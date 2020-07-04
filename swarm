@@ -1,0 +1,679 @@
+#!/bin/bash
+############################################################################################################################################################
+############################################################################################################################################################
+# DO NOT EDIT THE LINES BELOW !!! DO NOT EDIT THE LINES BELOW !!! DO NOT EDIT THE LINES BELOW !!! DO NOT EDIT THE LINES BELOW !!!
+############################################################################################################################################################
+############################################################################################################################################################
+
+version=0.1.0
+
+############################################################################################################################################################
+source /var/lib/swarm/modules/variables
+
+
+swarmgit="https://github.com/TangleBay/swarm.git"
+latestswarm="$(curl -s https://api.github.com/repos/TangleBay/swarm/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
+croncmd="$swarmdir/watchdog.sh"
+cronjob="*/15 * * * * $croncmd"
+
+
+if [ "$release" = "stable" ]; then
+    latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
+    latesthornet="${latesthornet:1}"
+fi
+if [ "$release" = "testing" ]; then
+    latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | head -n 1)"
+    latesthornet="${latesthornet:1}"
+fi
+
+############################################################################################################################################################
+
+clear
+function pause(){
+   read -p "$*"
+}
+
+# Check if script is running with root permissions
+if [ $(id -u) -ne 0 ]; then
+    echo -e $TEXT_RED_B "Please run HLM with sudo or as root"
+    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+    echo -e $text_reset
+    exit 0
+fi
+
+# Run PACKAGE Module
+source $modules/packages
+
+
+# Check if cfgs are up2date
+if [ -f "$swarmdir/updater.sh" ]; then
+    if [ -x "$swarmdir/updater.sh" ]; then
+        bash $swarmdir/updater.sh
+    else
+        sudo chmod +x $swarmdir/updater.sh
+        bash $swarmdir/updater.sh
+    fi
+fi
+
+
+counter=0
+while [ $counter -lt 1 ]; do
+    clear
+    source $configs/hornet.cfg
+    source $configs/nginx.cfg
+    source $configs/watchdog.cfg
+    source $envfile
+
+    nodetempv="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.appVersion')"
+    nodev="${nodetempv%\"}"
+    nodev="${nodev#\"}"
+    sync="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.isSynced')"
+
+    if [ -f "$swarmdir/log/watchdog.log" ]; then
+        sudo crontab -l | grep -q $swarmdir/watchdog.sh && watchdog=active || watchdog=inactive
+        watchdogcount="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
+        watchdogtime="$(cat $swarmdir/log/watchdog.log | sed -n -e '2{p;q}')"
+    fi
+
+    ############################################################################################################################################################
+
+    echo ""
+    echo -e $text_yellow "\033[1m\033[4mWelcome to the Hornet lightweight manager! [v$version]\033[0m"
+    echo ""
+    if [ "$latestswarm" != "$version" ] && [ "$latestswarm" != "" ]; then
+        echo -e $text_red "#####################################################"
+        echo -e $text_red " New version v$latestswarm available, please update HLM!"
+        echo -e $text_red "#####################################################"
+        echo ""
+    fi
+    if [ -n "$nodev" ]; then
+        if [ "$nodev" = "$latesthornet" ]; then
+            echo -e "$text_yellow Hornet Version:$text_green $nodev"
+        else
+            echo -e "$text_yellow Hornet Version:$text_red $nodev"
+        fi
+    else
+        echo -e "$text_yellow Hornet Version:$text_red N/A"
+    fi
+    if [ "$sync" = "true" ] || [ "$sync" = "false" ]; then
+        if [ "$sync" = "true" ]; then
+            echo -e "$text_yellow Hornet Status:$text_green synced"
+        else
+            echo -e "$text_yellow Hornet Status:$text_red not synced"
+        fi
+    else
+        echo -e "$text_yellow Hornet Status:$text_red N/A"
+    fi
+    echo ""
+    if [ "$watchdog" = "active" ] || [ "$watchdog" = "inactive" ]; then
+        if [ "$watchdog" != "active" ]; then
+            echo -e "$text_yellow Watchdog:$text_red $watchdog"
+        else
+            echo -e "$text_yellow Watchdog:$text_green $watchdog"
+            if [ "$watchdogcount" -gt "0" ]; then
+                echo -e "$text_yellow Restarts:$text_red $watchdogcount"
+                if [ -n "$watchdogtime" ]; then
+                    echo -e "$text_yellow Last restart: $watchdogtime"
+                fi
+                echo ""
+            fi
+            # Autoupdate
+            if [ "$autoupdate" = "true" ]; then
+                echo -e "$text_yellow Auto-updater:$text_green enabled"
+            else
+                echo -e "$text_yellow Auto-updater:$text_red disabled"
+            fi
+            # Sync Check
+            if [ "$checksync" = "true" ]; then
+                echo -e "$text_yellow Sync-checker:$text_green enabled"
+            else
+                echo -e "$text_yellow Sync-checker:$text_red disabled"
+            fi
+            # Log Pruning
+            if [ "$logpruning" = "true" ]; then
+                echo -e "$text_yellow Log-pruner:$text_green enabled"
+            else
+                echo -e "$text_yellow Log-pruner:$text_red disabled"
+            fi
+        fi
+    else
+        echo -e "$text_yellow Watchdog:$text_red inactive"
+    fi
+    echo ""
+    echo -e "\e[90m==========================================================="
+    echo ""
+    echo -e $text_red "\033[1m\033[4mManagement\033[0m"
+    echo ""
+    echo -e $text_yellow
+    echo " 1) HLM Toolbox"
+    echo ""
+    echo " 2) Hornet Node"
+    echo ""
+    echo " 3) Reverse Proxy"
+    echo ""
+    echo -e "\e[90m-----------------------------------------------------------"
+    echo ""
+    echo -e $text_yellow "x) Exit"
+    echo ""
+    echo -e "\e[90m==========================================================="
+    echo -e $text_yellow && read -t 60 -p " Please type in your option: " selector
+    echo -e $text_reset
+
+    if [ "$selector" = "1" ]; then
+        counter1=0
+        while [ $counter1 -lt 1 ]; do
+            clear
+            echo ""
+            echo -e $text_red " \033[1m\033[4mHLM Toolbox\033[0m"
+            echo -e $text_yellow ""
+            echo " 1) Edit Watchdog.cfg"
+            echo ""
+            echo " 2) Manage Watchdog"
+            echo ""
+            echo " 3) Update HLM"
+            echo ""
+            echo -e " \e[90m-----------------------------------------------------------"
+            echo ""
+            echo -e $text_yellow "x) Back"
+            echo ""
+            echo -e " \e[90m==========================================================="
+            echo -e $text_yellow && read -p " Please type in your option: " selector
+            echo -e $text_reset
+
+            # Change watchdog.cfg
+            if [ "$selector" = "1" ] ; then
+                sudo nano $hlmcfgdir/watchdog.cfg
+                echo -e $text_yellow && echo " Edit configuration finished!" && echo -e $text_reset
+                echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                echo -e $text_reset
+            fi
+
+            if [ "$selector" = "2" ]; then
+                echo -e $TEXT_RED_B && read -p " Would you like to (1)enable/(2)disable or (c)ancel hornet watchdog: " selector_watchdog
+                echo -e $text_reset
+                if [ "$selector_watchdog" = "1" ]; then
+                    echo -e $text_yellow && echo " Enable hornet watchdog..." && echo -e $text_reset
+                    sudo mkdir -p $swarmdir/log
+                    sudo echo "0" > $swarmdir/log/watchdog.log
+                    sudo chmod +x $swarmdir/watchdog.sh
+                    ( crontab -l | grep -v -F "$croncmd" ; echo "$cronjob" ) | crontab -
+                fi
+                if [ "$selector_watchdog" = "2" ]; then
+                    echo -e $text_yellow && echo " Disable hornet watchdog..." && echo -e $text_reset
+                    ( crontab -l | grep -v -F "$croncmd" ) | crontab -
+                fi
+                echo -e $text_yellow && echo " Hornet watchdog configuration finished!" && echo -e $text_reset
+                echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                echo -e $text_reset
+            fi
+
+            if [ "$selector" = "3" ]; then
+                echo -e $TEXT_RED_B && read -p " Are you sure you want to update HLM (y/N): " selector_hlmreset
+                if [ "$selector_hlmreset" = "y" ] || [ "$selector_hlmreset" = "Y" ]; then
+                    ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
+                    ( cd $swarmdir ; sudo git reset --hard origin/master ) > /dev/null 2>&1
+                    sudo chmod +x $swarmdir/hlm.sh $swarmdir/watchdog.sh $swarmdir/updater.sh
+                    echo ""
+                    echo -e $text_red " HLM update successfully!"
+                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...' && echo -e $text_reset
+                    clear
+                    #ScriptLoc=$(readlink -f "$0")
+                    #exec "$ScriptLoc"
+                    exit 0
+                fi
+            fi
+
+            if [ "$selector" = "x" ] || [ "$selector" = "X" ]; then
+                counter1=1
+            fi
+        done
+        unset selector
+    fi
+
+############################################################################################################################################################
+
+    if [ "$selector" = "2" ] ; then
+        counter2=0
+        while [ $counter2 -lt 1 ]; do
+            clear
+            echo ""
+            echo -e $text_red "\033[1m\033[4mHornet Node\033[0m"
+            echo -e $text_yellow ""
+            echo " 1) Edit HLM-Node.cfg"
+            echo " 2) Edit Hornet Configs"
+            echo ""
+            echo " 3) Hornet Service (start/stop)"
+            echo " 4) Show latest node log"
+            echo " 5) Reset database"
+            echo ""
+            echo " 6) Hornet Installer"
+            echo ""
+            echo -e "\e[90m-----------------------------------------------------------"
+            echo ""
+            echo -e $text_yellow "x) Back"
+            echo ""
+            echo -e "\e[90m==========================================================="
+            echo -e $text_yellow && read -p " Please type in your option: " selector
+            echo -e $text_reset
+
+            # Change HLM-hornet.cfg
+            if [ "$selector" = "1" ] ; then
+                currentrelease=$release
+                currentnetwork=$network
+                sudo nano $hlmcfgdir/hornet.cfg
+                source $hlmcfgdir/hornet.cfg
+
+                # Write selected release to config
+                if [ "$release" = "stable" ]; then
+                    sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+                fi
+                if [ "$release" = "testing" ]; then
+                    sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+                    sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
+                fi
+
+                # Check if release is changed
+                if [ "$release" != "$currentrelease" ]; then
+                    echo ""
+                    echo -e $TEXT_RED_B " Release change detected!!!" && echo -e $text_reset
+                    echo ""
+                    echo -e $text_yellow && read -p " Would you like to re-install hornet now (y/N): " selector_releasechange
+                    echo -e $text_reset
+                    if [ "$selector_releasechange" = "y" ] || [ "$selector_releasechange" = "Y" ]; then
+                        sudo apt purge hornet -y
+                        sudo apt update && sudo apt dist-upgrade -y && sudo apt upgrade -y
+                        sudo apt install hornet -y
+                        check="$(systemctl show -p ActiveState --value hornet)"
+                        if [ "$check" != "active" ]; then
+                            sudo systemctl restart hornet
+                        fi
+                        echo ""
+                        echo -e $text_red " Hornet re-installation finished!"
+                        echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                        echo -e $text_reset
+                    fi
+                echo ""
+                fi
+
+                # Check if network changed
+                if [ "$network" != "$currentnetwork" ]; then
+                    echo ""
+                    echo -e $TEXT_RED_B " Network change detected!!!" && echo -e $text_reset
+                    if [ "$network" = "mainnet" ]; then
+                        echo "" > /etc/default/hornet
+                    fi
+                    if [ "$network" = "comnet" ]; then
+                        echo "OPTIONS=\"--config config_comnet --overwriteCooAddress\"" > /etc/default/hornet
+                    fi
+                    sudo rm -rf $hornetdir/snapshots/mainnet/* $hornetdir/snapshots/comnet/* $hornetdir/export.bin $hornetdir/export_comnet.bin
+                    restart=true
+                    echo ""
+                    echo -e $text_red " Hornet network change finished!"
+                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                    echo -e $text_reset
+                    echo ""
+                fi
+
+                # CALL MODULE CONFIGPARSER
+                source $modules/configparser
+
+                # check if a restart is required
+                if [ "$restart" = "true" ]; then
+                    echo ""
+                    echo -e $TEXT_RED_B "Hornet configuration changes detected!" && echo -e $text_reset
+                    echo ""
+                    echo -e $text_yellow && read -p " Would you like to restart hornet now (y/N): " selector_restart
+                    echo -e $text_reset
+                    if [ "$selector_restart" = "y" ] || [ "$selector_restart" = "Y" ]; then
+                        sudo systemctl restart hornet
+                    fi
+                    restart=false
+                fi
+                echo -e $text_yellow && echo " Edit configuration finished!" && echo -e $text_reset
+                echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                echo -e $text_reset
+            fi
+
+            # Edit config.json
+            if [ "$selector" = "2" ] ; then
+                echo -e $TEXT_RED_B && read -p " Would you like to edit the (1)mainnet, (2)comnet or (3)peering config: " selector
+                if [ "$selector" = "1" ]; then
+                    sudo nano $hornetdir/config.json
+                    echo -e $TEXT_RED_B && read -p " Would you like to restart hornet now (y/N): " restart
+                fi
+                if [ "$selector" = "2" ]; then
+                    sudo nano $hornetdir/config_comnet.json
+                    echo -e $TEXT_RED_B && read -p " Would you like to restart hornet now (y/N): " restart
+                fi
+                if [ "$selector" = "3" ]; then
+                    sudo nano $hornetdir/peering.json
+                    echo -e $text_yellow && echo " New peering configuration loaded!" && echo -e $text_reset
+                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                fi
+                if [ "$restart" = "y" ] || [ "$restart" = "y" ]; then
+                    sudo systemctl restart hornet
+                    echo -e $text_yellow && echo " Hornet node restarted!" && echo -e $text_reset
+                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                    echo -e $text_reset
+                fi
+                unset selector
+                unset restart
+            fi
+
+            if [ "$selector" = "3" ] ; then
+                echo -e $TEXT_RED_B && read -p " Would you like to (1)restart/(2)stop/(3)status or (c)ancel: " selector1
+                echo -e $text_reset
+                if [ "$selector1" = "1" ]; then
+                    unset selector1
+                    sudo systemctl restart hornet
+                    echo -e $text_yellow && echo " Hornet node (re)started!" && echo -e $text_reset
+                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                    echo -e $text_reset
+                fi
+                if [ "$selector1" = "2" ]; then
+                    unset selector1
+                    sudo systemctl stop hornet
+                    echo -e $text_yellow " Hornet node stopped!"
+                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                    echo -e $text_reset
+                fi
+                if [ "$selector1" = "3" ]; then
+                    unset selector1
+                    sudo systemctl status hornet
+                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                    echo -e $text_reset
+                fi
+            fi
+
+            if [ "$selector" = "4" ] ; then
+                sudo journalctl -fu hornet | less -FRSXM
+            fi
+
+            if [ "$selector" = "5" ]; then
+                echo -e $TEXT_RED_B && read -p " Would you like to delete (1)mainnetdb or (2)comnetdb or (c)ancel: " selector_deletedb
+                echo -e $text_reset
+                if [ "$selector_deletedb" = "1" ]; then
+                    echo -e $TEXT_RED_B && read -p " Are you sure to delete the database (y/N): " selector6
+                    echo -e $text_reset
+                    if [ "$selector6" = "y" ] || [ "$selector6" = "Y" ]; then
+                        sudo systemctl stop hornet
+                        if [ -d "$hornetdir/mainnetdb" ]; then
+                            sudo rm -rf $hornetdir/mainnetdb
+                        fi
+                        if [ -f "$hornetdir/export.bin" ]; then
+                            sudo rm -rf $hornetdir/export.bin
+                        fi
+                        sudo systemctl start hornet
+                        echo -e $text_yellow && echo " Reset of the database finished and hornet restarted!" && echo -e $text_reset
+                        echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                        echo -e $text_reset
+                    fi
+                fi
+                if [ "$selector_deletedb" = "2" ]; then
+                    echo -e $TEXT_RED_B && read -p " Are you sure to delete the database (y/N): " selector6
+                    echo -e $text_reset
+                    if [ "$selector6" = "y" ] || [ "$selector6" = "Y" ]; then
+                        sudo systemctl stop hornet
+                        if [ -d "$hornetdir/comnetdb" ]; then
+                            sudo rm -rf $hornetdir/comnetdb
+                        fi
+                        if [ -f "$hornetdir/export_comnet.bin" ]; then
+                            sudo rm -rf $hornetdir/export_comnet.bin
+                        fi
+                        sudo systemctl start hornet
+                        echo -e $text_yellow && echo " Reset of the database finished and hornet restarted!" && echo -e $text_reset
+                        echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                        echo -e $text_reset
+                    fi
+                fi
+            fi
+
+            if [ "$selector" = "6" ] ; then
+                echo -e $TEXT_RED_B && read -p " Would you like to (1)update, (2)install, (3)remove Hornet or press any other key to cancel: " selector
+                echo -e $text_reset
+                # Update Hornet
+                if [ "$selector" = "1" ] ; then
+                    if [ -n "$nodev" ]; then
+                        echo -e $text_yellow " Checking if a new version is available..."
+                        if [ "$release" = "stable" ]; then
+                            latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
+                            latesthornet="${latesthornet:1}"
+                        fi
+                        if [ "$release" = "testing" ]; then
+                            latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | head -n 1)"
+                            latesthornet="${latesthornet:1}"
+                        fi
+                        if [ "$nodev" = "$latesthornet" ]; then
+                            echo -e "$text_green Already up to date."
+                        else
+                            echo -e $text_red " New Hornet version found... $text_red(v$latesthornet)"
+                            echo -e $text_yellow " Stopping Hornet node...(Please note that this may take some time)"
+                            sudo systemctl stop hornet
+                            echo -e $text_yellow " Updating Hornet..."
+                            sudo apt update && sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
+
+                            # Check if a new config exist after updating
+                            if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
+                                sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
+                                sudo rm -rf $hornetdir/config.json.dpkg-dist
+                            fi
+                            if [ -f "$hornetdir/config_comnet.json.dpkg-dist" ]; then
+                                sudo cp -r $hornetdir/config_comnet.json.dpkg-dist $hornetdir/config_comnet.json
+                                sudo rm -rf $hornetdir/config_comnet.json.dpkg-dist
+                            fi
+
+                            # CALL MODULE CONFIGPARSER
+                            source $modules/configparser
+
+                            echo -e $text_yellow " Starting Hornet node..."
+                            sudo systemctl start hornet
+                            echo -e $text_yellow " Updating Hornet version finished!"
+                            echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                            echo -e $text_reset
+                        fi
+                    else
+                        echo -e "$text_red Error! Please try again later."
+                    fi
+                fi
+                # Install Hornet
+                if [ "$selector" = "2" ]; then
+                    if [ ! -f "/usr/bin/hornet" ]; then
+                        source $hlmcfgdir/hornet.cfg
+                        sudo snap install --classic --channel=1.14/stable go
+                        sudo wget -qO - https://ppa.hornet.zone/pubkey.txt | sudo apt-key add -
+                        if [ "$release" = "stable" ]; then
+                            sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+                        fi
+                        if [ "$release" = "testing" ]; then
+                            sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+                            sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
+                        fi
+                        sudo apt update && sudo apt dist-upgrade -y && sudo apt upgrade -y
+                        sudo apt install hornet -y
+
+                        # Check which network
+                        if [ "$network" = "mainnet" ]; then
+                            echo "" > /etc/default/hornet
+                            sudo rm -rf $hornetdir/snapshots/mainnet/* $hornetdir/snapshots/comnet/* $hornetdir/export.bin $hornetdir/export_comnet.bin
+                            sudo rm -rf $hornetdir/snapshots/mainnet/* $hornetdir/snapshots/comnet/* $hornetdir/export.bin $hornetdir/export_comnet.bin
+                            restart=true
+                        fi
+                        if [ "$network" = "comnet" ]; then
+                            echo "OPTIONS=\"--config config_comnet --overwriteCooAddress\"" > /etc/default/hornet
+                            sudo rm -rf $hornetdir/snapshots/mainnet/* $hornetdir/snapshots/comnet/* $hornetdir/export.bin $hornetdir/export_comnet.bin
+                            sudo rm -rf $hornetdir/snapshots/mainnet/* $hornetdir/snapshots/comnet/* $hornetdir/export.bin $hornetdir/export_comnet.bin
+                            restart=true
+                        fi
+
+                        # CALL MODULE CONFIGPARSER
+                        source $modules/configparser
+
+                        if [ -f /usr/bin/hornet ]; then
+                            check="$(systemctl show -p ActiveState --value hornet)"
+                            if [ "$check" != "active" ]; then
+                                sudo systemctl restart hornet
+                            fi
+                            if [ "$restart" = "true" ]; then
+                                sudo systemctl restart hornet
+                                restart=false
+                            fi
+                            echo ""
+                            echo -e $TEXT_RED_B
+                            echo " You need to open the following ports in your home router for peering"
+                            echo " Ports: $autopeeringport/UDP & $neighborport/tcp"
+                            echo ""
+                            echo -e $text_yellow
+                            echo " Hornet installation finished!"
+                        else
+                            echo -e $TEXT_RED_B ""
+                            echo " Error while installing Hornet. Please check hornet.cfg and try again!"
+                            echo ""
+                        fi
+                        echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...' && echo -e $text_reset
+                    else
+                        echo -e $text_red " Hornet already installed. Please remove first!"
+                        echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...' && echo -e $text_reset
+                    fi
+                fi
+                # Remove Hornet
+                if [ "$selector" = "3" ]; then
+                    echo -e $TEXT_RED_B && read -p " Are you sure you want to remove Hornet (y/N): " selector_hornetremove
+                    echo -e $text_reset
+                    if [ "$selector_hornetremove" = "y" ] || [ "$selector_hornetremove" = "Y" ]; then
+                        ( crontab -l | grep -v -F "$croncmd" ) | crontab -
+                        ( crontab -l | grep -v -F "$croncmdswarm" ) | crontab -
+                        sudo systemctl stop hornet
+                        sudo apt purge hornet -y
+                        echo -e $text_red " Hornet was successfully removed!"
+                        echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                        echo -e $text_reset
+                    fi
+                fi
+                unset selector
+            fi
+
+            if [ "$selector" = "x" ] || [ "$selector" = "X" ]; then
+                counter2=1
+            fi
+        done
+        unset selector
+    fi
+
+############################################################################################################################################################
+
+    if [ "$selector" = "3" ]; then
+        counter3=0
+        while [ $counter3 -lt 1 ]; do
+            clear
+            echo ""
+            echo -e $text_red "\033[1m\033[4mReverse Proxy\033[0m"
+            echo -e $text_yellow ""
+            echo " 1) Edit Nginx.cfg"
+            echo ""
+            echo " 2) Update Dashboard Login"
+            echo ""
+            echo " 3) Deploy reverse proxy"
+            echo " 4) Renew SSL Certificate"
+            echo ""
+            echo -e "\e[90m-----------------------------------------------------------"
+            echo ""
+            echo -e $text_yellow "x) Back"
+            echo ""
+            echo -e "\e[90m==========================================================="
+            echo -e $text_yellow && read -p " Please type in your option: " selector
+            echo -e $text_reset
+
+            # Change nginx.cfg
+            if [ "$selector" = "1" ] ; then
+                sudo nano $hlmcfgdir/nginx.cfg
+                source $hlmcfgdir/nginx.cfg
+                echo -e $text_yellow && echo " Edit configuration finished!" && echo -e $text_reset
+                echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                echo -e $text_reset
+            fi
+
+            # Update Dashboard Login
+            if [ "$selector" = "2" ]; then
+                if [ -f "/etc/nginx/.htpasswd" ]; then
+                    dashpw="$(mkpasswd -m sha-512 $dashpw)"
+                    echo "$dashuser:$dashpw" > /etc/nginx/.htpasswd
+                    sudo systemctl reload nginx
+                    echo -e $text_yellow && echo " Hornet Dashboard login updated!" && echo -e $text_reset
+                else
+                    echo -e $text_red " Please install nginx first!"
+                fi
+                echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                echo -e $text_reset
+            fi
+
+            if [ "$selector" = "3" ]; then
+                if [ ! -f "/etc/nginx/.htpasswd" ]; then
+                    dashpw="$(mkpasswd -m sha-512 $dashpw)"
+                    sudo echo "$dashuser:$dashpw" > /etc/nginx/.htpasswd
+                fi
+
+                if [ ! -d "/etc/letsencrypt" ]; then
+                    echo -e $text_yellow && echo " Installing necessary packages..." && echo -e $text_reset
+                    sudo apt install software-properties-common certbot python3-certbot-nginx -y
+                    rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
+                    sudo cp $swarmdir/pre-nginx.template /etc/nginx/sites-enabled/default
+                    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
+                    sudo systemctl restart nginx
+
+                    dashpw="$(mkpasswd -m sha-512 $dashpw)"
+                    sudo echo "$dashuser:$dashpw" > /etc/nginx/.htpasswd
+                fi
+
+                if [ ! -d "/etc/letsencrypt/live/$domain" ]; then
+                    echo -e $text_yellow && echo " Starting SSL-Certificate installation..." && echo -e $text_reset
+                    sudo certbot --nginx -d $domain
+                    if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
+                        echo -e $text_yellow && echo " SSL certificate installed!" && echo -e $text_reset
+                    else
+                        echo -e $text_red " Error! SSL Certificate not found!"
+                    fi
+                fi
+
+                if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
+                    echo -e $text_yellow && echo " Copying Nginx configuration..." && echo -e $text_reset
+                    rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
+                    sudo cp $swarmdir/nginx.template /etc/nginx/sites-enabled/default
+                    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
+                    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/443/'$nodeport'/g' {} \;
+                    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/\#NGINX/''/g' {} \;
+                    sudo systemctl restart nginx
+                    echo -e $text_yellow && echo " Nginx configurationen updated!" && echo -e $text_reset
+                fi
+                echo -e $text_yellow && echo " Reverse proxy configuration finished!" && echo -e $text_reset
+                echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                echo -e $text_reset
+            fi
+
+            if [ "$selector" = "4" ]; then
+                if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
+                    sudo certbot renew
+                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                    echo -e $text_reset
+                else
+                    echo -e $text_red " Error! No SSL Certificate installed!"
+                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
+                    echo -e $text_reset
+                fi
+            fi
+
+            if [ "$selector" = "x" ] || [ "$selector" = "X" ]; then
+                counter3=1
+            fi
+        done
+        unset selector
+    fi
+
+############################################################################################################################################################
+
+    if [ "$selector" = "x" ] || [ "$selector" = "X" ]; then
+        counter=1
+    fi
+done
+counter=0
+clear
+exit 0
