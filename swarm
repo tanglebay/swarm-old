@@ -8,20 +8,8 @@
 version=0.0.1
 
 ############################################################################################################################################################
+
 source /var/lib/swarm/modules/variables
-
-
-swarmgit="https://github.com/TangleBay/swarm.git"
-latestswarm="$(curl -s https://api.github.com/repos/TangleBay/swarm/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
-
-if [ "$release" = "stable" ]; then
-    latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
-    latesthornet="${latesthornet:1}"
-fi
-if [ "$release" = "testing" ]; then
-    latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | head -n 1)"
-    latesthornet="${latesthornet:1}"
-fi
 
 ############################################################################################################################################################
 
@@ -38,8 +26,11 @@ if [ $(id -u) -ne 0 ]; then
     exit 0
 fi
 
-# Run PACKAGE Module
+# Run PACKAGE module
 source $modules/packages
+
+# Run VERSION module
+source $modules/versions
 
 # Start main script
 counter=0
@@ -50,11 +41,10 @@ while [ $counter -lt 1 ]; do
     source $configs/watchdog.cfg
     source $envfile
 
-    nodeversion="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.appVersion')"
-    nodeversion="${nodeversion%\"}"
-    nodeversion="${nodeversion#\"}"
+    # Check sync status of the node
     sync="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.isSynced')"
 
+    # Check if watchdog was enabled and get latest stats
     if [ -f "$swarmdir/log/watchdog.log" ]; then
         sudo crontab -l | grep -q $plugins/watchdog && watchdog=active || watchdog=inactive
         watchdogcount="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
@@ -420,16 +410,11 @@ while [ $counter -lt 1 ]; do
                 echo -e $text_reset
                 # Update Hornet
                 if [ "$selector" = "1" ] ; then
-                    if [ -n "$nodeversion" ]; then
+                    source
+                    if [ "$sync" = "true" ] || [ "$sync" = "false" ]; then
                         echo -e $text_yellow " Checking if a new version is available..."
-                        if [ "$release" = "stable" ]; then
-                            latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
-                            latesthornet="${latesthornet:1}"
-                        fi
-                        if [ "$release" = "testing" ]; then
-                            latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | head -n 1)"
-                            latesthornet="${latesthornet:1}"
-                        fi
+                        # Run VERSION module
+                        source $modules/versions
                         if [ "$nodeversion" = "$latesthornet" ]; then
                             echo -e "$text_green Already up to date."
                         else
