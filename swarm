@@ -50,9 +50,9 @@ while [ $counter -lt 1 ]; do
     source $configs/watchdog.cfg
     source $envfile
 
-    nodetempv="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.appVersion')"
-    nodev="${nodetempv%\"}"
-    nodev="${nodev#\"}"
+    nodeversion="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.appVersion')"
+    nodeversion="${nodeversion%\"}"
+    nodeversion="${nodeversion#\"}"
     sync="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.isSynced')"
 
     if [ -f "$swarmdir/log/watchdog.log" ]; then
@@ -72,11 +72,11 @@ while [ $counter -lt 1 ]; do
         echo -e $text_red "#####################################################"
         echo ""
     fi
-    if [ -n "$nodev" ]; then
-        if [ "v$nodev" = "$latesthornet" ]; then
-            echo -e "$text_yellow Hornet Version:$text_green $nodev"
+    if [ -n "$nodeversion" ]; then
+        if [ "$nodeversion" = "$latesthornet" ]; then
+            echo -e "$text_yellow Hornet Version:$text_green $nodeversion"
         else
-            echo -e "$text_yellow Hornet Version:$text_red $nodev"
+            echo -e "$text_yellow Hornet Version:$text_red $nodeversion"
         fi
     else
         echo -e "$text_yellow Hornet Version:$text_red N/A"
@@ -420,7 +420,7 @@ while [ $counter -lt 1 ]; do
                 echo -e $text_reset
                 # Update Hornet
                 if [ "$selector" = "1" ] ; then
-                    if [ -n "$nodev" ]; then
+                    if [ -n "$nodeversion" ]; then
                         echo -e $text_yellow " Checking if a new version is available..."
                         if [ "$release" = "stable" ]; then
                             latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
@@ -430,7 +430,7 @@ while [ $counter -lt 1 ]; do
                             latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | head -n 1)"
                             latesthornet="${latesthornet:1}"
                         fi
-                        if [ "$nodev" = "$latesthornet" ]; then
+                        if [ "$nodeversion" = "$latesthornet" ]; then
                             echo -e "$text_green Already up to date."
                         else
                             echo -e $text_red " New Hornet version found... $text_red(v$latesthornet)"
