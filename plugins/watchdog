@@ -15,8 +15,8 @@ if [ "$autoupdate" = "true" ]; then
             nodev="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.appVersion')"
             version="${nodev%\"}"
             version="${version#\"}"
+            prevhornet="$(hornet -v)"
             if [ "$version" != "$latesthornet" ]; then
-                sudo systemctl stop hornet
                 sudo apt update && sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
                 if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
                     sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
@@ -27,10 +27,13 @@ if [ "$autoupdate" = "true" ]; then
                     sudo rm -rf $hornetdir/config_comnet.json.dpkg-dist
                 fi
 
+                newhornet="$(hornet -v)"
+                if [ "$prehornet" != "$newhornet" ]; then
                 # CALL MODULE CONFIGPARSER
-                source $module/configparser
+                    source $modules/configparser
+                    sudo systemctl restart hornet
+                fi
 
-                sudo systemctl start hornet
             fi
         fi
         if [ "$release" = "testing" ]; then
@@ -39,8 +42,8 @@ if [ "$autoupdate" = "true" ]; then
             nodev="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.appVersion')"
             version="${nodev%\"}"
             version="${version#\"}"
+            prevhornet="$(hornet -v)"
             if [ "$version" != "$latesthornet" ]; then
-                sudo systemctl stop hornet
                 sudo apt update && sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
                 if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
                     sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
@@ -51,10 +54,13 @@ if [ "$autoupdate" = "true" ]; then
                     sudo rm -rf $hornetdir/config_comnet.json.dpkg-dist
                 fi
 
+                newhornet="$(hornet -v)"
+                if [ "$prehornet" != "$newhornet" ]; then
                 # CALL MODULE CONFIGPARSER
-                source $module/configparser
+                    source $modules/configparser
+                    sudo systemctl restart hornet
+                fi
 
-                sudo systemctl start hornet
             fi
         fi
     fi
