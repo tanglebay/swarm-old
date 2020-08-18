@@ -15,6 +15,11 @@ if [ "$pow" = "true" ] && [ "$parser" != "true" ]; then
     sudo jq '.httpAPI.permitRemoteAccess |= .+ ["attachToTangle"]' $hornetdir/config_comnet.json|sponge $hornetdir/config_comnet.json
     restart=true
 fi
+parser="$(jq '.httpAPI.permitRemoteAccess | contains(["attachToTangle"])' $hornetdir/config_devnet.json)"
+if [ "$pow" = "true" ] && [ "$parser" != "true" ]; then
+    sudo jq '.httpAPI.permitRemoteAccess |= .+ ["attachToTangle"]' $hornetdir/config_devnet.json|sponge $hornetdir/config_devnet.json
+    restart=true
+fi
 
 # Check if pow is disabled
 parser="$(jq '.httpAPI.permitRemoteAccess | contains(["attachToTangle"])' $hornetdir/config.json)"
@@ -25,6 +30,11 @@ fi
 parser="$(jq '.httpAPI.permitRemoteAccess | contains(["attachToTangle"])' $hornetdir/config_comnet.json)"
 if [ "$pow" = "false" ] && [ "$parser" != "false" ]; then
     sudo jq '.httpAPI.permitRemoteAccess |= .- ["attachToTangle"]' $hornetdir/config_comnet.json|sponge $hornetdir/config_comnet.json
+    restart=true
+fi
+parser="$(jq '.httpAPI.permitRemoteAccess | contains(["attachToTangle"])' $hornetdir/config_devnet.json)"
+if [ "$pow" = "false" ] && [ "$parser" != "false" ]; then
+    sudo jq '.httpAPI.permitRemoteAccess |= .- ["attachToTangle"]' $hornetdir/config_devnet.json|sponge $hornetdir/config_devnet.json
     restart=true
 fi
 
@@ -40,6 +50,13 @@ parser="$(jq '.snapshots.pruning.enabled' $hornetdir/config_comnet.json)"
 if [ "$parser" != "$pruning" ]; then
     if [ "$pruning" = "true" ] || [ "$pruning" = "false" ]; then
         sudo jq '.snapshots.pruning.enabled = '$pruning'' $hornetdir/config_comnet.json|sponge $hornetdir/config_comnet.json
+        restart=true
+    fi
+fi
+parser="$(jq '.snapshots.pruning.enabled' $hornetdir/config_devnet.json)"
+if [ "$parser" != "$pruning" ]; then
+    if [ "$pruning" = "true" ] || [ "$pruning" = "false" ]; then
+        sudo jq '.snapshots.pruning.enabled = '$pruning'' $hornetdir/config_devnet.json|sponge $hornetdir/config_devnet.json
         restart=true
     fi
 fi
@@ -59,6 +76,13 @@ if [ "$parser" != "$pruningdelay" ]; then
         restart=true
     fi
 fi
+parser="$(jq '.snapshots.pruning.delay' $hornetdir/config_devnet.json)"
+if [ "$parser" != "$pruningdelay" ]; then
+    if [ -n "$pruningdelay" ] && [ "$pruningdelay" -ge 50 ] 2>/dev/null; then
+        sudo jq '.snapshots.pruning.delay = '$pruningdelay'' $hornetdir/config_devnet.json|sponge $hornetdir/config_devnet.json
+        restart=true
+    fi
+fi
 
 # Check neighbor port
 parser="$(jq '.network.gossip.bindAddress' $hornetdir/config.json)"
@@ -72,6 +96,13 @@ parser="$(jq '.network.gossip.bindAddress' $hornetdir/config_comnet.json)"
 if [ "\"0.0.0.0:$neighborport\"" != "$parser" ]; then
     if [ -n "$neighborport" ] && [ "$neighborport" -ge 0 ] 2>/dev/null; then
         sudo jq '.network.gossip.bindAddress = "0.0.0.0:'$neighborport'"' $hornetdir/config_comnet.json|sponge $hornetdir/config_comnet.json
+        restart=true
+    fi
+fi
+parser="$(jq '.network.gossip.bindAddress' $hornetdir/config_devnet.json)"
+if [ "\"0.0.0.0:$neighborport\"" != "$parser" ]; then
+    if [ -n "$neighborport" ] && [ "$neighborport" -ge 0 ] 2>/dev/null; then
+        sudo jq '.network.gossip.bindAddress = "0.0.0.0:'$neighborport'"' $hornetdir/config_devnet.json|sponge $hornetdir/config_devnet.json
         restart=true
     fi
 fi
@@ -91,6 +122,13 @@ if [ "\"0.0.0.0:$autopeeringport\"" != "$parser" ]; then
         restart=true
     fi
 fi
+parser="$(jq '.network.autopeering.bindAddress' $hornetdir/config_devnet.json)"
+if [ "\"0.0.0.0:$autopeeringport\"" != "$parser" ]; then
+    if [ -n "$autopeeringport" ] && [ "$autopeeringport" -ge 0 ] 2>/dev/null; then
+        sudo jq '.network.autopeering.bindAddress = "0.0.0.0:'$autopeeringport'"' $hornetdir/config_devnet.json|sponge $hornetdir/config_devnet.json
+        restart=true
+    fi
+fi
 
 # Check Seed
 parser="$(jq '.network.autopeering.seed' $hornetdir/config.json)"
@@ -103,6 +141,11 @@ if [ "\"$seed\"" != "$parser" ] && [ "$seed" != "" ]; then
     sudo jq '.network.autopeering.seed = '\"$seed\"'' $hornetdir/config_comnet.json|sponge $hornetdir/config_comnet.json
     restart=true
 fi
+parser="$(jq '.network.autopeering.seed' $hornetdir/config_devnet.json)"
+if [ "\"$seed\"" != "$parser" ] && [ "$seed" != "" ]; then
+    sudo jq '.network.autopeering.seed = '\"$seed\"'' $hornetdir/config_devnet.json|sponge $hornetdir/config_devnet.json
+    restart=true
+fi
 
 # Change snapshot interval
 parser="$(jq '.snapshots.local.intervalSynced' $hornetdir/config.json)"
@@ -113,5 +156,10 @@ fi
 parser="$(jq '.snapshots.local.intervalSynced' $hornetdir/config_comnet.json)"
 if [ "\"$lsdelay\"" != "$parser" ]; then
     sudo jq '.snapshots.local.intervalSynced = '$lsdelay'' $hornetdir/config_comnet.json|sponge $hornetdir/config_comnet.json
+    restart=true
+fi
+parser="$(jq '.snapshots.local.intervalSynced' $hornetdir/config_devnet.json)"
+if [ "\"$lsdelay\"" != "$parser" ]; then
+    sudo jq '.snapshots.local.intervalSynced = '$lsdelay'' $hornetdir/config_devnet.json|sponge $hornetdir/config_devnet.json
     restart=true
 fi
