@@ -72,11 +72,24 @@ if [ "$status" != "active" ]; then
     sudo systemctl restart hornet
     counter="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
     let counter=counter+1
+    if [ "$counter" -gt "3" ]; then
+        if [ "$network" = "mainnet" ]; then
+            sudo rm -rf $hornetdir/mainnetdb $hornetdir/snapshots/mainnet
+        fi
+        if [ "$network" = "comnet" ]; then
+            sudo rm -rf $hornetdir/comnetdb $hornetdir/snapshots/comnet
+        fi
+        if [ "$network" = "devnet" ]; then
+            sudo rm -rf $hornetdir/devnetdb $hornetdir/snapshots/devnet
+        fi
+        sudo systemctl restart hornet
+        counter=1
+    fi
     {
     echo $counter
     echo $dt
     } > $swarmdir/log/watchdog.log
-    counter=0
+    unset counter
 fi
 
 # Check sync
@@ -85,17 +98,25 @@ if [ "$checksync" = "true" ]; then
     lsmi="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
     let dlmi=$lmi-$lsmi
     if [ "$status" = "active" ] && [ $dlmi -gt $maxlmi ]; then
-            dt=`date '+%m/%d/%Y %H:%M:%S'`
-            sudo systemctl stop hornet
-            sudo rm -rf $hornetdir/mainnetdb $hornetdir/export.bin $hornetdir/comnetdb $hornetdir/export_comnet.bin
-            sudo systemctl start hornet
-            counter="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
-            let counter=counter+1
-            {
-            echo $counter
-            echo $dt
-            } > $swarmdir/log/watchdog.log
-            counter=0
+        dt=`date '+%m/%d/%Y %H:%M:%S'`
+        sudo systemctl stop hornet
+        if [ "$network" = "mainnet" ]; then
+            sudo rm -rf $hornetdir/mainnetdb $hornetdir/snapshots/mainnet
+        fi
+        if [ "$network" = "comnet" ]; then
+            sudo rm -rf $hornetdir/comnetdb $hornetdir/snapshots/comnet
+        fi
+        if [ "$network" = "devnet" ]; then
+            sudo rm -rf $hornetdir/devnetdb $hornetdir/snapshots/devnet
+        fi
+        sudo systemctl start hornet
+        counter="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
+        let counter=counter+1
+        {
+        echo $counter
+        echo $dt
+        } > $swarmdir/log/watchdog.log
+        counter=0
     fi
 fi
 
