@@ -1,0 +1,36 @@
+#!/bin/bash
+
+echo -e $text_yellow && read -p " Would like to add a new user for the (1)dashboard, (2)API, (3)both or cancel: " aupopt
+
+adduserproxy=0
+while [ $adduserproxy -lt 1 ]; do
+    echo -e $TEXT_RED_B && read -p " Specify the user name for the new user: " newusername
+    if [ ! -z $newusername ]; then
+        echo -e $TEXT_RED_B && read -p " Specify the password for the new user: " newuserpw
+        if [ ! -z $newuserpw ]; then
+            newuserpw="$(mkpasswd -m sha-512 $newuserpw)"
+            adduserproxy=1
+        else
+            echo -e $text_red "Please set a password for the new user!"
+        fi
+    else
+        echo -e $text_red "Please define a user name for the new user!"
+    fi
+done
+
+if [ "$aupopt" = "1" ]; then
+    echo "$newusername:$newuserpw" >> /etc/nginx/dash/.htpasswd
+fi
+if [ "$aupopt" = "2" ]; then
+    echo "$newusername:$newuserpw" >> /etc/nginx/api/.htpasswd
+fi
+if [ "$aupopt" = "3" ]; then
+    echo "$newusername:$newuserpw" >> /etc/nginx/dash/.htpasswd
+    echo "$newusername:$newuserpw" >> /etc/nginx/api/.htpasswd
+fi
+
+# Unset all var
+unset aupopt
+unset adduserproxy
+unset newusername
+unset newuserpw
