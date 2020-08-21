@@ -169,65 +169,12 @@ while [ $counter -lt 1 ]; do
 
             # Change SWARM-hornet.cfg
             if [ "$selector" = "1" ] ; then
-                currentrelease=$release
-                currentnetwork=$network
+                source $modules/getcurrentcfg
                 sudo nano $configs/hornet.cfg
                 source $configs/hornet.cfg
 
-                # Write selected release to config
-                if [ "$release" = "stable" ]; then
-                    sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
-                fi
-                if [ "$release" = "testing" ]; then
-                    sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
-                    sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
-                    sudo sh -c 'echo "deb http://ppa.hornet.zone alpha main" >> /etc/apt/sources.list.d/hornet.list'
-                fi
-
-                # Check if release is changed
-                if [ "$release" != "$currentrelease" ]; then
-                    echo ""
-                    echo -e $TEXT_RED_B " Release change detected!!!" && echo -e $text_reset
-                    echo ""
-                    echo -e $text_yellow && read -p " Would you like to re-install hornet now (y/N): " selector_releasechange
-                    echo -e $text_reset
-                    if [ "$selector_releasechange" = "y" ] || [ "$selector_releasechange" = "Y" ]; then
-                        sudo apt purge hornet -y
-                        sudo apt update && sudo apt dist-upgrade -y && sudo apt upgrade -y
-                        sudo apt install hornet -y
-                        check="$(systemctl show -p ActiveState --value hornet)"
-                        if [ "$check" != "active" ]; then
-                            sudo systemctl restart hornet
-                        fi
-                        echo ""
-                        echo -e $text_red " Hornet re-installation finished!"
-                        echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
-                        echo -e $text_reset
-                    fi
-                echo ""
-                fi
-
-                # Check if network changed
-                if [ "$network" != "$currentnetwork" ]; then
-                    echo ""
-                    echo -e $TEXT_RED_B " Network change detected!!!" && echo -e $text_reset
-                    if [ "$network" = "mainnet" ]; then
-                        echo "" > /etc/default/hornet
-                    fi
-                    if [ "$network" = "comnet" ]; then
-                        echo "OPTIONS=\"--config config_comnet --overwriteCooAddress\"" > /etc/default/hornet
-                    fi
-                    if [ "$network" = "devnet" ]; then
-                        echo "OPTIONS=\"--config config_devnet --overwriteCooAddress\"" > /etc/default/hornet
-                    fi
-                    sudo rm -rf $hornetdir/snapshots/mainnet/export.bin $hornetdir/snapshots/comnet/export.bin $hornetdir/snapshots/devnet/export.bin $hornetdir/export.bin $hornetdir/export_comnet.bin $hornetdir/export_devnet.bin
-                    restart=true
-                    echo ""
-                    echo -e $text_red " Hornet network change finished!"
-                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
-                    echo -e $text_reset
-                    echo ""
-                fi
+                # Run Hornet cfg checker
+                source $modules/hornetcfgchecker
 
                 # CALL MODULE CONFIGPARSER
                 source $modules/configparser
