@@ -5,7 +5,6 @@
 ############################################################################################################################################################
 ############################################################################################################################################################
 
-branch=develop
 version=0.0.1
 
 ############################################################################################################################################################
@@ -28,27 +27,6 @@ if [ $(id -u) -ne 0 ]; then
     echo -e $TEXT_RED_B "Please run SWARM with sudo or as root"
     echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
     echo -e $text_reset
-    exit 0
-fi
-
-# Check SWARM branch
-swarmbranch="$(cd $swarmdir ; git branch --show-current )"
-if [ "$swarmbranch" != "$branch" ]; then
-    source $configs/hornet.cfg
-    source $configs/nginx.cfg
-    source $configs/watchdog.cfg
-    echo ""
-    echo -e $text_yellow "\033[1m\033[4mWelcome to SWARM! [v$version]\033[0m"
-    echo ""
-    ( cd $swarmdir ; sudo git checkout $branch ) > /dev/null 2>&1
-    ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
-    ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
-    sudo chmod +x $swarmdir/swarm $plugins/watchdog
-    source $modules/updater
-    echo ""
-    echo -e $text_red " SWARM branch change detected!"
-    echo -e $TEXT_RED_B && pause ' Press [Enter] key to exit SWARM...' && echo -e $text_reset
-    clear
     exit 0
 fi
 
@@ -593,6 +571,29 @@ while [ $counter -lt 1 ]; do
                     echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...' && echo -e $text_reset
                     clear
                     exit 0
+                fi
+            fi
+
+            if [ "$selector" = "9" ]; then
+                echo -e $TEXT_RED_B && read -p " In which branch you want so switch: " branch
+                if [ "$branch = "master" ] || [ "$branch" = "develop" ]; then
+                    # Check SWARM branch
+                    swarmbranch="$(cd $swarmdir ; git branch --show-current )"
+                    if [ "$swarmbranch" != "$branch" ]; then
+                        ( cd $swarmdir ; sudo git checkout $branch ) > /dev/null 2>&1
+                        ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
+                        ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
+                        sudo chmod +x $swarmdir/swarm $plugins/watchdog
+                        source $modules/updater
+                        echo ""
+                        echo -e $text_red " SWARM branch change detected!"
+                        echo -e $TEXT_RED_B && pause ' Press [Enter] key to exit SWARM...' && echo -e $text_reset
+                        clear
+                        exit 0
+                    fi
+                else
+                    echo -e $text_red " No valid branch selected!"
+                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...' && echo -e $text_reset
                 fi
             fi
 
