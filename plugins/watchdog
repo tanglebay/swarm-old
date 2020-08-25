@@ -3,6 +3,10 @@ source /var/lib/swarm/modules/variables
 source $configs/hornet.cfg
 source $configs/watchdog.cfg
 
+if [ -f "$swarmdir/log/locked" ]; then
+    exit 0
+fi
+
 # Get Service Status
 status="$(systemctl show -p ActiveState --value hornet)"
 
@@ -58,6 +62,7 @@ if [ "$autoupdate" = "true" ]; then
 
                 newversion="$(hornet -v)"
                 if [ "$version" != "$newversion" ]; then
+                sudo touch $swarmdir/log/locked
                 # CALL MODULE CONFIGPARSER
                     source $modules/configparser
                     sudo systemctl restart hornet
@@ -101,6 +106,7 @@ if [ "$checksync" = "true" ]; then
     lsmi="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
     let dlmi=$lmi-$lsmi
     if [ "$status" = "active" ] && [ $dlmi -gt $maxlmi ] && [ "$synccounter" -gt "2" ]; then
+        sudo touch $swarmdir/log/locked
         dt=`date '+%m/%d/%Y %H:%M:%S'`
         sudo systemctl stop hornet
         if [ "$network" = "mainnet" ]; then
@@ -148,5 +154,8 @@ unset statcounter
 unset synccounter
 unset dt
 unset currentlogsize
+
+# Remove lock file
+sudo rm -rf $swarmdir/log/locked
 
 exit 0
