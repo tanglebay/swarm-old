@@ -562,8 +562,9 @@ while [ $counter -lt 1 ]; do
             if [ "$selector" = "3" ]; then
                 echo -e $TEXT_RED_B && read -p " Are you sure you want to update SWARM (y/N): " selector_swarmreset
                 if [ "$selector_swarmreset" = "y" ] || [ "$selector_swarmreset" = "Y" ]; then
+                    currentbranch="$(cd $swarmdir ; git branch --show-current )"
                     ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
-                    ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
+                    ( cd $swarmdir ; sudo git reset --hard origin/$currentbranch ) > /dev/null 2>&1
                     sudo chmod +x $swarmdir/swarm $plugins/watchdog
                     source $modules/updater
                     echo ""
@@ -575,14 +576,15 @@ while [ $counter -lt 1 ]; do
             fi
 
             if [ "$selector" = "9" ]; then
+                currentbranch="$(cd $swarmdir ; git branch --show-current )"
+                echo -e $TEXT_RED_B "Current branch: $currentbranch" && echo -e $text_reset
                 echo -e $TEXT_RED_B && read -p " In which branch you want so switch: " branch
                 if [ "$branch" = "master" ] || [ "$branch" = "develop" ]; then
                     # Check SWARM branch
-                    swarmbranch="$(cd $swarmdir ; git branch --show-current )"
-                    if [ "$swarmbranch" != "$branch" ]; then
+                    if [ "$currentbranch" != "$branch" ]; then
+                        ( cd $swarmdir ; sudo git reset --hard origin/$currentbranch ) > /dev/null 2>&1
                         ( cd $swarmdir ; sudo git checkout $branch ) > /dev/null 2>&1
                         ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
-                        ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
                         sudo chmod +x $swarmdir/swarm $plugins/watchdog
                         source $modules/updater
                         echo ""
