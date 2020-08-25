@@ -3,159 +3,23 @@ source /var/lib/swarm/modules/variables
 source $configs/hornet.cfg
 source $configs/watchdog.cfg
 
-if [ -f "$swarmdir/log/locked" ]; then
-    exit 0
-fi
-
 # Get Service Status
 status="$(systemctl show -p ActiveState --value hornet)"
 
 # Update check
-if [ "$autoupdate" = "true" ]; then
-    if [ "$status" = "active" ]; then
-        if [ "$release" = "stable" ]; then
-            latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
-            latesthornet="${latesthornet:1}"
-            version="$(hornet -v)"
-            if [ "$version" != "HORNET $latesthornet" ]; then
-                sudo apt update && sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
-                if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
-                    sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
-                    sudo rm -rf $hornetdir/config.json.dpkg-dist
-                fi
-                if [ -f "$hornetdir/config_comnet.json.dpkg-dist" ]; then
-                    sudo cp -r $hornetdir/config_comnet.json.dpkg-dist $hornetdir/config_comnet.json
-                    sudo rm -rf $hornetdir/config_comnet.json.dpkg-dist
-                fi
-                if [ -f "$hornetdir/config_devnet.json.dpkg-dist" ]; then
-                    sudo cp -r $hornetdir/config_devnet.json.dpkg-dist $hornetdir/config_devnet.json
-                    sudo rm -rf $hornetdir/config_devnet.json.dpkg-dist
-                fi
-
-                newversion="$(hornet -v)"
-                if [ "$version" != "$newversion" ]; then
-                # CALL MODULE CONFIGPARSER
-                    source $modules/configparser
-                    sudo systemctl restart hornet
-                fi
-
-            fi
-        fi
-        if [ "$release" = "testing" ]; then
-            latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | head -n 1)"
-            latesthornet="${latesthornet:1}"
-            version="$(hornet -v)"
-            if [ "$version" != "HORNET $latesthornet" ]; then
-                sudo apt update && sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
-                if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
-                    sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
-                    sudo rm -rf $hornetdir/config.json.dpkg-dist
-                fi
-                if [ -f "$hornetdir/config_comnet.json.dpkg-dist" ]; then
-                    sudo cp -r $hornetdir/config_comnet.json.dpkg-dist $hornetdir/config_comnet.json
-                    sudo rm -rf $hornetdir/config_comnet.json.dpkg-dist
-                fi
-                if [ -f "$hornetdir/config_devnet.json.dpkg-dist" ]; then
-                    sudo cp -r $hornetdir/config_devnet.json.dpkg-dist $hornetdir/config_devnet.json
-                    sudo rm -rf $hornetdir/config_devnet.json.dpkg-dist
-                fi
-
-                newversion="$(hornet -v)"
-                if [ "$version" != "$newversion" ]; then
-                sudo touch $swarmdir/log/locked
-                # CALL MODULE CONFIGPARSER
-                    source $modules/configparser
-                    sudo systemctl restart hornet
-                fi
-            fi
-        fi
-    fi
-fi
+source $modules/autoupdater
 
 # Service check
-if [ "$status" != "active" ]; then
-    dt=`date '+%m/%d/%Y %H:%M:%S'`
-    sudo systemctl restart hornet
-    statcounter="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
-    let statcounter=statcounter+1
-    if [ "$statcounter" -gt "2" ]; then
-        if [ "$network" = "mainnet" ]; then
-            sudo rm -rf $hornetdir/mainnetdb $hornetdir/snapshots/mainnet
-        fi
-        if [ "$network" = "comnet" ]; then
-            sudo rm -rf $hornetdir/comnetdb $hornetdir/snapshots/comnet
-        fi
-        if [ "$network" = "devnet" ]; then
-            sudo rm -rf $hornetdir/devnetdb $hornetdir/snapshots/devnet
-        fi
-        statcounter=0
-    fi
-    sudo systemctl restart hornet
-    synccounter="$(cat $swarmdir/log/watchdog.log | sed -n -e '2{p;q}')"
-    {
-    echo $statcounter
-    echo $synccounter
-    echo $dt
-    } > $swarmdir/log/watchdog.log
-fi
+source $modules/watchdog/statuschecker
 
 # Check sync
-if [ "$checksync" = "true" ]; then
-    synccounter="$(cat $swarmdir/log/watchdog.log | sed -n -e '2{p;q}')"
-    lmi="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestMilestoneIndex')"
-    lsmi="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
-    let dlmi=$lmi-$lsmi
-    if [ "$status" = "active" ] && [ $dlmi -gt $maxlmi ] && [ "$synccounter" -gt "2" ]; then
-        sudo touch $swarmdir/log/locked
-        dt=`date '+%m/%d/%Y %H:%M:%S'`
-        sudo systemctl stop hornet
-        if [ "$network" = "mainnet" ]; then
-            sudo rm -rf $hornetdir/mainnetdb $hornetdir/snapshots/mainnet
-            synccounter=0
-        fi
-        if [ "$network" = "comnet" ]; then
-            sudo rm -rf $hornetdir/comnetdb $hornetdir/snapshots/comnet
-            synccounter=0
-        fi
-        if [ "$network" = "devnet" ]; then
-            sudo rm -rf $hornetdir/devnetdb $hornetdir/snapshots/devnet
-            synccounter=0
-        fi
-        sudo systemctl start hornet
-        statcounter="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
-        {
-        echo $statcounter
-        echo $synccounter
-        echo $dt
-        } > $swarmdir/log/watchdog.log
-    fi
-fi
+source $modules/watchdog/syncchecker
 
 # DB Pruner Module
-source $modules/dbpruner
+source $modules/watchdog/dbpruner
 
 # Log Pruning
-if [ "$logpruning" = "true" ]; then
-    if [ -f "$hornetdir/hornet.log" ]; then
-        currentlogsize="$(wc -c $hornetdir/hornet.log | awk '{print $1}')"
-        let logsize=$logsize*1000000
-        if [ $currentlogsize -gt $logsize ]; then
-            echo -n "" > $hornetdir/hornet.log
-        fi
-    fi
-fi
+source $modules/watchdog/logpruner
 
-# Unset all vars
-unset version
-unset newversion
-unset latesthornet
-unset status
-unset statcounter
-unset synccounter
-unset dt
-unset currentlogsize
-
-# Remove lock file
-sudo rm -rf $swarmdir/log/locked
 
 exit 0
