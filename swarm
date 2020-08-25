@@ -14,6 +14,20 @@ source /var/lib/swarm/modules/variables
 
 ############################################################################################################################################################
 
+# Check SWARM branch
+swarmbranch="$(cd $swarmdir ; git branch --show-current )"
+if [ "$swarmbranch" != "$branch" ]; then
+    ( cd $swarmdir ; sudo git checkout $branch ) > /dev/null 2>&1
+    ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
+    ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
+    source $modules/updater
+    echo ""
+    echo -e $text_red " SWARM branch change successfully!"
+    echo -e $TEXT_RED_B && pause ' Press [Enter] key to exit SWARM...' && echo -e $text_reset
+    clear
+    exit 0
+fi
+
 # Remove old HLM version if exist
 if [ -d "/etc/hlm-cfgs" ] || [ -d "/var/lib/hornet-light-manager" ]; then
     source $modules/hlmremover
