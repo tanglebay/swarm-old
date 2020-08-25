@@ -1,22 +1,50 @@
 #!/bin/bash
+source /var/lib/swarm/modules/variables
+source $configs/hornet.cfg
+source $configs/watchdog.cfg
+
+status=active
+dbpruner=true
+
 if [ "$status" = "active" ] && [ "$dbpruner" = "true" ]; then
     getdbsize="$(du -sb $hornetdir/mainnetdb | cut -f1)"
     let dbsize=$getdbsize/1000000
     if [ $dbsize -gt $maxdbsize ]; then
-        pruningindex="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
-        if [ -n "$pruningindex" ] && [ "$pruningindex" -gt 0 ]; then
-            pruningindex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
+        # LOCK DBPRUNER until its finished
+        sudo touch $swarmdir/tmp/dbpruner
+        # Start pruning process
+        lastpruningindex="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
+        pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '2{p;q}')"
+        if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le 0 ]; then
+            pruningmultiplier=0
         fi
-        lsmi="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
-        let msdif="$lsmi-$pruningindex"
-        if [ "$msdif" -gt 40000 ]; then
-            let pruningindex=$pruningindex+8640
-            sudo touch $swarmdir/log/locked
-            curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "pruneDatabase","targetIndex": '$pruningindex'}'
-            getdbsize="$(du -sb $hornetdir/mainnetdb | cut -f1)"
-            let maxdbsize=$getdbsize/1000000
-            sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/watchdog.cfg
-            echo $pruningindex > $swarmdir/log/pruning.log
+        let pruningmultiplier=$pruningmultiplier+1
+        if [ ! -n "$pruningindex" ] || [ "$pruningindex" -le 0 ]; then
+            lastpruningindex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
         fi
+        let pruningvalue=$pruningmultiplier*90
+        let pruningindex=$lastpruningindex+$pruningvalue
+        curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "pruneDatabase","targetIndex": '$pruningindex'}'
+        getdbsize="$(du -sb $hornetdir/mainnetdb | cut -f1)"
+        let maxdbsize=$getdbsize/1000000
+        sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/watchdog.cfg
+        {
+        echo $pruningindex
+        echo $pruningmultiplier
+        } > $swarmdir/log/pruning.log
+        sudo rm -rf $swarmdir/tmp/dbpruner
+    else
+        lastpruningindex="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
+        pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '2{p;q}')"
+        let pruningmultiplier="$pruningmultiplier-1"
+        if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le 0 ]; then
+            pruningmultiplier=0
+        fi
+        {
+        echo $lastpruningindex
+        echo $pruningmultiplier
+        } > $swarmdir/log/pruning.log
     fi
+    unset getdbsize
+    unset dbsize
 fi
