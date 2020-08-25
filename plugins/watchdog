@@ -62,7 +62,6 @@ if [ "$autoupdate" = "true" ]; then
                     source $modules/configparser
                     sudo systemctl restart hornet
                 fi
-
             fi
         fi
     fi
@@ -72,9 +71,9 @@ fi
 if [ "$status" != "active" ]; then
     dt=`date '+%m/%d/%Y %H:%M:%S'`
     sudo systemctl restart hornet
-    counter="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
-    let counter=counter+1
-    if [ "$counter" -gt "2" ]; then
+    statcounter="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
+    let statcounter=statcounter+1
+    if [ "$statcounter" -gt "2" ]; then
         if [ "$network" = "mainnet" ]; then
             sudo rm -rf $hornetdir/mainnetdb $hornetdir/snapshots/mainnet
         fi
@@ -84,37 +83,43 @@ if [ "$status" != "active" ]; then
         if [ "$network" = "devnet" ]; then
             sudo rm -rf $hornetdir/devnetdb $hornetdir/snapshots/devnet
         fi
-        sudo systemctl restart hornet
-        counter=0
+        statcounter=0
     fi
+    sudo systemctl restart hornet
+    synccounter="$(cat $swarmdir/log/watchdog.log | sed -n -e '2{p;q}')"
     {
-    echo $counter
+    echo $statcounter
+    echo $synccounter
     echo $dt
     } > $swarmdir/log/watchdog.log
-    unset counter
 fi
 
 # Check sync
 if [ "$checksync" = "true" ]; then
+    synccounter="$(cat $swarmdir/log/watchdog.log | sed -n -e '2{p;q}')"
     lmi="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestMilestoneIndex')"
     lsmi="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
     let dlmi=$lmi-$lsmi
-    if [ "$status" = "active" ] && [ $dlmi -gt $maxlmi ]; then
+    if [ "$status" = "active" ] && [ $dlmi -gt $maxlmi ] && [ "$synccounter" -gt "2" ]; then
         dt=`date '+%m/%d/%Y %H:%M:%S'`
         sudo systemctl stop hornet
         if [ "$network" = "mainnet" ]; then
             sudo rm -rf $hornetdir/mainnetdb $hornetdir/snapshots/mainnet
+            synccounter=0
         fi
         if [ "$network" = "comnet" ]; then
             sudo rm -rf $hornetdir/comnetdb $hornetdir/snapshots/comnet
+            synccounter=0
         fi
         if [ "$network" = "devnet" ]; then
             sudo rm -rf $hornetdir/devnetdb $hornetdir/snapshots/devnet
+            synccounter=0
         fi
         sudo systemctl start hornet
-        counter="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
+        statcounter="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
         {
-        echo $counter
+        echo $statcounter
+        echo $synccounter
         echo $dt
         } > $swarmdir/log/watchdog.log
     fi
@@ -130,5 +135,15 @@ if [ "$logpruning" = "true" ]; then
         fi
     fi
 fi
+
+# Unset all vars
+unset version
+unset newversion
+unset latesthornet
+unset status
+unset statcounter
+unset synccounter
+unset dt
+unset currentlogsize
 
 exit 0
