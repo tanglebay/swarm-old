@@ -21,33 +21,32 @@ if [ "$status" = "active" ] && [ "$dbpruner" = "true" ] && [ ! -f "$swarmdir/tmp
         sudo touch $swarmdir/tmp/dbpruner
 
         # Start pruning process
-        lastpruningindex="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
-        pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '2{p;q}')"
+        if [ ! -n "$pruningindex" ] || [ "$pruningindex" -le 0 ]; then
+            pruningindex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
+        fi
+
+        pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
         if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le 0 ]; then
             pruningmultiplier=1
         fi
-        if [ ! -n "$pruningindex" ] || [ "$pruningindex" -le 0 ]; then
-            lastpruningindex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
-        fi
         let pruningvalue=$pruningmultiplier*180
-        let pruningindex=$lastpruningindex+$pruningvalue
+        let pruningindex=$pruningindex+$pruningvalue
         let pruningmultiplier=$pruningmultiplier+1
-        prunedt=`date '+%m/%d/%Y %H:%M:%S'`
-        {
-        echo $pruningindex
-        echo $pruningmultiplier
-        echo $prunedt
-        } > $swarmdir/log/pruning.log
         curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "pruneDatabase","targetIndex": '$pruningindex'}'
         getdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
         let maxdbsize=$getdbsize/1000000
         sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/swarm.cfg
+        sudo sed -i 's/pruningindex=.*/pruningindex='$pruningindex'/' $configs/swarm.cfg
+        prunedt=`date '+%m/%d/%Y %H:%M:%S'`
+        {
+        echo $pruningmultiplier
+        echo $prunedt
+        } > $swarmdir/log/pruning.log
         # Remove LOCK file from tmp
         sudo rm -rf $swarmdir/tmp/dbpruner
     else
-        lastpruningindex="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
-        pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '2{p;q}')"
-        prunedt="$(cat $swarmdir/log/pruning.log | sed -n -e '3{p;q}')"
+        pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
+        prunedt="$(cat $swarmdir/log/pruning.log | sed -n -e '2{p;q}')"
         if [ "$pruningmultiplier" -gt 1 ]; then
             let pruningmultiplier="$pruningmultiplier-1"
         fi
@@ -55,7 +54,6 @@ if [ "$status" = "active" ] && [ "$dbpruner" = "true" ] && [ ! -f "$swarmdir/tmp
             pruningmultiplier=1
         fi
         {
-        echo $lastpruningindex
         echo $pruningmultiplier
         echo $prunedt
         } > $swarmdir/log/pruning.log
