@@ -26,14 +26,14 @@ if [ "$status" = "active" ] && [ "$dbpruner" = "true" ] && [ ! -f "$swarmdir/tmp
         fi
         let pruningvalue=$pruningmultiplier*180
         let pruningindex=$lastpruningindex+$pruningvalue
-        curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "pruneDatabase","targetIndex": '$pruningindex'}'
-        getdbsize="$(du -sb $hornetdir/mainnetdb | cut -f1)"
-        let maxdbsize=$getdbsize/1000000
-        sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/swarm.cfg
         {
         echo $pruningindex
         echo $pruningmultiplier
         } > $swarmdir/log/pruning.log
+        curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "pruneDatabase","targetIndex": '$pruningindex'}'
+        getdbsize="$(du -sb $hornetdir/mainnetdb | cut -f1)"
+        let maxdbsize=$getdbsize/1000000
+        sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/swarm.cfg
 
         # Remove LOCK file from tmp
         sudo rm -rf $swarmdir/tmp/dbpruner
