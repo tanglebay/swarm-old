@@ -1,0 +1,58 @@
+#!/bin/bash
+if [ "$autoupdate" = "true" ]; then
+    if [ "$release" = "stable" ]; then
+        latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
+        latesthornet="${latesthornet:1}"
+        version="$(hornet -v)"
+        if [ "$version" != "HORNET $latesthornet" ]; then
+            sudo apt update && sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
+            if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
+                sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
+                sudo rm -rf $hornetdir/config.json.dpkg-dist
+            fi
+            if [ -f "$hornetdir/config_comnet.json.dpkg-dist" ]; then
+                sudo cp -r $hornetdir/config_comnet.json.dpkg-dist $hornetdir/config_comnet.json
+                sudo rm -rf $hornetdir/config_comnet.json.dpkg-dist
+            fi
+            if [ -f "$hornetdir/config_devnet.json.dpkg-dist" ]; then
+                sudo cp -r $hornetdir/config_devnet.json.dpkg-dist $hornetdir/config_devnet.json
+                sudo rm -rf $hornetdir/config_devnet.json.dpkg-dist
+            fi
+
+            newversion="$(hornet -v)"
+            if [ "$version" != "$newversion" ]; then
+            # CALL MODULE CONFIGPARSER
+                source $modules/configparser
+                sudo systemctl restart hornet
+            fi
+
+        fi
+    fi
+    if [ "$release" = "testing" ]; then
+        latesthornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | head -n 1)"
+        latesthornet="${latesthornet:1}"
+        version="$(hornet -v)"
+        if [ "$version" != "HORNET $latesthornet" ]; then
+            sudo apt update && sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
+            if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
+                sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
+                sudo rm -rf $hornetdir/config.json.dpkg-dist
+            fi
+            if [ -f "$hornetdir/config_comnet.json.dpkg-dist" ]; then
+                sudo cp -r $hornetdir/config_comnet.json.dpkg-dist $hornetdir/config_comnet.json
+                sudo rm -rf $hornetdir/config_comnet.json.dpkg-dist
+            fi
+            if [ -f "$hornetdir/config_devnet.json.dpkg-dist" ]; then
+                sudo cp -r $hornetdir/config_devnet.json.dpkg-dist $hornetdir/config_devnet.json
+                sudo rm -rf $hornetdir/config_devnet.json.dpkg-dist
+            fi
+
+            newversion="$(hornet -v)"
+            if [ "$version" != "$newversion" ]; then
+            # CALL MODULE CONFIGPARSER
+                source $modules/configparser
+                sudo systemctl restart hornet
+            fi
+        fi
+    fi
+fi

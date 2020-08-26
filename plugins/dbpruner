@@ -1,0 +1,65 @@
+#!/bin/bash
+source /var/lib/swarm/modules/variables
+source $configs/hornet.cfg
+source $configs/swarm.cfg
+
+# Get Service Status
+status="$(systemctl show -p ActiveState --value hornet)"
+
+if [ "$status" = "active" ] && [ "$dbpruner" = "true" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdbsize" ]; then
+    if [ "$pruning" = "true" ]; then
+        sudo sed -i 's/pruning=.*/pruning=false/' $configs/hornet.cfg
+        sudo jq '.snapshots.pruning.enabled = false' $hornetdir/config.json|sponge $hornetdir/config.json
+        sudo jq '.snapshots.pruning.enabled = false' $hornetdir/config_comnet.json|sponge $hornetdir/config_comnet.json
+        sudo jq '.snapshots.pruning.enabled = false' $hornetdir/config_devnet.json|sponge $hornetdir/config_devnet.json
+        sudo systemctl restart hornet
+    fi
+    getdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
+    let dbsize=$getdbsize/1000000
+    if [ $dbsize -gt $maxdbsize ]; then
+        # LOCK DBPRUNER until its finished
+        sudo touch $swarmdir/tmp/dbpruner
+
+        # Start pruning process
+        if [ ! -n "$pruningindex" ] || [ "$pruningindex" -le 0 ]; then
+            pruningindex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
+        fi
+
+        pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
+        if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le 0 ]; then
+            pruningmultiplier=1
+        fi
+        let pruningvalue=$pruningmultiplier*180
+        let pruningindex=$pruningindex+$pruningvalue
+        let pruningmultiplier=$pruningmultiplier+1
+        curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "pruneDatabase","targetIndex": '$pruningindex'}'
+        getdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
+        let maxdbsize=$getdbsize/1000000
+        sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/swarm.cfg
+        sudo sed -i 's/pruningindex=.*/pruningindex='$pruningindex'/' $configs/swarm.cfg
+        prunedt=`date '+%m/%d/%Y %H:%M:%S'`
+        {
+        echo $pruningmultiplier
+        echo $prunedt
+        } > $swarmdir/log/pruning.log
+        # Remove LOCK file from tmp
+        sudo rm -rf $swarmdir/tmp/dbpruner
+    else
+        pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
+        prunedt="$(cat $swarmdir/log/pruning.log | sed -n -e '2{p;q}')"
+        if [ "$pruningmultiplier" -gt 1 ]; then
+            let pruningmultiplier="$pruningmultiplier-1"
+        fi
+        if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le 0 ]; then
+            pruningmultiplier=1
+        fi
+        {
+        echo $pruningmultiplier
+        echo $prunedt
+        } > $swarmdir/log/pruning.log
+    fi
+    unset getdbsize
+    unset dbsize
+fi
+
+exit 0
