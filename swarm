@@ -281,6 +281,13 @@ while [ $counter -lt 1 ]; do
                         if [ -d "$hornetdir/snapshots/mainnet" ]; then
                             sudo rm -rf $hornetdir/snapshots/mainnet/export.bin
                         fi
+                        if [ -f "$swarmdir/log/pruning.log" ]; then
+                            {
+                            echo "0"
+                            echo "0"
+                            echo ""
+                            } > $swarmdir/log/pruning.log
+                        fi
                         sudo systemctl start hornet
                         echo -e $text_yellow && echo " Reset of the database finished and hornet restarted!" && echo -e $text_reset
                         echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
@@ -298,6 +305,13 @@ while [ $counter -lt 1 ]; do
                         if [ -d "$hornetdir/snapshots/comnet" ]; then
                             sudo rm -rf $hornetdir/snapshots/comnet/export.bin
                         fi
+                        if [ -f "$swarmdir/log/pruning.log" ]; then
+                            {
+                            echo "0"
+                            echo "0"
+                            echo ""
+                            } > $swarmdir/log/pruning.log
+                        fi
                         sudo systemctl start hornet
                         echo -e $text_yellow && echo " Reset of the database finished and hornet restarted!" && echo -e $text_reset
                         echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
@@ -314,6 +328,13 @@ while [ $counter -lt 1 ]; do
                         fi
                         if [ -d "$hornetdir/snapshots/devnet" ]; then
                             sudo rm -rf $hornetdir/snapshots/devnet/export.bin
+                        fi
+                        if [ -f "$swarmdir/log/pruning.log" ]; then
+                            {
+                            echo "0"
+                            echo "0"
+                            echo ""
+                            } > $swarmdir/log/pruning.log
                         fi
                         sudo systemctl start hornet
                         echo -e $text_yellow && echo " Reset of the database finished and hornet restarted!" && echo -e $text_reset
@@ -438,7 +459,7 @@ while [ $counter -lt 1 ]; do
                     echo -e $text_reset
                     if [ "$selector_hornetremove" = "y" ] || [ "$selector_hornetremove" = "Y" ]; then
                         ( crontab -l | grep -v -F "$croncmd" ) | crontab -
-                        ( crontab -l | grep -v -F "$croncmdswarm" ) | crontab -
+                        ( crontab -l | grep -v -F "$dbpcroncmd" ) | crontab -
                         sudo systemctl stop hornet
                         sudo apt purge hornet -y
                         echo -e $text_red " Hornet was successfully removed!"
@@ -571,7 +592,7 @@ while [ $counter -lt 1 ]; do
             fi
 
             if [ "$selector" = "2" ]; then
-                echo -e $TEXT_RED_B && read -p " Would you like to (1)enable/(2)disable or (c)ancel hornet watchdog: " selector_watchdog
+                echo -e $TEXT_RED_B && read -p " Would you like to (1)enable/(2)disable or (c)ancel the SWARM watchdog: " selector_watchdog
                 echo -e $text_reset
                 if [ "$selector_watchdog" = "1" ]; then
                     echo -e $text_yellow && echo " Enable hornet watchdog..." && echo -e $text_reset
@@ -595,7 +616,9 @@ while [ $counter -lt 1 ]; do
                 if [ "$selector_dbpruner" = "1" ]; then
                     echo -e $text_yellow && echo " Enable DBPruner..." && echo -e $text_reset
                     sudo mkdir -p $swarmdir/log
-                    sudo touch $swarmdir/log/pruning.log
+                    if [ ! -f "$swarmdir/log/pruning.log" ]; then
+                        sudo touch $swarmdir/log/pruning.log
+                    fi
                     sudo chmod +x $plugins/dbpruner
                     ( crontab -l | grep -v -F "$dbpcroncmd" ; echo "$dbpcronjob" ) | crontab -
                 fi
