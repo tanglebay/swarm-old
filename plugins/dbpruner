@@ -7,6 +7,13 @@ source $configs/swarm.cfg
 status="$(systemctl show -p ActiveState --value hornet)"
 
 if [ "$status" = "active" ] && [ "$dbpruner" = "true" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdbsize" ]; then
+    if [ "$pruning" = "true" ]; then
+        sudo sed -i 's/pruning=.*/pruning=false/' $configs/hornet.cfg
+        sudo jq '.snapshots.pruning.enabled = false' $hornetdir/config.json|sponge $hornetdir/config.json
+        sudo jq '.snapshots.pruning.enabled = false' $hornetdir/config_comnet.json|sponge $hornetdir/config_comnet.json
+        sudo jq '.snapshots.pruning.enabled = false' $hornetdir/config_devnet.json|sponge $hornetdir/config_devnet.json
+        sudo systemctl restart hornet
+    fi
     getdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
     let dbsize=$getdbsize/1000000
     if [ $dbsize -gt $maxdbsize ]; then
