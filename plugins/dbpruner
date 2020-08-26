@@ -17,14 +17,14 @@ if [ "$status" = "active" ] && [ "$dbpruner" = "true" ] && [ ! -f "$swarmdir/tmp
         lastpruningindex="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
         pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '2{p;q}')"
         if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le 0 ]; then
-            pruningmultiplier=0
+            pruningmultiplier=1
         fi
-        let pruningmultiplier=$pruningmultiplier+1
         if [ ! -n "$pruningindex" ] || [ "$pruningindex" -le 0 ]; then
             lastpruningindex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
         fi
         let pruningvalue=$pruningmultiplier*180
         let pruningindex=$lastpruningindex+$pruningvalue
+        let pruningmultiplier=$pruningmultiplier+1
         prunedt=`date '+%m/%d/%Y %H:%M:%S'`
         {
         echo $pruningindex
