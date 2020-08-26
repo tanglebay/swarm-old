@@ -25,20 +25,22 @@ if [ "$status" = "active" ] && [ "$dbpruner" = "true" ] && [ ! -f "$swarmdir/tmp
         fi
         let pruningvalue=$pruningmultiplier*180
         let pruningindex=$lastpruningindex+$pruningvalue
+        prunedt=`date '+%m/%d/%Y %H:%M:%S'`
         {
         echo $pruningindex
         echo $pruningmultiplier
+        echo $prunedt
         } > $swarmdir/log/pruning.log
         curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "pruneDatabase","targetIndex": '$pruningindex'}'
         getdbsize="$(du -sb $hornetdir/mainnetdb | cut -f1)"
         let maxdbsize=$getdbsize/1000000
         sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/swarm.cfg
-
         # Remove LOCK file from tmp
         sudo rm -rf $swarmdir/tmp/dbpruner
     else
         lastpruningindex="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
         pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '2{p;q}')"
+        prunedt="$(cat $swarmdir/log/pruning.log | sed -n -e '3{p;q}')"
         let pruningmultiplier="$pruningmultiplier-1"
         if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le 0 ]; then
             pruningmultiplier=0
@@ -46,6 +48,7 @@ if [ "$status" = "active" ] && [ "$dbpruner" = "true" ] && [ ! -f "$swarmdir/tmp
         {
         echo $lastpruningindex
         echo $pruningmultiplier
+        echo $prunedt
         } > $swarmdir/log/pruning.log
     fi
     unset getdbsize
