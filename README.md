@@ -25,7 +25,7 @@ echo "alias swarm='sudo /var/lib/swarm/swarm'" >> ~/.bashrc && . ~/.bashrc
 1. Set your domain over SWARM in the nginx.cfg (Edit proxy menu -> nginx.cfg)
 2. Choose the option "Deploy reverse proxy"
 
-**Your Dashboard address will be `https://yourdomain.com` and your API (Trinity) will be `https://yourdomain.com/napi` (without API protection) or `https://yourdomain.com/auth`**
+**Your Dashboard address will be `https://yourdomain.com` and your API (Trinity) will be `https://yourdomain.com/access` (without API protection) or `https://yourdomain.com/auth`**
 
 
 # Support TANGLE BAY#
