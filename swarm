@@ -184,7 +184,7 @@ while [ $counter -lt 1 ]; do
                 source $modules/cfgchecker
 
                 # CALL MODULE CONFIGPARSER
-                if [ -f "$hornetdir/hornet" ]; then
+                if [ -f "/usr/bin/hornet" ]; then
                     source $modules/configparser
                 fi
 
@@ -366,15 +366,15 @@ while [ $counter -lt 1 ]; do
                             # Check if a new config exist after updating
                             if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
                                 sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
-                                sudo rm -rf $hornetdir/config.json.dpkg-*
+                                sudo rm -rf $hornetdir/config.json.dpkg*
                             fi
                             if [ -f "$hornetdir/config_comnet.json.dpkg-dist" ]; then
                                 sudo cp -r $hornetdir/config_comnet.json.dpkg-dist $hornetdir/config_comnet.json
-                                sudo rm -rf $hornetdir/config_comnet.json.dpkg-*
+                                sudo rm -rf $hornetdir/config_comnet.json.dpkg*
                             fi
                             if [ -f "$hornetdir/config_devnet.json.dpkg-dist" ]; then
                                 sudo cp -r $hornetdir/config_devnet.json.dpkg-dist $hornetdir/config_devnet.json
-                                sudo rm -rf $hornetdir/config_devnet.json.dpkg-*
+                                sudo rm -rf $hornetdir/config_devnet.json.dpkg*
                             fi
 
                             # CALL MODULE CONFIGPARSER
@@ -404,30 +404,26 @@ while [ $counter -lt 1 ]; do
                             sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
                             sudo sh -c 'echo "deb http://ppa.hornet.zone alpha main" >> /etc/apt/sources.list.d/hornet.list'
                         fi
-                        sudo apt update && sudo apt dist-upgrade -y && sudo apt upgrade -y
-                        sudo apt install hornet -y
+                        sudo apt update && sudo apt dist-upgrade -y && sudo apt upgrade -y && sudo apt install hornet -y
 
                         # Check which network
                         if [ "$network" = "mainnet" ]; then
                             echo "" > /etc/default/hornet
-                            sudo rm -rf $hornetdir/snapshots/*
                             restart=true
                         fi
                         if [ "$network" = "comnet" ]; then
                             echo "OPTIONS=\"--config config_comnet --overwriteCooAddress\"" > /etc/default/hornet
-                            sudo rm -rf $hornetdir/snapshots/*
                             restart=true
                         fi
                         if [ "$network" = "devnet" ]; then
                             echo "OPTIONS=\"--config config_devnet --overwriteCooAddress\"" > /etc/default/hornet
-                            sudo rm -rf $hornetdir/snapshots/*
                             restart=true
                         fi
 
-                        # CALL MODULE CONFIGPARSER
-                        source $modules/configparser
-
                         if [ -f /usr/bin/hornet ]; then
+                            # CALL MODULE CONFIGPARSER
+                            source $modules/configparser
+
                             check="$(systemctl show -p ActiveState --value hornet)"
                             if [ "$check" != "active" ]; then
                                 sudo systemctl restart hornet
