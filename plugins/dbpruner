@@ -20,6 +20,9 @@ if [ "$status" = "active" ] && [ "$dbpruner" = "true" ] && [ ! -f "$swarmdir/tmp
         # LOCK DBPRUNER until its finished
         sudo touch $swarmdir/tmp/dbpruner
 
+        # Get current LSMI
+        lsmi="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
+
         # Start pruning process
         if [ ! -n "$pruningindex" ] || [ "$pruningindex" -le 0 ]; then
             pruningindex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
@@ -27,11 +30,34 @@ if [ "$status" = "active" ] && [ "$dbpruner" = "true" ] && [ ! -f "$swarmdir/tmp
 
         pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
         if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le 0 ]; then
-            pruningmultiplier=1
+            pruningmultiplier=0
         fi
-        let pruningvalue=$pruningmultiplier*90
-        let pruningindex=$pruningindex+$pruningvalue
-        let pruningmultiplier=$pruningmultiplier+5
+        let pruningdiff=$lsmi-$pruningindex
+
+        if [ $pruningmultiplier -le 30 ]; then
+            pruningpercent=0.05
+        fi
+        if [ $pruningmultiplier -le 60 ]; then
+            pruningpercent=0.1
+        fi
+        if [ $pruningmultiplier -le 90 ]; then
+            pruningpercent=0.2
+        fi
+        if [ $pruningmultiplier -le 120 ]; then
+            pruningpercent=0.3
+        fi
+        if [ $pruningmultiplier -le 150 ]; then
+            pruningpercent=0.4
+        fi
+        if [ $pruningmultiplier -gt 150 ]; then
+            pruningpercent=0.5
+        fi
+
+        pruningvalue="$(awk "BEGIN {print $pruningdiff*$pruningpercent}")"
+        pruningindex="$(awk "BEGIN {print $pruningindex+$pruningvalue}")"
+        pruningindex="$(echo ${pruningindex%\.*})"
+        pruningmultiplier=$pruningmultiplier+30
+
         curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "pruneDatabase","targetIndex": '$pruningindex'}'
         getdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
         let maxdbsize=$getdbsize/1000000
@@ -51,7 +77,7 @@ if [ "$status" = "active" ] && [ "$dbpruner" = "true" ] && [ ! -f "$swarmdir/tmp
             let pruningmultiplier="$pruningmultiplier-1"
         fi
         if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le 0 ]; then
-            pruningmultiplier=1
+            pruningmultiplier=0
         fi
         {
         echo $pruningmultiplier
