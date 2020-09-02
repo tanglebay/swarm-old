@@ -5,7 +5,7 @@
 ############################################################################################################################################################
 ############################################################################################################################################################
 
-version=0.0.1
+version=0.0.0
 
 ############################################################################################################################################################
 
@@ -17,6 +17,8 @@ source /var/lib/swarm/modules/variables
 if [ -d "/etc/hlm-cfgs" ] || [ -d "/var/lib/hornet-light-manager" ]; then
     source $modules/hlmremover
 fi
+
+# Start pre-script stuff here
 clear
 function pause(){
    read -p "$*"
@@ -48,9 +50,6 @@ while [ $counter -lt 1 ]; do
     source $configs/swarm.cfg
     source $envfile
 
-    # Check sync status of the node
-    sync="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.isSynced')"
-
     # Check if watchdog was enabled and get latest stats
     if [ -f "$swarmdir/log/watchdog.log" ]; then
         sudo crontab -l | grep -q $plugins/watchdog && watchdog=active || watchdog=inactive
@@ -76,9 +75,9 @@ while [ $counter -lt 1 ]; do
     fi
     if [ "$watchdog" = "active" ] || [ "$watchdog" = "inactive" ]; then
         if [ "$watchdog" != "active" ]; then
-            echo -e "$text_yellow Watchdog:$text_red $watchdog"
+            echo -e "$text_yellow Watchdog:$text_red disabled"
         else
-            echo -e "$text_yellow Watchdog:$text_green $watchdog"
+            echo -e "$text_yellow Watchdog:$text_green enabled"
             if [ "$watchdogcount" -gt "0" ]; then
 #                echo -e "$text_yellow Restarts:$text_red $watchdogcount"
                 if [ -n "$watchdogtime" ]; then
@@ -88,21 +87,21 @@ while [ $counter -lt 1 ]; do
             fi
             # Autoupdate
             if [ "$autoupdate" = "true" ]; then
-                echo -e "$text_yellow Auto-updater:$text_green enabled"
+                echo -e "$text_yellow Auto-updater:$text_green active"
             else
-                echo -e "$text_yellow Auto-updater:$text_red disabled"
+                echo -e "$text_yellow Auto-updater:$text_red inactive"
             fi
             # Sync Check
             if [ "$checksync" = "true" ]; then
-                echo -e "$text_yellow Sync-checker:$text_green enabled"
+                echo -e "$text_yellow Sync-checker:$text_green active"
             else
-                echo -e "$text_yellow Sync-checker:$text_red disabled"
+                echo -e "$text_yellow Sync-checker:$text_red inactive"
             fi
             # Log Pruning
             if [ "$logpruning" = "true" ]; then
-                echo -e "$text_yellow Log-pruner:$text_green enabled"
+                echo -e "$text_yellow Log-pruner:$text_green active"
             else
-                echo -e "$text_yellow Log-pruner:$text_red disabled"
+                echo -e "$text_yellow Log-pruner:$text_red inactive"
             fi
         fi
     else
@@ -114,7 +113,7 @@ while [ $counter -lt 1 ]; do
     # DBPruner Plugin
     if [ "$dbprunerstat" = "active" ] || [ "$dbprunerstat" = "inactive" ]; then
         if [ "$dbprunerstat" != "active" ]; then
-            echo -e "$text_yellow DBPRuner:$text_red $dbprunerstat"
+            echo -e "$text_yellow DBPRuner:$text_red disabled"
         else
             getcurrentdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
             let getcurrentdbsizeingb=$getcurrentdbsize/1000000000
@@ -126,7 +125,7 @@ while [ $counter -lt 1 ]; do
             fi
             getcurrentmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
             lastprunedt="$(cat $swarmdir/log/pruning.log | sed -n -e '2{p;q}')"
-            echo -e "$text_yellow DBPruner:$text_green $dbprunerstat"
+            echo -e "$text_yellow DBPruner:$text_green enabled"
             echo -e "$text_yellow DB size: $currentdbsize"
             if [ "$lastprunedt" != "" ]; then
                 echo ""
@@ -134,7 +133,7 @@ while [ $counter -lt 1 ]; do
             fi
         fi
     else
-        echo -e "$text_yellow DBPruner:$text_red inactive"
+        echo -e "$text_yellow DBPruner:$text_red disabled"
     fi
     echo ""
     echo -e "\e[90m==========================================================="
@@ -356,6 +355,7 @@ while [ $counter -lt 1 ]; do
                 echo -e $text_reset
                 # Update Hornet
                 if [ "$selector" = "1" ] ; then
+                    sync="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.isSynced')"
                     if [ "$sync" = "true" ] || [ "$sync" = "false" ]; then
                         echo -e $text_yellow " Checking if a new version is available..."
                         # Run VERSION module
