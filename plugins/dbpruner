@@ -24,9 +24,7 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdb
         lsmi="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
 
         # Start pruning process
-        if [ ! -n "$pruningindex" ] || [ "$pruningindex" -le "0" ]; then
-            pruningindex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
-        fi
+        pruningindex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
 
         # Get difference between LSMI and pruningindex
         let pruningdiff=$lsmi-$pruningindex
@@ -81,7 +79,6 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdb
                 getdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
                 let maxdbsize=$getdbsize/1000000
                 sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/swarm.cfg
-                sudo sed -i 's/pruningindex=.*/pruningindex='$pruningindex'/' $configs/swarm.cfg
                 prunedt=`date '+%m/%d/%Y %H:%M:%S'`
                 {
                 echo $pruningmultiplier
