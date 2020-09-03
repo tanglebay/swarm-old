@@ -24,9 +24,7 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdb
         lsmi="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
 
         # Start pruning process
-        if [ ! -n "$pruningindex" ] || [ "$pruningindex" -le "0" ]; then
-            pruningindex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
-        fi
+        pruningindex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
 
         # Get difference between LSMI and pruningindex
         let pruningdiff=$lsmi-$pruningindex
@@ -38,34 +36,34 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdb
 
         # Define the percentage of pruning
         if [ "$pruningmultiplier" -le "30" ]; then
-            pruningpercent=0.01
+            pruningpercent=0.001
         fi
         if [ "$pruningmultiplier" -gt "30" ]; then
-            pruningpercent=0.02
+            pruningpercent=0.002
         fi
         if [ "$pruningmultiplier" -gt "90" ]; then
-            pruningpercent=0.03
+            pruningpercent=0.003
         fi
         if [ "$pruningmultiplier" -gt "120" ]; then
-            pruningpercent=0.04
+            pruningpercent=0.004
         fi
         if [ "$pruningmultiplier" -gt "150" ]; then
-            pruningpercent=0.05
+            pruningpercent=0.005
         fi
         if [ "$pruningmultiplier" -gt "180" ]; then
-            pruningpercent=0.06
+            pruningpercent=0.006
         fi
         if [ "$pruningmultiplier" -gt "210" ]; then
-            pruningpercent=0.07
+            pruningpercent=0.007
         fi
         if [ "$pruningmultiplier" -gt "240" ]; then
-            pruningpercent=0.08
+            pruningpercent=0.008
         fi
         if [ "$pruningmultiplier" -gt "270" ]; then
-            pruningpercent=0.09
+            pruningpercent=0.009
         fi
         if [ "$pruningmultiplier" -gt "300" ]; then
-            pruningpercent=0.1
+            pruningpercent=0.01
         fi
 
         pruningvalue="$(awk "BEGIN {print $pruningdiff*$pruningpercent}")"
@@ -81,7 +79,6 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdb
                 getdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
                 let maxdbsize=$getdbsize/1000000
                 sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/swarm.cfg
-                sudo sed -i 's/pruningindex=.*/pruningindex='$pruningindex'/' $configs/swarm.cfg
                 prunedt=`date '+%m/%d/%Y %H:%M:%S'`
                 {
                 echo $pruningmultiplier
