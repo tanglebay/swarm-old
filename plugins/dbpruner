@@ -3,10 +3,17 @@ source /var/lib/swarm/modules/variables
 source $configs/hornet.cfg
 source $configs/swarm.cfg
 
+# Check if SWARM log exist
+if [ ! -f "$swarmlog" ]; then
+    source $modules/logcheck
+else
+    source $swarmlog
+fi
+
 # Get Service Status
 status="$(systemctl show -p ActiveState --value hornet)"
 
-if [ "$status" = "active" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdbsize" ]; then
+if [ "$status" = "active" ] && [ ! -f "$swarmdir/log/dbpruner" ] && [ -n "$maxdbsize" ]; then
     if [ "$pruning" = "true" ]; then
         sudo sed -i 's/pruning=.*/pruning=false/' $configs/hornet.cfg
         sudo jq '.snapshots.pruning.enabled = false' $hornetdir/config.json|sponge $hornetdir/config.json
@@ -18,7 +25,7 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdb
     let dbsize=$getdbsize/1000000
     if [ $dbsize -gt $maxdbsize ]; then
         # LOCK DBPRUNER until its finished
-        sudo touch $swarmdir/tmp/dbpruner
+        sudo touch $swarmdir/log/dbpruner
 
         # Get current LSMI
         lsmi="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
@@ -29,7 +36,6 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdb
         # Get difference between LSMI and pruningindex
         let pruningdiff=$lsmi-$pruningindex
 
-        pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
         if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le "0" ]; then
             pruningmultiplier=0
         fi
@@ -80,10 +86,8 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdb
                 let maxdbsize=$getdbsize/1000000
                 sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/swarm.cfg
                 prunedt=`date '+%m/%d/%Y %H:%M:%S'`
-                {
-                echo $pruningmultiplier
-                echo $prunedt
-                } > $swarmdir/log/pruning.log
+                sudo sed -i 's/pruningmultiplier=.*/pruningmultiplier='$pruningmultiplier'/' $swarmlog
+                echo $prunedt > $log/pruning.log
             else
                 if [ "$pruningmultiplier" -gt "0" ]; then
                     let pruningmultiplier="$pruningmultiplier-1"
@@ -91,28 +95,22 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/tmp/dbpruner" ] && [ -n "$maxdb
                 if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le "0" ]; then
                     pruningmultiplier=0
                 fi
-                {
-                echo $pruningmultiplier
-                echo $prunedt
-                } > $swarmdir/log/pruning.log
+                sudo sed -i 's/pruningmultiplier=.*/pruningmultiplier='$pruningmultiplier'/' $swarmlog
+                echo $prunedt > $log/pruning.log
             fi
         fi
 
         # Remove LOCK file from tmp
-        sudo rm -rf $swarmdir/tmp/dbpruner
+        sudo rm -rf $swarmdir/log/dbpruner
     else
-        pruningmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
-        prunedt="$(cat $swarmdir/log/pruning.log | sed -n -e '2{p;q}')"
         if [ "$pruningmultiplier" -gt "0" ]; then
             let pruningmultiplier="$pruningmultiplier-1"
+            sudo sed -i 's/pruningmultiplier=.*/pruningmultiplier='$pruningmultiplier'/' $swarmlog
         fi
         if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le "0" ]; then
             pruningmultiplier=0
+            sudo sed -i 's/pruningmultiplier=.*/pruningmultiplier='$pruningmultiplier'/' $swarmlog
         fi
-        {
-        echo $pruningmultiplier
-        echo $prunedt
-        } > $swarmdir/log/pruning.log
     fi
     unset getdbsize
     unset dbsize

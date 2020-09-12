@@ -5,7 +5,7 @@
 ############################################################################################################################################################
 ############################################################################################################################################################
 
-version=0.0.2
+version=0.0.3
 
 ############################################################################################################################################################
 
@@ -51,16 +51,23 @@ while [ $counter -lt 1 ]; do
     source $configs/nginx.cfg
     source $configs/swarm.cfg
 
-    # Check if watchdog was enabled and get latest stats
-    if [ -f "$swarmdir/log/watchdog.log" ]; then
-        sudo crontab -l | grep -q $plugins/watchdog && watchdog=active || watchdog=inactive
-        watchdogcount="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
-        watchdogtime="$(cat $swarmdir/log/watchdog.log | sed -n -e '3{p;q}')"
+    # Check if SWARM log exist
+    if [ ! -f "$swarmlog" ]; then
+        source $modules/logcheck
+    else
+        source $swarmlog
     fi
 
-    # Check if DBPruner was enabled and get latest stats
-    if [ -f "$swarmdir/log/pruning.log" ]; then
+    # Check if plugins are enabled and get latest stats
+    if [ -f "$swarmlog" ]; then
+        sudo crontab -l | grep -q $plugins/watchdog && watchdog=active || watchdog=inactive
+        if [ -f "$log/watchdog.log" ]; then
+            restartdt="$(cat $log/watchdog.log)"
+        fi
         sudo crontab -l | grep -q $plugins/dbpruner && dbprunerstat=active || dbprunerstat=inactive
+        if [ -f "$log/pruning.log" ]; then
+            pruningdt="$(cat $log/pruning.log)"
+        fi
     fi
 
     ############################################################################################################################################################
@@ -79,10 +86,10 @@ while [ $counter -lt 1 ]; do
             echo -e "$text_yellow Watchdog:$text_red disabled"
         else
             echo -e "$text_yellow Watchdog:$text_green enabled"
-            if [ "$watchdogcount" -gt "0" ]; then
+            if [ "$statuscounter" -gt "0" ]; then
 #                echo -e "$text_yellow Restarts:$text_red $watchdogcount"
-                if [ -n "$watchdogtime" ]; then
-                    echo -e "$text_yellow Last restart: $watchdogtime"
+                if [ -n "$restartdt" ]; then
+                    echo -e "$text_yellow Last restart: $restartdt"
                     echo ""
                 fi
             fi
@@ -124,13 +131,11 @@ while [ $counter -lt 1 ]; do
             else
                 currentdbsize="$getcurrentdbsizeingb GB"
             fi
-            getcurrentmultiplier="$(cat $swarmdir/log/pruning.log | sed -n -e '1{p;q}')"
-            lastprunedt="$(cat $swarmdir/log/pruning.log | sed -n -e '2{p;q}')"
             echo -e "$text_yellow DBPruner:$text_green enabled"
             echo -e "$text_yellow DB size: $currentdbsize"
             if [ "$lastprunedt" != "" ]; then
                 echo ""
-                echo -e "$text_yellow Last Pruning: $lastprunedt"
+                echo -e "$text_yellow Last Pruning: $pruningdt"
             fi
         fi
     else
@@ -288,12 +293,6 @@ while [ $counter -lt 1 ]; do
                         if [ -d "$hornetdir/snapshots/mainnet" ]; then
                             sudo rm -rf $hornetdir/snapshots/mainnet/export.bin
                         fi
-                        if [ -f "$swarmdir/log/pruning.log" ]; then
-                            {
-                            echo "0"
-                            echo ""
-                            } > $swarmdir/log/pruning.log
-                        fi
                         sudo systemctl start hornet
                         echo -e $text_yellow && echo " Reset of the database finished and hornet restarted!" && echo -e $text_reset
                         echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
@@ -311,12 +310,6 @@ while [ $counter -lt 1 ]; do
                         if [ -d "$hornetdir/snapshots/comnet" ]; then
                             sudo rm -rf $hornetdir/snapshots/comnet/export.bin
                         fi
-                        if [ -f "$swarmdir/log/pruning.log" ]; then
-                            {
-                            echo "0"
-                            echo ""
-                            } > $swarmdir/log/pruning.log
-                        fi
                         sudo systemctl start hornet
                         echo -e $text_yellow && echo " Reset of the database finished and hornet restarted!" && echo -e $text_reset
                         echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
@@ -333,12 +326,6 @@ while [ $counter -lt 1 ]; do
                         fi
                         if [ -d "$hornetdir/snapshots/devnet" ]; then
                             sudo rm -rf $hornetdir/snapshots/devnet/export.bin
-                        fi
-                        if [ -f "$swarmdir/log/pruning.log" ]; then
-                            {
-                            echo "0"
-                            echo ""
-                            } > $swarmdir/log/pruning.log
                         fi
                         sudo systemctl start hornet
                         echo -e $text_yellow && echo " Reset of the database finished and hornet restarted!" && echo -e $text_reset
@@ -461,12 +448,6 @@ while [ $counter -lt 1 ]; do
                     if [ "$selector_hornetremove" = "y" ] || [ "$selector_hornetremove" = "Y" ]; then
                         ( crontab -l | grep -v -F "$croncmd" ) | crontab -
                         ( crontab -l | grep -v -F "$dbpcroncmd" ) | crontab -
-                        if [ -f "$swarmdir/log/pruning.log" ]; then
-                            {
-                            echo "1"
-                            echo ""
-                            } > $swarmdir/log/pruning.log
-                        fi
                         sudo systemctl stop hornet
                         sudo apt purge hornet -y
                         echo -e $text_red " Hornet was successfully removed!"

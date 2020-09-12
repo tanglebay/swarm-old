@@ -1,11 +1,10 @@
 #!/bin/bash
+source $swarmlog
 
 if [ "$status" != "active" ]; then
-    dt=`date '+%m/%d/%Y %H:%M:%S'`
-    sudo systemctl restart hornet
-    statcounter="$(cat $swarmdir/log/watchdog.log | sed -n -e '1{p;q}')"
-    let statcounter=statcounter+1
-    if [ "$statcounter" -gt "2" ]; then
+    restartdt=`date '+%m/%d/%Y %H:%M:%S'`
+    let statuscounter=$statuscounter+1
+    if [ "$statuscounter" -ge "2" ]; then
         if [ "$network" = "mainnet" ]; then
             sudo rm -rf $hornetdir/mainnetdb $hornetdir/snapshots/mainnet
         fi
@@ -15,20 +14,14 @@ if [ "$status" != "active" ]; then
         if [ "$network" = "devnet" ]; then
             sudo rm -rf $hornetdir/devnetdb $hornetdir/snapshots/devnet
         fi
-        if [ -f "$swarmdir/log/pruning.log" ]; then
-            {
-            echo "0"
-            echo ""
-            } > $swarmdir/log/pruning.log
-        fi
-        sudo sed -i 's/pruningindex=.*/pruningindex=/' $configs/swarm.cfg
-        statcounter=0
+        statuscounter=0
     fi
     sudo systemctl restart hornet
-    synccounter="$(cat $swarmdir/log/watchdog.log | sed -n -e '2{p;q}')"
-    {
-    echo $statcounter
-    echo $synccounter
-    echo $dt
-    } > $swarmdir/log/watchdog.log
+    sudo sed -i 's/statuscounter=.*/statuscounter='$statuscounter'/' $swarmlog
+    echo $restartdt > $log/watchdog.log
+else
+    if [ "$statuscounter" -gt "0" ]; then
+        let statuscounter=$statuscounter-1
+        sudo sed -i 's/statuscounter=.*/statuscounter='$statuscounter'/' $swarmlog
+    fi
 fi
