@@ -2,12 +2,11 @@
 source $swarmlog
 
 if [ "$checksync" = "true" ] && [ ! -f "$swarmdir/log/dbpruner" ]; then
-
     lmi="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestMilestoneIndex')"
     lsmi="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
     let dlmi=$lmi-$lsmi
     if [ "$status" = "active" ] && [ $dlmi -gt $maxlmi ]; then
-        dt=`date '+%m/%d/%Y %H:%M:%S'`
+        restartdt=`date '+%m/%d/%Y %H:%M:%S'`
         sudo systemctl stop hornet
         if [ "$network" = "mainnet" ]; then
             sudo rm -rf $hornetdir/mainnetdb $hornetdir/snapshots/mainnet
@@ -19,7 +18,7 @@ if [ "$checksync" = "true" ] && [ ! -f "$swarmdir/log/dbpruner" ]; then
             sudo rm -rf $hornetdir/devnetdb $hornetdir/snapshots/devnet
         fi
         sudo systemctl start hornet
-        sudo sed -i 's/restartdate=.*/restartdate=\"'$dt'\"/' $swarmlog
+        sudo sed -i 's/restartdt=.*/restartdt=\"'$restartdt'\"/' $swarmlog
         sudo sed -i 's/statuscounter=.*/statuscounter=0/' $swarmlog
     fi
 fi
