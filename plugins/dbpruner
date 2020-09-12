@@ -87,7 +87,7 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/log/dbpruner" ] && [ -n "$maxdb
                 sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/swarm.cfg
                 prunedt=`date '+%m/%d/%Y %H:%M:%S'`
                 sudo sed -i 's/pruningmultiplier=.*/pruningmultiplier='$pruningmultiplier'/' $swarmlog
-                sudo sed -i 's/pruningdt=.*/pruningdt=\"'$prunedt'\"/' $swarmlog
+                echo $prunedt > $log/pruning.log
             else
                 if [ "$pruningmultiplier" -gt "0" ]; then
                     let pruningmultiplier="$pruningmultiplier-1"
@@ -96,7 +96,7 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/log/dbpruner" ] && [ -n "$maxdb
                     pruningmultiplier=0
                 fi
                 sudo sed -i 's/pruningmultiplier=.*/pruningmultiplier='$pruningmultiplier'/' $swarmlog
-                sudo sed -i 's/pruningdt=.*/pruningdt=\"'$prunedt'\"/' $swarmlog
+                echo $prunedt > $log/pruning.log
             fi
         fi
 
@@ -105,12 +105,12 @@ if [ "$status" = "active" ] && [ ! -f "$swarmdir/log/dbpruner" ] && [ -n "$maxdb
     else
         if [ "$pruningmultiplier" -gt "0" ]; then
             let pruningmultiplier="$pruningmultiplier-1"
+            sudo sed -i 's/pruningmultiplier=.*/pruningmultiplier='$pruningmultiplier'/' $swarmlog
         fi
         if [ ! -n "$pruningmultiplier" ] || [ "$pruningmultiplier" -le "0" ]; then
             pruningmultiplier=0
+            sudo sed -i 's/pruningmultiplier=.*/pruningmultiplier='$pruningmultiplier'/' $swarmlog
         fi
-        sudo sed -i 's/pruningmultiplier=.*/pruningmultiplier='$pruningmultiplier'/' $swarmlog
-        sudo sed -i 's/pruningdt=.*/pruningdt=\"'$prunedt'\"/' $swarmlog
     fi
     unset getdbsize
     unset dbsize
