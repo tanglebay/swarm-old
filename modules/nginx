@@ -44,18 +44,46 @@ fi
 if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
     rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
     if (whiptail --title "Proxy Menu" --yesno "Would you like to protect the API of your node?" 8 65); then
+        {
+        echo 0
+        sleep 0.25
         sudo cp $templates/nginx_auth.template /etc/nginx/sites-enabled/default
+        echo 20
+        sleep 0.25
         sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
+        echo 40
+        sleep 0.25
         sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/443/'$nodeport'/g' {} \;
+        echo 60
+        sleep 0.25
         sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/\#NGINX/''/g' {} \;
+        echo 80
+        sleep 0.25
         sudo systemctl restart nginx
+        echo 100
+        sleep 0.25
+        } | whiptail --gauge "Please wait while SWARM deploying the config and restart proxy..." 6 65 0
         whiptail --title "Proxy Menu" --msgbox "Node Informations:\n\nDashboard: https://$domain:$nodeport\nAPI: https://$domain:$nodeport/auth" 15 65
     else
+        {
+        echo 0
+        sleep 0.25
         sudo cp $templates/nginx.template /etc/nginx/sites-enabled/default
+        echo 20
+        sleep 0.25
         sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
+        echo 40
+        sleep 0.25
         sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/443/'$nodeport'/g' {} \;
+        echo 60
+        sleep 0.25
         sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/\#NGINX/''/g' {} \;
+        echo 80
+        sleep 0.25
         sudo systemctl restart nginx
+        echo 100
+        sleep 0.25
+        } | whiptail --gauge "Please wait while SWARM deploying the config and restart proxy..." 6 65 0
         whiptail --title "Proxy Menu" --msgbox "Node Informations:\n\nDashboard: https://$domain:$nodeport\nAPI: https://$domain:$nodeport/access" 15 65
     fi
 fi
