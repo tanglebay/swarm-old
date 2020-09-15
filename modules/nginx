@@ -45,13 +45,17 @@ if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
     rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
     if (whiptail --title "Proxy Menu" --yesno "Would you like to protect the API of your node?" 8 65); then
         sudo cp $templates/nginx_auth.template /etc/nginx/sites-enabled/default
+        sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
+        sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/443/'$nodeport'/g' {} \;
+        sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/\#NGINX/''/g' {} \;
+        sudo systemctl restart nginx
         whiptail --title "Proxy Menu" --msgbox "Node Informations:\n\nDashboard: https://$domain:$nodeport\nAPI: https://$domain:$nodeport/auth" 15 65
     else
         sudo cp $templates/nginx.template /etc/nginx/sites-enabled/default
+        sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
+        sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/443/'$nodeport'/g' {} \;
+        sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/\#NGINX/''/g' {} \;
+        sudo systemctl restart nginx
         whiptail --title "Proxy Menu" --msgbox "Node Informations:\n\nDashboard: https://$domain:$nodeport\nAPI: https://$domain:$nodeport/access" 15 65
     fi
-    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
-    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/443/'$nodeport'/g' {} \;
-    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/\#NGINX/''/g' {} \;
-    sudo systemctl restart nginx
 fi
