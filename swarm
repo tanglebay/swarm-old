@@ -26,11 +26,7 @@ function pause(){
 
 # Check if script is running with root permissions
 if [ $(id -u) -ne 0 ]; then
-    echo -e $text_yellow "\033[1m\033[4mWelcome to SWARM! [v$version]\033[0m"
-    echo ""
-    echo -e $TEXT_RED_B "Please run SWARM with sudo or as root"
-    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
-    echo -e $text_reset
+    whiptail --title "Welcome to SWARM! [v$version]" --msgbox "Please run SWARM with sudo or as root" 8 78
     exit 0
 fi
 
@@ -72,118 +68,85 @@ while [ $counter -lt 1 ]; do
 
     ############################################################################################################################################################
 
-    echo ""
-    echo -e $text_yellow "\033[1m\033[4mWelcome to SWARM! [v$version]\033[0m"
-    echo ""
-    if [ "$latestswarm" != "$version" ] && [ "$latestswarm" != "" ]; then
-        echo -e $text_red "#####################################################"
-        echo -e $text_red " New version v$latestswarm available, please update SWARM!"
-        echo -e $text_red "#####################################################"
-        echo ""
-    fi
-    if [ "$watchdog" = "active" ] || [ "$watchdog" = "inactive" ]; then
-        if [ "$watchdog" != "active" ]; then
-            echo -e "$text_yellow Watchdog:$text_red disabled"
-        else
-            echo -e "$text_yellow Watchdog:$text_green enabled"
-            if [ "$statuscounter" -gt "0" ]; then
-#                echo -e "$text_yellow Restarts:$text_red $watchdogcount"
-                if [ -n "$restartdt" ]; then
-                    echo -e "$text_yellow Last restart: $restartdt"
-                    echo ""
-                fi
-            fi
-            # Autoupdate
-            if [ "$autoupdate" = "true" ]; then
-                echo -e "$text_yellow Auto-updater:$text_green active"
-            else
-                echo -e "$text_yellow Auto-updater:$text_red inactive"
-            fi
-            # Sync Check
-            if [ "$checksync" = "true" ]; then
-                echo -e "$text_yellow Sync-checker:$text_green active"
-            else
-                echo -e "$text_yellow Sync-checker:$text_red inactive"
-            fi
-            # Log Pruning
-            if [ "$logpruning" = "true" ]; then
-                echo -e "$text_yellow Log-pruner:$text_green active"
-            else
-                echo -e "$text_yellow Log-pruner:$text_red inactive"
-            fi
-        fi
+    if [ "$watchdog" = "active" ]; then
+        wdstatus=enabled
     else
-        echo -e "$text_yellow Watchdog:$text_red inactive"
-    fi
-    echo ""
-    echo -e "\e[90m-----------------------------------------------------------"
-    echo ""
-    # DBPruner Plugin
-    if [ "$dbprunerstat" = "active" ] || [ "$dbprunerstat" = "inactive" ]; then
-        if [ "$dbprunerstat" != "active" ]; then
-            echo -e "$text_yellow DBPRuner:$text_red disabled"
-        else
-            getcurrentdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
-            let getcurrentdbsizeingb=$getcurrentdbsize/1000000000
-            if [ "$getcurrentdbsizeingb" -le "0" ]; then
-                let getcurrentdbsizeinmb=$getcurrentdbsize/1000000
-                currentdbsize="$getcurrentdbsizeinmb MB"
-            else
-                currentdbsize="$getcurrentdbsizeingb GB"
-            fi
-            echo -e "$text_yellow DBPruner:$text_green enabled"
-            echo -e "$text_yellow DB size: $currentdbsize"
-            if [ "$lastprunedt" != "" ]; then
-                echo ""
-                echo -e "$text_yellow Last Pruning: $pruningdt"
-            fi
+        if [ "$watchdog" = "inactive" ]; then
+            wdstatus=disabled
         fi
-    else
-        echo -e "$text_yellow DBPruner:$text_red disabled"
     fi
-    echo ""
-    echo -e "\e[90m==========================================================="
-    echo ""
-    echo -e $text_red "\033[1m\033[4mManagement\033[0m"
-    echo ""
-    echo -e $text_yellow
-    echo " 1) Hornet Menu"
-    echo ""
-    echo " 2) Proxy Menu"
-    echo ""
-    echo " 3) SWARM Menu"
-    echo ""
-    echo -e "\e[90m-----------------------------------------------------------"
-    echo ""
-    echo -e $text_yellow "x) Exit"
-    echo ""
-    echo -e "\e[90m==========================================================="
-    echo -e $text_yellow && read -t 60 -p " Please type in your option: " selector
-    echo -e $text_reset
+    if [ "$dbprunerstat" = "active" ]; then
+        dbprunerstatus=enabled
+    else
+        if [ "$dbprunerstat" = "inactive" ]; then
+            dbprunertatus=disabled
+        fi
+    fi
 
+    CHOICE=$(
+        whiptail --title "Welcome to SWARM! [v$version]" --menu "Watchdog: $wdstatus\nDBPruner: $dbprunerstat\n\nChoose an option" 25 78 16 \
+        "1)" "Hornet Menu" \
+        "2)" "Proxy Menu" \
+        "3)" "SWARM Menu" \
+        "4)" "Exit."
+    )
+
+    case $CHOICE in
+        "1)")
+            selector=1
+        ;;
+        "2)")
+            selector=2
+        ;;
+        "3)")
+            selector=3
+        ;;
+        "4)")
+            exit 0
+        ;;
+    esac
+
+ ############################################################################################################################################################
+
+    # HORNET MENU
     if [ "$selector" = "1" ]; then
         counter1=0
         while [ $counter1 -lt 1 ]; do
-            clear
-            echo ""
-            echo -e $text_red "\033[1m\033[4mHornet Menu\033[0m"
-            echo -e $text_yellow ""
-            echo " 1) Simple Config Editor"
-            echo " 2) Edit Hornet Configs"
-            echo ""
-            echo " 3) Hornet Service (start/stop)"
-            echo " 4) Show latest node log"
-            echo " 5) Reset database"
-            echo ""
-            echo " 6) Hornet Installer"
-            echo ""
-            echo -e "\e[90m-----------------------------------------------------------"
-            echo ""
-            echo -e $text_yellow "x) Back"
-            echo ""
-            echo -e "\e[90m==========================================================="
-            echo -e $text_yellow && read -p " Please type in your option: " selector
-            echo -e $text_reset
+            CHOICE=$(
+                whiptail --title "Hornet Menu" --menu "Choose an option" 25 78 16 \
+                "1)" "Simple Config Editor" \
+                "2)" "Edit Hornet Configs" \
+                "3)" "Hornet Service (start/stop)" \
+                "4)" "Hornet Service (start/stop)" \
+                "5)" "Hornet Service (start/stop)" \
+                "6)" "Hornet Service (start/stop)" \
+                "7)" "Back..."
+            )
+
+            case $CHOICE in
+                "1)")
+                    selector=1
+                ;;
+                "2)")
+                    selector=2
+                ;;
+                "3)")
+                    selector=3
+                ;;
+                "4)")
+                    selector=4
+                ;;
+                "5)")
+                    selector=5
+                ;;
+                "6)")
+                    selector=6
+                ;;
+                "7)")
+                    selector=x
+                ;;
+            esac
+
 
             # Change SWARM-hornet.cfg
             if [ "$selector" = "1" ] ; then
@@ -201,51 +164,66 @@ while [ $counter -lt 1 ]; do
 
                 # check if a restart is required
                 if [ "$restart" = "true" ]; then
-                    echo ""
-                    echo -e $TEXT_RED_B "Hornet configuration changes detected!" && echo -e $text_reset
-                    echo ""
-                    echo -e $text_yellow && read -p " Would you like to restart hornet now (y/N): " selector_restart
-                    echo -e $text_reset
-                    if [ "$selector_restart" = "y" ] || [ "$selector_restart" = "Y" ]; then
+                    if (whiptail --title "Hornet Menu" --yesno "Hornet configuration changes detected!\nWould you like to restart hornet now?" 8 78); then
                         sudo systemctl restart hornet
+                    else
+                        restart=false
                     fi
-                    restart=false
                 fi
-                echo -e $text_yellow && echo " Edit configuration finished!" && echo -e $text_reset
-                echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
-                echo -e $text_reset
             fi
 
             # Edit config.json
             if [ "$selector" = "2" ] ; then
-                echo -e $TEXT_RED_B && read -p " Would you like to edit the (1)mainnet, (2)comnet, (3)devnet, (4)peering or the (5)service config: " selector
-                if [ "$selector" = "1" ]; then
-                    sudo nano $hornetdir/config.json
-                    echo -e $TEXT_RED_B && read -p " Would you like to restart hornet now (y/N): " restart
-                fi
-                if [ "$selector" = "2" ]; then
-                    sudo nano $hornetdir/config_comnet.json
-                    echo -e $TEXT_RED_B && read -p " Would you like to restart hornet now (y/N): " restart
-                fi
-                if [ "$selector" = "3" ]; then
-                    sudo nano $hornetdir/config_devnet.json
-                    echo -e $TEXT_RED_B && read -p " Would you like to restart hornet now (y/N): " restart
-                fi
-                if [ "$selector" = "4" ]; then
-                    sudo nano $hornetdir/peering.json
-                    echo -e $text_yellow && echo " New peering configuration loaded!" && echo -e $text_reset
-                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
-                fi
-                if [ "$selector" = "5" ]; then
-                    sudo nano /etc/default/hornet
-                    echo -e $TEXT_RED_B && read -p " Would you like to restart hornet now (y/N): " restart
-                fi
-                if [ "$restart" = "y" ] || [ "$restart" = "y" ]; then
-                    sudo systemctl restart hornet
-                    echo -e $text_yellow && echo " Hornet node restarted!" && echo -e $text_reset
-                    echo -e $TEXT_RED_B && pause ' Press [Enter] key to continue...'
-                    echo -e $text_reset
-                fi
+                CHOICE=$(
+                    whiptail --title "Hornet Menu" --menu "Which config you want to edit" 25 78 16 \
+                    "1)" "Mainnet config" \
+                    "2)" "Comnet config" \
+                    "3)" "Devnet config" \
+                    "4)" "Peering config" \
+                    "5)" "Service config" \
+                    "6)" "Cancel."
+                )
+
+                case $CHOICE in
+                    "1)")
+                        sudo nano $hornetdir/config.json
+                        if (whiptail --title "Hornet Menu" --yesno "Would you like to restart hornet now?" 8 78); then
+                            sudo systemctl restart hornet
+                        else
+                            restart=false
+                        fi
+                    ;;
+                    "2)")
+                        sudo nano $hornetdir/config_comnet.json
+                        if (whiptail --title "Hornet Menu" --yesno "Would you like to restart hornet now?" 8 78); then
+                            sudo systemctl restart hornet
+                        else
+                            restart=false
+                        fi
+                    ;;
+                    "3)")
+                        sudo nano $hornetdir/config_devnet.json
+                        if (whiptail --title "Hornet Menu" --yesno "Would you like to restart hornet now?" 8 78); then
+                            sudo systemctl restart hornet
+                        else
+                            restart=false
+                        fi
+                    ;;
+                    "4)")
+                        whiptail --title "Hornet Menu" --msgbox "New peering configuration will be loaded automatically." 8 78
+                    ;;
+                    "5)")
+                        sudo nano $hornetdir/config.json
+                        if (whiptail --title "Hornet Menu" --yesno "Would you like to restart hornet now?" 8 78); then
+                            sudo systemctl restart hornet
+                        else
+                            restart=false
+                        fi
+                    ;;
+                    "6)")
+                        # Nothing to do here
+                    ;;
+                esac
                 unset selector
                 unset restart
             fi

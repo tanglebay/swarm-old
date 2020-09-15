@@ -1,44 +1,51 @@
 #!/bin/bash
-
-# Check if a package is missing
-if ! [ -x "$(command -v curl)" ]; then
-    echo -e $text_yellow && echo "Installing necessary packages curl..." && echo -e $text_reset
-    sudo apt install curl -y > /dev/null
-    clear
-fi
-if ! [ -x "$(command -v jq)" ]; then
-    echo -e $text_yellow && echo "Installing necessary package jq..." && echo -e $text_reset
-    sudo apt install jq -y > /dev/null
-    clear
-fi
-if ! [ -x "$(command -v nano)" ]; then
-    echo -e $text_yellow && echo "Installing necessary package nano..." && echo -e $text_reset
-    sudo apt install nano -y > /dev/null
-    clear
-fi
-if ! [ -x "$(command -v whois)" ]; then
-    echo -e $text_yellow && echo "Installing necessary package whois..." && echo -e $text_reset
-    sudo apt install whois -y > /dev/null
-    clear
-fi
-if ! [ -x "$(command -v sponge)" ]; then
-    echo -e $text_yellow && echo "Installing necessary package moreutils..." && echo -e $text_reset
-    sudo apt install moreutils -y > /dev/null
-    clear
-fi
-if ! [ -x "$(command -v snap)" ]; then
-    echo -e $text_yellow && echo "Installing necessary package snap..." && echo -e $text_reset
-    sudo apt install snapd -y > /dev/null
-    clear
-fi
-
-# Add snap to enviroment file
-if ! grep -q /snap/bin "$envfile"; then
-    envpath="$(cat $envfile | sed 's/.$//')"
-    echo "$envpath:/snap/bin\"" > $envfile
-    source $envfile
-fi
-if ! grep -q /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin "$envfile"; then
-    echo "PATH=\"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin\"" > $envfile
-    source $envfile
-fi
+{
+        echo 0
+        # Check if a package is missing
+        if ! [ -x "$(command -v curl)" ]; then
+            sudo apt install curl -y > /dev/null
+        fi
+        echo 10
+        sleep 0.25
+        if ! [ -x "$(command -v jq)" ]; then
+            sudo apt install jq -y > /dev/null
+        fi
+        echo 20
+        sleep 0.25
+        if ! [ -x "$(command -v nano)" ]; then
+            sudo apt install nano -y > /dev/null
+        fi
+        echo 30
+        sleep 0.25
+        if ! [ -x "$(command -v whois)" ]; then
+            sudo apt install whois -y > /dev/null
+        fi
+        echo 40
+        sleep 0.25
+        if ! [ -x "$(command -v sponge)" ]; then
+            sudo apt install moreutils -y > /dev/null
+        fi
+        echo 50
+        sleep 0.25
+        if ! [ -x "$(command -v snap)" ]; then
+            echo -e $text_yellow && echo "Installing necessary package snap..." && echo -e $text_reset
+            sudo apt install snapd -y > /dev/null
+        fi
+        echo 60
+        sleep 0.25
+        # Add snap to enviroment file
+        if ! grep -q /snap/bin "$envfile" && [ "$i" -eq "60" ]; then
+            envpath="$(cat $envfile | sed 's/.$//')"
+            echo "$envpath:/snap/bin\"" > $envfile
+            source $envfile
+        fi
+        echo 70
+        sleep 0.25
+        if ! grep -q /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin "$envfile"  && [ "$i" -eq "70" ]; then
+            echo "PATH=\"/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin\"" > $envfile
+            source $envfile
+        fi
+        echo 80
+        sleep 0.25
+        echo 100
+} | whiptail --gauge "Please wait while SWARM install all packages..." 6 50 0
