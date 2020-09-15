@@ -14,38 +14,46 @@ if [ -d "/etc/nginx" ]; then
         sudo touch /etc/nginx/api/.htpasswd
     fi
 else
-    echo -e $text_red "Please deploy the reverse proxy first!"
+    whiptail --title "Proxy Menu" --msgbox "Please deploy the reverse proxy first!" 8 65
 fi
 
-echo -e $text_yellow && read -p " Would like to add a new user for the (1)dashboard, (2)API, (3)both or cancel: " aupopt
-adduserproxy=0
-if [ "$aupopt" = "1" ] || [ "$aupopt" = "2" ] || [ "$aupopt" = "3" ]; then
-    while [ $adduserproxy -lt 1 ]; do
-        echo -e $TEXT_RED_B && read -p " Specify the user name for the new user: " newusername
-        if [ ! -z $newusername ]; then
-            echo -e $TEXT_RED_B && read -p " Specify the password for the new user: " newuserpw
-            if [ ! -z $newuserpw ]; then
-                newuserpw="$(mkpasswd -m sha-512 $newuserpw)"
-                adduserproxy=1
-            else
-                echo -e $text_red "Please set a password for the new user!"
-            fi
-        else
-            echo -e $text_red "Please define a user name for the new user!"
-        fi
-    done
-fi
+CHOICE=$(
+    whiptail --title "Proxy Menu" --menu "\nChoose an option:" 20 65 10 \
+    "1)" "Add new dashboard user" \
+    "2)" "Add new API user" \
+    "3)" "Add new user for Dash/API" 3>&2 2>&1 1>&3
+)
 
-if [ "$aupopt" = "1" ]; then
-    echo "$newusername:$newuserpw" >> /etc/nginx/dash/.htpasswd
+newusername=$(whiptail --inputbox "Please enter a username:" 8 65 --title "Proxy Menu" 3>&1 1>&2 2>&3)
+if [ ! -z $newusername ]; then
+    newuserpw=$(whiptail --passwordbox "Please enter a secure password:" 8 65 --title "Proxy Menu" 3>&1 1>&2 2>&3)
+    if [ ! -z $newuserpw ]; then
+        newuserpw="$(mkpasswd -m sha-512 $newuserpw)"
+    else
+        whiptail --title "Proxy Menu" --msgbox "Please set a password!" 8 65
+        CHOICE=0
+    fi
+else
+    whiptail --title "Proxy Menu" --msgbox "Please set a username!" 8 65
+    CHOICE=0
 fi
-if [ "$aupopt" = "2" ]; then
-    echo "$newusername:$newuserpw" >> /etc/nginx/api/.htpasswd
-fi
-if [ "$aupopt" = "3" ]; then
-    echo "$newusername:$newuserpw" >> /etc/nginx/dash/.htpasswd
-    echo "$newusername:$newuserpw" >> /etc/nginx/api/.htpasswd
-fi
+                                                                        
+
+case $CHOICE in
+    "1)")
+        echo "$newusername:$newuserpw" >> /etc/nginx/dash/.htpasswd
+        sudo systemctl reload nginx
+    ;;
+    "2)")
+        echo "$newusername:$newuserpw" >> /etc/nginx/api/.htpasswd
+        sudo systemctl reload nginx
+    ;;
+    "3)")
+        echo "$newusername:$newuserpw" >> /etc/nginx/dash/.htpasswd
+        echo "$newusername:$newuserpw" >> /etc/nginx/api/.htpasswd
+        sudo systemctl reload nginx
+    ;;
+esac
 
 # Unset all var
 unset aupopt
