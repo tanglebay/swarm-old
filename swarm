@@ -13,9 +13,6 @@ source /var/lib/swarm/modules/variables
 
 ############################################################################################################################################################
 
-# Set background color
-sudo tput setab 4
-
 # Remove old HLM version if exist
 if [ -d "/etc/hlm-cfgs" ] || [ -d "/var/lib/hornet-light-manager" ]; then
     source $modules/hlmremover
@@ -29,8 +26,6 @@ function pause(){
 # Check if script is running with root permissions
 if [ $(id -u) -ne 0 ]; then
     whiptail --title "Welcome to SWARM! [v$version]" --msgbox "Please run SWARM with sudo or as root" 8 65
-    sudo tput sgr0
-    clear
     exit 0
 fi
 
@@ -95,8 +90,7 @@ while [ $counter -lt 1 ]; do
     )
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
-        sudo tput sgr0
-        clear
+
         exit 0
     fi
 
@@ -127,15 +121,21 @@ while [ $counter -lt 1 ]; do
                         # Edit simple config
                         source $modules/currenteasycfg
                         sudo nano $configs/hornet.cfg
-                        source $configs/hornet.cfg
 
-                        # Run Hornet cfg checker
-                        source $modules/cfgchecker
-
-                        # CALL MODULE CONFIGPARSER
-                        if [ -f "/usr/bin/hornet" ]; then
-                            source $modules/configparser
-                        fi
+                        {
+                            echo 0
+                            source $configs/hornet.cfg
+                            echo 33
+                            # Run Hornet cfg checker
+                            source $modules/cfgchecker
+                            echo 66
+                            # CALL MODULE CONFIGPARSER
+                            if [ -f "/usr/bin/hornet" ]; then
+                                source $modules/configparser
+                            fi
+                            echo 100
+                            sleep 0.2
+                        }  | whiptail --gauge "Verify configuration..." 6 65 0
 
                         # check if a restart is required
                         if [ "$restart" = "true" ]; then
@@ -507,13 +507,11 @@ while [ $counter -lt 1 ]; do
                     ;;
                     "4)")
                         # Update SWARM
-                        if (whiptail --title "SWARM Menu" --yesno "Are you sure you want to update SWARM?" 8 65); then
+                        if (whiptail --title "SWARM Menu" --yesno --defaultno "Are you sure you want to update SWARM?" 8 65); then
                             ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
                             ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
                             sudo chmod +x $swarmdir/swarm $plugins/watchdog $plugins/dbpruner
                             source $modules/updater
-                            sudo tput sgr0
-                            clear
                             exit 0
                         fi
                     ;;
@@ -531,8 +529,6 @@ while [ $counter -lt 1 ]; do
                                     sudo chmod +x $swarmdir/swarm $plugins/watchdog $plugins/dbpruner
                                     source $modules/updater
                                     whiptail --title "SWARM Menu" --msgbox "SWARM branch change detected! Exit SWARM..." 8 65
-                                    sudo tput sgr0
-                                    clear
                                     exit 0
                                 fi
                             else
@@ -550,6 +546,5 @@ done
 ############################################################################################################################################################
 
 counter=0
-sudo tput sgr0
 clear
 exit 0
