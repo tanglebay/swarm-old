@@ -1,41 +1,40 @@
 #!/bin/bash
+{
+    if [ -z "$restartdt" ]; then
+        unset restartdt
+    fi
 
-if [ -z "$restartdt" ]; then
-    unset restartdt
-fi
+    if [ "$autoupdate" = "true" ]; then
+        autoupdate=enabled
+    else
+        autoupdate=disabled
+    fi
 
-if [ "$autoupdate" = "true" ]; then
-    autoupdate=enabled
-else
-    autoupdate=disabled
-fi
+    # Sync Check
+    if [ "$checksync" = "true" ]; then
+        checksync=enabled
+    else
+        checksync=disabled
+    fi
 
-# Sync Check
-if [ "$checksync" = "true" ]; then
-    checksync=enabled
-else
-    checksync=disabled
-fi
+    # Log Pruning
+    if [ "$logpruning" = "true" ]; then
+        logpruning=enabled
+    else
+        logpruning=disabled
+    fi
 
-# Log Pruning
-if [ "$logpruning" = "true" ]; then
-    logpruning=enabled
-else
-    logpruning=disabled
-fi
+    # DB size
+    getcurrentdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
+    let getcurrentdbsizeingb=$getcurrentdbsize/1000000000
+    if [ "$getcurrentdbsizeingb" -le "0" ]; then
+        let getcurrentdbsizeinmb=$getcurrentdbsize/1000000
+        currentdbsize="$getcurrentdbsizeinmb MB"
+    else
+        currentdbsize="$getcurrentdbsizeingb GB"
+    fi
 
-# DB size
-getcurrentdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
-let getcurrentdbsizeingb=$getcurrentdbsize/1000000000
-if [ "$getcurrentdbsizeingb" -le "0" ]; then
-    let getcurrentdbsizeinmb=$getcurrentdbsize/1000000
-    currentdbsize="$getcurrentdbsizeinmb MB"
-else
-    currentdbsize="$getcurrentdbsizeingb GB"
-fi
-
-if [ -z "$pruningdt" ]; then
-    unset pruningdt
-fi
-
-whiptail --title "SWARM Info [v$version]" --msgbox "Watchdog: $wdstatus\nNode-updater: $autoupdate\nSync-check: $checksync\nLog-pruner: $logpruning\nLast restart: $restartdt\n\nDBPruner: $dbprunerstatus\nDB size: $currentdbsize\nLast pruning: $lastprunedt" 15 65
+    if [ -z "$pruningdt" ]; then
+        unset pruningdt
+    fi
+} | whiptail --title "SWARM Info [v$version]" --msgbox "Watchdog: $wdstatus\nNode-updater: $autoupdate\nSync-check: $checksync\nLog-pruner: $logpruning\nLast restart: $restartdt\n\nDBPruner: $dbprunerstatus\nDB size: $currentdbsize\nLast pruning: $lastprunedt" 15 65
