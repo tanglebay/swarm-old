@@ -325,7 +325,7 @@ while [ $counter -lt 1 ]; do
                                         sudo apt -qq upgrade -y > /dev/null 2>&1
                                         echo 50
                                         sudo apt -qq install hornet -y > /dev/null 2>&1
-
+                                        echo 60
                                         # Check which network
                                         if [ "$network" = "mainnet" ]; then
                                             echo "" > /etc/default/hornet
@@ -339,12 +339,14 @@ while [ $counter -lt 1 ]; do
                                             echo "OPTIONS=\"--config config_devnet --overwriteCooAddress\"" > /etc/default/hornet
                                             restart=true
                                         fi
-                                        echo 60
-
-                                        if [ -f "/usr/bin/hornet" ]; then
+                                        echo 70
+                                    } | whiptail --gauge "Please wait while installing Hornet..." 8 65 0
+                                    if [ -f "/usr/bin/hornet" ]; then
+                                        {
+                                            echo 70
                                             # CALL MODULE CONFIGPARSER
                                             source $modules/configparser
-                                            echo 75
+                                            echo 80
 
                                             check="$(systemctl show -p ActiveState --value hornet)"
                                             if [ "$check" != "active" ]; then
@@ -354,14 +356,13 @@ while [ $counter -lt 1 ]; do
                                                 sudo systemctl restart hornet
                                                 unset restart
                                             fi
-                                            echo 90
-                                            whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports in your home router for peering\n\nPorts: $autopeeringport/UDP\n$neighborport/tcp" 8 65
                                             echo 100
-                                        else
-                                            whiptail --title "Hornet Installer" --msgbox "Error while installing Hornet. Please check hornet.cfg and try again!" 8 65
-                                        fi
-                                    } | whiptail --gauge "Please wait while installing Hornet..." 8 65 0
-
+                                            sleep 0.2
+                                        } | whiptail --gauge "Please wait while installing Hornet..." 8 65 0
+                                        whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports in your home router for peering\n\nPorts: $autopeeringport/UDP\n$neighborport/tcp" 8 65
+                                    else
+                                        whiptail --title "Hornet Installer" --msgbox "Error while installing Hornet. Please check hornet.cfg and try again!" 8 65
+                                    fi
                                 else
                                     whiptail --title "Hornet Installer" --msgbox "Hornet already installed. Please remove first!" 8 65
                                 fi
