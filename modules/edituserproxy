@@ -14,22 +14,22 @@ if [ -d "/etc/nginx" ]; then
         sudo touch /etc/nginx/api/.htpasswd
     fi
 else
-    echo -e $text_red "Please deploy the reverse proxy first!"
+    whiptail --title "Proxy Menu" --msgbox "Please deploy the reverse proxy first!" 8 65
 fi
 
-echo -e $text_yellow && read -p " Would like to edit the (1)dashboard user, (2)API user or cancel: " aupopt
+CHOICE=$(
+    whiptail --title "Proxy Menu" --menu "\nChoose an option:" 20 65 10 \
+    "1)" "Edit dashboard user" \
+    "2)" "Edit API user" 3>&2 2>&1 1>&3
+)
 
-if [ "$aupopt" = "1" ]; then
-    sudo nano /etc/nginx/dash/.htpasswd
-    sudo systemctl reload nginx
-    echo -e $text_yellow && echo " Dashboard user updated!" && echo -e $text_reset
-fi
-
-if [ "$aupopt" = "2" ]; then
-    sudo nano /etc/nginx/api/.htpasswd
-    sudo systemctl reload nginx
-    echo -e $text_yellow && echo " API user updated!" && echo -e $text_reset
-fi
-
-# Unset all var
-unset aupopt
+case $CHOICE in
+    "1)")
+        sudo nano /etc/nginx/dash/.htpasswd
+        sudo systemctl reload nginx
+    ;;
+    "2)")
+        sudo nano /etc/nginx/api/.htpasswd
+        sudo systemctl reload nginx
+    ;;
+esac
