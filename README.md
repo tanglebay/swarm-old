@@ -14,7 +14,6 @@ cd /var/lib && sudo git clone https://github.com/TangleBay/swarm.git && sudo chm
 echo "alias swarm='sudo /var/lib/swarm/swarm'" >> ~/.bashrc && . ~/.bashrc
 ```
 3. Run SWARM: `swarm`
-4. With the first start it is necessary to edit the hornet config (will opened automatically) !!!
 
 
 # Install reverse proxy #
