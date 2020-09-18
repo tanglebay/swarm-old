@@ -28,6 +28,6 @@ echo "alias swarm='sudo /var/lib/swarm/swarm'" >> ~/.bashrc && . ~/.bashrc
 **Your Dashboard address will be `https://yourdomain.com` and your API (Trinity) will be `https://yourdomain.com/access` (without API protection) or `https://yourdomain.com/auth`**
 
 
-# Support TANGLE BAY#
+# Support TANGLE BAY
 
 IOTA Address: `KKEMSVOKRVEOARTKSYFM9ZNFEDDQUFGTFATYGRF9RXKBJGTUMGMDVPSLSZF9TRQXSASYAFTFEUNCQCHZYTDOQAUGDW`
