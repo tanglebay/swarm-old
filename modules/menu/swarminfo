@@ -1,4 +1,14 @@
 #!/bin/bash
+
+nodeversion="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq -r '.appVersion')"
+if [ -z "$nodeversion" ]; then
+    nodeversion="N/A"
+fi
+healthy="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.isHealthy')"
+if [ -z "$healthy" ]; then
+    healthy="N/A"
+fi
+
 if [ "$autoupdate" = "true" ]; then
     autoupdate=enabled
 else
@@ -45,6 +55,6 @@ else
 fi
 
 if [ -z "$pruningdt" ]; then
-    unset pruningdt
+    pruningdt="N/A"
 fi
-whiptail --title "SWARM Info [v$version]" --msgbox "Watchdog: $wdstatus\nNode-updater: $autoupdate\nSync-check: $checksync\nLog-pruner: $logpruning\nLast restart: $restartdt\n\nDBPruner: $dbpstatus\nDB size: $currentdbsize\nLast pruning: $lastprunedt" 15 65
+whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: v$nodeversion\nNetwork: $network\nHealthy: $healthy\n\nWatchdog: $wdstatus\nNode-updater: $autoupdate\nSync-check: $checksync\nLog-pruner: $logpruning\nLast restart: $restartdt\n\nDBPruner: $dbpstatus\nDB size: $currentdbsize\nLast pruning: $lastprunedt" 18 65
