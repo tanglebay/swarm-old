@@ -9,11 +9,10 @@
 ```shell
 cd /var/lib && sudo git clone https://github.com/TangleBay/swarm.git && sudo chmod +x /var/lib/swarm/swarm
 ```
-2. Set aliases for run SWARM from every source
+2. Run one time SWARM this command and after first start/reboot you can use just `swarm`
 ```shell
-echo "alias swarm='sudo /var/lib/swarm/swarm'" >> ~/.bashrc && . ~/.bashrc
+sudo /var/lib/swarm/swarm
 ```
-3. Run SWARM: `swarm`
 
 
 # Install reverse proxy #
