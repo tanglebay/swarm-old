@@ -3,75 +3,70 @@ while [ $counter -lt 1 ]; do
     clear
     CHOICE=$(
         whiptail --title "SWARM Menu" --menu "\nChoose an option" 16 65 0 \
-        "1)" "Edit SWARM.cfg" \
-        "2)" "Manage Watchdog" \
-        "3)" "Manage DBPruner" \
-        "4)" "Update SWARM" \
-        "5)" "Dev-Mode" 3>&2 2>&1 1>&3
+        "1)" "SWARM Configuration" \
+        "2)" "Manage Plugins" \
+        "3)" "Debugging SWARM" \
+        "4)" "Update SWARM" 3>&2 2>&1 1>&3
     )
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         counter=1
     fi
-
     case $CHOICE in
         "1)")
             # Change SWARM.cfg
             sudo nano $configs/swarm.cfg
         ;;
         "2)")
-            # Control WATCHDOG
             CHOICE=$(
-                whiptail --title "Watchdog Menu" --menu "\nChoose an option" 16 65 0 \
-                "1)" "Enable Watchdog" \
-                "2)" "Disable Watchdog" 3>&2 2>&1 1>&3
+                whiptail --title "SWARM Menu" --menu "\nChoose an option" 16 65 0 \
+                "1)" "Manage Watchdog" \
+                "2)" "Manage DBPruner" 3>&2 2>&1 1>&3
             )
-
             case $CHOICE in
                 "1)")
-                    sudo chmod +x $plugins/watchdog
-                    ( crontab -l | grep -v -F "$croncmd" ; echo "$cronjob" ) | crontab -
-                    whiptail --title "Watchdog" --msgbox "Watchdog successfully activated!" 8 65
+                    # Control WATCHDOG
+                    CHOICE=$(
+                        whiptail --title "Watchdog Menu" --menu "\nChoose an option" 16 65 0 \
+                        "1)" "Enable Watchdog" \
+                        "2)" "Disable Watchdog" 3>&2 2>&1 1>&3
+                    )
+
+                    case $CHOICE in
+                        "1)")
+                            sudo chmod +x $plugins/watchdog
+                            ( crontab -l | grep -v -F "$croncmd" ; echo "$cronjob" ) | crontab -
+                            whiptail --title "Watchdog" --msgbox "Watchdog successfully activated!" 8 65
+                        ;;
+                        "2)")
+                            ( crontab -l | grep -v -F "$croncmd" ) | crontab -
+                            whiptail --title "Watchdog" --msgbox "Watchdog successfully deactivated!" 8 65
+                        ;;
+                    esac
                 ;;
                 "2)")
-                    ( crontab -l | grep -v -F "$croncmd" ) | crontab -
-                    whiptail --title "Watchdog" --msgbox "Watchdog successfully deactivated!" 8 65
+                    # Control DBPRUNER
+                    CHOICE=$(
+                        whiptail --title "DBPruner Menu" --menu "\nChoose an option" 16 65 0 \
+                        "1)" "Enable DBPruner" \
+                        "2)" "Disable DBPruner" 3>&2 2>&1 1>&3
+                    )
+
+                    case $CHOICE in
+                        "1)")
+                            sudo chmod +x $plugins/dbpruner
+                            ( crontab -l | grep -v -F "$dbpcroncmd" ; echo "$dbpcronjob" ) | crontab -
+                            whiptail --title "DBPruner" --msgbox "DBPruner successfully activated!" 8 65
+                        ;;
+                        "2)")
+                            ( crontab -l | grep -v -F "$dbpcroncmd" ) | crontab -
+                            whiptail --title "DBPruner" --msgbox "DBPruner successfully deactivated!" 8 65
+                        ;;
+                    esac
                 ;;
             esac
         ;;
         "3)")
-            # Control DBPRUNER
-            CHOICE=$(
-                whiptail --title "DBPruner Menu" --menu "\nChoose an option" 16 65 0 \
-                "1)" "Enable DBPruner" \
-                "2)" "Disable DBPruner" 3>&2 2>&1 1>&3
-            )
-
-            case $CHOICE in
-                "1)")
-                    sudo chmod +x $plugins/dbpruner
-                    ( crontab -l | grep -v -F "$dbpcroncmd" ; echo "$dbpcronjob" ) | crontab -
-                    whiptail --title "DBPruner" --msgbox "DBPruner successfully activated!" 8 65
-                ;;
-                "2)")
-                    ( crontab -l | grep -v -F "$dbpcroncmd" ) | crontab -
-                    whiptail --title "DBPruner" --msgbox "DBPruner successfully deactivated!" 8 65
-                ;;
-            esac
-        ;;
-        "4)")
-            # Update SWARM
-            if (whiptail --title "SWARM Menu" --yesno --defaultno "Are you sure you want to update SWARM?" 8 65); then
-                ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
-                ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
-                sudo chmod +x $swarmdir/swarm $plugins/watchdog $plugins/dbpruner
-                source $modules/updater
-                whiptail --title "SWARM Menu" --msgbox "Update SWARM successfully" 8 65
-                clear
-                exit 0
-            fi
-        ;;
-        "5)")
             inputbranch=$(whiptail --inputbox "In which branch you want so switch?" 8 39 master --title "SWARM Menu" 3>&1 1>&2 2>&3)
             exitstatus=$?
             if [ $exitstatus = 0 ]; then
@@ -91,6 +86,18 @@ while [ $counter -lt 1 ]; do
                 else
                     whiptail --title "SWARM Menu" --msgbox "No valid branch selected!" 8 65
                 fi
+            fi
+        ;;
+        "4)")
+            # Update SWARM
+            if (whiptail --title "SWARM Menu" --yesno --defaultno "Are you sure you want to update SWARM?" 8 65); then
+                ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
+                ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
+                sudo chmod +x $swarmdir/swarm $plugins/watchdog $plugins/dbpruner
+                source $modules/updater
+                whiptail --title "SWARM Menu" --msgbox "Update SWARM successfully" 8 65
+                clear
+                exit 0
             fi
         ;;
     esac
