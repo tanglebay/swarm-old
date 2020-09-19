@@ -5,8 +5,7 @@ while [ $counter -lt 1 ]; do
         whiptail --title "SWARM Menu" --menu "\nChoose an option" 16 65 0 \
         "1)" "SWARM Configuration" \
         "2)" "Manage Plugins" \
-        "3)" "Debugging SWARM" \
-        "4)" "Update SWARM" 3>&2 2>&1 1>&3
+        "3)" "Manage SWARM" 3>&2 2>&1 1>&3
     )
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
@@ -67,38 +66,50 @@ while [ $counter -lt 1 ]; do
             esac
         ;;
         "3)")
-            inputbranch=$(whiptail --inputbox "In which branch you want so switch?" 8 39 master --title "SWARM Menu" 3>&1 1>&2 2>&3)
-            exitstatus=$?
-            if [ $exitstatus = 0 ]; then
-                if [ "$inputbranch" = "master" ] || [ "$inputbranch" = "develop" ]; then
-                    # Check SWARM branch
-                    if [ "$branch" != "$inputbranch" ]; then
-                        ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
-                        ( cd $swarmdir ; sudo git checkout $inputbranch ) > /dev/null 2>&1
+            CHOICE=$(
+                whiptail --title "SWARM Menu" --menu "\nChoose an option" 16 65 0 \
+                "1)" "Manage Watchdog" \
+                "2)" "Manage DBPruner" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    # Update SWARM
+                    if (whiptail --title "SWARM Menu" --yesno --defaultno "Are you sure you want to update SWARM?" 8 65); then
                         ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
-                        branch=$inputbranch
+                        ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
                         sudo chmod +x $swarmdir/swarm $plugins/watchdog $plugins/dbpruner
                         source $modules/updater
-                        whiptail --title "SWARM Menu" --msgbox "SWARM branch change detected! Exit SWARM..." 8 65
+                        whiptail --title "SWARM Menu" --msgbox "Update SWARM successfully" 8 65
                         clear
                         exit 0
                     fi
-                else
-                    whiptail --title "SWARM Menu" --msgbox "No valid branch selected!" 8 65
-                fi
-            fi
-        ;;
-        "4)")
-            # Update SWARM
-            if (whiptail --title "SWARM Menu" --yesno --defaultno "Are you sure you want to update SWARM?" 8 65); then
-                ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
-                ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
-                sudo chmod +x $swarmdir/swarm $plugins/watchdog $plugins/dbpruner
-                source $modules/updater
-                whiptail --title "SWARM Menu" --msgbox "Update SWARM successfully" 8 65
-                clear
-                exit 0
-            fi
+                ;;
+                "2)")
+                    source $modules/removeswarm
+                ;;
+                "3)")
+                    inputbranch=$(whiptail --inputbox "In which branch you want so switch?" 8 39 master --title "SWARM Menu" 3>&1 1>&2 2>&3)
+                    exitstatus=$?
+                    if [ $exitstatus = 0 ]; then
+                        if [ "$inputbranch" = "master" ] || [ "$inputbranch" = "develop" ]; then
+                            # Check SWARM branch
+                            if [ "$branch" != "$inputbranch" ]; then
+                                ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
+                                ( cd $swarmdir ; sudo git checkout $inputbranch ) > /dev/null 2>&1
+                                ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
+                                branch=$inputbranch
+                                sudo chmod +x $swarmdir/swarm $plugins/watchdog $plugins/dbpruner
+                                source $modules/updater
+                                whiptail --title "SWARM Menu" --msgbox "SWARM branch change detected! Exit SWARM..." 8 65
+                                clear
+                                exit 0
+                            fi
+                        else
+                            whiptail --title "SWARM Menu" --msgbox "No valid branch selected!" 8 65
+                        fi
+                    fi
+                ;;
+            esac
         ;;
     esac
 done
