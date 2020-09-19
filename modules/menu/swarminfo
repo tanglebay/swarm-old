@@ -1,0 +1,71 @@
+#!/bin/bash
+if [ "$apiprotection" = "true" ]; then
+    dashboardurl="https://$domain:$nodeport"
+    apiurl="https://$domain:$nodeport/auth"
+else if [ "$apiprotection" = "false" ]; then
+        dashboardurl="https://$domain:$nodeport"
+        apiurl="https://$domain:$nodeport/access"
+    else
+        dashboardurl="N/A"
+        apiurl="N/A"
+    fi
+fi
+
+nodeversion="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq -r '.appVersion')"
+if [ -z "$nodeversion" ]; then
+    nodeversion="N/A"
+fi
+healthy="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.isHealthy')"
+if [ -z "$healthy" ]; then
+    healthy="N/A"
+fi
+
+if [ "$autoupdate" = "true" ]; then
+    autoupdate=enabled
+else
+    autoupdate=disabled
+fi
+
+# Sync Check
+if [ "$checksync" = "true" ]; then
+    checksync=enabled
+else
+    checksync=disabled
+fi
+
+# Log Pruning
+if [ "$logpruning" = "true" ]; then
+    logpruning=enabled
+else
+    logpruning=disabled
+fi
+
+if [ "$watchdog" = "active" ]; then
+    wdstatus=enabled
+else
+    wdstatus=disabled
+fi
+if [ "$dbpruner" = "active" ]; then
+    dbpstatus=enabled
+else
+    dbpstatus=disabled
+fi
+
+# DB size
+if [ -d "$hornetdir/${network}db" ]; then
+    getcurrentdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
+    let getcurrentdbsizeingb=$getcurrentdbsize/1000000000
+    if [ "$getcurrentdbsizeingb" -le "0" ]; then
+        let getcurrentdbsizeinmb=$getcurrentdbsize/1000000
+        currentdbsize="$getcurrentdbsizeinmb MB"
+    else
+        currentdbsize="$getcurrentdbsizeingb GB"
+    fi
+else
+    currentdbsize="N/A"
+fi
+
+if [ -z "$pruningdt" ]; then
+    pruningdt="N/A"
+fi
+whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: v$nodeversion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentdbsize\n\nWatchdog: $wdstatus\nHornet-updater: $autoupdate\nSync-check: $checksync\nLast restart: $restartdt\n\nDBPruner: $dbpstatus\nLast pruning: $pruningdt\n\nDash-URL: $dashboardurl\nAPI-URL: $apiurl" 21 65

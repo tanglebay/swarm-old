@@ -9,12 +9,10 @@
 ```shell
 cd /var/lib && sudo git clone https://github.com/TangleBay/swarm.git && sudo chmod +x /var/lib/swarm/swarm
 ```
-2. Set aliases for run SWARM from every source
+2. Run one time SWARM this command and after first start/reboot you can use just `swarm`
 ```shell
-echo "alias swarm='sudo /var/lib/swarm/swarm'" >> ~/.bashrc && . ~/.bashrc
+sudo /var/lib/swarm/swarm
 ```
-3. Run SWARM: `swarm`
-4. With the first start it is necessary to edit the hornet config (will opened automatically) !!!
 
 
 # Install reverse proxy #
@@ -28,6 +26,6 @@ echo "alias swarm='sudo /var/lib/swarm/swarm'" >> ~/.bashrc && . ~/.bashrc
 **Your Dashboard address will be `https://yourdomain.com` and your API (Trinity) will be `https://yourdomain.com/access` (without API protection) or `https://yourdomain.com/auth`**
 
 
-# Support TANGLE BAY#
+# Support TANGLE BAY
 
 IOTA Address: `KKEMSVOKRVEOARTKSYFM9ZNFEDDQUFGTFATYGRF9RXKBJGTUMGMDVPSLSZF9TRQXSASYAFTFEUNCQCHZYTDOQAUGDW`

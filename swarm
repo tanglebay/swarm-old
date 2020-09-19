@@ -5,7 +5,7 @@
 ############################################################################################################################################################
 ############################################################################################################################################################
 
-version=0.1.1
+version=0.1.2
 
 ############################################################################################################################################################
 
@@ -13,21 +13,14 @@ source /var/lib/swarm/modules/variables
 
 ############################################################################################################################################################
 
+# Run module sudo check
+source $modules/sudoers
+
 # Remove old HLM version if exist
-if [ -d "/etc/hlm-cfgs" ] || [ -d "/var/lib/hornet-light-manager" ]; then
-    source $modules/hlmremover
-fi
+source $modules/hlmremover
 
-# Start pre-script stuff here
-function pause(){
-   read -p "$*"
-}
-
-# Check if script is running with root permissions
-if [ $(id -u) -ne 0 ]; then
-    whiptail --title "Welcome to SWARM! [v$version]" --msgbox "Please run SWARM with sudo or as root" 8 65
-    exit 0
-fi
+# Run module alias check
+source $modules/aliases
 
 # Run PACKAGE module
 source $modules/packages
@@ -38,12 +31,15 @@ source $modules/versions
 # Run GO module check
 source $modules/gochecker
 
+# Run module restart check
+source $modules/hostrestart
+
 # Start main script
 counter=0
 while [ $counter -lt 1 ]; do
     clear
     source $configs/hornet.cfg
-    source $configs/nginx.cfg
+    source $configs/proxy.cfg
     source $configs/swarm.cfg
 
     # Check if SWARM log exist
@@ -53,21 +49,8 @@ while [ $counter -lt 1 ]; do
         source $swarmlog
     fi
 
-    # Check if plugins are enabled and get latest stats
-    if [ -f "$swarmlog" ]; then
-        sudo crontab -l | grep -q $plugins/watchdog && watchdog=active || watchdog=inactive
-        if [ -f "$log/watchdog.log" ]; then
-            restartdt="$(cat $log/watchdog.log)"
-        else
-            restartdt=N/A
-        fi
-        sudo crontab -l | grep -q $plugins/dbpruner && dbpruner=active || dbpruner=inactive
-        if [ -f "$log/pruning.log" ]; then
-            pruningdt="$(cat $log/pruning.log)"
-        else
-            pruningdt=N/A
-        fi
-    fi
+    # Run module plugin status check
+    source $modules/pluginstatus
 
     ############################################################################################################################################################
 
@@ -87,526 +70,19 @@ while [ $counter -lt 1 ]; do
     case $CHOICE in
         "1)")
             # SWARM INFO
-            source $modules/swarminfo
+            source $modules/menu/swarminfo
         ;;
         "2)")
             # HORNET MENU
-            while [ $counter -lt 1 ]; do
-                clear
-                CHOICE=$(
-                    whiptail --title "Hornet Menu" --menu "\nChoose an option" 16 65 0 \
-                    "1)" "Simple Config Editor" \
-                    "2)" "Edit Hornet Configs" \
-                    "3)" "Hornet Service (start/stop)" \
-                    "4)" "Show latest node log" \
-                    "5)" "Reset database" \
-                    "6)" "Hornet Installer" 3>&2 2>&1 1>&3
-                )
-                exitstatus=$?
-                if [ "$exitstatus" = "1" ]; then
-                    counter=1
-                fi
-
-                case $CHOICE in
-                    "1)")
-                        # Edit simple config
-                        source $modules/currenteasycfg
-                        sudo nano $configs/hornet.cfg
-
-                        {
-                            echo 0
-                            source $configs/hornet.cfg
-                            echo 33
-                            # Run Hornet cfg checker
-                            source $modules/cfgchecker
-                            echo 66
-                            # CALL MODULE CONFIGPARSER
-                            if [ -f "/usr/bin/hornet" ]; then
-                                source $modules/configparser
-                            fi
-                            echo 100
-                            sleep 0.2
-                        }  | whiptail --gauge "Verify configuration..." 6 65 0
-
-                        # check if a restart is required
-                        if [ "$restart" = "true" ]; then
-                            if (whiptail --title "Hornet Menu" --yesno --defaultno "Hornet configuration changes detected!\nWould you like to restart hornet now?" 8 65); then
-                                {
-                                    echo 0
-                                    sleep 0.25
-                                    echo 66
-                                    sudo systemctl restart hornet
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
-                            fi
-                        fi
-                    ;;
-                    "2)")
-                        # Edit Hornet config
-                        CHOICE=$(
-                            whiptail --title "Hornet Menu" --menu "\nWhich config you want to edit" 16 65 0 \
-                            "1)" "Mainnet config" \
-                            "2)" "Comnet config" \
-                            "3)" "Devnet config" \
-                            "4)" "Peering config" \
-                            "5)" "Service config" 3>&2 2>&1 1>&3
-                        )
-
-                        case $CHOICE in
-                            "1)")
-                                sudo nano $hornetdir/config.json
-                                if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                                    {
-                                        echo 0
-                                        sleep 0.25
-                                        echo 66
-                                        sudo systemctl restart hornet
-                                        echo 100
-                                        sleep 0.25
-                                    } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
-                                fi
-                            ;;
-                            "2)")
-                                sudo nano $hornetdir/config_comnet.json
-                                if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                                    {
-                                        echo 0
-                                        sleep 0.25
-                                        echo 66
-                                        sudo systemctl restart hornet
-                                        echo 100
-                                        sleep 0.25
-                                    } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
-                                fi
-                            ;;
-                            "3)")
-                                sudo nano $hornetdir/config_devnet.json
-                                if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                                    {
-                                        echo 0
-                                        sleep 0.25
-                                        echo 66
-                                        sudo systemctl restart hornet
-                                        echo 100
-                                        sleep 0.25
-                                    } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
-                                fi
-                            ;;
-                            "4)")
-                                sudo nano $hornetdir/peering.json
-                                whiptail --title "Hornet Menu" --msgbox "New peering configuration loaded!" 8 65
-                            ;;
-                            "5)")
-                                sudo nano $hornetdir/config.json
-                                if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                                    {
-                                        echo 0
-                                        sleep 0.25
-                                        echo 66
-                                        sudo systemctl restart hornet
-                                        echo 100
-                                        sleep 0.25
-                                    } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
-                                fi
-                            ;;
-                        esac
-                    ;;
-                    "3)")
-                        # Control Hornet service
-                        CHOICE=$(
-                            whiptail --title "Hornet Menu" --menu "\nChoose your option" 16 65 0 \
-                            "1)" "Restart Hornet" \
-                            "2)" "Start Hornet" \
-                            "3)" "Stop Hornet" \
-                            "4)" "Status Hornet" 3>&2 2>&1 1>&3
-                        )
-
-                        case $CHOICE in
-                            "1)")
-                                {
-                                    echo 0
-                                    sleep 0.25
-                                    echo 66
-                                    sudo systemctl restart hornet
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
-                                whiptail --title "Hornet Menu" --msgbox "Hornet restart successfully" 8 65
-                            ;;
-                            "2)")
-                                {
-                                    echo 0
-                                    sleep 0.25
-                                    echo 66
-                                    sudo systemctl start hornet
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while starting Hornet..." 6 65 0
-                                whiptail --title "Hornet Menu" --msgbox "Hornet start successfully" 8 65
-                            ;;
-                            "3)")
-                                {
-                                    echo 0
-                                    sleep 0.25
-                                    echo 66
-                                    sudo systemctl stop hornet
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while stopping Hornet..." 6 65 0
-                                whiptail --title "Hornet Menu" --msgbox "Hornet stop successfully" 8 65
-                            ;;
-                            "4)")
-                                hornetstatus="$(sudo systemctl status hornet)"
-                                whiptail --title "Hornet Menu" --msgbox "$hornetstatus" 15 65
-                            ;;
-                        esac
-                    ;;
-                    "4)")
-                        # Display last 65 lines of log
-                        sudo journalctl -fu hornet | less -FRSXM
-                    ;;
-                    "5)")
-                        # Delete DB
-                        CHOICE=$(
-                            whiptail --title "Hornet Menu" --menu "\nChoose which databases you want to delete" 16 65 0 \
-                            "1)" "Mainnet Database" \
-                            "2)" "Comnet Database" \
-                            "3)" "Devnet Database" 3>&2 2>&1 1>&3
-                        )
-
-                        case $CHOICE in
-                            "1)")
-                                {
-                                    echo 0
-                                    sudo rm -rf $hornetdir/mainnetdb $hornetdir/snapshots/mainnet/export.bin
-                                    echo 66
-                                    sudo systemctl restart hornet
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while running cleanup..." 6 65 0
-                                whiptail --title "Hornet Menu" --msgbox "MainnetDB reset successfully" 8 65
-                            ;;
-                            "2)")
-                                {
-                                    echo 0
-                                    sudo rm -rf $hornetdir/comnetdb $hornetdir/snapshots/comnet/export.bin
-                                    echo 66
-                                    sudo systemctl restart hornet
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while running cleanup..." 6 65 0
-                                whiptail --title "Hornet Menu" --msgbox "ComnetDB reset successfully" 8 65
-                            ;;
-                            "3)")
-                                {
-                                    echo 0
-                                    sudo rm -rf $hornetdir/devnet $hornetdir/snapshots/devnet/export.bin
-                                    echo 66
-                                    sudo systemctl restart hornet
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while running cleanup..." 6 65 0
-                                whiptail --title "Hornet Menu" --msgbox "DevnetDB reset successfully" 8 65
-                            ;;
-                        esac
-                    ;;
-                    "6)")
-                        CHOICE=$(
-                            whiptail --title "Hornet Menu" --menu "\nChoose your option" 16 65 0 \
-                            "1)" "Update Hornet" \
-                            "2)" "Install Hornet" \
-                            "3)" "Remove Hornet" 3>&2 2>&1 1>&3
-                        )
-
-                        case $CHOICE in
-                            "1)")
-                                # Update HORNET
-                                source $modules/versions
-                                if [ "$nodeversion" != "HORNET $latesthornet" ]; then
-                                    {
-                                        echo 0
-                                        sudo apt update
-                                        echo 25
-                                        sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
-                                        echo 65
-                                        if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
-                                            sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
-                                            sudo rm -rf $hornetdir/config.json.dpkg*
-                                        fi
-                                        if [ -f "$hornetdir/config_comnet.json.dpkg-dist" ]; then
-                                            sudo cp -r $hornetdir/config_comnet.json.dpkg-dist $hornetdir/config_comnet.json
-                                            sudo rm -rf $hornetdir/config_comnet.json.dpkg*
-                                        fi
-                                        if [ -f "$hornetdir/config_devnet.json.dpkg-dist" ]; then
-                                            sudo cp -r $hornetdir/config_devnet.json.dpkg-dist $hornetdir/config_devnet.json
-                                            sudo rm -rf $hornetdir/config_devnet.json.dpkg*
-                                        fi
-                                        echo 75
-                                        newversion="$(hornet -v)"
-                                        if [ "$version" != "$newversion" ]; then
-                                        # CALL MODULE CONFIGPARSER
-                                            source $modules/configparser
-                                            sudo systemctl restart hornet
-                                        fi
-                                        echo 100
-                                    } | whiptail --gauge "Please wait while updating Hornet..." 6 65 0
-                                    whiptail --title "Hornet Menu" --msgbox "Hornet update successfully" 8 65
-                                else
-                                    whiptail --title "Hornet Menu" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
-                                fi
-                            ;;
-                            "2)")
-                                # INSTALL HORNET
-                                if [ ! -f "/usr/bin/hornet" ]; then
-                                    {
-                                        echo 0
-                                        source $configs/hornet.cfg
-                                        sudo snap install go --channel=1.15/stable --classic > /dev/null 2>&1
-                                        echo 10
-                                        sudo wget -qO - https://ppa.hornet.zone/pubkey.txt | sudo apt-key add - > /dev/null 2>&1
-                                        if [ "$release" = "stable" ]; then
-                                            sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
-                                        fi
-                                        if [ "$release" = "testing" ]; then
-                                            sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
-                                            sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
-                                            sudo sh -c 'echo "deb http://ppa.hornet.zone alpha main" >> /etc/apt/sources.list.d/hornet.list'
-                                        fi
-                                        echo 20
-                                        sudo apt -qq update > /dev/null 2>&1
-                                        echo 30
-                                        sudo apt -qq dist-upgrade -y > /dev/null 2>&1
-                                        echo 40
-                                        sudo apt -qq upgrade -y > /dev/null 2>&1
-                                        echo 50
-                                        sudo apt -qq install hornet -y > /dev/null 2>&1
-                                        echo 60
-                                        # Check which network
-                                        if [ "$network" = "mainnet" ]; then
-                                            echo "" > /etc/default/hornet
-                                            restart=true
-                                        fi
-                                        if [ "$network" = "comnet" ]; then
-                                            echo "OPTIONS=\"--config config_comnet --overwriteCooAddress\"" > /etc/default/hornet
-                                            restart=true
-                                        fi
-                                        if [ "$network" = "devnet" ]; then
-                                            echo "OPTIONS=\"--config config_devnet --overwriteCooAddress\"" > /etc/default/hornet
-                                            restart=true
-                                        fi
-                                        echo 70
-                                    } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
-                                    if [ -f "/usr/bin/hornet" ]; then
-                                        {
-                                            echo 70
-                                            # CALL MODULE CONFIGPARSER
-                                            source $modules/configparser
-                                            echo 80
-
-                                            check="$(systemctl show -p ActiveState --value hornet)"
-                                            if [ "$check" != "active" ]; then
-                                                sudo systemctl restart hornet
-                                                unset restart
-                                            fi
-                                            if [ "$restart" = "true" ]; then
-                                                sudo systemctl restart hornet
-                                                unset restart
-                                            fi
-                                            echo 100
-                                            sleep 0.2
-                                        } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
-                                        whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports in your home router for peering\n\nPorts: $autopeeringport/UDP\n$neighborport/tcp" 8 65
-                                    else
-                                        whiptail --title "Hornet Installer" --msgbox "Error while installing Hornet. Please check hornet.cfg and try again!" 8 65
-                                    fi
-                                else
-                                    whiptail --title "Hornet Installer" --msgbox "Hornet already installed. Please remove first!" 8 65
-                                fi
-                            ;;
-                            "3)")
-                                {
-                                    echo 0
-                                    sleep 0.25
-                                    ( crontab -l | grep -v -F "$croncmd" ) | crontab -
-                                    echo 25
-                                    sleep 0.25
-                                    ( crontab -l | grep -v -F "$dbpcroncmd" ) | crontab -
-                                    echo 65
-                                    sleep 0.25
-                                    sudo systemctl stop hornet
-                                    echo 75
-                                    sleep 0.25
-                                    sudo apt -qq purge hornet -y > /dev/null 2>&1
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while removing Hornet..." 6 65 0
-                                whiptail --title "Hornet Menu" --msgbox "Deleting Hornet successfully" 8 65
-                            ;;
-                        esac
-                        if [ "$restart" = "true" ]; then
-                            sudo systemctl restart hornet
-                        fi
-                        unset restart
-                    ;;
-                esac
-            done
-            counter=0
+            source $modules/menu/hornetmenu
         ;;
         "3)")
             # PROXY MENU
-            while [ $counter -lt 1 ]; do
-                clear
-                CHOICE=$(
-                    whiptail --title "Proxy Menu" --menu "\nChoose an option" 16 65 0 \
-                    "1)" "Edit Nginx.cfg" \
-                    "2)" "Edit auth users" \
-                    "3)" "Add new auth user" \
-                    "4)" "Deploy reverse proxy" \
-                    "5)" "Renew SSL Certificate" 3>&2 2>&1 1>&3
-                )
-                exitstatus=$?
-                if [ "$exitstatus" = "1" ]; then
-                    counter=1
-                fi
-
-                case $CHOICE in
-                    "1)")
-                        # Change nginx.cfg
-                        sudo nano $configs/nginx.cfg
-                        source $configs/nginx.cfg
-                    ;;
-                    "2)")
-                        # Edit auth user
-                        if [ -d "/etc/nginx" ]; then
-                            source $modules/edituserproxy
-                        else
-                            whiptail --title "Proxy Menu" --msgbox "Please install nginx first!" 8 65
-                        fi
-                    ;;
-                    "3)")
-                        # Add new auth user
-                        if [ -d "/etc/nginx" ]; then
-                            source $modules/adduserproxy
-                        else
-                            whiptail --title "Proxy Menu" --msgbox "Please install nginx first!" 8 65
-                        fi
-                    ;;
-                    "4)")
-                        # Run the nginx module for the proxy
-                        source $modules/nginx
-                    ;;
-                    "5)")
-                        # Manual renew certificate if installed
-                        if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
-                            sudo certbot renew
-                        else
-                            whiptail --title "Proxy Menu" --msgbox "Error! No SSL Certificate installed!" 8 65
-                        fi
-                    ;;
-                esac
-            done
-            counter=0
+            source $modules/menu/proxymenu
         ;;
         "4)")
             # SWARM Menu
-            while [ $counter -lt 1 ]; do
-                clear
-                CHOICE=$(
-                    whiptail --title "SWARM Menu" --menu "\nChoose an option" 16 65 0 \
-                    "1)" "Edit SWARM.cfg" \
-                    "2)" "Manage Watchdog" \
-                    "3)" "Manage DBPruner" \
-                    "4)" "Update SWARM" \
-                    "5)" "Dev-Mode" 3>&2 2>&1 1>&3
-                )
-                exitstatus=$?
-                if [ "$exitstatus" = "1" ]; then
-                    counter=1
-                fi
-
-                case $CHOICE in
-                    "1)")
-                        # Change SWARM.cfg
-                        sudo nano $configs/swarm.cfg
-                    ;;
-                    "2)")
-                        # Control WATCHDOG
-                        CHOICE=$(
-                            whiptail --title "Watchdog Menu" --menu "\nChoose an option" 16 65 0 \
-                            "1)" "Enable Watchdog" \
-                            "2)" "Disable Watchdog" 3>&2 2>&1 1>&3
-                        )
-
-                        case $CHOICE in
-                            "1)")
-                                sudo chmod +x $plugins/watchdog
-                                ( crontab -l | grep -v -F "$croncmd" ; echo "$cronjob" ) | crontab -
-                                whiptail --title "Watchdog" --msgbox "Watchdog successfully activated!" 8 65
-                            ;;
-                            "2)")
-                                ( crontab -l | grep -v -F "$croncmd" ) | crontab -
-                                whiptail --title "Watchdog" --msgbox "Watchdog successfully deactivated!" 8 65
-                            ;;
-                        esac
-                    ;;
-                    "3)")
-                        # Control DBPRUNER
-                        CHOICE=$(
-                            whiptail --title "DBPruner Menu" --menu "\nChoose an option" 16 65 0 \
-                            "1)" "Enable DBPruner" \
-                            "2)" "Disable DBPruner" 3>&2 2>&1 1>&3
-                        )
-
-                        case $CHOICE in
-                            "1)")
-                                sudo chmod +x $plugins/dbpruner
-                                ( crontab -l | grep -v -F "$dbpcroncmd" ; echo "$dbpcronjob" ) | crontab -
-                                whiptail --title "DBPruner" --msgbox "DBPruner successfully activated!" 8 65
-                            ;;
-                            "2)")
-                                ( crontab -l | grep -v -F "$dbpcroncmd" ) | crontab -
-                                whiptail --title "DBPruner" --msgbox "DBPruner successfully deactivated!" 8 65
-                            ;;
-                        esac
-                    ;;
-                    "4)")
-                        # Update SWARM
-                        if (whiptail --title "SWARM Menu" --yesno --defaultno "Are you sure you want to update SWARM?" 8 65); then
-                            ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
-                            ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
-                            sudo chmod +x $swarmdir/swarm $plugins/watchdog $plugins/dbpruner
-                            source $modules/updater
-                            whiptail --title "SWARM Menu" --msgbox "Update SWARM successfully" 8 65
-                            clear
-                            exit 0
-                        fi
-                    ;;
-                    "5)")
-                        inputbranch=$(whiptail --inputbox "In which branch you want so switch?" 8 39 master --title "SWARM Menu" 3>&1 1>&2 2>&3)
-                        exitstatus=$?
-                        if [ $exitstatus = 0 ]; then
-                            if [ "$inputbranch" = "master" ] || [ "$inputbranch" = "develop" ]; then
-                                # Check SWARM branch
-                                if [ "$branch" != "$inputbranch" ]; then
-                                    ( cd $swarmdir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
-                                    ( cd $swarmdir ; sudo git checkout $inputbranch ) > /dev/null 2>&1
-                                    ( cd $swarmdir ; sudo git pull ) > /dev/null 2>&1
-                                    branch=$inputbranch
-                                    sudo chmod +x $swarmdir/swarm $plugins/watchdog $plugins/dbpruner
-                                    source $modules/updater
-                                    whiptail --title "SWARM Menu" --msgbox "SWARM branch change detected! Exit SWARM..." 8 65
-                                    clear
-                                    exit 0
-                                fi
-                            else
-                                whiptail --title "SWARM Menu" --msgbox "No valid branch selected!" 8 65
-                            fi
-                        fi
-                    ;;
-                esac
-            done
-            counter=0
+            source $modules/menu/swarmmenu
         ;;
     esac
 done
