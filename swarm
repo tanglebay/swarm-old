@@ -5,7 +5,7 @@
 ############################################################################################################################################################
 ############################################################################################################################################################
 
-version=0.1.2
+version=0.1.3
 
 ############################################################################################################################################################
 
@@ -19,20 +19,27 @@ source $modules/sudoers
 # Remove old HLM version if exist
 source $modules/hlmremover
 
+# Run VERSION module
+source $modules/getversions
+
+# Run module swarm update
+source $modules/swarmupdate
+
 # Run module alias check
 source $modules/aliases
 
 # Run PACKAGE module
 source $modules/packages
 
-# Run VERSION module
-source $modules/versions
-
 # Run GO module check
 source $modules/gochecker
 
 # Run module restart check
 source $modules/hostrestart
+
+if [ -d "$swarmdir/log" ]; then
+    sudo rm -rf $swarmdir/log
+fi
 
 # Start main script
 counter=0
@@ -42,15 +49,13 @@ while [ $counter -lt 1 ]; do
     source $configs/proxy.cfg
     source $configs/swarm.cfg
 
-    # Check if SWARM log exist
-    if [ ! -f "$swarmlog" ]; then
-        source $modules/logcheck
-    else
-        source $swarmlog
-    fi
+    # Load logs
+    source $logs/swarm
+    source $logs/watchdog
+    source $logs/dbpruner
 
     # Run module plugin status check
-    source $modules/pluginstatus
+    #source $modules/pluginstatus
 
     ############################################################################################################################################################
 
