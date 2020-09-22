@@ -6,7 +6,7 @@ if [ "$checksync" = "true" ] && [ "$dbplock" = "false" ] && [ "$status" = "activ
     lsmi="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
     let dlmi="$lmi-$lsmi"
     if [ "$status" = "active" ] && [ "$dlmi" -gt "$maxlmi" ]; then
-        restartdt=`date '+%m/%d/%Y %H:%M:%S'`
+        restartdt=`date '+%d-%m-%Y %H-%M-%S'`
         sudo systemctl stop hornet
         if [ "$network" = "mainnet" ]; then
             sudo rm -rf $hornetdir/mainnetdb $hornetdir/snapshots/mainnet
@@ -19,6 +19,6 @@ if [ "$checksync" = "true" ] && [ "$dbplock" = "false" ] && [ "$status" = "activ
         fi
         sudo systemctl start hornet
         sudo sed -i 's/statuscounter=.*/statuscounter=0/' $logs/watchdog
-        sudo sed -i 's/restartdt=.*/restartdt=\"'$restartdt'\"/' $logs/watchdog
+        sudo sed -i "s,restartdt=.*,restartdt=\"$restartdt\"," $logs/watchdog
     fi
 fi
