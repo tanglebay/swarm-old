@@ -7,18 +7,22 @@ if [ "$status" != "active" ]; then
     if [ "$statuscounter" -ge "3" ]; then
         if [ "$network" = "mainnet" ]; then
             sudo rm -rf $hornetdir/mainnetdb $hornetdir/snapshots/mainnet
+            echo "$restartdt WACHTDOG - STATUSCHECK - Hornet DB deleted while counter reached" >> $logs/swarm.log
         fi
         if [ "$network" = "comnet" ]; then
             sudo rm -rf $hornetdir/comnetdb $hornetdir/snapshots/comnet
+            echo "$restartdt WACHTDOG - STATUSCHECK - Hornet DB deleted while counter reached" >> $logs/swarm.log
         fi
         if [ "$network" = "devnet" ]; then
             sudo rm -rf $hornetdir/devnetdb $hornetdir/snapshots/devnet
+            echo "$restartdt WACHTDOG - STATUSCHECK - Hornet DB deleted while counter reached" >> $logs/swarm.log
         fi
         statuscounter=0
     fi
     sudo systemctl restart hornet
     sudo sed -i 's/statuscounter=.*/statuscounter='$statuscounter'/' $logs/watchdog
     sudo sed -i "s,restartdt=.*,restartdt=\"$restartdt\"," $logs/watchdog
+    echo "$restartdt WACHTDOG - STATUSCHECK - Hornet restartet while service not active" >> $logs/swarm.log
 else
     if [ "$statuscounter" -gt "0" ]; then
         let statuscounter=$statuscounter-1
