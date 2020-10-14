@@ -191,58 +191,66 @@ while [ $counter -lt 1 ]; do
                 ;;
                 "2)")
                     # INSTALL GoShimmer
-                    if [ ! -f "/usr/bin/hornet" ] && [ ! -f "$goshimmerdir/goshimmer" ] && [ "$node" = "goshimmer" ]; then
-                    source $configs/goshimmer.cfg
-                        {
-                            ( crontab -l | grep -v -F "$dbpcroncmd" ) | crontab -
-                            echo 0
-                            echo 10
-                            source $configs/goshimmer.cfg
-                            sudo snap install go --channel=$go --classic > /dev/null 2>&1
-                            sudo apt -qq update > /dev/null 2>&1 && sudo apt -qq install build-essential -y > /dev/null 2>&1
-                            echo 20
-                            sleep 0.2
-                            sudo useradd -s /bin/bash -M goshimmer > /dev/null 2>&1
-                            cd /var/lib
-                            echo 30
-                            sleep 0.2
-                            sudo git clone https://github.com/iotaledger/goshimmer.git > /dev/null 2>&1
-                            echo 40
-                            sleep 0.2
-                            sudo cp -r $goshimmerdir/config.default.json $goshimmerdir/config.json
-                            echo 50
-                            sleep 0.2
-                            if [ ! -z "$gsautopeeringport" ]; then
-                                sudo jq '.autopeering.port = '$gsautopeeringport'' $goshimmerdir/config.json|sponge $goshimmerdir/config.json
+                    if [ ! -f "/usr/bin/hornet" ]; then
+                        if [ ! -f "$goshimmerdir/goshimmer" ]; then
+                            if [ "$node" = "goshimmer" ]; then
+                                source $configs/goshimmer.cfg
+                                {
+                                    ( crontab -l | grep -v -F "$dbpcroncmd" ) | crontab -
+                                    echo 0
+                                    echo 10
+                                    source $configs/goshimmer.cfg
+                                    sudo snap install go --channel=$go --classic > /dev/null 2>&1
+                                    sudo apt -qq update > /dev/null 2>&1 && sudo apt -qq install build-essential -y > /dev/null 2>&1
+                                    echo 20
+                                    sleep 0.2
+                                    sudo useradd -s /bin/bash -M goshimmer > /dev/null 2>&1
+                                    cd /var/lib
+                                    echo 30
+                                    sleep 0.2
+                                    sudo git clone https://github.com/iotaledger/goshimmer.git > /dev/null 2>&1
+                                    echo 40
+                                    sleep 0.2
+                                    sudo cp -r $goshimmerdir/config.default.json $goshimmerdir/config.json
+                                    echo 50
+                                    sleep 0.2
+                                    if [ ! -z "$gsautopeeringport" ]; then
+                                        sudo jq '.autopeering.port = '$gsautopeeringport'' $goshimmerdir/config.json|sponge $goshimmerdir/config.json
+                                    fi
+                                    if [ ! -z "$gsgossipport" ]; then
+                                        sudo jq '.gossip.port = '$gsgossipport'' $goshimmerdir/config.json|sponge $goshimmerdir/config.json
+                                    fi
+                                    echo 60
+                                    sleep 0.2
+                                    cd $goshimmerdir
+                                    sudo go build -o goshimmer > /dev/null 2>&1
+                                    sudo chown -R goshimmer:goshimmer $goshimmerdir
+                                    echo 70
+                                    sleep 0.2
+                                    cp -r $templates/goshimmer.service /lib/systemd/system/goshimmer.service
+                                    echo 80
+                                    sleep 0.2
+                                    sudo systemctl daemon-reload
+                                    sudo systemctl enable goshimmer
+                                    echo 90
+                                    sleep 0.2
+                                    sudo systemctl start goshimmer
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while installing GoShimmer..." 6 65 0
+                                if [ -f "$goshimmerdir/goshimmer" ]; then
+                                    whiptail --title "GoShimmer Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports in your home router for peering\n\nPorts: $gsautopeeringport/UDP\n$gsgossipport/tcp" 8 65
+                                else
+                                    whiptail --title "GoShimmer Installer" --msgbox "Error while installing GoShimmer, please try again!" 8 65
+                                fi
+                            else
+                                whiptail --title "GoShimmer Installer" --msgbox "GoShimmer is not defined in SWARM.cfg!" 8 65
                             fi
-                            if [ ! -z "$gsgossipport" ]; then
-                                sudo jq '.gossip.port = '$gsgossipport'' $goshimmerdir/config.json|sponge $goshimmerdir/config.json
-                            fi
-                            echo 60
-                            sleep 0.2
-                            cd $goshimmerdir
-                            sudo go build -o goshimmer > /dev/null 2>&1
-                            sudo chown -R goshimmer:goshimmer $goshimmerdir
-                            echo 70
-                            sleep 0.2
-                            cp -r $templates/goshimmer.service /lib/systemd/system/goshimmer.service
-                            echo 80
-                            sleep 0.2
-                            sudo systemctl daemon-reload
-                            sudo systemctl enable goshimmer
-                            echo 90
-                            sleep 0.2
-                            sudo systemctl start goshimmer
-                            echo 100
-                            sleep 0.25
-                        } | whiptail --gauge "Please wait while installing GoShimmer..." 6 65 0
-                        if [ -f "$goshimmerdir/goshimmer" ]; then
-                            whiptail --title "GoShimmer Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports in your home router for peering\n\nPorts: $gsautopeeringport/UDP\n$gsgossipport/tcp" 8 65
                         else
-                            whiptail --title "GoShimmer Installer" --msgbox "Error while installing GoShimmer, please try again!" 8 65
+                            whiptail --title "GoShimmer Installer" --msgbox "GoShimmer is already installed!" 8 65
                         fi
                     else
-                        whiptail --title "GoShimmer Installer" --msgbox "GoShimmer or Hornet already installed. Please remove first!" 8 65
+                        whiptail --title "GoShimmer Installer" --msgbox "Hornet is currently installed, please remove first!" 8 65
                     fi
                 ;;
                 "3)")
