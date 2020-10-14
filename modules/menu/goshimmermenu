@@ -159,18 +159,13 @@ while [ $counter -lt 1 ]; do
                         source $configs/goshimmer.cfg
                         {
                             echo 0
-                            echo 10
-                            sleep 0.2
-                            sudo systemctl stop goshimmer
                             echo 20
                             sleep 0.2
-                            sudo mkdir -p $goshimmerdir
-                            sudo rm -rf $goshimmerdir
-                            echo 30
+                            sudo rm -rf $goshimmerdir/goshimmer
+                            sudo -u goshimmer git pull > /dev/null 2>&1
+                            echo 40
                             sleep 0.2
-                            lateststable="$(curl -s https://api.github.com/repos/iotaledger/goshimmer/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
-                            lateststable="${lateststable#?}"
-                            sudo wget -q -c https://github.com/iotaledger/goshimmer/releases/download/v$lateststable/goshimmer-${lateststable}_Linux_x86_64.tar.gz -O - | sudo tar -xz -C $goshimmerdir > /dev/null 2>&1
+                            sudo cp -r $goshimmerdir/config.default.json $goshimmerdir/config.json > /dev/null 2>&1
                             echo 60
                             sleep 0.2
                             if [ ! -z "$gsautopeeringport" ]; then
@@ -179,11 +174,11 @@ while [ $counter -lt 1 ]; do
                             if [ ! -z "$gsgossipport" ]; then
                                 sudo jq '.gossip.port = '$gsgossipport'' $goshimmerdir/config.json|sponge $goshimmerdir/config.json > /dev/null 2>&1
                             fi
-                            echo 70
+                            echo 80
                             sleep 0.2
+                            (cd $goshimmerdir; go build -o goshimmer > /dev/null 2>&1)
                             sudo chown -R goshimmer:goshimmer $goshimmerdir > /dev/null 2>&1
-                            echo 85
-                            sleep 0.2
+                            sudo rm -rf mainnetdb > /dev/null 2>&1
                             sudo systemctl restart goshimmer > /dev/null 2>&1
                             echo 100
                             sleep 0.25
@@ -205,17 +200,16 @@ while [ $counter -lt 1 ]; do
                                     echo 10
                                     source $configs/goshimmer.cfg
                                     sudo snap install go --channel=$go --classic > /dev/null 2>&1
+                                    sudo apt -qq update > /dev/null 2>&1 && sudo apt -qq install build-essential -y > /dev/null 2>&1
                                     echo 20
                                     sleep 0.2
                                     sudo useradd -s /bin/bash -M goshimmer > /dev/null 2>&1
                                     echo 30
                                     sleep 0.2
-                                    sudo mkdir -p $goshimmerdir
+                                    sudo git clone https://github.com/iotaledger/goshimmer.git /var/lib/goshimmer -q
                                     echo 40
                                     sleep 0.2
-                                    lateststable="$(curl -s https://api.github.com/repos/iotaledger/goshimmer/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
-                                    lateststable="${lateststable#?}"
-                                    sudo wget -q -c https://github.com/iotaledger/goshimmer/releases/download/v$lateststable/goshimmer-${lateststable}_Linux_x86_64.tar.gz -O - | sudo tar -xz -C $goshimmerdir > /dev/null 2>&1
+                                    sudo cp -r $goshimmerdir/config.default.json $goshimmerdir/config.json
                                     echo 50
                                     sleep 0.2
                                     if [ ! -z "$gsautopeeringport" ]; then
@@ -226,6 +220,7 @@ while [ $counter -lt 1 ]; do
                                     fi
                                     echo 60
                                     sleep 0.2
+                                    (cd $goshimmerdir; go build -o goshimmer > /dev/null 2>&1)
                                     sudo chown -R goshimmer:goshimmer $goshimmerdir
                                     echo 70
                                     sleep 0.2
