@@ -127,11 +127,15 @@ while [ $counter -lt 1 ]; do
                         {
                             echo 0
                             cd $goshimmerdir
-                            echo 25
-                            sudo -u goshimmer git pull
-                            echo 65
+                            echo 20
+                            sudo -u goshimmer git pull > /dev/null 2>&1
+                            echo 40
                             sudo -u goshimmer cp config.default.json config.json
-                            echo 75
+                            echo 60
+                            sudo jq '.autopeering.port = '$gsautopeeringport'' $goshimmerdir/config.json|sponge $goshimmerdir/config.json
+                            sudo jq '.gossip.port = '$gsgossipport'' $goshimmerdir/config.json|sponge $goshimmerdir/config.json
+                            echo 80
+                            sudo -u goshimmer go build -o goshimmer
                             sudo rm -rf mainnetdb
                             sudo systemctl restart goshimmer
                             echo 100
@@ -143,7 +147,7 @@ while [ $counter -lt 1 ]; do
                 ;;
                 "2)")
                     # INSTALL GoShimmer
-                    if [ ! -f "/usr/bin/hornet" ] && [ ! -f "$goshimmerdir/goshimmer" ]; then
+                    if [ ! -f "/usr/bin/hornet" ] && [ ! -f "$goshimmerdir/goshimmer" ] && [ "$node" = "goshimmer" ]; then
                         {
                             ( crontab -l | grep -v -F "$dbpcroncmd" ) | crontab -
                             echo 0
@@ -154,10 +158,13 @@ while [ $counter -lt 1 ]; do
                             cd /var/lib
                             echo 20
                             sudo git clone https://github.com/iotaledger/goshimmer.git
-                            echo 30
                             sudo chown -R $goshimmerdir
-                            echo 40
+                            echo 30
                             cd $goshimmerdir
+                            sudo cp -r $goshimmerdir/config.default.json $goshimmerdir/config.json
+                            echo 40
+                            sudo jq '.autopeering.port = '$gsautopeeringport'' $goshimmerdir/config.json|sponge $goshimmerdir/config.json
+                            sudo jq '.gossip.port = '$gsgossipport'' $goshimmerdir/config.json|sponge $goshimmerdir/config.json
                             echo 50
                             sudo -u goshimmer go build -o goshimmer
                             echo 60
@@ -172,7 +179,7 @@ while [ $counter -lt 1 ]; do
                             sleep 0.25
                         } | whiptail --gauge "Please wait while installing GoShimmer..." 6 65 0
                         if [ -f "$goshimmerdir/goshimmer" ]; then
-                            whiptail --title "GoShimmer Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports in your home router for peering\n\nPorts: $autopeeringport/UDP\n$gossipport/tcp" 8 65
+                            whiptail --title "GoShimmer Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports in your home router for peering\n\nPorts: $gsautopeeringport/UDP\n$gsgossipport/tcp" 8 65
                         else
                             whiptail --title "GoShimmer Installer" --msgbox "Error while installing GoShimmer, please try again!" 8 65
                         fi
@@ -181,29 +188,33 @@ while [ $counter -lt 1 ]; do
                     fi
                 ;;
                 "3)")
-                    {
-                        echo 0
-                        sleep 0.25
-                        ( crontab -l | grep -v -F "$croncmd" ) | crontab -
-                        echo 25
-                        sleep 0.2
-                        sudo systemctl stop goshimmer
-                        echo 35
-                        sleep 0.2
-                        sudo systemctl disable goshimmer
-                        echo 50
-                        sleep 0.2
-                        sudo rm -rf /lib/systemd/system/goshimmer.service
-                        echo 65
-                        sleep 0.25
-                        sudo rm -rf $goshimmerdir
-                        echo 75
-                        sudo deluser goshimmer
-                        sleep 0.25
-                        echo 100
-                        sleep 0.25
-                    } | whiptail --gauge "Please wait while removing GoShimmer..." 6 65 0
-                    whiptail --title "GoShimmer Menu" --msgbox "Deleting GoShimmer successfully" 8 65
+                    if [ -d "$goshimmerdir" ]; then
+                        {
+                            echo 0
+                            sleep 0.25
+                            ( crontab -l | grep -v -F "$croncmd" ) | crontab -
+                            echo 25
+                            sleep 0.2
+                            sudo systemctl stop goshimmer
+                            echo 35
+                            sleep 0.2
+                            sudo systemctl disable goshimmer
+                            echo 50
+                            sleep 0.2
+                            sudo rm -rf /lib/systemd/system/goshimmer.service
+                            echo 65
+                            sleep 0.25
+                            sudo rm -rf $goshimmerdir
+                            echo 75
+                            sudo deluser goshimmer
+                            sleep 0.25
+                            echo 100
+                            sleep 0.25
+                        } | whiptail --gauge "Please wait while removing GoShimmer..." 6 65 0
+                        whiptail --title "GoShimmer Menu" --msgbox "Deleting GoShimmer successfully" 8 65
+                    else
+                        whiptail --title "GoShimmer Menu" --msgbox "Error! GoShimmer is not installed on the server!" 8 65
+                    fi
                 ;;
             esac
         ;;
