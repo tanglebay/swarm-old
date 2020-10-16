@@ -1,4 +1,5 @@
 #!/bin/bash
+status="$(systemctl show -p ActiveState --value $node)"
 
 if [ "$apiprotection" = "true" ]; then
     if [ "$nodeport" = "443" ]; then
@@ -22,29 +23,35 @@ else if [ "$apiprotection" = "false" ]; then
     fi
 fi
 
-nodeversion="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq -r '.appVersion')"
-if [ -z "$nodeversion" ]; then
-    nodeversion="N/A"
-fi
-healthy="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.isHealthy')"
-if [ -z "$healthy" ]; then
-    healthy="N/A"
+if [ "$node" = "hornet" ]; then
+    nodeversion="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq -r '.appVersion')"
+    if [ -z "$nodeversion" ]; then
+        nodeversion="N/A"
+    fi
+    healthy="$(curl -s http://127.0.0.1:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.isHealthy')"
+    if [ -z "$healthy" ]; then
+        healthy="N/A"
+    fi
+
+    if [ "$autoupdate" = "true" ]; then
+        autoupdatevalue=enabled
+    else
+        autoupdatevalue=disabled
+    fi
+
+    # Sync Check
+    if [ "$checksync" = "true" ]; then
+        checksyncvalue=enabled
+    else
+        checksyncvalue=disabled
+    fi
+
+    if [ -z "$pruningdt" ]; then
+        pruningdt="N/A"
+    fi
 fi
 
-if [ "$autoupdate" = "true" ]; then
-    autoupdatevalue=enabled
-else
-    autoupdatevalue=disabled
-fi
-
-# Sync Check
-if [ "$checksync" = "true" ]; then
-    checksyncvalue=enabled
-else
-    checksyncvalue=disabled
-fi
-
-# Sync Check
+# Proxy Check
 if [ "$proxycheck" = "true" ]; then
     proxycheckvalue=enabled
 else
@@ -63,7 +70,7 @@ else
 fi
 
 # DB size
-if [ -d "$hornetdir/${network}db" ]; then
+if [ -d "$hornetdir/${network}db" ] && [ "$node" = "hornet" ]; then
     getcurrentdbsize="$(du -sb $hornetdir/${network}db/tangle.db | cut -f1)"
     let getcurrentdbsizeingb=$getcurrentdbsize/1000000000
     if [ "$getcurrentdbsizeingb" -le "0" ]; then
@@ -72,11 +79,24 @@ if [ -d "$hornetdir/${network}db" ]; then
     else
         currentdbsize="$getcurrentdbsizeingb GB"
     fi
-else
-    currentdbsize="N/A"
+else if [ -d "$goshimmerdir/mainnetdb" ] && [ "$node" = "goshimmer" ]; then
+        getcurrentdbsize="$(du -sb $goshimmerdir/${network}db | cut -f1)"
+        let getcurrentdbsizeingb=$getcurrentdbsize/1000000000
+        if [ "$getcurrentdbsizeingb" -le "0" ]; then
+            let getcurrentdbsizeinmb=$getcurrentdbsize/1000000
+            currentdbsize="$getcurrentdbsizeinmb MB"
+        else
+            currentdbsize="$getcurrentdbsizeingb GB"
+        fi
+    else
+        currentdbsize="N/A"
+    fi
 fi
 
-if [ -z "$pruningdt" ]; then
-    pruningdt="N/A"
+# OUTPUT
+if [ "$node" = "hornet" ]; then
+    whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: v$nodeversion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentdbsize\n\nWatchdog: $watchdog\nAuto-updater: $autoupdatevalue\nSync-check: $checksyncvalue\nProxy-check: $proxycheckvalue\nLogpruning: $logpruning\nLast restart: $restartdt\n\nDBPruner: $dbpruner\nLast pruning: $pruningdt\n\nDash-URL: $dashboardurl\nAPI-URL: $apiurl" 23 65
 fi
-whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: v$nodeversion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentdbsize\n\nWatchdog: $watchdog\nAuto-updater: $autoupdatevalue\nSync-check: $checksyncvalue\nProxy-check: $proxycheckvalue\nLogpruning: $logpruning\nLast restart: $restartdt\n\nDBPruner: $dbpruner\nLast pruning: $pruningdt\n\nDash-URL: $dashboardurl\nAPI-URL: $apiurl" 23 65
+if [ "$node" = "goshimmer" ]; then
+    whiptail --title "SWARM Info [v$version]" --msgbox "GoShimmer: $status\nDB size: $currentdbsize\n\nWatchdog: $watchdog\nProxy-check: $proxycheckvalue\nLogpruning: $logpruning\nLast restart: $restartdt\n\nDash-URL: $dashboardurl\nAPI-URL: $apiurl" 23 65
+fi
