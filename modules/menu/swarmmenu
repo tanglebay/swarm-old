@@ -59,10 +59,16 @@ while [ $counter -lt 1 ]; do
                     case $CHOICE in
                         "1)")
                             if [ "$node" = "hornet" ]; then
-                                sudo chmod +x $plugins/dbpruner
-                                ( crontab -l | grep -v -F "$dbpcroncmd" ; echo "$dbpcronjob" ) | crontab -
-                                sudo sed -i 's/dbpruner=.*/dbpruner=enabled/' $logs/dbpruner
-                                whiptail --title "DBPruner" --msgbox "DBPruner successfully activated!" 8 65
+                                if [ ! -z "$maxdbsize" ]; then
+                                    sudo chmod +x $plugins/dbpruner
+                                    ( crontab -l | grep -v -F "$dbpcroncmd" ; echo "$dbpcronjob" ) | crontab -
+                                    sudo sed -i 's/dbpruner=.*/dbpruner=enabled/' $logs/dbpruner
+                                    whiptail --title "DBPruner" --msgbox "DBPruner successfully activated!" 8 65
+                                else
+                                    maxdbsize=$(whiptail --inputbox "Please define the size in MB and try again:" 8 65 --title "DBPruner Menu" 3>&1 1>&2 2>&3)
+                                    sudo sed -i 's/maxdbsize=.*/maxdbsize='$maxdbsize'/' $configs/swarm.cfg
+                                    source $configs/swarm.cfg
+                                fi
                             else
                                 whiptail --title "DBPruner" --msgbox "DBPruner only available for Hornet!" 8 65
                             fi
