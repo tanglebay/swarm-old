@@ -12,3 +12,17 @@ else
     whiptail --title "Welcome to SWARM! [v$version]" --msgbox "Error. 32Bit system detected! Please only use a 64bit OS." 8 65
     exit 0
 fi
+
+# STARTUP UPDATE CHECK
+source $configs/swarm.cfg
+source $logs/swarm
+latestswarm="$(curl -s https://api.github.com/repos/TangleBay/swarm/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
+if [ "$updatenotifier" = "true" ] && [ "$branch" != "develop" ]; then
+    if [ ! -z "$latestswarm" ]; then
+        if [ "$version" != "$latestswarm" ]; then
+            if (whiptail --title "Welcome to SWARM! [v$version]" --yesno "A new version of SWARM (v$latestswarm) is available!\n\nDo you want to update SWARM now?" 10 65); then
+                source $modules/swarmupdater
+            fi
+        fi
+    fi
+fi
