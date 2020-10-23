@@ -1,12 +1,13 @@
 #!/bin/bash
-if [ -f "$goshimmerdir/goshimmer" ]; then
+if [ -d "$goshimmerdir" ]; then
     source $configs/goshimmer.cfg
     {
         echo 0
+        sudo systemctl stop goshimmer
         echo 20
         sleep 0.2
         sudo rm -rf $goshimmerdir/goshimmer
-        sudo -u goshimmer git pull > /dev/null 2>&1
+        (cd $goshimmerdir;sudo -u goshimmer git pull > /dev/null 2>&1)
         echo 40
         sleep 0.2
         sudo cp -r $goshimmerdir/config.default.json $goshimmerdir/config.json > /dev/null 2>&1
@@ -20,10 +21,10 @@ if [ -f "$goshimmerdir/goshimmer" ]; then
         fi
         echo 80
         sleep 0.2
-        (cd $goshimmerdir; go build -o goshimmer > /dev/null 2>&1)
+        (cd $goshimmerdir;sudo go build -o goshimmer > /dev/null 2>&1)
         sudo chown -R goshimmer:goshimmer $goshimmerdir > /dev/null 2>&1
         sudo rm -rf mainnetdb > /dev/null 2>&1
-        sudo systemctl restart goshimmer > /dev/null 2>&1
+        sudo systemctl start goshimmer > /dev/null 2>&1
         echo 100
         sleep 0.25
     } | whiptail --gauge "Please wait while updating GoShimmer..." 6 65 0
