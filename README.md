@@ -7,14 +7,14 @@
 
 1. First you should clone the repo
 ```shell
-cd /var/lib && sudo git clone https://github.com/TangleBay/swarm.git && sudo chmod +x /var/lib/swarm/swarm
+sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm && sudo chmod +x /var/lib/swarm/swarm
 ```
 2. Add an alias for the current user
 ```shell
 echo "alias swarm='sudo /var/lib/swarm/swarm'" >> ~/.bashrc && . ~/.bashrc
 ```
 3. Run one time SWARM this command and after first start/reboot you can use just `swarm`
-4. With the first start it is necessary to edit the configs!!!
+
 
 
 # Install reverse proxy #
@@ -28,6 +28,6 @@ echo "alias swarm='sudo /var/lib/swarm/swarm'" >> ~/.bashrc && . ~/.bashrc
 **Your Dashboard address will be `https://yourdomain.com` and your API (Trinity) will be `https://yourdomain.com/access` (without API protection) or `https://yourdomain.com/auth`**
 
 
-# Support TANGLE BAY
+# Support
 
-IOTA Address: `KKEMSVOKRVEOARTKSYFM9ZNFEDDQUFGTFATYGRF9RXKBJGTUMGMDVPSLSZF9TRQXSASYAFTFEUNCQCHZYTDOQAUGDW`
+IOTA Address: `EFFYDHD9UMJJEOHHJKUGFQ9BLFTYVEBMIMELQDHZ9WKHPWHOBY9DVZDRELYAZAIIVIBZZETYUBGGZTUJAHXJWEKFWB`
