@@ -217,52 +217,48 @@ while [ $counter -lt 1 ]; do
             case $CHOICE in
                 "1)")
                     # Update HORNET
-                    if [ "$node" = "hornet" ]; then
-                        source $modules/getversions
-                        if [ "$nodeversion" != "HORNET $latesthornet" ]; then
-                            {
-                                echo 0
-                                sudo apt update
-                                echo 25
-                                sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
-                                echo 65
-                                if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
-                                    sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
-                                    sudo rm -rf $hornetdir/config.json.dpkg*
-                                fi
-                                if [ -f "$hornetdir/config_comnet.json.dpkg-dist" ]; then
-                                    sudo cp -r $hornetdir/config_comnet.json.dpkg-dist $hornetdir/config_comnet.json
-                                    sudo rm -rf $hornetdir/config_comnet.json.dpkg*
-                                fi
-                                if [ -f "$hornetdir/config_devnet.json.dpkg-dist" ]; then
-                                    sudo cp -r $hornetdir/config_devnet.json.dpkg-dist $hornetdir/config_devnet.json
-                                    sudo rm -rf $hornetdir/config_devnet.json.dpkg*
-                                fi
-                                echo 75
-                                newversion="$(hornet -v)"
-                                if [ "$version" != "$newversion" ]; then
-                                # CALL MODULE CONFIGPARSER
-                                    source $modules/configparser
-                                    sudo systemctl restart hornet
-                                fi
-                                echo 100
-                            } | whiptail --gauge "Please wait while updating Hornet..." 6 65 0
-                            whiptail --title "Hornet Menu" --msgbox "Hornet update successfully" 8 65
-                        else
-                            whiptail --title "Hornet Menu" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
-                        fi
+                    source $modules/getversions
+                    if [ "$nodeversion" != "HORNET $latesthornet" ]; then
+                        {
+                            echo 0
+                            sudo apt update
+                            echo 25
+                            sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
+                            echo 65
+                            if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
+                                sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
+                                sudo rm -rf $hornetdir/config.json.dpkg*
+                            fi
+                            if [ -f "$hornetdir/config_comnet.json.dpkg-dist" ]; then
+                                sudo cp -r $hornetdir/config_comnet.json.dpkg-dist $hornetdir/config_comnet.json
+                                sudo rm -rf $hornetdir/config_comnet.json.dpkg*
+                            fi
+                            if [ -f "$hornetdir/config_devnet.json.dpkg-dist" ]; then
+                                sudo cp -r $hornetdir/config_devnet.json.dpkg-dist $hornetdir/config_devnet.json
+                                sudo rm -rf $hornetdir/config_devnet.json.dpkg*
+                            fi
+                            echo 75
+                            newversion="$(hornet -v)"
+                            if [ "$version" != "$newversion" ]; then
+                            # CALL MODULE CONFIGPARSER
+                                source $modules/configparser
+                                sudo systemctl restart hornet
+                            fi
+                            echo 100
+                        } | whiptail --gauge "Please wait while updating Hornet..." 6 65 0
+                        whiptail --title "Hornet Menu" --msgbox "Hornet update successfully" 8 65
                     else
-                        whiptail --title "Hornet Menu" --msgbox "Please change your node to hornet in SWARM.cfg before continue!" 8 65
+                        whiptail --title "Hornet Menu" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
                     fi
                 ;;
                 "2)")
                     # INSTALL HORNET
-                    if [ ! -f "/usr/bin/hornet/hornet" ] && [ "$node" = "hornet" ]; then
+                    if [ ! -f "/usr/bin/hornet/hornet" ]; then
                         {
                             echo 0
                             echo 5
                             source $configs/hornet.cfg
-                            sudo snap install go --channel=1.15/stable --classic > /dev/null 2>&1
+                            sudo snap install go --classic > /dev/null 2>&1
                             echo 10
                             sudo wget -qO - https://ppa.hornet.zone/pubkey.txt | sudo apt-key add - > /dev/null 2>&1
                             if [ "$release" = "stable" ]; then
