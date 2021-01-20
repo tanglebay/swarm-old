@@ -1,0 +1,17 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetconfigs <<< "$hornetconfigs"
+
+for hornetconfig in "${ARRAYhornetconfigs[@]}"
+do
+    parser="$(jq '.httpAPI.permitRemoteAccess | contains(["attachToTangle"])' $hornetdir/$hornetconfig.json)"
+    if [ "$pow" = "true" ] && [ "$parser" = false ]; then
+        sudo jq '.httpAPI.permitRemoteAccess |= .+ ["attachToTangle"]' $hornetdir/$hornetconfig.json|sponge $hornetdir/$hornetconfig.json
+    fi
+    if [ "$pow" = "false" ] && [ "$parser" = true ]; then
+         sudo jq '.httpAPI.permitRemoteAccess |= .- ["attachToTangle"]' $hornetdir/$hornetconfig.json|sponge $hornetdir/$hornetconfig.json
+    fi
+done
+
+unset ARRAYhornetconfigs
+unset hornetconfig

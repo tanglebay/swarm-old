@@ -1,0 +1,17 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetconfigs <<< "$hornetconfigs"
+IFS=', ' read -r -a ARRAYenableplugins <<< "$enableplugins"
+
+for hornetconfig in "${ARRAYhornetconfigs[@]}"
+do
+    sudo jq '.node.enablePlugins |= []' $hornetdir/$hornetconfig.json|sponge $hornetdir/$hornetconfig.json
+    for enableplugin in "${ARRAYenableplugins[@]}"
+    do
+        sudo jq '.node.enablePlugins |= .+ ["'$enableplugin'"]' $hornetdir/$hornetconfig.json|sponge $hornetdir/$hornetconfig.json
+    done
+done
+unset ARRAYhornetconfigs
+unset ARRAYenableplugins
+unset hornetconfig
+unset enableplugin
