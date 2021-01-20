@@ -1,0 +1,11 @@
+IFS=', ' read -r -a hornetconfig <<< "$hornetconfigs"
+IFS=', ' read -r -a disabledplugins <<< "$disableplugins"
+
+for config in "${hornetconfig[@]}"
+do
+    sudo jq '.node.disablePlugins |= []' $hornetdir/$config.json|sponge $hornetdir/$config.json
+    for plugin in "${disabledplugins[@]}"
+    do
+        sudo jq '.node.disablePlugins |= .+ ["'$plugin'"]' $hornetdir/$config.json|sponge $hornetdir/$config.json
+    done
+done
