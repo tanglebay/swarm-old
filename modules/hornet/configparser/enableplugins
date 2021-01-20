@@ -1,16 +1,16 @@
 #!/bin/bash
 
-if [ ! -z "$enableplugins" ]; then
-    IFS=', ' read -r -a hornetconf <<< "$hornetconfigs"
-    IFS=', ' read -r -a enabledplugins <<< "$enableplugins"
-    for config in "${hornetconf[@]}"
+IFS=', ' read -r -a hornetconfig <<< "$hornetconfigs"
+IFS=', ' read -r -a enabledplugins <<< "$enableplugins"
+
+for config in "${hornetconfig[@]}"
+do
+    sudo jq '.node.enablePlugins |= []' $hornetdir/$config.json|sponge $hornetdir/$config.json
+    for plugin in "${enabledplugins[@]}"
     do
-        for plugin in "${enabledplugins[@]}"
-        do
-            parser="$(jq '.node.enablePlugins | contains(["'$plugin'"])' $hornetdir/$config.json)"
-            if [ "$parser" = false ]; then
-                sudo jq '.node.enablePlugins |= .+ ["'$plugin'"]' $hornetdir/$config.json|sponge $hornetdir/$config.json
-            fi
-        done
+        parser="$(jq '.node.enablePlugins | contains(["'$plugin'"])' $hornetdir/$config.json)"
+        if [ "$parser" = false ]; then
+            sudo jq '.node.enablePlugins |= .+ ["'$plugin'"]' $hornetdir/$config.json|sponge $hornetdir/$config.json
+        fi
     done
-fi
+done
