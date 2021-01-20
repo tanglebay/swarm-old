@@ -1,0 +1,15 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetconfigs <<< "$hornetconfigs"
+
+for hornetconfig in "${ARRAYhornetconfigs[@]}"
+do
+    parser="$(jq '.network.gossip.bindAddress' $hornetdir/$hornetconfig.json)"
+    if [ "\"0.0.0.0:$neighborport\"" != "$parser" ]; then
+        if [ -n "$neighborport" ] && [ "$neighborport" -ge 0 ] 2>/dev/null; then
+            sudo jq '.network.gossip.bindAddress = "0.0.0.0:'$neighborport'"' $hornetdir/$hornetconfig.json|sponge $hornetdir/$hornetconfig.json
+        fi
+    fi
+done
+unset ARRAYhornetconfigs
+unset hornetconfig

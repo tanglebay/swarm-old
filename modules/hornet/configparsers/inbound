@@ -1,0 +1,16 @@
+#!/bin/bash
+
+
+if [ -n "$inbound" ] && [ "$inbound" -gt 0 ] 2>/dev/null; then
+    IFS=', ' read -r -a ARRAYhornetconfigs <<< "$hornetconfigs"
+
+    for hornetconfig in "${ARRAYhornetconfigs[@]}"
+    do
+        parser="$(jq '.network.autopeering.inboundPeers' $hornetdir/$hornetconfig.json)"
+        if [ "$parser" != "$inbound" ] ; then
+            sudo jq '.network.autopeering.inboundPeers = '$inbound'' $hornetdir/$hornetconfig.json|sponge $hornetdir/$hornetconfig.json
+        fi
+    done
+    unset ARRAYhornetconfigs
+    unset hornetconfig
+fi

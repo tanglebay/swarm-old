@@ -1,0 +1,15 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetconfigs <<< "$hornetconfigs"
+
+for hornetconfig in "${ARRAYhornetconfigs[@]}"
+do
+    parser="$(jq '.snapshots.pruning.delay' $hornetdir/$hornetconfig.json)"
+    if [ "$parser" != "$pruningdelay" ]; then
+        if [ -n "$pruningdelay" ] && [ "$pruningdelay" -ge 50 ] 2>/dev/null; then
+            sudo jq '.snapshots.pruning.delay = '$pruningdelay'' $hornetdir/$hornetconfig.json|sponge $hornetdir/$hornetconfig.json
+        fi
+    fi
+done
+unset ARRAYhornetconfigs
+unset hornetconfig

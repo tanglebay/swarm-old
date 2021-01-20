@@ -1,0 +1,13 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetconfigs <<< "$hornetconfigs"
+
+for hornetconfig in "${ARRAYhornetconfigs[@]}"
+do
+    parser="$(jq '.snapshots.local.intervalSynced' $hornetdir/$hornetconfig.json)"
+    if [ "$lsdelay" != "$parser" ]; then
+        sudo jq '.snapshots.local.intervalSynced = '$lsdelay'' $hornetdir/$hornetconfig.json|sponge $hornetdir/$hornetconfig.json
+    fi
+done
+unset ARRAYhornetconfigs
+unset hornetconfig
