@@ -59,15 +59,21 @@ while [ $counter -lt 1 ]; do
                     case $CHOICE in
                         "1)")
                             if [ "$node" = "hornet" ]; then
-                                if [ ! -z "$maxDbSize" ]; then
-                                    sudo chmod +x $plugins/dbpruner
+                                if [ -n "$maxDbSize" ] && [ "$maxDbSize" -gt "10000" ]; then
+                                    sudo chmod +x $plugins/dbPruner
                                     ( crontab -l | grep -v -F "$dbPrunerCronCmd" ; echo "$dbPrunerCronJob" ) | crontab -
                                     sudo sed -i 's/dbPruner=.*/dbPruner=enabled/' $logs/dbPruner
                                     whiptail --title "DBPruner" --msgbox "DBPruner successfully activated!" 8 65
                                 else
-                                    maxDbSize=$(whiptail --inputbox "Please define the size in MB and try again:" 8 65 --title "DBPruner Menu" 3>&1 1>&2 2>&3)
-                                    sudo sed -i 's/maxDbSize=.*/maxDbSize='$maxDbSize'/' $configs/swarm.cfg
-                                    source $configs/swarm.cfg
+                                    maxDbSize=$(whiptail --inputbox "Please define the size in MB (min. 10000):" 8 65 --title "DBPruner Menu" 3>&1 1>&2 2>&3)
+                                    if [ -n "$maxDbSize" ] && [ "$maxDbSize" -gt "10000" ]; then
+                                        sudo sed -i 's/maxDbSize=.*/maxDbSize='$maxDbSize'/' $configs/swarm.cfg
+                                        source $configs/swarm.cfg
+                                        sudo chmod +x $plugins/dbPruner
+                                        ( crontab -l | grep -v -F "$dbPrunerCronCmd" ; echo "$dbPrunerCronJob" ) | crontab -
+                                        sudo sed -i 's/dbPruner=.*/dbPruner=enabled/' $logs/dbPruner
+                                        whiptail --title "DBPruner" --msgbox "DBPruner successfully activated!" 8 65
+                                    fi
                                 fi
                             else
                                 whiptail --title "DBPruner" --msgbox "DBPruner only available for Hornet!" 8 65
