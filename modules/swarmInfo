@@ -1,26 +1,14 @@
 #!/bin/bash
 status="$(systemctl show -p ActiveState --value $node)"
 
-if [ "$apiProtection" = "true" ]; then
+if [ ! -z "$domain" ]; then
     if [ "$apiPort" = "443" ]; then
-        dashboardurl="https://$domain"
-        apiurl="https://$domain/auth"
+        nodeUrl="https://$domain"
     else
-        dashboardurl="https://$domain:$apiPort"
-        apiurl="https://$domain:$apiPort/auth"
-    fi
-else if [ "$apiProtection" = "false" ]; then
-        if [ "$apiPort" = "443" ]; then
-            dashboardUrl="https://$domain"
-            apiUrl="https://$domain/access"
-        else
-            dashboardUrl="https://$domain:$apiPort"
-            apiUrl="https://$domain:$apiPort/access"
-        fi
-    else
-        dashboardUrl="N/A"
-        apiUrl="N/A"
-    fi
+        nodeUrl="https://$domain:$apiPort
+    fi"
+else
+    nodeUrl="N/A"
 fi
 
 nodeVersion="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.version')"
@@ -39,7 +27,7 @@ else
 fi
 
 # Sync Check
-if [ "$checksync" = "true" ]; then
+if [ "$checkSync" = "true" ]; then
     checkSyncValue=enabled
 else
     checkSyncValue=disabled
@@ -82,5 +70,5 @@ else
 fi
 
 # OUTPUT
-whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: v$nodeVersion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentDbSize\n\nWatchdog: $watchdog\nAuto-updater: $autoUpdateValue\nSync-check: $checkSyncValue\nProxy-check: $proxyCheckValue\nLogpruning: $logPruning\nLast restart: $restartDate\n\nDBPruner: $dbPruner\nLast pruning: $pruningDate\n\nDash-URL: $dashboardUrl\nAPI-URL: $apiUrl" 23 65
+whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: v$nodeVersion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentDbSize\n\nWatchdog: $watchdog\nAuto-updater: $autoUpdateValue\nSync-check: $checkSyncValue\nProxy-check: $proxyCheckValue\nLogpruning: $logPruning\nLast restart: $restartDate\n\nDBPruner: $dbPruner\nLast pruning: $pruningDate\n\nNode-URL: $dashboardUrl\nProtected API: $apiProtection" 23 65
 
