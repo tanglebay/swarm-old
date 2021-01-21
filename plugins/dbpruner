@@ -26,10 +26,10 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
         sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=true/' $logs/dbPruner
 
         # Get current LSMI
-        lsmi="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.latestSolidSubtangleMilestoneIndex')"
+        lsmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.solidMilestoneIndex')"
 
         # Start pruning process
-        pruningIndex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.milestoneStartIndex')"
+        pruningIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.pruningIndex')"
 
         # Get difference between LSMI and pruningindex
         let pruningDiff=$lsmi-$pruningIndex
@@ -74,7 +74,7 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
         pruningValue="$(echo ${pruningValue%\.*})"
         pruningIndex="$(awk "BEGIN {print $pruningIndex+$pruningValue}")"
 
-        lsIndex="$(curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "getNodeInfo"}' | jq '.lastSnapshottedMilestoneIndex')"
+        lsIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.pruningIndex')"
         if [ "$pruningIndex" -lt "$lsIndex" ]; then
             execPruning=`curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "pruneDatabase","targetIndex": '$pruningIndex'}'`
 
