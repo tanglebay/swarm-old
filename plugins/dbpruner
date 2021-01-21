@@ -74,29 +74,26 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
         pruningValue="$(echo ${pruningValue%\.*})"
         pruningIndex="$(awk "BEGIN {print $pruningIndex+$pruningValue}")"
 
-        lsIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.pruningIndex')"
-        if [ "$pruningIndex" -lt "$lsIndex" ]; then
-            execPruning=`curl -s http://localhost:14265 -X POST -H 'Content-Type: application/json' -H 'X-IOTA-API-Version: 1' -d '{"command": "pruneDatabase","targetIndex": '$pruningIndex'}'`
+        execPruning=`curl -s -X GET "http://localhost:14265/api/v1/control/database/prune?index=$pruningIndex" -H  "accept: application/json"`
 
-            if [ "$execPruning" != "{\"error\":\"no pruning needed.\"}" ]; then
-                let pruningMultiplier=$pruningMultiplier+30
-                getDbSize="$(du -sb $hornetDir/${network}db/tangle.db | cut -f1)"
-                let maxDbSize=$getDbSize/1000000
-                sudo sed -i 's/maxDbSize=.*/maxDbSize='$maxDbSize'/' $configs/swarm.cfg
-                pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
-                sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
-                sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
-                echo "$pruningDate dbPruner - Database pruned ($pruningPercent% of $pruningDiff Milestones)" >> $logs/swarm.log
-            else
-                if [ "$pruningMultiplier" -gt "0" ]; then
-                    let pruningMultiplier="$pruningMultiplier-1"
-                fi
-                if [ ! -n "$pruningMultiplier" ] || [ "$pruningMultiplier" -le "0" ]; then
-                    pruningMultiplier=0
-                fi
-                sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
-                sudo sed -i 's/pruningDate=.*/pruningDate='$pruningDate'/' $logs/dbPruner
+        if [ "$execPruning" != "{\"error\":\"no pruning needed.\"}" ]; then
+            let pruningMultiplier=$pruningMultiplier+30
+            getDbSize="$(du -sb $hornetDir/${network}db/tangle.db | cut -f1)"
+            let maxDbSize=$getDbSize/1000000
+            sudo sed -i 's/maxDbSize=.*/maxDbSize='$maxDbSize'/' $configs/swarm.cfg
+            pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
+            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
+            sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
+            echo "$pruningDate dbPruner - Database pruned ($pruningPercent% of $pruningDiff Milestones)" >> $logs/swarm.log
+        else
+            if [ "$pruningMultiplier" -gt "0" ]; then
+                let pruningMultiplier="$pruningMultiplier-1"
             fi
+            if [ ! -n "$pruningMultiplier" ] || [ "$pruningMultiplier" -le "0" ]; then
+                pruningMultiplier=0
+            fi
+            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
+            sudo sed -i 's/pruningDate=.*/pruningDate='$pruningDate'/' $logs/dbPruner
         fi
 
         # Remove LOCK file from tmp
