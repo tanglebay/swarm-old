@@ -1,0 +1,44 @@
+#!/bin/bash
+# Add snap to enviroment file
+if ! grep -q /snap/bin "$envfile"; then
+    echo "PATH=\"$PATH:/snap/bin\"" > $envfile
+    source $envfile
+fi
+
+if [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v nano)" ] || [ ! -x "$(command -v whois)" ] || [ ! -x "$(command -v sponge)" ] | [ ! -x "$(command -v snap)" ]; then
+    {
+        echo 0
+        # Check if a package is missing
+        if ! [ -x "$(command -v curl)" ]; then
+                sudo apt -qq install curl -y > /dev/null 2>&1
+        fi
+        echo 15
+        sleep 0.25
+        if ! [ -x "$(command -v jq)" ]; then
+            sudo apt -qq install jq -y > /dev/null 2>&1
+        fi
+        echo 30
+        sleep 0.25
+        if ! [ -x "$(command -v nano)" ]; then
+            sudo apt -qq install nano -y > /dev/null 2>&1
+        fi
+        echo 45
+        sleep 0.25
+        if ! [ -x "$(command -v whois)" ]; then
+            sudo apt -qq install whois -y > /dev/null 2>&1
+        fi
+        echo 60
+        sleep 0.25
+        if ! [ -x "$(command -v sponge)" ]; then
+            sudo apt -qq install moreutils -y > /dev/null 2>&1
+        fi
+        echo 75
+        sleep 0.25
+        if ! [ -x "$(command -v snap)" ]; then
+            echo -e $text_yellow && echo "Installing necessary package snap..." && echo -e $text_reset
+            sudo apt -qq install snapd -y > /dev/null 2>&1
+        fi
+        echo 100
+        sleep 0.25
+    } | whiptail --gauge "Please wait while SWARM is installing all packages..." 6 65 0
+fi
