@@ -60,9 +60,9 @@ while [ $counter -lt 1 ]; do
                         "1)")
                             if [ "$node" = "hornet" ]; then
                                 if [ ! -z "$maxDbSize" ]; then
-                                    sudo chmod +x $plugins/dbpruner
+                                    sudo chmod +x $plugins/dbPruner
                                     ( crontab -l | grep -v -F "$dbPrunerCronCmd" ; echo "$dbPrunerCronJob" ) | crontab -
-                                    sudo sed -i 's/dbPruner=.*/dbPruner=enabled/' $logs/dbpruner
+                                    sudo sed -i 's/dbPruner=.*/dbPruner=enabled/' $logs/dbPruner
                                     whiptail --title "DBPruner" --msgbox "DBPruner successfully activated!" 8 65
                                 else
                                     maxDbSize=$(whiptail --inputbox "Please define the size in MB and try again:" 8 65 --title "DBPruner Menu" 3>&1 1>&2 2>&3)
@@ -75,8 +75,8 @@ while [ $counter -lt 1 ]; do
                         ;;
                         "2)")
                             ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
-                            sudo sed -i 's/dbPruner=.*/dbPruner=disabled/' $logs/dbpruner
-                            sudo sed -i "s,pruningMultiplier=.*,pruningMultiplier=0," $logs/dbpruner
+                            sudo sed -i 's/dbPruner=.*/dbPruner=disabled/' $logs/dbPruner
+                            sudo sed -i "s,pruningMultiplier=.*,pruningMultiplier=0," $logs/dbPruner
                             sudo sed -i "s,pruningDate=.*,pruningDate=," $logs/dbpruner
                             whiptail --title "DBPruner" --msgbox "DBPruner successfully deactivated!" 8 65
                         ;;
@@ -96,11 +96,11 @@ while [ $counter -lt 1 ]; do
                 "1)")
                     # Update SWARM
                     if (whiptail --title "SWARM Menu" --yesno --defaultno "Are you sure you want to update SWARM?" 8 65); then
-                        source $modules/swarmupdater
+                        source $modules/updater/swarmUpdater
                     fi
                 ;;
                 "2)")
-                    source $modules/removeswarm
+                    source $modules/removeSwarm
                 ;;
                 "3)")
                     sudo nano $logs/swarm.log
@@ -109,15 +109,15 @@ while [ $counter -lt 1 ]; do
                     inputBranch=$(whiptail --inputbox "In which branch you want so switch?\n\nCurrent Branch: $branch" 10 65 master --title "SWARM Menu" 3>&1 1>&2 2>&3)
                     exitStatus=$?
                     if [ $exitStatus = 0 ]; then
-                        if [ "$inputBranch" = "master" ] || [ "$inputBranch" = "develop" ]; then
+                        if [ "$inputBranch" = "master" ] || [ "$inputBranch" = "develop" ] || [ "$inputBranch" = "chrysalis" ]; then
                             # Check SWARM branch
                             if [ "$branch" != "$inputBranch" ]; then
                                 ( cd $swarmDir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
                                 ( cd $swarmDir ; sudo git checkout $inputBranch ) > /dev/null 2>&1
                                 ( cd $swarmDir ; sudo git pull ) > /dev/null 2>&1
                                 branch=$inputBranch
-                                sudo chmod +x $swarmDir/swarm $plugins/watchdog $plugins/dbpruner
-                                source $modules/updateparser
+                                sudo chmod +x $swarmDir/swarm $plugins/watchdog $plugins/dbPruner
+                                source $modules/updater/updateParser
                                 whiptail --title "SWARM Menu" --msgbox "SWARM branch change detected! Exit SWARM..." 8 65
                                 clear
                                 exit 0
