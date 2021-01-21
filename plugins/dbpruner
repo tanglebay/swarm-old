@@ -2,7 +2,7 @@
 source /var/lib/swarm/modules/variables
 source $configs/hornet
 source $configs/swarm
-source $logs/dbPruner
+source $logs/dbpruner
 
 # Get Service Status
 status="$(systemctl show -p ActiveState --value hornet)"
@@ -23,7 +23,7 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
     let dbSize=$getDbSize/1000000
     if [ $dbSize -gt $maxDbSize ]; then
         # LOCK dbPruner until its finished
-        sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=true/' $logs/dbPruner
+        sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=true/' $logs/dbpruner
 
         # Get current LSMI
         lsmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.solidMilestoneIndex')"
@@ -82,8 +82,8 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
             let maxDbSize=$getDbSize/1000000
             sudo sed -i 's/maxDbSize=.*/maxDbSize='$maxDbSize'/' $configs/swarm.cfg
             pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
-            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
-            sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
+            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbpruner
+            sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbpruner
             echo "$pruningDate dbPruner - Database pruned ($pruningPercent% of $pruningDiff Milestones)" >> $logs/swarm.log
         else
             if [ "$pruningMultiplier" -gt "0" ]; then
@@ -92,20 +92,20 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
             if [ ! -n "$pruningMultiplier" ] || [ "$pruningMultiplier" -le "0" ]; then
                 pruningMultiplier=0
             fi
-            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
-            sudo sed -i 's/pruningDate=.*/pruningDate='$pruningDate'/' $logs/dbPruner
+            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbpruner
+            sudo sed -i 's/pruningDate=.*/pruningDate='$pruningDate'/' $logs/dbpruner
         fi
 
         # Remove LOCK file from tmp
-        sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
+        sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbpruner
     else
         if [ "$pruningMultiplier" -gt "0" ]; then
             let pruningMultiplier="$pruningMultiplier-1"
-            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
+            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbpruner
         fi
         if [ ! -n "$pruningMultiplier" ] || [ "$pruningMultiplier" -le "0" ]; then
             pruningMultiplier=0
-            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
+            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbpruner
         fi
     fi
     unset getDbSize
