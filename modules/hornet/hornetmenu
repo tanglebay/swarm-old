@@ -28,8 +28,8 @@ while [ $counter -lt 1 ]; do
             case $CHOICE in
                 "1)")
                     # Edit simple config
-                    currentrelease=$release
-                    currentnetwork=$network
+                    currentRelease=$release
+                    currentNetwork=$network
                     sudo nano $configs/hornet.cfg
 
                     {
@@ -59,7 +59,7 @@ while [ $counter -lt 1 ]; do
                     fi
                 ;;
                 "2)")
-                    sudo nano $hornetdir/config.json
+                    sudo nano $hornetDir/config.json
                     if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
                         {
                             echo 0
@@ -72,7 +72,7 @@ while [ $counter -lt 1 ]; do
                     fi
                 ;;
                 "3)")
-                    sudo nano $hornetdir/config_comnet.json
+                    sudo nano $hornetDir/config_comnet.json
                     if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
                         {
                             echo 0
@@ -85,7 +85,7 @@ while [ $counter -lt 1 ]; do
                     fi
                 ;;
                 "4)")
-                    sudo nano $hornetdir/config_devnet.json
+                    sudo nano $hornetDir/config_devnet.json
                     if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
                         {
                             echo 0
@@ -98,7 +98,7 @@ while [ $counter -lt 1 ]; do
                     fi
                 ;;
                 "5)")
-                    sudo nano $hornetdir/peering.json
+                    sudo nano $hornetDir/peering.json
                     whiptail --title "Hornet Menu" --msgbox "New peering configuration loaded!" 8 65
                 ;;
                 "6)")
@@ -186,7 +186,7 @@ while [ $counter -lt 1 ]; do
                         ;;
                         "4)")
                             hornetstatus="$(sudo systemctl status hornet)"
-                            whiptail --title "Hornet Menu" --msgbox "$hornetstatus" 15 65
+                            whiptail --title "Hornet Menu" --msgbox "$hornetStatus" 15 65
                         ;;
                     esac
                 ;;
@@ -197,7 +197,7 @@ while [ $counter -lt 1 ]; do
                             echo 33
                             sudo systemctl stop hornet
                             echo 66
-                            sudo rm -rf $hornetdir/${network}db $hornetdir/snapshots/${network}/export.bin
+                            sudo rm -rf $hornetDir/${network}db $hornetdir/snapshots/${network}/export.bin
                             sudo systemctl start hornet
                             sleep 0.25
                             echo 100
@@ -219,28 +219,26 @@ while [ $counter -lt 1 ]; do
                 "1)")
                     # Update HORNET
                     source $modules/getversions
-                    if [ "$nodeversion" != "HORNET $latesthornet" ]; then
+                    if [ "$nodeVersion" != "HORNET $latestHornet" ]; then
                         {
                             echo 0
                             sudo apt update
                             echo 25
                             sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
                             echo 65
-                            if [ -f "$hornetdir/config.json.dpkg-dist" ]; then
-                                sudo cp -r $hornetdir/config.json.dpkg-dist $hornetdir/config.json
-                                sudo rm -rf $hornetdir/config.json.dpkg*
-                            fi
-                            if [ -f "$hornetdir/config_comnet.json.dpkg-dist" ]; then
-                                sudo cp -r $hornetdir/config_comnet.json.dpkg-dist $hornetdir/config_comnet.json
-                                sudo rm -rf $hornetdir/config_comnet.json.dpkg*
-                            fi
-                            if [ -f "$hornetdir/config_devnet.json.dpkg-dist" ]; then
-                                sudo cp -r $hornetdir/config_devnet.json.dpkg-dist $hornetdir/config_devnet.json
-                                sudo rm -rf $hornetdir/config_devnet.json.dpkg*
-                            fi
+                            IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+                            for hornetConfig in "${ARRAYhornetConfigs[@]}"
+                            do
+                                if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
+                                sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json
+                                sudo rm -rf $hornetDir/$hornetConfig.json.dpkg*
+                                fi
+                            done
+                            unset ARRAYhornetConfigs
+                            unset hornetConfig
                             echo 75
-                            newversion="$(hornet -v)"
-                            if [ "$version" != "$newversion" ]; then
+                            newVersion="$(hornet -v)"
+                            if [ "$version" != "$newVersion" ]; then
                             # CALL MODULE CONFIGPARSER
                                 source $modules/hornet/configparser
                                 sudo systemctl restart hornet
@@ -305,7 +303,7 @@ while [ $counter -lt 1 ]; do
                                 echo 100
                                 sleep 0.2
                             } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
-                            whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports in your home router for peering\n\nPorts: $autopeeringport/UDP\n$neighborport/tcp" 8 65
+                            whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports in your home router for peering\n\nPorts: $autopeeringPort/UDP\n$neighborPort/tcp" 8 65
                         else
                             whiptail --title "Hornet Installer" --msgbox "Error while installing Hornet. Please check hornet.cfg and try again!" 8 65
                         fi
@@ -317,10 +315,10 @@ while [ $counter -lt 1 ]; do
                     {
                         echo 0
                         sleep 0.25
-                        ( crontab -l | grep -v -F "$croncmd" ) | crontab -
+                        ( crontab -l | grep -v -F "$cronCmd" ) | crontab -
                         echo 25
                         sleep 0.25
-                        ( crontab -l | grep -v -F "$dbpcroncmd" ) | crontab -
+                        ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
                         echo 65
                         sleep 0.25
                         sudo systemctl stop hornet
