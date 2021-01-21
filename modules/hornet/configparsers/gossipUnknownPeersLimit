@@ -1,1 +1,14 @@
 #!/bin/bash
+
+if [ -n "$maxUnknownNeighbors" ] && [ "$maxUnknownNeighbors" -ge 0 ] 2>/dev/null; then
+    IFS=', ' read -r -a ARRAYhornetconfigs <<< "$hornetconfigs"
+    for hornetconfig in "${ARRAYhornetconfigs[@]}"
+    do
+        parser="$(jq '.p2p.maxUnknownNeighbors' $hornetdir/$hornetconfig.json)"
+        if [ "$parser" != "$maxUnknownNeighbors" ]; then
+            sudo jq '.p2p.maxUnknownNeighbors = '$maxUnknownNeighbors'' $hornetdir/$hornetconfig.json|sponge $hornetdir/$hornetconfig.json
+        fi
+    done
+    unset ARRAYhornetconfigs
+    unset hornetconfig
+fi
