@@ -24,12 +24,8 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
         sudo systemctl restart hornet
     fi
 
-    getDbSize="$(du -sh $hornetDir/${network}db | cut -f1)"
-    if [[ "$getDbSize" != *"M"* ]]; then
-        dbSize="$(du -sh $hornetDir/${network}db | cut -f1 | sed 's/.$//')"
-    else
-        dbSize=0
-    fi
+    getDbSize="$(du -sb $hornetDir/${network}db | cut -f1)"
+    let dbSize=$getdbsize/1000000000
     if [ "$dbSize" -gt 0 ] && [ "$dbSize" -gt "$maxDbSize" ]; then
         # ADD LOCK
         sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=true/' $logs/dbPruner
@@ -51,7 +47,9 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
                 # Remove LOCK
                 sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
             fi
-            dbSize="$(du -sh $hornetDir/${network}db | cut -f1 | sed 's/.$//')"
+        timeout 5
+        getDbSize="$(du -sb $hornetDir/${network}db | cut -f1)"
+        let dbSize=$getdbsize/1000000000
         done
     fi
     if [ "$milestonesPruned" = "true" ]; then
