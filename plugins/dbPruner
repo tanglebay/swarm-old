@@ -39,11 +39,11 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
 
             execPruning=`curl -s -X GET "http://localhost:14265/api/v1/control/database/prune?index=$pruningIndex" -H  "accept: application/json"`
 
-            if [ "$execPruning" = "{\"data\":{\"index\":*}}" ]; then
+            if [[ "$execPruning" == *"{\"data\":{\"index\":"* ]]; then
                 milestonesPruned=true    
             else
                 stopPruning=true
-
+                echo "$pruningDate dbPruner - [ERROR] Received stop request" >> $logs/swarm.log
                 # Remove LOCK
                 sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
             fi
