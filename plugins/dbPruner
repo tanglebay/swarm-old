@@ -8,119 +8,57 @@ source $logs/dbPruner
 status="$(systemctl show -p ActiveState --value hornet)"
 
 if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize" ]; then
-    if [ "$pruning" = "true" ]; then
+    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+    for hornetConfig in "${ARRAYhornetConfigs[@]}"
+    do
+        pruningValue="$(jq '.pruning.enabled' $hornetDir/$hornetConfig.json)"
+        if [ "$pruningValue" = "true" ]; then
+            sudo jq '.pruning.enabled = false' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+            restartHornet=true
+        fi
+    done
+    if [ "$pruning" = true]
         sudo sed -i 's/pruning=.*/pruning=false/' $configs/hornet.cfg
-        IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-        for hornetConfig in "${ARRAYhornetConfigs[@]}"
-        do
-            sudo jq '.snapshots.pruning.enabled = false' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
-        done
-        unset ARRAYhornetConfigs
-        unset hornetConfig
+    fi
+    if [ "$restartHornet" = "true" ]; then
         sudo systemctl restart hornet
     fi
-    getDbSize="$(du -sb $hornetDir/${network}db/tangle.db | cut -f1)"
-    let dbSize=$getDbSize/1000000
-    if [ $dbSize -gt $maxDbSize ]; then
-        # LOCK dbPruner until its finished
+
+    getDbSize="$(du -sb $hornetDir/${network}db | cut -f1)"
+    let dbSize=$getDbSize/1000000000
+    if [ "$dbSize" -gt 0 ] && [ "$dbSize" -gt "$maxDbSize" ]; then
+        # ADD LOCK
         sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=true/' $logs/dbPruner
 
-        # Get current LSMI
-        lsmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.solidMilestoneIndex')"
-
         # Start pruning process
-        pruningIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.pruningIndex')"
+        currentPruningIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.pruningIndex')"
 
         # Get difference between LSMI and pruningindex
-        let pruningDiff=$lsmi-$pruningIndex
-
-        if [ ! -n "$pruningMultiplier" ] || [ "$pruningMultiplier" -le "0" ]; then
-            pruningMultiplier=0
-        fi
-
-        # Define the percentage of pruning
-        if [ "$pruningMultiplier" -le "30" ]; then
-            pruningpercent=0.001
-        fi
-        if [ "$pruningMultiplier" -gt "30" ]; then
-            pruningpercent=0.002
-        fi
-        if [ "$pruningMultiplier" -gt "90" ]; then
-            pruningpercent=0.003
-        fi
-        if [ "$pruningMultiplier" -gt "120" ]; then
-            pruningpercent=0.004
-        fi
-        if [ "$pruningMultiplier" -gt "150" ]; then
-            pruningpercent=0.005
-        fi
-        if [ "$pruningMultiplier" -gt "180" ]; then
-            pruningpercent=0.006
-        fi
-        if [ "$pruningMultiplier" -gt "210" ]; then
-            pruningpercent=0.007
-        fi
-        if [ "$pruningMultiplier" -gt "240" ]; then
-            pruningpercent=0.008
-        fi
-        if [ "$pruningMultiplier" -gt "270" ]; then
-            pruningpercent=0.009
-        fi
-        if [ "$pruningMultiplier" -gt "300" ]; then
-            pruningpercent=0.01
-        fi
-
-        pruningValue="$(awk "BEGIN {print $pruningDiff*$pruningPercent}")"
-        pruningValue="$(echo ${pruningValue%\.*})"
-        pruningIndex="$(awk "BEGIN {print $pruningIndex+$pruningValue}")"
+        let pruningIndex=$currentPruningIndex+90
 
         execPruning=`curl -s -X GET "http://localhost:14265/api/v1/control/database/prune?index=$pruningIndex" -H  "accept: application/json"`
 
-        if [ "$execPruning" != "{\"error\":\"no pruning needed.\"}" ]; then
-            let pruningMultiplier=$pruningMultiplier+30
-            getDbSize="$(du -sb $hornetDir/${network}db/tangle.db | cut -f1)"
-            let maxDbSize=$getDbSize/1000000
-            sudo sed -i 's/maxDbSize=.*/maxDbSize='$maxDbSize'/' $configs/swarm.cfg
+        if [ "$execPruning" = "{\"data\":{\"index\":*}}" ]; then
             pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
-            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
             sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
-            echo "$pruningDate dbPruner - Database pruned ($pruningPercent% of $pruningDiff Milestones)" >> $logs/swarm.log
-        else
-            if [ "$pruningMultiplier" -gt "0" ]; then
-                let pruningMultiplier="$pruningMultiplier-1"
-            fi
-            if [ ! -n "$pruningMultiplier" ] || [ "$pruningMultiplier" -le "0" ]; then
-                pruningMultiplier=0
-            fi
-            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
-            sudo sed -i 's/pruningDate=.*/pruningDate='$pruningDate'/' $logs/dbPruner
+            echo "$pruningDate dbPruner - Database pruned to milestones $pruningIndex)" >> $logs/swarm.log
         fi
 
-        # Remove LOCK file from tmp
+        # Remove LOCK
         sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
-    else
-        if [ "$pruningMultiplier" -gt "0" ]; then
-            let pruningMultiplier="$pruningMultiplier-1"
-            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
-        fi
-        if [ ! -n "$pruningMultiplier" ] || [ "$pruningMultiplier" -le "0" ]; then
-            pruningMultiplier=0
-            sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier='$pruningMultiplier'/' $logs/dbPruner
-        fi
     fi
     unset getDbSize
     unset dbSize
-    unset pruningMultiplier
     unset pruneDate
     unset maxDbSize
-    unset pruningValue
     unset execPruning
-    unset pruningPercent
-    unset lsmi
 else
     if [ ! -n "$maxDbSize" ]; then
         ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
     fi
 fi
+
+unset ARRAYhornetConfigs
+unset hornetConfig
 
 exit 0
