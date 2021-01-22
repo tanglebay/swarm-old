@@ -29,20 +29,32 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
     if [ "$dbSize" -gt 0 ] && [ "$dbSize" -gt "$maxDbSize" ]; then
         # ADD LOCK
         sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=true/' $logs/dbPruner
+        stopPruning=false
+        while [ $dbSize -gt $maxDbSize ] && [ "$stopPruning" != "true" ]; do
+            # Start pruning process
+            currentPruningIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.pruningIndex')"
 
-        # Start pruning process
-        currentPruningIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.pruningIndex')"
+            # Get difference between LSMI and pruningindex
+            let pruningIndex=$currentPruningIndex+51
 
-        # Get difference between LSMI and pruningindex
-        let pruningIndex=$currentPruningIndex+51
+            execPruning=`curl -s -X GET "http://localhost:14265/api/v1/control/database/prune?index=$pruningIndex" -H  "accept: application/json"`
 
-        execPruning=`curl -s -X GET "http://localhost:14265/api/v1/control/database/prune?index=$pruningIndex" -H  "accept: application/json"`
+            if [ "$execPruning" = "{\"data\":{\"index\":*}}" ]; then
+                milestonesPruned=true    
+            else
+                stopPruning=true
 
-        if [ "$execPruning" = "{\"data\":{\"index\":*}}" ]; then
-            pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
-            sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
-            echo "$pruningDate dbPruner - Database pruned to milestones $pruningIndex)" >> $logs/swarm.log
-        fi
+                # Remove LOCK
+                sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
+            fi
+            getDbSize="$(du -sb $hornetDir/${network}db | cut -f1)"
+            let dbSize=$getDbSize/1000000000
+        done
+    fi
+    if [ "$milestonesPruned" = "true" ]; then
+        pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
+        sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
+        echo "$pruningDate dbPruner - Database pruned to milestones $pruningIndex)" >> $logs/swarm.log
 
         # Remove LOCK
         sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
