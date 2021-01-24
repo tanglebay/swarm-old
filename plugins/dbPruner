@@ -5,9 +5,9 @@ source $configs/swarm.cfg
 source $logs/dbPruner
 
 # Get Service Status
-status="$(systemctl show -p ActiveState --value hornet)"
+isHealthy="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
 
-if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize" ] && [ "$dbPruner" = "true" ]; then
+if [ "$isHealthy" = "true" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize" ] && [ "$dbPruner" = "true" ]; then
     IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
     for hornetConfig in "${ARRAYhornetConfigs[@]}"
     do
@@ -30,8 +30,7 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
     if [ "$dbSize" -gt 0 ] && [ "$dbSize" -gt "$maxDbSize" ]; then
         # ADD LOCK
         sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=true/' $logs/dbPruner
-        stopPruning=false
-        while [ $dbSize -gt $maxDbSize ] && [ "$stopPruning" != "true" ]; do
+        while [ $dbSize -gt $maxDbSize ] && [ "$killSwitch" != "true" ]; do
             # Start pruning process
             currentPruningIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.pruningIndex')"
 
@@ -43,8 +42,8 @@ if [ "$status" = "active" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize
             if [[ "$execPruning" == *"{\"data\":{\"index\":"* ]]; then
                 milestonesPruned=true
             else
-                stopPruning=true
-                echo "$pruningDate dbPruner - [ERROR] Received stop request" >> $logs/swarm.log
+                killSwitch=true
+                echo "$pruningDate dbPruner - [ERROR] Kill switch enabled" >> $logs/swarm.log
                 # Remove LOCK
                 sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
             fi
