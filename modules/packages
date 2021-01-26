@@ -4,8 +4,12 @@ if ! grep -q /snap/bin "$envfile"; then
     echo "PATH=\"$PATH:/snap/bin\"" > $envfile
     source $envfile
 fi
+checkPackage="$(dpkg-query -W -f='${Status}\n' apache2-utils)"
+if [[ "$checkPackage" == *"install ok installed"* ]]; then
+    apache2utils=true
+fi
 
-if [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v nano)" ] || [ ! -x "$(command -v apache2-utils)" ] || [ ! -x "$(command -v sponge)" ] | [ ! -x "$(command -v snap)" ]; then
+if [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v nano)" ] || [ "$apache2utils" != "true" ] || [ ! -x "$(command -v sponge)" ] | [ ! -x "$(command -v snap)" ]; then
     {
         echo 0
         # Check if a package is missing
@@ -24,7 +28,7 @@ if [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(com
         fi
         echo 45
         sleep 0.25
-        if ! [ -x "$(command -v apache2-utils)" ]; then
+        if [ "$apache2utils" != "true" ]; then
             sudo apt -qq install apache2-utils -y > /dev/null 2>&1
         fi
         echo 60
