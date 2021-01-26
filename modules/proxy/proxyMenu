@@ -16,31 +16,40 @@ while [ $counter -lt 1 ]; do
         "1)")
             CHOICE=$(
                 whiptail --title "Proxy Menu" --menu "\nChoose an option" 16 65 0 \
-                "1)" "Edit Nginx.cfg" \
-                "2)" "Edit auth users" \
-                "3)" "Add new auth user" 3>&2 2>&1 1>&3
+                "1)" "Update user" \
+                "2)" "Add user" \
+                "3)" "Delete user" \
+                "4)" "Edit Nginx.cfg" 3>&2 2>&1 1>&3
             )
             case $CHOICE in
                 "1)")
-                    # Change proxy.cfg
-                    sudo nano $configs/proxy.cfg
-                    source $configs/proxy.cfg
-                ;;
-                "2)")
-                    # Edit auth user
-                    if [ -d "/etc/nginx" ]; then
-                        source $modules/proxy/editUserProxy
+                    # Update auth user
+                    if [ -d "/etc/nginx" ] && [ -f "$plugins/proxy/htpasswd" ]; then
+                        source $modules/proxy/updateUserProxy
                     else
                         whiptail --title "Proxy Menu" --msgbox "Please install the proxy first!" 8 65
                     fi
                 ;;
-                "3)")
-                    # Add new auth user
+                "2)")
+                    # Add new user
                     if [ -d "/etc/nginx" ]; then
                         source $modules/proxy/addUserProxy
                     else
                         whiptail --title "Proxy Menu" --msgbox "Please install the proxy first!" 8 65
                     fi
+                ;;
+                "3)")
+                    # Delete user
+                    if [ -d "/etc/nginx" ]; then
+                        source $modules/proxy/deleteUserProxy
+                    else
+                        whiptail --title "Proxy Menu" --msgbox "Please install the proxy first!" 8 65
+                    fi
+                ;;
+                "4)")
+                    # Change proxy.cfg
+                    sudo nano $configs/proxy.cfg
+                    source $configs/proxy.cfg
                 ;;
             esac
         ;;

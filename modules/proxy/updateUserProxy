@@ -1,0 +1,52 @@
+#!/bin/bash
+
+if [ -d "/etc/nginx" ]; then
+    if [ ! -f "$configs/.dashboard_htpasswd" ]; then
+        sudo touch $configs/.dashboard_htpasswd
+    fi
+    if [ ! -f "$configs/.api_htpasswd" ]; then
+        sudo touch $configs/.api_htpasswd
+    fi
+else
+    whiptail --title "Proxy Menu" --msgbox "Please deploy the reverse proxy first!" 8 65
+fi
+
+CHOICE=$(
+    whiptail --title "Proxy Menu" --menu "\nChoose an option:" 20 65 10 \
+    if [ "$apiProtection" = "true" ]; then
+        "1)" "Update dashboard user" \
+        "2)" "Update API user" 3>&2 2>&1 1>&3
+    else
+        "1)" "Add dashboard user" 3>&2 2>&1 1>&3
+    fi
+)
+
+newUsername=$(whiptail --inputbox "Please enter a username:" 8 65 --title "Proxy Menu" 3>&1 1>&2 2>&3)
+if [ ! -z $newUsername ]; then
+    newUserPw=$(whiptail --passwordbox "Please enter a secure password:" 8 65 --title "Proxy Menu" 3>&1 1>&2 2>&3)
+    if [ ! -z $newUserPw ]; then
+        case $CHOICE in
+            "1)")
+                sudo htpasswd -Bb $configs/.dashboard_htpasswd $newUsername $newUserPw
+                sudo htpasswd -Bb $configs/.api_htpasswd $newUsername $newUserPw
+                sudo systemctl reload nginx
+                whiptail --title "Proxy Menu" --msgbox "User $newUsername updated for the dashboard/api!" 8 65
+            ;;
+            "2)")
+                sudo htpasswd -Bb $configs/.api_htpasswd $newUsername $newUserPw
+                sudo systemctl reload nginx
+                whiptail --title "Proxy Menu" --msgbox "User $newUsername updated for the API!" 8 65
+            ;;
+        esac
+    else
+        whiptail --title "Proxy Menu" --msgbox "Please set a password!" 8 65
+        CHOICE=0
+    fi
+else
+    whiptail --title "Proxy Menu" --msgbox "Please set a username!" 8 65
+    CHOICE=0
+fi
+
+# Unset all var
+unset newUsername
+unset newUserPw
