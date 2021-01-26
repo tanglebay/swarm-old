@@ -28,33 +28,14 @@ deleteUsername=$(whiptail --inputbox "Please enter the user to be deleted:" 8 65
 if [ ! -z $deleteUsername ]; then
     case $CHOICE in
         "1)")
-            delUser="$(sudo htpasswd -D $configs/.dashboard_htpasswd $deleteUsername)"
-            if [[ "$delUser" != *"not found"* ]]; then
-                delUserDashboard=true
-            else
-                whiptail --title "Proxy Menu" --msgbox "User $deleteUsername not found in Dashboard auth!" 8 65
-            fi
-            delUser="$(sudo htpasswd -D $configs/.api_htpasswd $deleteUsername)"
-            if [[ "$delUser" != *"not found"* ]]; then
-                delUserApi=true
-            else
-                whiptail --title "Proxy Menu" --msgbox "User $deleteUsername not found in API auth!" 8 65
-            fi
-            if [ "$delUserDashboard" = "true" ] && [ "$delUserApi" = "true" ]; then
-                whiptail --title "Proxy Menu" --msgbox "User $deleteUsername successfully deleted from Dashboard/API auth!" 8 65
-            fi
+            delUserDashboard=$(htpasswd -D $configs/.dashboard_htpasswd $deleteUsername 2>&1)
+            delUserApi=$(htpasswd -D $configs/.api_htpasswd $deleteUsername 2>&1)
+            whiptail --title "Proxy Menu" --msgbox "Dashboard: $delUserDashboard\nAPI: $delUserApi" 8 65
             sudo systemctl reload nginx
         ;;
         "2)")
-            delUser="$(sudo htpasswd -D $configs/.api_htpasswd $deleteUsername)"
-            if [[ "$delUser" != *"not found"* ]]; then
-                delUserApi=true
-            else
-                whiptail --title "Proxy Menu" --msgbox "User $deleteUsername not found in API auth!" 8 65
-            fi
-            if [ "$delUserApi" = "true" ]; then
-                whiptail --title "Proxy Menu" --msgbox "User $deleteUsername successfully deleted from API auth!" 8 65
-            fi
+            delUserApi=$(htpasswd -D $configs/.api_htpasswd $deleteUsername 2>&1)
+            whiptail --title "Proxy Menu" --msgbox "$delUserApi" 8 65
             sudo systemctl reload nginx
         ;;
     esac
