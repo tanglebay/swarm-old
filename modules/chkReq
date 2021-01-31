@@ -1,0 +1,28 @@
+#!/bin/bash
+if [ $(id -u) -ne 0 ]; then
+    whiptail --title "Welcome to SWARM! [v$version]" --msgbox "Please run SWARM with sudo or as root" 8 65
+    exit 0
+fi
+
+osv="$(uname -m)"
+if [ "$osv" = "aarch64" ] || [ "$osv" = "x86_64" ]; then
+    ospassed=true
+    unset ospassed
+else
+    whiptail --title "Welcome to SWARM! [v$version]" --msgbox "Error. 32Bit system detected! Please only use a 64bit OS." 8 65
+    exit 0
+fi
+
+# STARTUP UPDATE CHECK
+source $configs/swarm.cfg
+source $logs/swarm
+latestSwarm="$(curl -s https://api.github.com/repos/TangleBay/swarm/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
+if [ "$updateNotifier" = "true" ] && [ "$branch" = "master" ]; then
+    if [ ! -z "$latestSwarm" ]; then
+        if [ "$version" != "$latestSwarm" ]; then
+            if (whiptail --title "Welcome to SWARM! [v$version]" --yesno "A new version of SWARM (v$latestSwarm) is available!\n\nDo you want to update SWARM now?" 10 65); then
+                source $modules/updater/swarmUpdater
+            fi
+        fi
+    fi
+fi

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Check if network changed
+if [ "$network" != "$currentNetwork" ]; then
+    if [ "$network" = "mainnet" ]; then
+        echo "" > /etc/default/hornet
+    fi
+    if [ "$network" = "devnet" ]; then
+        echo "OPTIONS=\"--config config_devnet.json\"" > /etc/default/hornet
+    fi
+    if [ "$network" = "testnet" ]; then
+        echo "OPTIONS=\"--config config_chrysalis_testnet.json\"" > /etc/default/hornet
+    fi
+    sudo rm -rf $hornetDir/snapshots/mainnet/*.bin $hornetDir/snapshots/devnet/*.bin $hornetDir/snapshots/testnet/*.bin
+    sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
+    sudo sed -i 's/pruningMultiplier=.*/pruningMultiplier=/' $logs/dbPruner
+    sudo sed -i 's/pruningDate=.*/pruningDate=/' $logs/dbPruner
+fi

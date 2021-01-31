@@ -1,0 +1,16 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    parser="$(jq '.node.enableProofOfWork' $hornetDir/$hornetConfig.json)"
+    if [ "$parser" != "$pow" ]; then
+        if [ "$pow" = "true" ] || [ "$pow" = "false" ]; then
+            sudo jq '.node.enableProofOfWork = '$pow'' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+        fi
+    fi
+done
+
+unset ARRAYhornetConfigs
+unset hornetConfig

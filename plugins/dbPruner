@@ -1,0 +1,76 @@
+#!/bin/bash
+source /var/lib/swarm/modules/variables
+source $configs/hornet.cfg
+source $configs/swarm.cfg
+source $logs/dbPruner
+
+# Get Service Status
+isHealthy="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+
+if [ "$isHealthy" = "true" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize" ] && [ "$dbPruner" = "true" ]; then
+    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+    for hornetConfig in "${ARRAYhornetConfigs[@]}"
+    do
+        pruningValue="$(jq '.pruning.enabled' $hornetDir/$hornetConfig.json)"
+        if [ "$pruningValue" = "true" ]; then
+            sudo jq '.pruning.enabled = false' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+            restartHornet=true
+        fi
+    done
+    if [ "$pruning" = "true" ]; then
+        sudo sed -i 's/pruning=.*/pruning=false/' $configs/hornet.cfg
+    fi
+    if [ "$restartHornet" = "true" ]; then
+        sudo systemctl restart hornet
+    fi
+
+    getDbSize="$(du -sb $hornetDir/${network}db | cut -f1)"
+    let dbSize=$getDbSize/1000000
+    let maxDbSize=$maxDbSize*1000
+    if [ "$dbSize" -gt 0 ] && [ "$dbSize" -gt "$maxDbSize" ]; then
+        # ADD LOCK
+        sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=true/' $logs/dbPruner
+        while [ $dbSize -gt $maxDbSize ] && [ "$killSwitch" != "true" ]; do
+            # Start pruning process
+            currentPruningIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.pruningIndex')"
+
+            # Get difference between LSMI and pruningindex
+            let pruningIndex=$currentPruningIndex+51
+
+            execPruning=`curl -s -X GET "http://localhost:14265/api/v1/control/database/prune?index=$pruningIndex" -H  "accept: application/json"`
+
+            if [[ "$execPruning" == *"{\"data\":{\"index\":"* ]]; then
+                milestonesPruned=true
+            else
+                killSwitch=true
+                echo "$pruningDate dbPruner - [ERROR] Kill switch enabled" >> $logs/swarm.log
+                # Remove LOCK
+                sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
+            fi
+        getDbSize="$(du -sb $hornetDir/${network}db | cut -f1)"
+        let dbSize=$getDbSize/1000000
+        done
+        if [ "$milestonesPruned" = "true" ]; then
+            pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
+            sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
+            echo "$pruningDate dbPruner - Database pruned to milestones $pruningIndex" >> $logs/swarm.log
+
+            # Remove LOCK
+            sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
+        fi
+    fi
+    unset getDbSize
+    unset dbSize
+    unset pruneDate
+    unset maxDbSize
+    unset execPruning
+else
+    if [ ! -n "$maxDbSize" ] || [ "$dbPruner" = "false" ]; then
+        ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
+    fi
+fi
+
+unset ARRAYhornetConfigs
+unset hornetConfig
+
+exit 0

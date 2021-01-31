@@ -1,0 +1,15 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    parser="$(jq '.network.autopeering.bindAddress' $hornetDir/$hornetConfig.json)"
+    if [ "\"0.0.0.0:$autopeeringPort\"" != "$parser" ]; then
+        if [ -n "$autopeeringPort" ] && [ "$autopeeringPort" -ge 0 ] 2>/dev/null; then
+            sudo jq '.network.autopeering.bindAddress = "0.0.0.0:'$autopeeringPort'"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+        fi
+    fi
+done
+unset ARRAYhornetConfigs
+unset hornetConfig

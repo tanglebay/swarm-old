@@ -1,0 +1,32 @@
+#!/bin/bash
+source $logs/dbPruner
+
+if [ "$checkSync" = "true" ] && [ "$DbPrunerLock" = "false" ] && [ "$status" = "active" ]; then
+    lmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
+    lsmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.solidMilestoneIndex')"
+    let dlmi="$lmi-$lsmi"
+    if [ "$status" = "active" ] && [ "$dlmi" -gt "$maxLmi" ]; then
+        restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+        sudo systemctl stop hornet
+        if [ "$keepDb" = "false" ]; then
+            if [ "$network" = "mainnet" ]; then
+                sudo rm -rf $hornetDir/mainnetdb $hornetDir/snapshots/mainnet
+                echo "$restartDate WACHTDOG - SYNCCHECK - Hornet DB deleted while maxlmi reached!" >> $logs/swarm.log
+            fi
+            if [ "$network" = "comnet" ]; then
+                sudo rm -rf $hornetDir/comnetdb $hornetDir/snapshots/comnet
+                echo "$restartDate WACHTDOG - SYNCCHECK - Hornet DB deleted while maxlmi reached!" >> $logs/swarm.log
+            fi
+            if [ "$network" = "devnet" ]; then
+                sudo rm -rf $hornetDir/devnetdb $hornetDir/snapshots/devnet
+                echo "$restartDate WACHTDOG - SYNCCHECK - Hornet DB deleted while maxlmi reached!" >> $logs/swarm.log
+            fi
+        else
+            echo "$restartDate WACHTDOG - SYNCCHECK - Hornet DB not deleted while keepdb is set to true!" >> $logs/swarm.log
+        fi
+        sudo systemctl start hornet
+        echo "$restartDate WACHTDOG - SYNCCHECK - Hornet restarted while maxlmi reached!" >> $logs/swarm.log
+        sudo sed -i 's/statusCounter=.*/statusCounter=0/' $logs/watchdog
+        sudo sed -i "s,restartDate=.*,restartDate=\"$restartDate\"," $logs/watchdog
+    fi
+fi
