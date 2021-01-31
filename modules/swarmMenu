@@ -112,22 +112,21 @@ while [ $counter -lt 1 ]; do
                     sudo nano $logs/swarm.log
                 ;;
                 "4)")
-                    inputBranch=$(whiptail --inputbox "In which branch you want so switch?\n\nCurrent Branch: $branch" 10 65 master --title "SWARM Menu" 3>&1 1>&2 2>&3)
+                    currentBranch=$( cd $swarmDir ; git rev-parse --abbrev-ref HEAD )
+                    inputBranch=$(whiptail --inputbox "In which branch you want so switch?\n\nCurrent Branch: $currentbranch" 10 65 master --title "SWARM Menu" 3>&1 1>&2 2>&3)
                     exitStatus=$?
                     if [ $exitStatus = 0 ]; then
                         if [ "$inputBranch" = "master" ] || [ "$inputBranch" = "develop" ]; then
                             # Check SWARM branch
-                            if [ "$branch" != "$inputBranch" ]; then
+                            if [ "$currentbranch" != "$inputBranch" ]; then
                                 sudo cat $configs/swarm.cfg > $configs/swarm.cfg.bak
                                 sudo cat $configs/hornet.cfg > $configs/hornet.cfg.bak
                                 sudo cat $configs/proxy.cfg > $configs/proxy.cfg.bak
-                                sudo cat $logs/swarm > $logs/swarm.bak
                                 sudo cat $logs/dbPruner > $logs/dbPruner.bak
                                 sudo cat $logs/watchdog > $logs/watchdog.bak
-                                ( cd $swarmDir ; sudo git reset --hard origin/$branch ) > /dev/null 2>&1
+                                ( cd $swarmDir ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
                                 ( cd $swarmDir ; sudo git checkout $inputBranch ) > /dev/null 2>&1
                                 ( cd $swarmDir ; sudo git pull ) > /dev/null 2>&1
-                                sudo sed -i "s,branch=.*,branch=$inputBranch," $logs/swarm
                                 sudo chmod +x $swarmDir/swarm $plugins/watchdog $plugins/dbPruner
                                 whiptail --title "SWARM Menu" --msgbox "SWARM branch change detected! Exit SWARM..." 8 65
                                 clear
