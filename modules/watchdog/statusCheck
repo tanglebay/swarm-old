@@ -1,15 +1,16 @@
 #!/bin/bash
 source $logs/watchdog
 
+if [ -n "$statusCounter" ]; then
+    if ! [ "$statusCounter" -eq "$statusCounter" ] 2>/dev/null; then
+        statusCounter=0
+        sudo sed -i 's/statusCounter=.*/statusCounter='$statusCounter'/' $logs/watchdog
+    fi
+else
+    statusCounter=0
+fi
 
 if [ "$status" != "active" ]; then
-    if [ -n "$statusCounter" ]; then
-        if ! [ "$statusCounter" -eq "$statusCounter" ] 2>/dev/null; then
-            statusCounter=0
-        fi
-    else
-        statusCounter=0
-    fi
     sudo systemctl stop $node
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
     if [ "$statusCounter" -ge "2" ]; then

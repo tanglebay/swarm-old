@@ -2,18 +2,20 @@
 source $logs/dbPruner
 source $logs/watchdog
 
+if [ -n "$syncCounter" ]; then
+    if ! [ "$syncCounter" -eq "$syncCounter" ] 2>/dev/null; then
+        syncCounter=0
+        sudo sed -i 's/syncCounter=.*/syncCounter='$syncCounter'/' $logs/watchdog
+    fi
+else
+    syncCounter=0
+fi
+
 if [ "$checkSync" = "true" ] && [ "$DbPrunerLock" = "false" ] && [ "$status" = "active" ]; then
     lmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
     lsmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.solidMilestoneIndex')"
     let dlmi="$lmi-$lsmi"
     if [ "$dlmi" -gt "$maxLmi" ]; then
-        if [ -n "$syncCounter" ]; then
-            if ! [ "$syncCounter" -eq "$syncCounter" ] 2>/dev/null; then
-                syncCounter=0
-            fi
-        else
-            syncCounter=0
-        fi
         sudo systemctl stop $node
         if [ "$syncCounter" -gt "2" ]; then
             if [ "$keepDb" = "false" ]; then
@@ -29,5 +31,10 @@ if [ "$checkSync" = "true" ] && [ "$DbPrunerLock" = "false" ] && [ "$status" = "
         restartDate=`date '+%d-%m-%Y %H-%M-%S'`
         sudo sed -i 's/syncCounter=.*/syncCounter=0/' $logs/watchdog
         sudo sed -i "s,restartDate=.*,restartDate=\"$restartDate\"," $logs/watchdog
+    fi
+else
+    if [ "$syncCounter" -gt "0" ]; then
+        let syncCounter=$syncCounter-1
+        sudo sed -i 's/syncCounter=.*/syncCounter='$syncCounter'/' $logs/watchdog
     fi
 fi
