@@ -1,23 +1,25 @@
 #!/bin/bash
 source $logs/watchdog
 
+
 if [ "$status" != "active" ]; then
+    if [ -n "$statusCounter" ]; then
+        if ! [ "$statusCounter" -eq "$statusCounter" ] 2>/dev/null; then
+            statusCounter=0
+        fi
+    else
+        statusCounter=0
+    fi
+    sudo systemctl stop $node
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-    let statuscounter=$statusCounter+1
-    if [ "$statusCounter" -ge "3" ] && [ "$keepDb" = "false" ]; then
-        if [ "$network" = "mainnet" ]; then
-            sudo rm -rf $hornetDir/snapshots/mainnet
-            echo "$restartdt WACHTDOG - STATUSCHECK - $node DB deleted while counter reached" >> $logs/swarm.log
-        fi
-        if [ "$network" = "testnet" ]; then
-            sudo rm -rf $hornetDir/snapshots/testnet
-            echo "$restartdt WACHTDOG - STATUSCHECK - $node DB deleted while counter reached" >> $logs/swarm.log
-        fi
-        if [ "$network" = "devnet" ]; then
-            sudo rm -rf $hornetDir/snapshots/devnet
-            echo "$restartdt WACHTDOG - STATUSCHECK - $node DB deleted while counter reached" >> $logs/swarm.log
+    if [ "$statusCounter" -ge "2" ]; then
+        if [ "$keepDb" = "false" ]; then
+            sudo rm -rf $hornetDir/${network}db $hornetDir/snapshots/${network}/*.bin
+            echo "$restartdt WACHTDOG - STATUSCHECK - ${network}}DB deleted while counter reached" >> $logs/swarm.log
         fi
         statusCounter=0
+    else
+        let statusCounter=$statusCounter+1
     fi
     sudo systemctl restart $node
     sudo sed -i 's/statusCounter=.*/statusCounter='$statusCounter'/' $logs/watchdog
