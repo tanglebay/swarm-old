@@ -1,0 +1,21 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+    do
+    parser="$(jq '.db.engine' $hornetDir/$hornetConfig.json)"
+    if [ "$parser" != "\"$dbEngine\"" ]; then
+        sudo jq '.db.engine = "'$dbEngine'"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+        nodeRestart=true
+    fi
+done
+if [ "$nodeRestart" = "true" ]; then
+    sudo chown $node:$node $hornetDir/config*.json
+    sudo systemctl stop $node
+    sudo rm -rf $hornetDir/${network}db $hornetDir/snapshots/${network}
+    sudo systemctl start $node
+    unset nodeRestart
+fi
+unset ARRAYhornetConfigs
+unset hornetConfig
