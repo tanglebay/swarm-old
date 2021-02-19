@@ -1,0 +1,17 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    parser="$(jq '.dashboard.auth.username' $hornetDir/$hornetConfig.json)"
+    if [ "\"$username\"" != "$parser" ]; then
+        if [ ! -z "$username" ] 2>/dev/null; then
+            sudo jq '.dashboard.auth.username = "'$username'"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+        else
+            sudo jq '.dashboard.auth.username = "admin"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+        fi
+    fi
+done
+unset ARRAYhornetConfigs
+unset hornetConfig
