@@ -43,13 +43,17 @@ if [ "$isHealthy" = "true" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSiz
                 milestonesPruned=true
             else
                 killSwitch=true
-                echo "$pruningDate dbPruner - [ERROR - KillSwitch] $execPruning" >> $logs/swarm.log
-                # Remove LOCK
-                sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
             fi
         getDbSize="$(du -sb $hornetDir/${network}db | cut -f1)"
         let dbSize=$getDbSize/1000000
         done
+
+        if [ "$killSwitch" = "true" ]; then
+            echo "$pruningDate dbPruner - [ERROR - KillSwitch] $execPruning" >> $logs/swarm.log
+            # Remove LOCK
+            sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
+        fi
+
         if [ "$milestonesPruned" = "true" ]; then
             pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
             sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
@@ -64,6 +68,7 @@ if [ "$isHealthy" = "true" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSiz
     unset pruneDate
     unset maxDbSize
     unset execPruning
+    unset killSwitch
 else
     if [ ! -n "$maxDbSize" ]; then
         ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
