@@ -232,37 +232,41 @@ while [ $counter -lt 1 ]; do
             )
             case $CHOICE in
                 "1)")
-                    # Update HORNET
-                    source $modules/getVersions
-                    if [ "$nodeVersion" != "HORNET $latestHornet" ]; then
-                        {
-                            echo 0
-                            sudo apt update
-                            echo 25
-                            sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
-                            echo 65
-                            IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                            for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                            do
-                                if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
-                                sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json
-                                sudo rm -rf $hornetDir/$hornetConfig.json.dpkg*
+                    if [ -f "/usr/bin/hornet/hornet" ]; then
+                        # Update HORNET
+                        source $modules/getVersions
+                        if [ "$nodeVersion" != "HORNET $latestHornet" ]; then
+                            {
+                                echo 0
+                                sudo apt update
+                                echo 25
+                                sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
+                                echo 65
+                                IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+                                for hornetConfig in "${ARRAYhornetConfigs[@]}"
+                                do
+                                    if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
+                                    sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json
+                                    sudo rm -rf $hornetDir/$hornetConfig.json.dpkg*
+                                    fi
+                                done
+                                unset ARRAYhornetConfigs
+                                unset hornetConfig
+                                echo 75
+                                newVersion="$(hornet -v)"
+                                if [ "$version" != "$newVersion" ]; then
+                                # CALL MODULE CONFIGPARSER
+                                    source $modules/hornet/configParser
+                                    sudo systemctl restart hornet
                                 fi
-                            done
-                            unset ARRAYhornetConfigs
-                            unset hornetConfig
-                            echo 75
-                            newVersion="$(hornet -v)"
-                            if [ "$version" != "$newVersion" ]; then
-                            # CALL MODULE CONFIGPARSER
-                                source $modules/hornet/configParser
-                                sudo systemctl restart hornet
-                            fi
-                            echo 100
-                        } | whiptail --gauge "Please wait while updating Hornet..." 6 65 0
-                        whiptail --title "Hornet Menu" --msgbox "Hornet update successfully" 8 65
+                                echo 100
+                            } | whiptail --gauge "Please wait while updating Hornet..." 6 65 0
+                            whiptail --title "Hornet Menu" --msgbox "Hornet update successfully" 8 65
+                        else
+                            whiptail --title "Hornet Menu" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
+                        fi
                     else
-                        whiptail --title "Hornet Menu" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
+                        whiptail --title "Hornet Installer" --msgbox "Sorry, but Hornet is not installed!" 8 65
                     fi
                 ;;
                 "2)")
