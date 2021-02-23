@@ -15,7 +15,12 @@ echo "alias swarm='sudo /var/lib/swarm/swarm'" >> ~/.bashrc && . ~/.bashrc
 ```
 3. Run one time SWARM this command and after first start/reboot you can use just `swarm`
 
+4. Please edit the config for hornet, proxy and swarm!
+
 
 # Support
 
-IOTA Address: `PBOHQZ9SZ9AZD9LDM9EHOSAENTEVIBAOUEYEYRZHIDXJVWLTKLSQJZZXFBKGXYTHFVGV9WSBPDGRILOX9SLKPOXRAA`
+**IOTA Address:**
+```
+PBOHQZ9SZ9AZD9LDM9EHOSAENTEVIBAOUEYEYRZHIDXJVWLTKLSQJZZXFBKGXYTHFVGV9WSBPDGRILOX9SLKPOXRAA
+```
