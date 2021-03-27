@@ -8,11 +8,9 @@
 
 1. First you should clone the repo
 ```shell
-sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm && sudo chmod +x /var/lib/swarm/swarm
+curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh | sudo bash -
 ```
-2. Run one time SWARM this command and after first start/reboot you can use just `swarm`
-
-3. Please edit the config for hornet, proxy and swarm!
+2. Please edit the config for hornet, proxy and swarm!
 
 
 # Support
