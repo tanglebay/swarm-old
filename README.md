@@ -1,5 +1,6 @@
 ### Please note that you use this script at your own risk and that I will not be liable for any damages that may occur ###
 
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/TangleBay/swarm?style=for-the-badge)
 
 # SWARM #
 
@@ -9,13 +10,9 @@
 ```shell
 sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm && sudo chmod +x /var/lib/swarm/swarm
 ```
-2. Add an alias for the current user
-```shell
-echo "alias swarm='sudo /var/lib/swarm/swarm'" >> ~/.bashrc && . ~/.bashrc
-```
-3. Run one time SWARM this command and after first start/reboot you can use just `swarm`
+2. Run one time SWARM this command and after first start/reboot you can use just `swarm`
 
-4. Please edit the config for hornet, proxy and swarm!
+3. Please edit the config for hornet, proxy and swarm!
 
 
 # Support
