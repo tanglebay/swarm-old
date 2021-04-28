@@ -1,0 +1,16 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    parser="$(jq '.node.alias' $hornetDir/$hornetConfig.json)"
+    if [ "\"$nodeAlias\"" != "$parser" ]; then
+        if [ ! -z "$nodeAlias" ] 2>/dev/null; then
+            nodeAlias=$(echo $nodeAlias | tr -d ' ')
+            sudo jq '.node.alias = "'$nodeAlias'"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+        fi
+    fi
+done
+unset ARRAYhornetConfigs
+unset hornetConfig

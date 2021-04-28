@@ -1,0 +1,26 @@
+#!/bin/bash
+
+
+# STARTUP UPDATE CHECK
+if [ ! -f "$configs/swarmCfgBak" ] && [ ! -f "$configs/proxyCfgBak" ] && [ ! -f "$configs/hornetCfgBak" ] && [ ! -f "$logs/watchdogBak" ] && [ ! -f "$logs/dbPrunerBak" ]; then
+    source $swarmDir/version
+    currentBranch=$( cd $swarmDir ; git rev-parse --abbrev-ref HEAD )
+    latestSwarm="$(curl -s https://api.github.com/repos/TangleBay/swarm/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
+    if [ "$swarmAutoUpdater" = "true" ]; then
+        if [ ! -z "$latestSwarm" ]; then
+            if [ "$version" != "$latestSwarm" ]; then
+                swarmUpdated=true
+                cat $configs/swarm.cfg > $configs/swarmCfgBak
+                cat $configs/hornet.cfg > $configs/hornetCfgBak
+                cat $configs/proxy.cfg > $configs/proxyCfgBak
+                cat $logs/dbPruner > $logs/dbPrunerBak
+                cat $logs/watchdog > $logs/watchdogBak
+
+                currentBranch=$( cd $swarmDir ; git rev-parse --abbrev-ref HEAD )
+                ( cd $swarmDir ; sudo git pull ) > /dev/null 2>&1
+                ( cd $swarmDir ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
+                sudo chmod +x $swarmDir/swarm $plugins/watchdog $plugins/dbPruner
+            fi
+        fi
+    fi
+fi

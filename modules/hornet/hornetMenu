@@ -1,0 +1,359 @@
+#!/bin/bash
+# HORNET MENU
+while [ $counter -lt 1 ]; do
+    clear
+    CHOICE=$(
+        whiptail --title "Hornet Menu" --menu "\nChoose an option" 16 65 0 \
+        "1)" "Hornet Configurations" \
+        "2)" "Hornet Debugging" \
+        "3)" "Hornet Installer" 3>&2 2>&1 1>&3
+    )
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        counter=1
+    fi
+
+    case $CHOICE in
+        "1)")
+            CHOICE=$(
+                whiptail --title "Hornet Configurations" --menu "\nChoose an option" 16 65 0 \
+                "1)" "Edit Hornet configuration" \
+                "2)" "Mainnet Config" \
+                "3)" "Devnet Config" \
+                "4)" "Testnet Config" \
+                "5)" "Peering Config" \
+                "6)" "Hornet Service Options" \
+                "7)" "Hornet Service" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    # Edit simple config
+                    currentRelease=$release
+                    currentNetwork=$network
+                    sudo nano $configs/hornet.cfg
+
+                    {
+                        echo 0
+                        source $configs/hornet.cfg
+                        # Run Hornet cfg checker
+                        source $modules/hornet/releaseChannel
+                        source $modules/hornet/iotaNetwork
+                        # CALL MODULE CONFIGPARSER
+                        if [ -f "$hornetDir/config.json" ]; then
+                            source $modules/hornet/configParser
+                        fi
+                        sleep 0.1
+                        echo 100
+                        sleep 0.2
+                    } | whiptail --gauge "Verify configuration and set values..." 6 65 0
+
+                    if [ "$restartNode" = "true" ]; then
+                        sudo systemctl restart $nodeVersion
+                    else
+                        if (whiptail --title "Hornet Menu" --yesno "Would you like to restart hornet now?" 8 65); then
+                            {
+                                echo 0
+                                sleep 0.25
+                                echo 66
+                                sudo systemctl restart hornet
+                                echo 100
+                                sleep 0.25
+                            } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                        fi
+                    fi
+                ;;
+                "2)")
+                    sudo nano $hornetDir/config.json
+                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                        {
+                            echo 0
+                            sleep 0.25
+                            echo 66
+                            sudo systemctl restart hornet
+                            echo 100
+                            sleep 0.25
+                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                    fi
+                ;;
+                "3)")
+                    sudo nano $hornetDir/config_devnet.json
+                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                        {
+                            echo 0
+                            sleep 0.25
+                            echo 66
+                            sudo systemctl restart hornet
+                            echo 100
+                            sleep 0.25
+                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                    fi
+                ;;
+                "4)")
+                    sudo nano $hornetDir/config_chrysalis_testnet.json
+                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                        {
+                            echo 0
+                            sleep 0.25
+                            echo 66
+                            sudo systemctl restart hornet
+                            echo 100
+                            sleep 0.25
+                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                    fi
+                ;;
+                "5)")
+                    sudo nano $hornetDir/peering.json
+                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                        {
+                            echo 0
+                            sleep 0.25
+                            echo 66
+                            sudo systemctl restart hornet
+                            echo 100
+                            sleep 0.25
+                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                    fi
+                ;;
+                "6)")
+                    sudo nano /etc/default/hornet
+                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                        {
+                            echo 0
+                            sleep 0.25
+                            echo 66
+                            sudo systemctl restart hornet
+                            echo 100
+                            sleep 0.25
+                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                    fi
+                ;;
+                "7)")
+                    sudo nano /lib/systemd/system/hornet.service
+                    sudo systemctl daemon-reload
+                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                        {
+                            echo 0
+                            sleep 0.25
+                            echo 66
+                            sudo systemctl restart hornet
+                            echo 100
+                            sleep 0.25
+                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                    fi
+                ;;
+            esac
+        ;;
+        "2)")
+            CHOICE=$(
+                whiptail --title "Hornet Debugging" --menu "\nChoose your option" 16 65 0 \
+                "1)" "Show Hornet log" \
+                "2)" "Start/Stop Hornet" \
+                "3)" "Reset Hornet Database" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    # Display last 65 lines of log
+                    sudo journalctl -fu hornet | less -FRSXM
+                ;;
+                "2)")
+                    CHOICE=$(
+                        whiptail --title "Hornet Menu" --menu "\nChoose your option" 16 65 0 \
+                        "1)" "Restart Hornet" \
+                        "2)" "Start Hornet" \
+                        "3)" "Stop Hornet" \
+                        "4)" "Status Hornet" 3>&2 2>&1 1>&3
+                    )
+                    case $CHOICE in
+                        "1)")
+                            {
+                                echo 0
+                                sleep 0.25
+                                echo 66
+                                sudo systemctl restart hornet
+                                echo 100
+                                sleep 0.25
+                            } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                            whiptail --title "Hornet Menu" --msgbox "Hornet restart successfully" 8 65
+                        ;;
+                        "2)")
+                            {
+                                echo 0
+                                sleep 0.25
+                                echo 66
+                                sudo systemctl start hornet
+                                echo 100
+                                sleep 0.25
+                            } | whiptail --gauge "Please wait while starting Hornet..." 6 65 0
+                            whiptail --title "Hornet Menu" --msgbox "Hornet start successfully" 8 65
+                        ;;
+                        "3)")
+                            {
+                                echo 0
+                                sleep 0.25
+                                echo 66
+                                sudo systemctl stop hornet
+                                echo 100
+                                sleep 0.25
+                            } | whiptail --gauge "Please wait while stopping Hornet..." 6 65 0
+                            whiptail --title "Hornet Menu" --msgbox "Hornet stop successfully" 8 65
+                        ;;
+                        "4)")
+                            hornetStatus="$(sudo systemctl status hornet)"
+                            whiptail --title "Hornet Menu" --msgbox "$hornetStatus" 15 65
+                        ;;
+                    esac
+                ;;
+                "3)")
+                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Are you sure you want to delete the hornet database?" 8 65); then
+                        source $configs/hornet.cfg
+                        {
+                            echo 0
+                            echo 33
+                            sudo systemctl stop hornet
+                            echo 66
+                            sudo rm -rf $hornetDir/${network}db $hornetDir/snapshots/${network}/*.bin
+                            sudo systemctl start hornet
+                            sleep 0.25
+                            echo 100
+                            sleep 0.25
+                        } | whiptail --gauge "Please wait while running cleanup..." 6 65 0
+                        whiptail --title "Hornet Menu" --msgbox "${network}DB reset successfully" 8 65
+                    fi
+                ;;
+            esac
+        ;;
+        "3)")
+            CHOICE=$(
+                whiptail --title "Hornet Installer" --menu "\nChoose your option" 16 65 0 \
+                "1)" "Update Hornet" \
+                "2)" "Install Hornet" \
+                "3)" "Remove Hornet" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    if [ -f "/usr/bin/hornet/hornet" ]; then
+                        # Update HORNET
+                        source $modules/getVersions
+                        if [ "$nodeVersion" != "HORNET $latestHornet" ]; then
+                            {
+                                echo 0
+                                sudo apt update
+                                echo 25
+                                sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
+                                echo 65
+                                IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+                                for hornetConfig in "${ARRAYhornetConfigs[@]}"
+                                do
+                                    if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
+                                    sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json
+                                    sudo rm -rf $hornetDir/$hornetConfig.json.dpkg*
+                                    fi
+                                done
+                                unset ARRAYhornetConfigs
+                                unset hornetConfig
+                                echo 75
+                                newVersion="$(hornet -v)"
+                                if [ "$version" != "$newVersion" ]; then
+                                # CALL MODULE CONFIGPARSER
+                                    source $modules/hornet/configParser
+                                    sudo systemctl restart hornet
+                                fi
+                                echo 100
+                            } | whiptail --gauge "Please wait while updating Hornet..." 6 65 0
+                            whiptail --title "Hornet Menu" --msgbox "Hornet update successfully" 8 65
+                        else
+                            whiptail --title "Hornet Menu" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
+                        fi
+                    else
+                        whiptail --title "Hornet Installer" --msgbox "Sorry, but Hornet is not installed!" 8 65
+                    fi
+                ;;
+                "2)")
+                    # INSTALL HORNET
+                    if [ ! -f "/usr/bin/hornet/hornet" ]; then
+                        {
+                            echo 0
+                            echo 5
+                            source $configs/hornet.cfg
+                            sudo snap install go --classic > /dev/null 2>&1
+                            echo 10
+                            sudo wget -qO - https://ppa.hornet.zone/pubkey.txt | sudo apt-key add -
+                            if [ "$release" = "stable" ]; then
+                                sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+                            fi
+                            if [ "$release" = "testing" ]; then
+                                sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+                                sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
+                                sudo sh -c 'echo "deb http://ppa.hornet.zone alpha main" >> /etc/apt/sources.list.d/hornet.list'
+                            fi
+                            echo 20
+                            sudo apt -qq update > /dev/null 2>&1
+                            echo 30
+                            sudo apt -qq dist-upgrade -y > /dev/null 2>&1
+                            echo 40
+                            sudo apt -qq upgrade -y > /dev/null 2>&1
+                            echo 50
+                            sudo apt -qq install hornet -y > /dev/null 2>&1
+                            echo 60
+                            # Check which network
+                            if [ "$network" = "mainnet" ]; then
+                                echo "" > /etc/default/hornet
+                            fi
+                            if [ "$network" = "devnet" ]; then
+                                echo "OPTIONS=\"--config config_devnet\"" > /etc/default/hornet
+                            fi
+                            if [ "$network" = "testnet" ]; then
+                                echo "OPTIONS=\"--config config_chrysalis_testnet\"" > /etc/default/hornet
+                            fi
+                            # ONLY TEMP AND WILL BE REMOVED IN THE NEXT VERSIONS
+                            if [ ! -f "/etc/systemd/system/multi-user.target.wants/hornet.service" ]; then
+                                sudo systemctl enable hornet
+                            fi
+                            echo 70
+                        } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
+                        if [ -f "/usr/bin/hornet" ]; then
+                            {
+                                echo 70
+                                # CALL MODULE CONFIGPARSER
+                                source $modules/hornet/configParser
+                                echo 85
+                                sudo systemctl restart hornet
+                                echo 100
+                                sleep 0.2
+                            } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
+                            whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports in your home router for peering\n\nPorts: $autopeeringPort/UDP\n$neighborPort/tcp" 8 65
+                        else
+                            whiptail --title "Hornet Installer" --msgbox "Error while installing Hornet. Please check hornet.cfg and try again!" 8 65
+                        fi
+                    else
+                        whiptail --title "Hornet Installer" --msgbox "Hornet already installed or not set in the SWARM.cfg!" 8 65
+                    fi
+                ;;
+                "3)")
+                    {
+                        echo 0
+                        sleep 0.25
+                        ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab -
+                        echo 25
+                        sleep 0.25
+                        ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
+                        echo 65
+                        sleep 0.25
+                        sudo systemctl stop hornet
+                        echo 75
+                        sleep 0.25
+                        sudo apt -qq purge hornet -y > /dev/null 2>&1
+                        echo 85
+                        sleep 0.25
+                        sudo apt -qq autoremove -y > /dev/null 2>&1
+                        sudo systemctl daemon-reload
+                        echo 100
+                        sleep 0.25
+                    } | whiptail --gauge "Please wait while removing Hornet..." 6 65 0
+                    whiptail --title "Hornet Menu" --msgbox "Deleting Hornet successfully" 8 65
+                ;;
+            esac
+        ;;
+    esac
+done
+counter=0

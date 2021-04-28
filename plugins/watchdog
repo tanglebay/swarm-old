@@ -5,21 +5,26 @@ source $configs/swarm.cfg
 source $configs/proxy.cfg
 
 # Get Service Status
-status="$(systemctl show -p ActiveState --value hornet)"
+status="$(systemctl show -p ActiveState --value $node)"
 
-# Update check
-source $modules/watchdog/autoupdate
+# SWARM auto updater
+source $modules/watchdog/swarmAutoUpdate
 
-# Service check
-source $modules/watchdog/statuscheck
+if [ "$swarmupdated" != "true" ]; then
+    # Update check
+    source $modules/watchdog/nodeUpdate
 
-# Check sync
-source $modules/watchdog/synccheck
+    # Service check
+    source $modules/watchdog/statusCheck
 
-# Check proxy status
-source $modules/watchdog/proxycheck
+    # Check sync
+    source $modules/watchdog/syncCheck
 
-# Log Pruning
-source $modules/watchdog/logpruning
+    # Check proxy status
+    source $modules/watchdog/proxyCheck
+
+    # Log Pruning
+    source $modules/watchdog/logPruning
+fi
 
 exit 0

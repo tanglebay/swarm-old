@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Check if letsencrypt is already installed on the node
+if [ ! -d "/etc/letsencrypt" ]; then
+    {
+        echo 0
+        sudo apt -qq install software-properties-common certbot python3-certbot-nginx -y > /dev/null 2>&1
+        echo 20
+        rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
+        sleep 0.1
+        echo 30
+        rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
+        sleep 0.1
+        echo 50
+        sleep 0.1
+        sudo cp $templates/nginx_http.template /etc/nginx/sites-enabled/default
+        echo 60
+        sleep 0.1
+        sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
+        echo 70
+        sleep 0.1
+        sudo systemctl restart nginx
+        echo 90
+        sleep 0.1
+        echo 100
+        sleep 0.25
+    } | whiptail --gauge "Please wait while the proxy will be installed..." 6 65 0
+else
+    {
+        echo 0
+        sleep 0.1
+        echo 40
+        sleep 0.1
+        echo 80
+        sleep 0.1
+        echo 100
+        sleep 0.25
+    } | whiptail --gauge "Please wait while the proxy will be installed..." 6 65 0
+fi
+
+# Check if a folder of the domain for letsencrypt already exist
+if [ ! -d "/etc/letsencrypt/live/$domain" ]; then
+    sudo certbot --nginx -d $domain
+    echo ""
+    read -p "Press any key to continue..."
+    if [ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
+        whiptail --title "Proxy Menu" --msgbox "Error! SSL Certificate not found!" 8 65
+    else
+        whiptail --title "Proxy Menu" --msgbox "SSL certificate successfully issued!" 8 65
+    fi
+fi
+
+# Check if the certificate for the domain already exist
+if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
+    rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
+    {
+    echo 0
+    sleep 0.25
+    sudo cp $templates/nginx_default.template /etc/nginx/sites-enabled/default
+    echo 30
+    sleep 0.25
+    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
+    echo 60
+    sleep 0.25
+    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/443/'$apiPort'/g' {} \;
+    echo 80
+    sleep 0.25
+    sudo systemctl restart nginx
+    echo 100
+    sleep 0.25
+    } | whiptail --gauge "Please wait while SWARM deploying the config and restart the proxy..." 6 65 0
+    whiptail --title "Proxy Menu" --msgbox "Node Informations:\n\nURL: https://$domain:$apiPort" 15 65
+else
+    whiptail --title "Proxy Menu" --msgbox "SSL Protection is not correctly defined in proxy.cfg!" 8 65
+fi

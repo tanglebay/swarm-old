@@ -1,0 +1,19 @@
+#!/bin/bash
+if [ -z "$p2pIdentity" ]; then
+    p2pIdentity=$($hornetDir/hornet tools p2pidentity | grep "private key" | awk '{ print $NF }')
+    sudo sed -i 's/p2pIdentity=.*/p2pIdentity="'$p2pIdentity'"/' $configs/hornet.cfg
+    sudo rm -rf $hornetDir/p2pstore
+fi
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    parser="$(jq '.p2p.identityPrivateKey' $hornetDir/$hornetConfig.json)"
+    if [ "$parser" != "\"$p2pIdentity\"" ]; then
+        sudo jq '.p2p.identityPrivateKey = "'$p2pIdentity'"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+        sudo rm -rf $hornetDir/p2pstore
+    fi
+done
+unset ARRAYhornetConfigs
+unset hornetConfig

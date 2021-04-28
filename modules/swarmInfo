@@ -1,0 +1,87 @@
+#!/bin/bash
+
+if [ ! -z "$domain" ]; then
+    if [ "$apiPort" = "443" ]; then
+        nodeUrl="https://$domain"
+    else
+        nodeUrl="https://$domain:$apiPort"
+    fi
+else
+    nodeUrl="N/A"
+fi
+
+nodeVersion="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.version')"
+if [ -z "$nodeVersion" ]; then
+    nodeVersion="N/A"
+fi
+healthy="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+if [ -z "$healthy" ]; then
+    healthy="N/A"
+fi
+
+if [ "$nodeUpdate" = "true" ]; then
+    nodeUpdateStatus=enabled
+else
+    nodeUpdateStatus=disabled
+fi
+
+# Sync Check
+if [ "$checkSync" = "true" ]; then
+    checkSyncStatus=enabled
+else
+    checkSyncStatus=disabled
+fi
+
+if [ -z "$pruningDate" ]; then
+    pruningDate="N/A"
+fi
+
+# Proxy Check
+if [ "$proxyCheck" = "true" ]; then
+    proxyCheckStatus=enabled
+else
+    proxyCheckStatus=disabled
+fi
+
+if [ -z "$restartDate" ]; then
+    restartDate="N/A"
+fi
+
+# Log Pruning
+if [ "$logPruning" = "true" ]; then
+    logPruning=enabled
+else
+    logPruning=disabled
+fi
+
+#DBPruner
+crontab -l | grep -q "$dbPrunerCronCmd" && dbPrunerStatus=enabled || dbPrunerStatus=disabled
+
+# Watchdog
+#DBPruner
+crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled
+
+#API Protection
+if [ "$apiProtection" = "true" ]; then
+    apiProtectionStatus=enabled
+else
+    apiProtectionStatus=disabled
+fi
+
+# DB size
+if [ -d "$hornetDir/${network}db" ] && [ "$node" = "hornet" ]; then
+    getCurrentDbSize="$(du -sb $hornetDir/${network}db | cut -f1)"
+    let getCurrentDbSizeInGb=$getCurrentDbSize/1000000
+    if [ "$getCurrentDbSizeInGb" -gt "1000000" ]; then
+        let getCurrentDbSizeInMb=$getCurrentDbSize/1000000000
+        currentDbSize="$getCurrentDbSizeInMb GB"
+    else
+        currentDbSize="$getCurrentDbSizeInGb MB"
+    fi
+else
+    currentDbSize="N/A"
+fi
+
+# OUTPUT
+whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: $nodeVersion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentDbSize\n\nWatchdog: $watchdogStatus\nNode updater: $nodeUpdateStatus\nSync-check: $checkSyncStatus\nProxy-check: $proxyCheckStatus\nLogpruning: $logPruning\nLast restart: $restartDate\n\nDBPruner: $dbPrunerStatus\nLast pruning: $pruningDate\n\nNode-URL: $nodeUrl\nAPI Protection: $apiProtectionStatus" 23 65
+

@@ -1,0 +1,1 @@
+alias swarm='sudo /var/lib/swarm/swarm'
