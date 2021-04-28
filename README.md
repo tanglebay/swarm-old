@@ -19,3 +19,4 @@ curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh |
 ```
 PBOHQZ9SZ9AZD9LDM9EHOSAENTEVIBAOUEYEYRZHIDXJVWLTKLSQJZZXFBKGXYTHFVGV9WSBPDGRILOX9SLKPOXRAA
 ```
+
