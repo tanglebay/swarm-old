@@ -21,6 +21,6 @@ curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh |
 
 **IOTA Address:**
 ```
-
+iota1qpelnfz0kksu7hfyqgva64m256kkx8m8jrl36dlylz23d3anutf9jrlkzg3
 ```
 
