@@ -6,21 +6,17 @@
 
 **Download the latest release version of SWARM and run it. Do the following steps:**
 
-1. First add the hornet gpg key
-```
-wget -qO - https://ppa.hornet.zone/pubkey.txt | sudo apt-key add -
-```
-2. Install SWARM with the Installer
+1. Install SWARM with the Installer
 ```shell
 curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh | sudo bash -
 ```
-3. Please edit the config for hornet, proxy and swarm!
+2. Please edit the config for hornet, proxy and swarm!
 
 
 # Support
 
 **IOTA Address:**
 ```
-iota1qpelnfz0kksu7hfyqgva64m256kkx8m8jrl36dlylz23d3anutf9jrlkzg3
+iota1qq2zpclw655gaxun5ruzlnpmpqccem5v47xvc8ptkms260csz2m5ymuesea
 ```
 
