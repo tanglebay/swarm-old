@@ -2,7 +2,7 @@
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/TangleBay/swarm?style=for-the-badge)
 
-# SWARM for Ubuntu 20.04
+# SWARM (for Ubuntu 20.04)
 
 **Download the latest release version of SWARM and run it. Do the following steps:**
 
@@ -11,7 +11,6 @@
 curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh | sudo bash -
 ```
 2. After installting SWARM you can execute it with typing `swarm`
-3. Please edit the config for hornet, proxy and swarm!
 
 
 # Dashboard

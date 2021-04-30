@@ -26,7 +26,6 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
                 sudo nano $configs/hornet.cfg
                 whiptail --title "SWARM" --msgbox "Please edit the Hornet.cfg!" 8 65
                 sudo nano $configs/proxy.cfg
-                whiptail --title "SWARM" --msgbox "Setting up SWARM alias and reboot system!" 8 65
                 source $modules/alias
             else
                 whiptail --title "SWARM" --msgbox "SWARM could not be successfully cloned from GitHub" 8 65
