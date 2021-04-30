@@ -1,4 +1,5 @@
-### Please note that you use this script at your own risk and that I will not be liable for any damages that may occur ###
+## Please note that you use this script at your own risk and that I will not be liable for any damages that may occur ##
+
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/TangleBay/swarm?style=for-the-badge)
 
@@ -11,6 +12,8 @@
 curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh | sudo bash -
 ```
 2. After installting SWARM you can execute it with typing `swarm`
+
+**Notice**: Please make sure that your node is properly secured (e.g. firewall, SSH KeyAuth, regular system updates).
 
 
 # Dashboard
