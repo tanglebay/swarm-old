@@ -18,7 +18,7 @@ if [ "$checkSync" = "true" ] && [ "$dbPrunerLock" = "false" ] && [ "$status" = "
     lsmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.solidMilestoneIndex')"
     let dlmi="$lmi-$lsmi"
     if [ "$dlmi" -gt "$maxLmi" ]; then
-        sudo systemctl stop $node
+        sudo systemctl stop hornet
         if [ "$syncCounter" -gt "5" ]; then
             if [ "$keepDb" = "false" ]; then
                 sudo rm -rf $hornetDir/${network}db $hornetDir/snapshots/${network}/*.bin
@@ -28,7 +28,7 @@ if [ "$checkSync" = "true" ] && [ "$dbPrunerLock" = "false" ] && [ "$status" = "
         else
             let syncCounter=$syncCounter+1
         fi
-        sudo systemctl start $node
+        sudo systemctl start hornet
         echo "$restartDate [WACHTDOG] - SYNCCHECK - Hornet restarted because maxLmi reached!" >> $logs/swarm.log
         restartDate=`date '+%d-%m-%Y %H-%M-%S'`
         sudo sed -i 's/syncCounter=.*/syncCounter='$syncCounter'/' $logs/watchdog
