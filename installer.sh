@@ -18,8 +18,16 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
             fi
             sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm
             if [ -f "/var/lib/swarm/swarm" ]; then
-                sudo chmod +x /var/lib/swarm/swarm
-                source /var/lib/swarm/modules/alias
+                source /var/lib/swarm/modules/variables
+                sudo chmod +x $swarmDir/swarm $plugins/watchdog $plugins/dbPruner
+                whiptail --title "SWARM" --msgbox "Please edit the SWARM.cfg!" 8 65
+                sudo nano $configs/swarm.cfg
+                whiptail --title "SWARM" --msgbox "Please edit the Hornet.cfg!" 8 65
+                sudo nano $configs/hornet.cfg
+                whiptail --title "SWARM" --msgbox "Please edit the Hornet.cfg!" 8 65
+                sudo nano $configs/proxy.cfg
+                whiptail --title "SWARM" --msgbox "Setting up SWARM alias and reboot system!" 8 65
+                source $modules/alias
             else
                 whiptail --title "SWARM" --msgbox "SWARM could not be successfully cloned from GitHub" 8 65
             fi

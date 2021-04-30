@@ -10,7 +10,8 @@
 ```shell
 curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh | sudo bash -
 ```
-2. Please edit the config for hornet, proxy and swarm!
+2. After installting SWARM you can execute it with typing `swarm`
+3. Please edit the config for hornet, proxy and swarm!
 
 
 # Dashboard
