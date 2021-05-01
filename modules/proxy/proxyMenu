@@ -22,7 +22,9 @@ while [ $counter -lt 1 ]; do
                 "1)")
                     # Change proxy.cfg
                     sudo nano $configs/proxy.cfg
+                    sudo ufw delete allow $apiPort/tcp /dev/null 2>&1
                     source $configs/proxy.cfg
+                    sudo ufw allow $apiPort/tcp /dev/null 2>&1
                 ;;
             esac
         ;;
@@ -91,13 +93,31 @@ while [ $counter -lt 1 ]; do
             )
             case $CHOICE in
                 "1)")
-                    # Run the nginx module for the proxy
-                    source $modules/proxy/proxyDeployment
+                    if [ "$domain" = "myhornetnode.domain.tld" ]; then
+                        whiptail --title "Proxy Menu" --msgbox "Please enter your domain first before continuing!" 8 65
+                        sudo nano $configs/proxy.cfg
+                        if [ -x "$(command -v ufw)" ]; then
+                            sudo ufw delete allow $apiPort/tcp /dev/null 2>&1
+                        fi
+                        source $configs/proxy.cfg
+                        if [ -x "$(command -v ufw)" ]; then
+                            sudo ufw allow $apiPort/tcp /dev/null 2>&1
+                        fi
+                    fi
+                    if [ "$domain" != "myhornetnode.domain.tld" ]; then
+                        # Run the nginx module for the proxy
+                        source $modules/proxy/proxyDeployment
+                    else
+                        whiptail --title "Proxy Menu" --msgbox "No valid domain specified, please try again!" 8 65
+                    fi
                 ;;
                 "2)")
                     {
                         echo 0
-                        sleep 0.25
+                        if [ -x "$(command -v ufw)" ]; then
+                            sudo ufw delete allow 80/tcp
+                            sudo ufw delte allow $apiPort/tcp
+                        fi
                         echo 33
                         sudo apt -qq purge software-properties-common certbot python3-certbot-nginx -y > /dev/null 2>&1
                         echo 66
