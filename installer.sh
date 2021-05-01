@@ -19,6 +19,7 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
             sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm
             if [ -f "/var/lib/swarm/swarm" ]; then
                 source /var/lib/swarm/modules/variables
+                sudo chmod +x $swarmDir/swarm $plugins/watchdog $plugins/dbPruner
                 source $modules/alias
                 if [ "$restart" = "false" ]; then
                     source $swarmDir/swarm
