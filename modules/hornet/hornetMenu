@@ -26,9 +26,6 @@ while [ $counter -lt 1 ]; do
             )
             case $CHOICE in
                 "1)")
-                    if [ -x "$(command -v ufw)" ]; then
-                        sudo ufw delete allow $gossipPort/tcp > /dev/null 2>&1
-                    fi
                     # Edit simple config
                     currentRelease=$release
                     currentNetwork=$network
@@ -43,9 +40,6 @@ while [ $counter -lt 1 ]; do
                         # CALL MODULE CONFIGPARSER
                         if [ -f "$hornetDir/config.json" ]; then
                             source $modules/hornet/configParser
-                        fi
-                        if [ "$ufw" = "true" ]; then
-                            sudo ufw allow $gossipPort/tcp > /dev/null 2>&1
                         fi
                         echo 100
                         sleep 0.2
@@ -286,7 +280,7 @@ while [ $counter -lt 1 ]; do
                             echo 20
                             sudo apt -qq update > /dev/null 2>&1
                             echo 40
-                            sudo apt -qq install hornet -y > /dev/null 2>&1
+                            sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
                             echo 60
                             # Check which network
                             if [ "$network" = "mainnet" ]; then
@@ -303,10 +297,14 @@ while [ $counter -lt 1 ]; do
                         } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
                         if [ -f "/usr/bin/hornet" ]; then
                             {
-                                echo 75
+                                echo 70
                                 # CALL MODULE CONFIGPARSER
                                 source $modules/hornet/configParser
-                                echo 85
+                                echo 80
+                                if [ "$ufw" = "true" ]; then
+                                    sudo ufw allow $gossipPort/tcp > /dev/null 2>&1
+                                fi
+                                echo 90
                                 sudo systemctl restart hornet > /dev/null 2>&1
                                 echo 100
                                 sleep 0.2
@@ -324,19 +322,24 @@ while [ $counter -lt 1 ]; do
                         echo 0
                         sleep 0.25
                         ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab -
-                        echo 25
+                        echo 15
                         sleep 0.25
                         ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
-                        echo 65
+                        echo 30
                         sleep 0.25
                         sudo systemctl stop hornet
-                        echo 75
+                        echo 45
                         sleep 0.25
                         sudo apt -qq purge hornet -y > /dev/null 2>&1
-                        echo 85
+                        echo 60
                         sleep 0.25
                         sudo apt -qq autoremove -y > /dev/null 2>&1
+                        echo 75
                         sudo systemctl daemon-reload
+                        echo 90
+                        if [ "$ufw" = "true" ]; then
+                            sudo ufw delete allow $gossipPort > /dev/null 2>&1
+                        fi
                         echo 100
                         sleep 0.25
                     } | whiptail --gauge "Please wait while removing Hornet..." 6 65 0
