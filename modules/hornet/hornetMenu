@@ -19,6 +19,7 @@ while [ $counter -lt 1 ]; do
                 whiptail --title "Hornet Configurations" --menu "\nChoose an option" 16 65 0 \
                 "1)" "Edit Hornet configuration" \
                 "2)" "Mainnet Config" \
+                "3)" "Testnet Config" \
                 "3)" "Peering Config" \
                 "4)" "Hornet Service Options" \
                 "5)" "Hornet Service" 3>&2 2>&1 1>&3
@@ -40,7 +41,6 @@ while [ $counter -lt 1 ]; do
                         if [ -f "$hornetDir/config.json" ]; then
                             source $modules/hornet/configParser
                         fi
-                        sleep 0.1
                         echo 100
                         sleep 0.2
                     } | whiptail --gauge "Verify configuration and set values..." 6 65 0
@@ -74,7 +74,7 @@ while [ $counter -lt 1 ]; do
                     fi
                 ;;
                 "3)")
-                    sudo nano $hornetDir/peering.json
+                    sudo nano $hornetDir/config_chrysalis_testnet.json
                     if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
                         {
                             echo 0
@@ -87,7 +87,7 @@ while [ $counter -lt 1 ]; do
                     fi
                 ;;
                 "4)")
-                    sudo nano /etc/default/hornet
+                    sudo nano $hornetDir/peering.json
                     if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
                         {
                             echo 0
@@ -100,6 +100,19 @@ while [ $counter -lt 1 ]; do
                     fi
                 ;;
                 "5)")
+                    sudo nano /etc/default/hornet
+                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                        {
+                            echo 0
+                            sleep 0.25
+                            echo 66
+                            sudo systemctl restart hornet
+                            echo 100
+                            sleep 0.25
+                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                    fi
+                ;;
+                "6)")
                     sudo nano /lib/systemd/system/hornet.service
                     sudo systemctl daemon-reload
                     if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
@@ -227,7 +240,7 @@ while [ $counter -lt 1 ]; do
                                 newVersion="$(hornet -v)"
                                 if [ "$version" != "$newVersion" ]; then
                                 # CALL MODULE CONFIGPARSER
-                                    sudo -u hornet wget -q -O $hornetDir/config_chrysalis_testnet.json https://github.com/gohornet/hornet/blob/develop/config_chrysalis_testnet.json
+                                    sudo -u hornet wget -q -O $hornetDir/config_chrysalis_testnet.json https://raw.githubusercontent.com/gohornet/hornet/develop/config_chrysalis_testnet.json
                                     source $modules/hornet/configParser
                                     sudo systemctl restart hornet
                                 fi
@@ -242,7 +255,7 @@ while [ $counter -lt 1 ]; do
                     fi
                 ;;
                 "2)")
-                    if (whiptail --title "Hornet Menu" --yesno "Have you already modified Hornet.cfg in SWARM??" 8 65); then
+                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Have you already modified Hornet.cfg in SWARM??" 8 65); then
                         echo 0 > /dev/null 2>&1
                     else
                         sudo nano $configs/hornet.cfg
@@ -274,7 +287,7 @@ while [ $counter -lt 1 ]; do
                                 echo "" > /etc/default/hornet
                             fi
                             if [ "$network" = "testnet" ]; then
-                                echo "OPTIONS=\"--config config_chrysalis_testnet\"" > /etc/default/hornet
+                                echo "OPTIONS=\"--config config_chrysalis_testnet.json\"" > /etc/default/hornet
                             fi
                             # ONLY TEMP AND WILL BE REMOVED IN THE NEXT VERSIONS
                             if [ ! -f "/etc/systemd/system/multi-user.target.wants/hornet.service" ]; then
@@ -284,10 +297,17 @@ while [ $counter -lt 1 ]; do
                         } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
                         if [ -f "/usr/bin/hornet" ]; then
                             {
-                                echo 75
+                                echo 70
+                                if [ ! -f "$hornetDir/config_chrysalis_testnet.json" ]; then
+                                    sudo -u hornet wget -q -O $hornetDir/config_chrysalis_testnet.json https://raw.githubusercontent.com/gohornet/hornet/develop/config_chrysalis_testnet.json
+                                fi
                                 # CALL MODULE CONFIGPARSER
                                 source $modules/hornet/configParser
-                                echo 85
+                                echo 80
+                                if [ "$ufw" = "true" ]; then
+                                    sudo ufw allow $gossipPort/tcp > /dev/null 2>&1
+                                fi
+                                echo 90
                                 sudo systemctl restart hornet > /dev/null 2>&1
                                 echo 100
                                 sleep 0.2
@@ -305,19 +325,26 @@ while [ $counter -lt 1 ]; do
                         echo 0
                         sleep 0.25
                         ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab -
-                        echo 25
+                        echo 15
                         sleep 0.25
                         ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
-                        echo 65
+                        echo 30
                         sleep 0.25
-                        sudo systemctl stop hornet
-                        echo 75
+                        sudo systemctl stop hornet > /dev/null 2>&1
+                        sudo systemctl disable hornet > /dev/null 2>&1
+                        echo 45
                         sleep 0.25
                         sudo apt -qq purge hornet -y > /dev/null 2>&1
-                        echo 85
+                        echo 60
                         sleep 0.25
                         sudo apt -qq autoremove -y > /dev/null 2>&1
-                        sudo systemctl daemon-reload
+                        echo 75
+                        sudo systemctl daemon-reload > /dev/null 2>&1
+                        echo 90
+                        if [ "$ufw" = "true" ]; then
+                            sudo ufw delete allow $gossipPort > /dev/null 2>&1
+                        fi
+                        sudo rm -rf $hornetDir > /dev/null 2>&1
                         echo 100
                         sleep 0.25
                     } | whiptail --gauge "Please wait while removing Hornet..." 6 65 0
