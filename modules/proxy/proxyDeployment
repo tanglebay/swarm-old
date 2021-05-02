@@ -61,15 +61,19 @@ if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
     echo 0
     sleep 0.25
     sudo cp $templates/nginx_default.template /etc/nginx/sites-enabled/default
-    echo 30
+    echo 20
     sleep 0.25
     sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
-    echo 60
+    echo 40
     sleep 0.25
     sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/443/'$apiPort'/g' {} \;
-    echo 80
+    echo 60
     sleep 0.25
     sudo systemctl restart nginx
+    echo 80
+    if [ "$ufw" = "true" ]; then
+        sudo ufw allow $apiPort/tcp > /dev/null 2>&1
+    fi
     echo 100
     sleep 0.25
     } | whiptail --gauge "Please wait while SWARM deploying the config and restart the proxy..." 6 65 0
