@@ -1,7 +1,8 @@
 ## Please note that you use this script at your own risk and that I will not be liable for any damages that may occur ##
 
 
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/TangleBay/swarm?style=for-the-badge)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/TangleBay/swarm?style=for-the-badge) [![Bash Shell](https://badges.frapsoft.com/bash/v1/bash.png?v=103)](https://github.com/ellerbrock/open-source-badges/) [![Support Server](https://img.shields.io/discord/591914197219016707.svg?label=Discord&logo=Discord&colorB=7289da&style=for-the-badge)](https://discord.tanglebay.com)
+
 
 # SWARM (for Ubuntu 20.04)
 
