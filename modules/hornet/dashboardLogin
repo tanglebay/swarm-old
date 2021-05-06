@@ -1,0 +1,42 @@
+#!/bin/bash
+nodeVersion=$(hornet -v)
+if [ "$nodeVersion" != "HORNET 1.0.1" ] || [ "$currentBranch" = "develop" ]; then
+    inputPassword=$(whiptail --passwordbox "\nPlease set a secure password for your dashboard login:" 8 65 --title "Hornet Menu" 3>&1 1>&2 2>&3)
+    if [ ! -z "$inputPassword" ] && [ -f "/usr/bin/hornet" ]; then
+        {
+            echo 0
+            export HORNET_TOOL_PASSWORD="$inputPassword"
+            echo 10
+            pwdhash=$(/usr/bin/hornet tools pwdhash)
+            echo 20
+            passwordHash=$(echo $pwdhash | grep -o "Your hash:.*" | awk  '{print $3}')
+            echo 30
+            passwordSalt=$(echo $pwdhash | grep -o "Your salt:.*" | awk  '{print $3}')
+            echo 40
+            sudo sed -i 's/passwordHash=.*/passwordHash="'$passwordHash'"/' $configs/hornet.cfg
+            echo 50
+            sudo sed -i 's/passwordSalt=.*/passwordSalt="'$passwordSalt'"/' $configs/hornet.cfg
+            echo 60
+            source $modules/hornet/configParsers/dashboardPasswordHash
+            echo 70
+            source $modules/hornet/configParsers/dashboardPasswordSalt
+            echo 80
+            export HORNET_TOOL_PASSWORD=""
+            unset $inputPassword
+            echo 100
+            sleep 0.25
+        } | whiptail --gauge "Please wait while generating Dashboard login..." 6 65 0
+        if (whiptail --title "Hornet Menu" --yesno "Would you like to restart hornet now?" 8 65); then
+            {
+                echo 0
+                sleep 0.25
+                echo 50
+                sudo systemctl restart hornet
+                echo 100
+                sleep 0.25
+            } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+        fi
+    else
+        whiptail --title "Hornet Menu" --msgbox "Error - Try again later!" 8 65
+    fi
+fi
