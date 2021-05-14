@@ -24,6 +24,16 @@ if [ "$isHealthy" = "true" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSiz
         sudo systemctl restart hornet
     fi
 
+    # Check if enough buffer space is left
+    getDiskSize=$(df -h $hornetDir/${network}db | awk '{print $2}')
+    getDiskSize=$(echo $getDiskSize | awk '{print $2}')
+    diskSize=${getDiskSize::-1}
+    let bufferSize=$diskSize-$maxDbSize
+    if [ $bufferSize -lt 10 ]; then
+        let maxDbSize=$maxDbSize-10
+        sudo sed -i 's/maxDbSize=.*/maxDbSize='$maxDbSize'/' $configs/swarm.cfg
+    fi
+
     getDbSize="$(du -sb $hornetDir/${network}db | cut -f1)"
     let dbSize=$getDbSize/1000000
     let maxDbSize=$maxDbSize*1000
