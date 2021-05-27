@@ -1,13 +1,14 @@
 #!/bin/bash
+if [ "pruning" = "true" ]; then
+    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
 
-IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-
-for hornetConfig in "${ARRAYhornetConfigs[@]}"
-do
-    parser="$(jq '.pruning.delay' $hornetDir/$hornetConfig.json)"
-    if [ "$parser" != "$pruningDelay" ]; then
-        sudo jq '.pruning.delay = '$pruningDelay'' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
-    fi
-done
-unset ARRAYhornetConfigs
-unset hornetConfig
+    for hornetConfig in "${ARRAYhornetConfigs[@]}"
+    do
+        parser="$(jq '.pruning.delay' $hornetDir/$hornetConfig.json)"
+        if [ "$parser" != "0" ]; then
+            sudo jq '.pruning.delay = 0' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+        fi
+    done
+    unset ARRAYhornetConfigs
+    unset hornetConfig
+fi

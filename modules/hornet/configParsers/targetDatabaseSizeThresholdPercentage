@@ -1,0 +1,14 @@
+#!/bin/bash
+if [ "pruning" = "true" ]; then
+    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+    for hornetConfig in "${ARRAYhornetConfigs[@]}"
+    do
+        parser="$(jq '.pruning.targetDatabaseSizeThresholdPercentage' $hornetDir/$hornetConfig.json)"
+        if [ "\"$parser\"" != "$targetDatabaseSizeThresholdPercentage" ]; then
+            sudo jq '.pruning.targetDatabaseSizeThresholdPercentage = "'$targetDatabaseSizeThresholdPercentage'"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+        fi
+    done
+    unset ARRAYhornetConfigs
+    unset hornetConfig
+fi

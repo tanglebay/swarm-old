@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Disable dbPruner
+crontab -l | grep -q "$dbPrunerCronCmd" && ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
+
+###########################################################################################################################
 if [ -f "$configs/hornetCfgBak" ]; then
     source $configs/hornetCfgBak
     # Upater for Hornet.cfg
@@ -81,10 +85,16 @@ if [ -f "$configs/hornetCfgBak" ]; then
         sudo sed -i 's/pruning=.*/pruning='$pruning'/' $configs/hornet.cfg
     fi
 
-    if [ -z "$pruningDelay" ]; then
-        sudo sed -i 's/pruningDelay=.*/pruningDelay=60480/' $configs/hornet.cfg
+    if [ -z "$targetDatabaseSize" ]; then
+        sudo sed -i 's/targetDatabaseSize=.*/targetDatabaseSize="35GB"/' $configs/hornet.cfg
     else
-        sudo sed -i 's/pruningDelay=.*/pruningDelay='$pruningDelay'/' $configs/hornet.cfg
+        sudo sed -i 's/targetDatabaseSize=.*/targetDatabaseSize='$targetDatabaseSize'/' $configs/hornet.cfg
+    fi
+
+    if [ -z "$targetDatabaseSizeThresholdPercentage" ]; then
+        sudo sed -i 's/targetDatabaseSizeThresholdPercentage=.*/targetDatabaseSizeThresholdPercentage=5.0/' $configs/hornet.cfg
+    else
+        sudo sed -i 's/targetDatabaseSizeThresholdPercentage=.*/targetDatabaseSizeThresholdPercentage='$targetDatabaseSizeThresholdPercentage'/' $configs/hornet.cfg
     fi
 
     if [ -z "$username" ]; then
@@ -237,14 +247,14 @@ fi
 
 ####################################################################################################################################
 
-if [ -f "$logs/dbPrunerBak" ]; then
-    source $logs/dbPrunerBak
-    # Updater for dbpruner.log
-    sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock='$dbPrunerLock'/' $logs/dbPruner
-    sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
-    # Delete Bak file
-    rm -rf $logs/dbPrunerBak
-fi
+# if [ -f "$logs/dbPrunerBak" ]; then
+#     source $logs/dbPrunerBak
+#     # Updater for dbpruner.log
+#     sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock='$dbPrunerLock'/' $logs/dbPruner
+#     sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
+#     # Delete Bak file
+#     rm -rf $logs/dbPrunerBak
+# fi
 
 
 #### REMOVE ALL BAKs
