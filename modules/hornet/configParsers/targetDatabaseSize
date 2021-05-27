@@ -1,5 +1,18 @@
 #!/bin/bash
 if [ "pruning" = "true" ]; then
+
+    if [ -d "$hornetDir" ]; then
+        getDiskSize=$(df -h $hornetDir/${network}db | awk '{print $2}')
+        getDiskSize=$(echo $getDiskSize | awk '{print $2}')
+        diskSize=${getDiskSize::-1}
+        getTargetDatabaseSize=${targetDatabaseSize//[!0-9]/}
+        let bufferSize=$diskSize-$getTargetDatabaseSize
+        if [ $bufferSize -lt 10 ]; then
+            let targetDatabaseSize=$diskSize-10
+            sudo sed -i 's/targetDatabaseSize=.*/targetDatabaseSize="'$targetDatabaseSize'GB"/' $configs/hornet.cfg
+        fi
+    fi
+
     IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
 
     for hornetConfig in "${ARRAYhornetConfigs[@]}"
