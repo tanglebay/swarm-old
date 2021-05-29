@@ -2,24 +2,23 @@
 source /var/lib/swarm/modules/variables
 source $configs/hornet.cfg
 source $configs/swarm.cfg
-source $logs/dbPruner
+#source $logs/dbPruner
 
 # Get Service Status
 isHealthy="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+pruningDatabaseSize=${pruningDatabaseSize//[!0-9]/}
 
-if [ "$isHealthy" = "true" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSize" ]; then
+
+if [ "$isHealthy" = "true" ] && [ ! -f "$logs/dbPruner.lock" ] && [ -n "$pruningDatabaseSize" ]; then
     IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
     for hornetConfig in "${ARRAYhornetConfigs[@]}"
     do
-        pruningValue="$(jq '.pruning.enabled' $hornetDir/$hornetConfig.json)"
+        pruningValue="$(jq '.pruning.size.enabled' $hornetDir/$hornetConfig.json)"
         if [ "$pruningValue" = "true" ]; then
-            sudo jq '.pruning.enabled = false' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+            sudo jq '.pruning.size.enabled = false' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
             restartHornet=true
         fi
     done
-    if [ "$pruning" = "true" ]; then
-        sudo sed -i 's/pruning=.*/pruning=false/' $configs/hornet.cfg
-    fi
     if [ "$restartHornet" = "true" ]; then
         sudo systemctl restart hornet
     fi
@@ -28,19 +27,19 @@ if [ "$isHealthy" = "true" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSiz
     getDiskSize=$(df -h $hornetDir/${network}db | awk '{print $2}')
     getDiskSize=$(echo $getDiskSize | awk '{print $2}')
     diskSize=${getDiskSize::-1}
-    let bufferSize=$diskSize-$maxDbSize
+    let bufferSize=$diskSize-$pruningDatabaseSize
     if [ $bufferSize -lt 10 ]; then
-        let maxDbSize=$diskSize-10
-        sudo sed -i 's/maxDbSize=.*/maxDbSize='$maxDbSize'/' $configs/swarm.cfg
+        let pruningDatabaseSize=$diskSize-10
+        sudo sed -i 's/pruningDatabaseSize=.*/pruningDatabaseSize='$pruningDatabaseSize'/' $configs/hornet.cfg
     fi
 
     getDbSize="$(du -sb $hornetDir/${network}db | cut -f1)"
     let dbSize=$getDbSize/1000000
-    let maxDbSize=$maxDbSize*1000
-    if [ "$dbSize" -gt 0 ] && [ "$dbSize" -gt "$maxDbSize" ]; then
+    let pruningDatabaseSize=$pruningDatabaseSize*1000
+    if [ "$dbSize" -gt 0 ] && [ "$dbSize" -gt "$pruningDatabaseSize" ]; then
         # ADD LOCK
-        sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=true/' $logs/dbPruner
-        while [ $dbSize -gt $maxDbSize ] && [ "$killSwitch" != "true" ]; do
+        sudo touch $logs/dbPruner.lock
+        while [ $dbSize -gt $pruningDatabaseSize ] && [ "$killSwitch" != "true" ]; do
             # Start pruning process
             currentPruningIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.pruningIndex')"
 
@@ -67,32 +66,32 @@ if [ "$isHealthy" = "true" ] && [ "$dbPrunerLock" = "false" ] && [ -n "$maxDbSiz
             pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
             echo "$pruningDate [DBPRUNER] - KillSwitch triggered -> $execPruning" >> $logs/swarm.log
             # Remove LOCK
-            sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
+            sudo rm -rf $logs/dbPruner.lock
         fi
 
         if [ "$milestonesPruned" = "true" ]; then
-            pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
-            sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
+            # pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
+            # sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
             echo "$pruningDate [DBPRUNER] - Database pruned to milestones $pruningIndex" >> $logs/swarm.log
 
             # Remove LOCK
-            sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
+            sudo rm -rf $logs/dbPruner.lock
         fi
     fi
     unset getDbSize
     unset dbSize
     unset pruneDate
-    unset maxDbSize
+    unset pruningDatabaseSize
     unset execPruning
     unset killSwitch
-else
-    if [ ! -n "$maxDbSize" ]; then
-        ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
-    else
-        if ! [ "$maxDbSize" -eq "$maxDbSize" ]; then
-            ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
-        fi
-    fi
+# else
+#     if [ ! -n "$pruningDatabaseSize" ]; then
+#         ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
+#     else
+#         if ! [ "$pruningDatabaseSize" -eq "$pruningDatabaseSize" ]; then
+#             ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
+#         fi
+#     fi
 fi
 
 unset ARRAYhornetConfigs
