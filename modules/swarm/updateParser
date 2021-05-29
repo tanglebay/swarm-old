@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Disable dbPruner
+# crontab -l | grep -q "$dbPrunerCronCmd" && ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
+
+###########################################################################################################################
 if [ -f "$configs/hornetCfgBak" ]; then
     source $configs/hornetCfgBak
     # Upater for Hornet.cfg
@@ -81,10 +85,28 @@ if [ -f "$configs/hornetCfgBak" ]; then
         sudo sed -i 's/pruning=.*/pruning='$pruning'/' $configs/hornet.cfg
     fi
 
-    if [ -z "$pruningDelay" ]; then
-        sudo sed -i 's/pruningDelay=.*/pruningDelay=60480/' $configs/hornet.cfg
+    if [ -z "$dbPruner" ]; then
+        sudo sed -i 's/dbPruner=.*/dbPruner="swarm"/' $configs/hornet.cfg
     else
-        sudo sed -i 's/pruningDelay=.*/pruningDelay='$pruningDelay'/' $configs/hornet.cfg
+        sudo sed -i 's/dbPruner=.*/dbPruner="'$dbPruner'"/' $configs/hornet.cfg
+    fi
+
+    if [ -z "$pruningDatabaseSize" ]; then
+        sudo sed -i 's/pruningDatabaseSize=.*/pruningDatabaseSize="35GB"/' $configs/hornet.cfg
+    else
+        sudo sed -i 's/pruningDatabaseSize=.*/pruningDatabaseSize="'$pruningDatabaseSize'"/' $configs/hornet.cfg
+    fi
+
+    if [ -z "$pruningPercentage" ]; then
+        sudo sed -i 's/pruningPercentage=.*/pruningPercentage=5.0/' $configs/hornet.cfg
+    else
+        sudo sed -i 's/pruningPercentage=.*/pruningPercentage='$pruningPercentage'/' $configs/hornet.cfg
+    fi
+
+    if [ -z "$pruningCooldownTime" ]; then
+        sudo sed -i 's/pruningCooldownTime=.*/pruningCooldownTime="5m"/' $configs/hornet.cfg
+    else
+        sudo sed -i 's/pruningCooldownTime=.*/pruningCooldownTime="'$pruningCooldownTime'"/' $configs/hornet.cfg
     fi
 
     if [ -z "$username" ]; then
@@ -213,11 +235,11 @@ if [ -f "$configs/swarmCfgBak" ]; then
         sudo sed -i 's/logSize=.*/logSize='$logSize'/' $configs/swarm.cfg
     fi
 
-    if [ -z "$maxDbSize" ]; then
-        sudo sed -i 's/maxDbSize=.*/maxDbSize=/' $configs/swarm.cfg
-    else
-        sudo sed -i 's/maxDbSize=.*/maxDbSize='$maxDbSize'/' $configs/swarm.cfg
-    fi
+    # if [ -z "$maxDbSize" ]; then
+    #     sudo sed -i 's/maxDbSize=.*/maxDbSize=/' $configs/swarm.cfg
+    # else
+    #     sudo sed -i 's/maxDbSize=.*/maxDbSize='$maxDbSize'/' $configs/swarm.cfg
+    # fi
 
     # Delete Bak file
     rm -rf $configs/swarmCfgBak
@@ -237,14 +259,14 @@ fi
 
 ####################################################################################################################################
 
-if [ -f "$logs/dbPrunerBak" ]; then
-    source $logs/dbPrunerBak
-    # Updater for dbpruner.log
-    sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock='$dbPrunerLock'/' $logs/dbPruner
-    sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
-    # Delete Bak file
-    rm -rf $logs/dbPrunerBak
-fi
+# if [ -f "$logs/dbPrunerBak" ]; then
+#     source $logs/dbPrunerBak
+#     # Updater for dbpruner.log
+#     sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock='$dbPrunerLock'/' $logs/dbPruner
+#     sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
+#     # Delete Bak file
+#     rm -rf $logs/dbPrunerBak
+# fi
 
 
 #### REMOVE ALL BAKs
