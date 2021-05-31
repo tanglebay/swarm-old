@@ -31,6 +31,7 @@ while [ $counter -lt 1 ]; do
                     sleep 0.25
                 } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
             fi
+            unset restartNode
         fi
     fi
 
@@ -60,6 +61,7 @@ while [ $counter -lt 1 ]; do
             if [ "$nodeAlias" != "$currentNodeAlias" ] && [ ! -z "$nodeAlias" ]; then
                 source $modules/hornet/configParsers/alias
                 sudo sed -i 's/nodeAlias=.*/nodeAlias="'$nodeAlias'"/' $configs/hornet.cfg
+                whiptail --title "Hornet Configuration" --msgbox "New alias \"$nodeAlias\" applied!" 8 65
                 restartNode=true
             fi
         ;;
@@ -69,6 +71,7 @@ while [ $counter -lt 1 ]; do
             if [ "$username" != "$currentUsername" ] && [ ! -z "$username" ]; then
                 source $modules/hornet/configParsers/dashboardUsername
                 sudo sed -i 's/username=.*/username="'$username'"/' $configs/hornet.cfg
+                whiptail --title "Hornet Configuration" --msgbox "New username \"$username\" applied!" 8 65
                 restartNode=true
             fi
         ;;
@@ -84,6 +87,11 @@ while [ $counter -lt 1 ]; do
                     source $modules/hornet/configParsers/powWorkerCount
                     sudo sed -i 's/pow=.*/pow='$pow'/' $configs/hornet.cfg
                     sudo sed -i 's/powWorkerCount=.*/powWorkerCount='$powWorkerCount'/' $configs/hornet.cfg
+                    if [ "$pow" = "true" ]; then
+                        whiptail --title "Hornet Configuration" --msgbox "PoW has been enabled!" 8 65
+                    else
+                        whiptail --title "Hornet Configuration" --msgbox "PoW has been disabeld!!" 8 65
+                    fi
                     restartNode=true
                 fi
             fi
@@ -94,6 +102,7 @@ while [ $counter -lt 1 ]; do
             if [ "$snapshotInterval" != "$currentSnapshotInterval" ] && [ ! -z "$snapshotInterval" ]; then
                 source $modules/hornet/configParsers/snapshotInterval
                 sudo sed -i 's/snapshotInterval=.*/snapshotInterval='$snapshotInterval'/' $configs/hornet.cfg
+                whiptail --title "Hornet Configuration" --msgbox "Snapshot interval changed to $snapshotInterval milestones!" 8 65
                 restartNode=true
             fi
         ;;
@@ -105,6 +114,7 @@ while [ $counter -lt 1 ]; do
                     source $modules/hornet/configParsers/dbEngine
                     sudo rm -rf $hornetDir/${network}db $hornetDir/snapshot/$network
                     sudo sed -i 's/dbEngine=.*/dbEngine="'$dbEngine'"/' $configs/hornet.cfg
+                    whiptail --title "Hornet Configuration" --msgbox "Database engine \"$dbEngine\" applied!" 8 65
                     restartNode=true
                 fi
             fi
@@ -126,6 +136,11 @@ while [ $counter -lt 1 ]; do
                                     sudo sed -i 's/pruningPercentage=.*/pruningPercentage='$pruningPercentage'/' $configs/hornet.cfg
                                 fi
                             fi
+                            pruningDatabaseSize=$(whiptail --inputbox "\nSet the maximum size of the database in gigabyte." 10 65 $pruningDatabaseSize --title "Hornet Configuration" 3>&1 1>&2 2>&3)
+                            pruningDatabaseSize=${pruningDatabaseSize//[!0-9]/}
+                            if [ ! -z "$pruningDatabaseSize" ];
+                                source $modules/hornet/configParsers/pruningDatabaseSize
+                            fi
                             currentPruningCooldownTime=$pruningCooldownTime
                             pruningCooldownTime=$(whiptail --inputbox "\nSet the interval (minutes) at which pruning is performed when the maximum DB size is reached." 10 65 $pruningCooldownTime --title "Hornet Configuration" 3>&1 1>&2 2>&3)
                             pruningCooldownTime=${pruningCooldownTime//[!0-9]/}
@@ -141,6 +156,11 @@ while [ $counter -lt 1 ]; do
                         source $modules/hornet/configParsers/pruning
                         sudo sed -i 's/pruning=.*/pruning='$pruning'/' $configs/hornet.cfg
                     fi
+                    if [ "$pruning" = "true" ]; then
+                        whiptail --title "Hornet Configuration" --msgbox "Pruning was set to ${pruningDatabaseSize}GB with the \"${dbPruner}\" pruner!" 8 65
+                    else
+                        whiptail --title "Hornet Configuration" --msgbox "Pruning has been disabeld!!" 8 65
+                    fi
                     restartNode=true
                 fi
             fi
@@ -152,6 +172,11 @@ while [ $counter -lt 1 ]; do
             if [ "$enablePlugins" != "$currentEnablePlugins" ]; then
                 source $modules/hornet/configParsers/enablePlugins
                 sudo sed -i 's/enablePlugins=.*/enablePlugins="'$enablePlugins'"/' $configs/hornet.cfg
+                if [ ! -z "$enablePlugins" ]; then
+                    whiptail --title "Hornet Configuration" --msgbox "The following plugins are enabled: $enablePlugins!" 8 65
+                else
+                    whiptail --title "Hornet Configuration" --msgbox "No plugins are enabled!" 8 65
+                fi
                 restartNode=true
             fi
         ;;
@@ -162,6 +187,11 @@ while [ $counter -lt 1 ]; do
             if [ "$disablePlugins" != "$currentDisablePlugins" ]; then
                 source $modules/hornet/configParsers/disablePlugins
                 sudo sed -i 's/disablePlugins=.*/disablePlugins="'$disablePlugins'"/' $configs/hornet.cfg
+                if [ ! -z "$disablePlugins" ]; then
+                    whiptail --title "Hornet Configuration" --msgbox "The following plugins are disabled: $disablePlugins!" 8 65
+                else
+                    whiptail --title "Hornet Configuration" --msgbox "No plugins are disabled!" 8 65
+                fi
                 restartNode=true
             fi
         ;;
@@ -185,6 +215,11 @@ while [ $counter -lt 1 ]; do
                    
                 if [ "$validation" != "$currentValidation" ]; then
                     restartNode=true
+                fi
+                if [ "$validation" = "true" ]; then
+                    whiptail --title "Hornet Configuration" --msgbox "Migration validation is enabled!" 8 65
+                else
+                    whiptail --title "Hornet Configuration" --msgbox "Migration validation is disabled!" 8 65
                 fi
             fi
         ;;

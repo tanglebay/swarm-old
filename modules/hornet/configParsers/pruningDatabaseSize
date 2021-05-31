@@ -9,7 +9,7 @@ if [ "$pruning" = "true" ]; then
         let bufferSize=$diskSize-$getTargetDatabaseSize
         if [ $bufferSize -lt 10 ]; then
             let pruningDatabaseSize=$diskSize-10
-            sudo sed -i 's/pruningDatabaseSize=.*/pruningDatabaseSize="'$pruningDatabaseSize'GB"/' $configs/hornet.cfg
+            sudo sed -i 's/pruningDatabaseSize=.*/pruningDatabaseSize='$pruningDatabaseSize'/' $configs/hornet.cfg
         fi
     fi
 
@@ -18,8 +18,8 @@ if [ "$pruning" = "true" ]; then
     for hornetConfig in "${ARRAYhornetConfigs[@]}"
     do
         parser="$(jq '.pruning.size.targetSize' $hornetDir/$hornetConfig.json)"
-        if [ "\"$parser\"" != "$pruningDatabaseSize" ]; then
-            sudo jq '.pruning.size.targetSize = "'$pruningDatabaseSize'"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+        if [ "$parser" != "\"${pruningDatabaseSize}GB\"" ]; then
+            sudo jq '.pruning.size.targetSize = "'$pruningDatabaseSize'GB"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
         fi
     done
     unset ARRAYhornetConfigs
