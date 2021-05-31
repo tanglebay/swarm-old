@@ -1,12 +1,16 @@
 #!/bin/bash
 
-if [ "$powWorkers" -ge 1 ] 2>/dev/null; then
+powWorkerCount=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
+let powWorkerCount=$powWorkerCount-1
+
+if [ "$powWorkerCount" -ge 1 ] 2>/dev/null; then
     IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
     for hornetConfig in "${ARRAYhornetConfigs[@]}"
     do
         parser="$(jq '.restAPI.powWorkerCount' $hornetDir/$hornetConfig.json)"
-        if [ "$parser" != "$powWorkers" ]; then
-            sudo jq '.restAPI.powWorkerCount = '$powWorkers'' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+        if [ "$parser" != "$powWorkersCount" ]; then
+            sudo jq '.restAPI.powWorkerCount = '$powWorkerCount'' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+            sudo sed -i 's/powWorkerCount=.*/powWorkerCount='$powWorkerCount'/' $configs/hornet.cfg
         fi
     done
     unset ARRAYhornetConfigs
