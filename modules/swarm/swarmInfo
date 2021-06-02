@@ -67,9 +67,9 @@ if [ -d "$hornetDir/${network}db" ]; then
     let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
     if [ "$getCurrentDbSizeInMb" -gt "999" ]; then
         let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
-        currentDbSize="$getCurrentDbSizeInGb GB"
+        currentDbSize="${getCurrentDbSizeInGb0}GB"
     else
-        currentDbSize="$getCurrentDbSizeInMb MB"
+        currentDbSize="${getCurrentDbSizeInMb}MB"
     fi
 else
     currentDbSize="N/A"
@@ -93,6 +93,19 @@ else
     swarmAutoUpdateStatus=disabled
 fi
 
-# OUTPUT
-whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: $nodeVersion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentDbSize\n\nPoW: $powStatus\nPruning: $pruningStatus\nDB Pruner: \"$dbPruner\"\nMax DB size: $pruningDatabaseSize GB\n\nWatchdog: $watchdogStatus\nSWARM updater: $swarmAutoUpdateStatus\nNode updater: $nodeUpdateStatus\nSync-check: $checkSyncStatus\nProxy-check: $proxyCheckStatus\nLogpruning: $logPruning\nLast restart: $restartDate\n\nNode-URL: $nodeUrl" 25 65
+if [ "$ufw" = "true" ]; then
+    firewallStatus=$(systemctl show -p ActiveState --value ufw)
+    if [ "$firewallStatus" = "active" ]; then
+        firewall=enabled
+    else
+        firewall=disabled
+    fi
+fi
 
+if [ "$watchdogStatus" = "enabled" ]; then
+    # OUTPUT
+    whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: $nodeVersion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentDbSize\n\nPoW: $powStatus\nPruning: $pruningStatus\nDB Pruner: \"$dbPruner\"\nMax DB size: ${pruningDatabaseSize}GB\n\nWatchdog: $watchdogStatus\nSWARM updater: $swarmAutoUpdateStatus\nNode updater: $nodeUpdateStatus\nSync-check: $checkSyncStatus\nProxy-check: $proxyCheckStatus\nLogpruning: $logPruning\nLast restart: $restartDate\n\nFirewall: $firewall\n\nNode-URL: $nodeUrl" 27 65
+else
+    # OUTPUT
+    whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: $nodeVersion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentDbSize\n\nPoW: $powStatus\nPruning: $pruningStatus\nDB Pruner: \"$dbPruner\"\nMax DB size: ${pruningDatabaseSize}GB\n\nWatchdog: $watchdogStatus\nFirewall: $firewall\n\nNode-URL: $nodeUrl" 27 65
+fi
