@@ -1,38 +1,67 @@
 #!/bin/bash
-while [ $counter -lt 1 ]; do
-    clear
+while [ $exitCode -lt 1 ]; do
     CHOICE=$(
         whiptail --title "Proxy Menu" --menu "\nChoose an option" 16 65 0 \
-        "1)" "Proxy Configuration" \
-        "2)" "Proxy Debugging" \
-        "3)" "Proxy Installer" 3>&2 2>&1 1>&3
+        "1)" "Proxy Info" \
+        "2)" "Proxy Configuration" \
+        "3)" "Proxy Debugging" \
+        "4)" "Proxy Installer" 3>&2 2>&1 1>&3
     )
+
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
-        counter=1
+        exitCode=1
     fi
 
     case $CHOICE in
         "1)")
-            CHOICE=$(
-                whiptail --title "Proxy Menu" --menu "\nChoose an option" 16 65 0 \
-                "1)" "Edit Proxy configuration" 3>&2 2>&1 1>&3
-            )
-            case $CHOICE in
-                "1)")
-                    # Change proxy.cfg
-                    sudo nano $configs/proxy.cfg
-                    if [ "$ufw" = "true" ]; then
-                        sudo ufw delete allow $apiPort/tcp > /dev/null 2>&1
-                    fi
-                    source $configs/proxy.cfg
-                    if [ "$ufw" = "true" ]; then
-                        sudo ufw allow $apiPort/tcp > /dev/null 2>&1
-                    fi
-                ;;
-            esac
+            source $modules/proxy/proxyInfo
         ;;
         "2)")
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "Proxy Menu" --menu "\nChoose an option" 12 65 0 \
+                    "1)" "Set Domain" \
+                    "2)" "API Port" 3>&2 2>&1 1>&3
+                )
+
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        source $configs/proxy.cfg
+                        currentDomain=$domain
+                        domain=$(whiptail --inputbox "\nSet your domain or your ddns name for you node" 10 65 $domain --title "Proxy - Domain" 3>&1 1>&2 2>&3)
+                        if [ ! -z "$domain" ]; then
+                            if [ "$currentDomain" != "$domain" ]; then
+                                sudo sed -i 's/domain=.*/domain="'$domain'"/' $configs/proxy.cfg
+                                whiptail --title "Proxy - Domain" --msgbox "Domain for proxy set to \"$domain\"" 8 65
+                            else
+                                whiptail --title "Proxy - Domain" --msgbox "No domain change detected" 8 65
+                            fi
+                        fi 
+                    ;;
+                    "2)")
+                        source $config/proxy.cfg
+                        currentApiPort=$apiPort
+                        domain=$(whiptail --inputbox "\nSet your API port for you node" 10 65 $apiPort --title "Proxy - API" 3>&1 1>&2 2>&3)
+                        if [ ! -z "$apiPort" ] && [ $apiPort -eq $apiPort ] 2>/dev/null; then
+                            if [ "$currentApiPort" != "$apiPort" ]; then
+                                ufw delete allow $currentApiPort/tcp > /dev/null 2>&1
+                                ufw allow $apiPort > /dev/null 2>&1
+                                sudo sed -i 's/apiPort=.*/apiPort='$apiPort'/' $configs/proxy.cfg
+                                whiptail --title "Proxy - API" --msgbox "Your API port set to \"$apiPort\"" 8 65
+                            fi
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
             CHOICE=$(
                 whiptail --title "Proxy Menu" --menu "\nChoose an option" 16 65 0 \
                 "1)" "Show proxy status" \
@@ -60,7 +89,7 @@ while [ $counter -lt 1 ]; do
                                 echo 100
                                 sleep 0.25
                             } | whiptail --gauge "Please wait while re-starting the proxy..." 6 65 0
-                            whiptail --title "Proxy Menu" --msgbox "Proxy restarted successfully!" 8 65
+                            whiptail --scrolltext --title "Proxy Menu" --msgbox "Proxy restarted successfully!" 8 65
                         ;;
                         "2)")
                             {
@@ -88,7 +117,7 @@ while [ $counter -lt 1 ]; do
                 ;;
             esac
         ;;
-        "3)")
+        "4)")
             CHOICE=$(
                 whiptail --title "Proxy Menu" --menu "\nChoose an option" 16 65 0 \
                 "1)" "Install/Deploy the proxy" \
@@ -99,15 +128,19 @@ while [ $counter -lt 1 ]; do
             case $CHOICE in
                 "1)")
                     if [ "$domain" = "myhornetnode.domain.tld" ]; then
-                        whiptail --title "Proxy Menu" --msgbox "Please enter your domain first before continuing!" 8 65
-                        sudo nano $configs/proxy.cfg
-                        source $configs/proxy.cfg
-                    fi
-                    if [ "$domain" != "myhornetnode.domain.tld" ]; then
-                        # Run the nginx module for the proxy
-                        source $modules/proxy/proxyDeployment
+                        whiptail --title "Proxy Menu" --msgbox "Please set your domain first before continuing!" 8 65
                     else
-                        whiptail --title "Proxy Menu" --msgbox "No valid domain specified, please try again!" 8 65
+                        if [ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
+                            # Run the nginx module for the proxy
+                            email=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+                            if [ ! -z "$email" ]; then
+                                source $modules/proxy/proxyDeployment
+                            else
+                                whiptail --title "Proxy - Deployment" --msgbox "No valid email address entered!" 8 65
+                            fi
+                        else
+                            source $modules/proxy/proxyDeployment
+                        fi
                     fi
                 ;;
                 "2)")
@@ -199,4 +232,4 @@ while [ $counter -lt 1 ]; do
         ;;
     esac
 done
-counter=0
+exitCode=0

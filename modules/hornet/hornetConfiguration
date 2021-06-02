@@ -1,0 +1,481 @@
+#!/bin/bash
+while [ $exitCode -lt 1 ]; do
+    clear
+    source $configs/hornet.cfg
+    CHOICE=$(
+        whiptail --title "Hornet Configurations" --menu "\nChoose an option" 21 65 0 \
+        "1)" "Dashboard" \
+        "2)" "Node Alias" \
+        "3)" "Pruning" \
+        "4)" "Proof of Work" \
+        "5)" "Local Snapshot" \
+        "6)" "Enable Plugins" \
+        "7)" "Disable Plugins" \
+        "8)" "Migration Validation" \
+        "9)" "Database Engine" \
+        "10)" "IOTA Network" \
+        "11)" "Hornet release Channel" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+        if [ "$restartNode" = "true" ]; then
+            if (whiptail --title "Hornet Menu" --yesno "Would you like to restart hornet now?" 8 65); then
+                {
+                    echo 0
+                    echo 33
+                    source $modules/hornet/configParser
+                    echo 50
+                    sudo systemctl restart hornet
+                    sleep 0.25
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+            fi
+            unset restartNode
+        fi
+    fi
+
+    case $CHOICE in
+        "1)")
+            while [ $exitCode -lt 1 ]; do
+                source $configs/hornet.cfg
+                # Hornet Dashboard
+                CHOICE=$(
+                    whiptail --title "Hornet - Dashboard" --menu "\nChoose an option" 12 65 0 \
+                    "1)" "Dashboard Username" \
+                    "2)" "Dashboard Password" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        username=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $username --title "Hornet - Dashboard" 3>&1 1>&2 2>&3)
+                        if [ ! -z "$username" ]; then
+                            source $modules/hornet/configParsers/dashboardUsername
+                            if [ "$newUsername" = "true" ]; then
+                                sudo sed -i 's/username=.*/username="'$username'"/' $configs/hornet.cfg
+                                whiptail --title "Hornet - Dashboard" --msgbox "New username \"$username\" applied!" 8 65
+                                unset newUsername
+                            else
+                                whiptail --title "Hornet - Dashboard" --msgbox "No username change detected!" 8 65
+                            fi
+                        else
+                            whiptail --title "Hornet - Dashboardn" --msgbox "No valid username, please try again!" 8 65
+                        fi
+                    ;;
+                    "2)")
+                        source $modules/hornet/dashboardLogin
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "2)")
+            nodeAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $nodeAlias --title "Hornet - Alias" 3>&1 1>&2 2>&3)
+            if [ ! -z "$nodeAlias" ]; then
+                source $modules/hornet/configParsers/alias
+                if [ "$newNodeAlias" = "true" ]; then
+                    sudo sed -i 's/nodeAlias=.*/nodeAlias="'$nodeAlias'"/' $configs/hornet.cfg
+                    whiptail --title "Hornet Configuration" --msgbox "New alias \"$nodeAlias\" applied!" 8 65
+                    unset newNodeAlias
+                else
+                    whiptail --title "Hornet Configuration" --msgbox "No node alias change detected!" 8 65
+                fi
+            fi
+        ;;
+        "3)")
+            while [ $exitCode -lt 1 ]; do
+                source $configs/hornet.cfg
+                # Hornet Pruning
+                if [ "$pruning" = "true" ]; then
+                    pruningStatus=enabled
+                else
+                    pruning=disabled
+                fi
+                CHOICE=$(
+                    whiptail --title "Hornet - Pruning" --menu "\nStatus: $pruningStatus\n\nChoose an option" 18 65 0 \
+                    "1)" "Enable/Disable pruning" \
+                    "2)" "Set pruning method" \
+                    "3)" "Set database size" \
+                    "4)" "Set pruning cooldown" \
+                    "5)" "Set pruning percentage" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ "$pruning" = "true" ]; then
+                            pruningStatus=enabled
+                        else
+                            pruning=disabled
+                        fi
+                        CHOICE=$(
+                            whiptail --title "Hornet - Pruning" --menu "\nStatus: $pruningStatus\n\nChoose an option" 14 65 0 \
+                            "1)" "Enable pruning" \
+                            "2)" "Disable pruning" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                pruning=true
+                                source $modules/hornet/configParsers/pruning
+                                sudo sed -i 's/pruning=.*/pruning='$pruning'/' $configs/hornet.cfg
+                                whiptail --title "Hornet Pruning" --msgbox "Pruning was successfully activated!" 8 65
+                            ;;
+                            "2)")
+                                pruning=false
+                                source $modules/hornet/configParsers/pruning
+                                sudo sed -i 's/pruning=.*/pruning='$pruning'/' $configs/hornet.cfg
+                                whiptail --title "Hornet Pruning" --msgbox "Pruning was successfully deactivated!" 8 65
+                            ;;
+                        esac
+                    ;;
+                    "2)")
+                        CHOICE=$(
+                            whiptail --title "Hornet Pruning" --menu "\ndbPruner: $dbPruner\n\nChoose an option" 14 65 0 \
+                            "1)" "Set Hornet as pruner" \
+                            "2)" "Set SWARM as pruner" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                dbPruner=hornet
+                                sudo sed -i 's/dbPruner=.*/dbPruner="'$dbPruner'"/' $configs/hornet.cfg
+                                source $modules/hornet/configParsers/pruning
+                                whiptail --title "Hornet Pruning" --msgbox "Pruning with Hornet set successfully!" 8 65
+                            ;;
+                            "2)")
+                                dbPruner=swarm
+                                sudo sed -i 's/dbPruner=.*/dbPruner="'$dbPruner'"/' $configs/hornet.cfg
+                                source $modules/hornet/configParsers/pruning
+                                whiptail --title "Hornet Pruning" --msgbox "Pruning with SWARM set successfully!" 8 65
+                            ;;
+                        esac
+                    ;;
+                    "3)")
+                        pruningDatabaseSize=$(whiptail --inputbox "\nSet the maximum size of the database in gigabyte." 10 65 $pruningDatabaseSize --title "Hornet - Pruning" 3>&1 1>&2 2>&3)
+                        pruningDatabaseSize=${pruningDatabaseSize//[!0-9]/}
+                        if [ ! -z "$pruningDatabaseSize" ] && [ $pruningDatabaseSize -eq $pruningDatabaseSize ] 2>/dev/null; then
+                            source $modules/hornet/configParsers/pruningDatabaseSize
+                            sudo sed -i 's/pruningDatabaseSize=.*/pruningDatabaseSize='$pruningDatabaseSize'/' $configs/hornet.cfg
+                            whiptail --title "Hornet Pruning" --msgbox "Pruning of the database set to ${pruningDatabaseSize}GB!" 8 65
+                        fi
+                    ;;
+                    "4)")
+                        currentPruningCooldownTime=$pruningCooldownTime
+                        pruningCooldownTime=$(whiptail --inputbox "\nSet the interval (minutes) at which pruning is performed when the maximum DB size is reached." 10 65 $pruningCooldownTime --title "Hornet - Pruning" 3>&1 1>&2 2>&3)
+                        pruningCooldownTime=${pruningCooldownTime//[!0-9]/}
+                        if [ ! -z "$pruningCooldownTime" ] && [ $pruningCooldownTime -gt 0 ] && [ $pruningCooldownTime -lt 60 ]; then
+                            source $modules/hornet/configParsers/pruningCooldownTime
+                            sudo sed -i 's/pruningCooldownTime=.*/pruningCooldownTime='$pruningCooldownTime'/' $configs/hornet.cfg
+                            source $modules/hornet/configParsers/pruning
+                            whiptail --title "Hornet Pruning" --msgbox "Pruning cooldown time set to ${pruningCooldownTime}m!" 8 65
+                        fi
+                    ;;
+                    "5)")
+                        pruningPercentage=$(whiptail --inputbox "\nSet how much percent of history should be pruned from the database" 10 65 $pruningPercentage --title "Hornet - Pruning" 3>&1 1>&2 2>&3)
+                        if [ ! -z "$pruningPercentage" ]; then
+                            source $modules/hornet/configParsers/pruningPercentage
+                            sudo sed -i 's/pruningPercentage=.*/pruningPercentage='$pruningPercentage'/' $configs/hornet.cfg
+                            whiptail --title "Hornet Pruning" --msgbox "Pruning percentage set to ${pruningPercentage}%!" 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "4)")
+            source $configs/hornet.cfg
+            if [ "$pow" = "true" ]; then
+                powStatus=enabled
+            else
+                powStatus=disabled
+            fi
+            CHOICE=$(
+                whiptail --title "Hornet - PoW" --menu "\nPOW: $powStatus\n\nChoose an option" 14 65 0 \
+                "1)" "Enable PoW" \
+                "2)" "Disable PoW" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    pow=true
+                    source $modules/hornet/configParsers/pow
+                    source $modules/hornet/configParsers/powWorkerCount
+                    sudo sed -i 's/pow=.*/pow='$pow'/' $configs/hornet.cfg
+                    sudo sed -i 's/powWorkerCount=.*/powWorkerCount='$powWorkerCount'/' $configs/hornet.cfg
+                    whiptail --title "Hornet - PoW" --msgbox "PoW has been enabled!" 8 65
+                ;;
+                "2)")
+                    pow=false
+                    source $modules/hornet/configParsers/pow
+                    source $modules/hornet/configParsers/powWorkerCount
+                    sudo sed -i 's/pow=.*/pow='$pow'/' $configs/hornet.cfg
+                    sudo sed -i 's/powWorkerCount=.*/powWorkerCount='$powWorkerCount'/' $configs/hornet.cfg
+                    whiptail --title "Hornet - PoW" --msgbox "PoW has been disabeld!!" 8 65
+                ;;
+            esac
+        ;;
+        "5)")
+            source $configs/hornet.cfg
+            snapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $snapshotInterval --title "Hornet - Snapshots" 3>&1 1>&2 2>&3)
+            if [ ! -z "$snapshotInterval" ] && [ $snapshotInterval -eq $snapshotInterval ] 2>/dev/null; then
+                source $modules/hornet/configParsers/snapshotInterval
+                sudo sed -i 's/snapshotInterval=.*/snapshotInterval='$snapshotInterval'/' $configs/hornet.cfg
+                if [ "$newSnapshotInterval" = "true" ]; then
+                    whiptail --title "Hornet - Plugins" --msgbox "Snapshot interval changed to $snapshotInterval milestones!" 8 65
+                else
+                    whiptail --title "Hornet - Plugins" --msgbox "No new snapshot interval detected!" 8 65
+                fi
+            fi
+        ;;
+        "6)")
+            source $configs/hornet.cfg
+            currentEnablePlugins=$enablePlugins
+            enablePlugins=$(whiptail --inputbox "\nEnable plugins (seperated with a comma e.g: mqtt,spammer,etc.)" 10 65 $enablePlugins --title "Hornet - Plugins" 3>&1 1>&2 2>&3)
+            enablePlugins=$(echo $enablePlugins | tr -d ' ')
+            if [ "$enablePlugins" != "$currentEnablePlugins" ]; then
+                source $modules/hornet/configParsers/enablePlugins
+                sudo sed -i 's/enablePlugins=.*/enablePlugins="'$enablePlugins'"/' $configs/hornet.cfg
+                if [ ! -z "$enablePlugins" ]; then
+                    whiptail --title "Hornet - Plugins" --msgbox "The following plugins are enabled: $enablePlugins!" 8 65
+                fi
+            fi
+        ;;
+        "7)")
+            source $configs/hornet.cfg
+            currentDisablePlugins=$disablePlugins
+            disablePlugins=$(whiptail --inputbox "\nEnable plugins (seperated with a comma e.g: mqtt,spammer,etc.)" 10 65 $disablePlugins --title "Hornet - Plugins" 3>&1 1>&2 2>&3)
+            disablePlugins=$(echo $disablePlugins | tr -d ' ')
+            if [ "$disablePlugins" != "$currentDisablePlugins" ]; then
+                source $modules/hornet/configParsers/disablePlugins
+                sudo sed -i 's/disablePlugins=.*/disablePlugins="'$disablePlugins'"/' $configs/hornet.cfg
+                if [ ! -z "$disablePlugins" ]; then
+                    whiptail --title "Hornet Plugins" --msgbox "The following plugins are disabled: $disablePlugins!" 8 65
+                fi
+            fi
+        ;;
+        "8)")
+            while [ $exitCode -lt 1 ]; do
+                source $configs/hornet.cfg
+                if [ "$validation" = "true" ]; then
+                    validationStatus=enabled
+                else
+                    validationStatus=disabled
+                fi
+                if [ "$validationLog" = "true" ]; then
+                    validationLogStatus=enabled
+                else
+                    validationLogStatus=disabled
+                fi
+                CHOICE=$(
+                    whiptail --title "Hornet - Validation" --menu "\nValidation: $validationStatus\nValidation Log: $validationLogStatus\n\nChoose an option" 16 65 0 \
+                    "1)" "Validation" \
+                    "2)" "Validation Log" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        CHOICE=$(
+                            whiptail --title "Hornet - Validation" --menu "\nValidation: $validationStatus\n\nChoose an option" 14 65 0 \
+                            "1)" "Enable Validation" \
+                            "2)" "Disable Validation" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                validation=true
+                                source $modules/hornet/configParsers/validation
+                                sudo sed -i 's/validation=.*/validation='$validation'/' $configs/hornet.cfg
+                                if [ "$newValidation" = "true" ]; then
+                                    whiptail --title "Hornet - Validation" --msgbox "Migration validation enabled!" 8 65
+                                else
+                                    whiptail --title "Hornet - Validation" --msgbox "No validation change detected!" 8 65
+                                fi
+                            ;;
+                            "2)")
+                                validation=false
+                                source $modules/hornet/configParsers/validation
+                                sudo sed -i 's/validation=.*/validation='$validation'/' $configs/hornet.cfg
+                                if [ "$newValidation" = "true" ]; then
+                                    whiptail --title "Hornet - Validation" --msgbox "Migration validation disabled!" 8 65
+                                else
+                                    whiptail --title "Hornet - Validation" --msgbox "No validation change detected!" 8 65
+                                fi
+                            ;;
+                        esac
+                    ;;
+                    "2)")
+                        CHOICE=$(
+                            whiptail --title "Hornet - Validation" --menu "\nValidation Log: $validationLogStatus\n\nChoose an option" 14 65 0 \
+                            "1)" "Enable validation log" \
+                            "2)" "Enable validation log" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                validationLog=true
+                                source $modules/hornet/configParsers/validationLog
+                                sudo sed -i 's/validationLog=.*/validationLog='$validationLog'/' $configs/hornet.cfg
+                                if [ "$newValidationLog" = "true" ]; then
+                                    whiptail --title "Hornet - Validation" --msgbox "Migration validation log enabled!" 8 65
+                                else
+                                    whiptail --title "Hornet - Validation" --msgbox "No validation log change detected!" 8 65
+                                fi
+                            ;;
+                            "2)")
+                                validation=false
+                                source $modules/hornet/configParsers/validation
+                                sudo sed -i 's/validation=.*/validation='$validation'/' $configs/hornet.cfg
+                                if [ "$newValidation" = "true" ]; then
+                                    whiptail --title "Hornet - Validation" --msgbox "Migration validation disabled!" 8 65
+                                else
+                                    whiptail --title "Hornet - Validation" --msgbox "No validation change detected!" 8 65
+                                fi
+                            ;;
+                        esac
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "9)")
+            source $configs/hornet.cfg
+            CHOICE=$(
+                whiptail --title "Hornet Database" --menu "\nDatabase: $dbEngine\n\nChoose an option" 14 65 0 \
+                "1)" "Set RocksDB (default)" \
+                "2)" "Set PebbleDB" \
+                "3)" "Set BoltDB" \
+                "4)" "Set BadgerDB" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    if (whiptail --title "Hornet - Database" --yesno --defaultno "Are you sure you want to change the database to RocksDB (the old database will be deleted)?" 8 65); then
+                        dbEngine=rocksdb
+                        sudo sed -i 's/dbEngine=.*/dbEngine="'$dbEngine'"/' $configs/hornet.cfg
+                        source $modules/hornet/configParsers/dbEngine
+                        if [ "$newDbEngine" = "true" ]; then
+                            sudo systemctl stop hornet
+                            sudo rm -rf $hornetDir/${network}db $hornetDir/snapshot/$network
+                            sudo systemctl start hornet
+                            whiptail --title "Hornet - Database" --msgbox "New database successfully set to $dbEngine!" 8 65
+                        else
+                            whiptail --title "Hornet - Database" --msgbox "No database engine change detected!" 8 65
+                        fi
+                    fi
+                ;;
+                "2)")
+                    if (whiptail --title "Hornet - Database" --yesno --defaultno "Are you sure you want to change the database to PebbleDB (the old database will be deleted)?" 8 65); then
+                        dbEngine=pebble
+                        sudo sed -i 's/dbEngine=.*/dbEngine="'$dbEngine'"/' $configs/hornet.cfg
+                        source $modules/hornet/configParsers/dbEngine
+                        if [ "$newDbEngine" = "true" ]; then
+                            sudo systemctl stop hornet
+                            sudo rm -rf $hornetDir/${network}db $hornetDir/snapshot/$network
+                            sudo systemctl start hornet
+                            whiptail --title "Hornet - Database" --msgbox "New database successfully set to $dbEngine!" 8 65
+                        else
+                            whiptail --title "Hornet - Database" --msgbox "No database engine change detected!" 8 65
+                        fi
+                    fi
+                ;;
+                "3)")
+                    if (whiptail --title "Hornet - Database" --yesno --defaultno "Are you sure you want to change the database to BoltDB (the old database will be deleted)?" 8 65); then
+                        dbEngine=bolt
+                        sudo sed -i 's/dbEngine=.*/dbEngine="'$dbEngine'"/' $configs/hornet.cfg
+                        source $modules/hornet/configParsers/dbEngine
+                        if [ "$newDbEngine" = "true" ]; then
+                            sudo systemctl stop hornet
+                            sudo rm -rf $hornetDir/${network}db $hornetDir/snapshot/$network
+                            sudo systemctl start hornet
+                            whiptail --title "Hornet - Database" --msgbox "New database successfully set to $dbEngine!" 8 65
+                        else
+                            whiptail --title "Hornet - Database" --msgbox "No database engine change detected!" 8 65
+                        fi
+                    fi
+                ;;
+                "4)")
+                    if (whiptail --title "Hornet - Database" --yesno --defaultno "Are you sure you want to change the database to BadgerDB (the old database will be deleted)?" 8 65); then
+                        dbEngine=badger
+                        sudo sed -i 's/dbEngine=.*/dbEngine="'$dbEngine'"/' $configs/hornet.cfg
+                        source $modules/hornet/configParsers/dbEngine
+                        if [ "$newDbEngine" = "true" ]; then
+                            sudo systemctl stop hornet
+                            sudo rm -rf $hornetDir/${network}db $hornetDir/snapshot/$network
+                            sudo systemctl start hornet
+                            whiptail --title "Hornet - Database" --msgbox "New database successfully set to $dbEngine!" 8 65
+                        else
+                            whiptail --title "Hornet - Database" --msgbox "No database engine change detected!" 8 65
+                        fi
+                    fi
+                ;;
+            esac
+        ;;
+        "10)")
+            source $configs/hornet.cfg
+            # Hornet Networks
+            CHOICE=$(
+                whiptail --title "Hornet - Network" --menu "\nSet network \"mainnet\" or \"testnet\"\n\nChoose an option" 12 65 0 \
+                "1)" "Mainnet (default)" \
+                "2)" "Testnet (dev)" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    if (whiptail --title "Hornet - Network" --yesno --defaultno "Are you sure you want to change the network to mainnet (the old database will be deleted)?" 8 65); then
+                        currentNetwork=$network
+                        network=mainnet
+                        sudo sed -i 's/network=.*/network='$network'/' $configs/hornet.cfg
+                        source $modules/hornet/iotaNetwork
+                        restartNode=true
+                    fi
+                ;;
+                "2)")
+                    if (whiptail --title "Hornet - Network" --yesno --defaultno "Are you sure you want to change the network to testnet (the old database will be deleted)?" 8 65); then
+                        currentNetwork=$network
+                        network=testnet
+                        sudo sed -i 's/network=.*/network='$network'/' $configs/hornet.cfg
+                        source $modules/hornet/iotaNetwork
+                        restartNode=true
+                    fi
+                ;;
+            esac
+        ;;
+        "11)")
+            source $configs/hornet.cfg
+            # Hornet release channel
+            CHOICE=$(
+                whiptail --title "Hornet - Release" --menu "\nSet \"stable\" for official release or \"testing\" for releases under development\n\nChoose an option" 12 65 0 \
+                "1)" "Stable Channel (default)" \
+                "2)" "Testing Channel (dev)" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    if (whiptail --title "Hornet - Release" --yesno --defaultno "Are you sure you want to change the release channel to stable (hornet will be reinstalled)?" 8 65); then
+                        currentRelease=$release
+                        release=stable
+                        sudo sed -i 's/release=.*/release='$release'/' $configs/hornet.cfg
+                        source $modules/hornet/releaseChannel
+                        source $modules/hornet/configParser
+                        restartNode=true
+                    fi
+                ;;
+                "2)")
+                    if (whiptail --title "Hornet - Release" --yesno --defaultno "Are you sure you want to change the release channel to stable (hornet will be reinstalled)?" 8 65); then
+                        currentRelease=$release
+                        release=testing
+                        sudo sed -i 's/release=.*/release='$release'/' $configs/hornet.cfg
+                        source $modules/hornet/releaseChannel
+                        source $modules/hornet/configParser
+                        restartNode=true
+                    fi
+                ;;
+            esac
+        ;;
+    esac
+done
+sudo chown -R hornet:hornet $hornetDir/*.json
+exitCode=0

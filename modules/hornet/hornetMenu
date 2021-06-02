@@ -1,123 +1,102 @@
 #!/bin/bash
 # HORNET MENU
-while [ $counter -lt 1 ]; do
-    clear
+while [ $exitCode -lt 1 ]; do
     CHOICE=$(
-        whiptail --title "Hornet Menu" --menu "\nChoose an option" 16 65 0 \
-        "1)" "Hornet Configurations" \
-        "2)" "Hornet Debugging" \
-        "3)" "Hornet Installer" 3>&2 2>&1 1>&3
+        whiptail --title "Hornet Menu" --menu "\nChoose an option" 14 65 0 \
+        "1)" "Hornet Info" \
+        "2)" "Hornet Configurations" \
+        "3)" "Hornet Debugging" \
+        "4)" "Hornet Installer" 3>&2 2>&1 1>&3
     )
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
-        counter=1
+        exitCode=1
     fi
 
     case $CHOICE in
         "1)")
-            CHOICE=$(
-                whiptail --title "Hornet Configurations" --menu "\nChoose an option" 16 65 0 \
-                "1)" "Edit Hornet configuration" \
-                "2)" "Mainnet Config" \
-                "3)" "Testnet Config" \
-                "4)" "Peering Config" \
-                "5)" "Dashboard Password" 3>&2 2>&1 1>&3
-            )
-            case $CHOICE in
-                "1)")
-                    # Edit simple config
-                    currentRelease=$release
-                    currentNetwork=$network
-                    sudo nano $configs/hornet.cfg
-
-                    {
-                        echo 0
-                        source $configs/hornet.cfg
-                        # Run Hornet cfg checker
-                        source $modules/hornet/releaseChannel
-                        source $modules/hornet/iotaNetwork
-                        # CALL MODULE CONFIGPARSER
-                        if [ -f "/usr/bin/hornet" ]; then
-                            source $modules/hornet/configParser
-                        fi
-                        echo 100
-                        sleep 0.2
-                    } | whiptail --gauge "Verify configuration and set values..." 6 65 0
-
-                    if [ "$restartNode" = "true" ]; then
-                        sudo systemctl restart hornet
-                    else
-                        if (whiptail --title "Hornet Menu" --yesno "Would you like to restart hornet now?" 8 65); then
-                            {
-                                echo 0
-                                sleep 0.25
-                                echo 66
-                                sudo systemctl restart hornet
-                                echo 100
-                                sleep 0.25
-                            } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
-                        fi
-                    fi
-                ;;
-                "2)")
-                    sudo nano $hornetDir/config.json
-                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                        {
-                            echo 0
-                            sleep 0.25
-                            echo 66
-                            sudo systemctl restart hornet
-                            echo 100
-                            sleep 0.25
-                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
-                    fi
-                ;;
-                "3)")
-                    sudo nano $hornetDir/config_chrysalis_testnet.json
-                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                        {
-                            echo 0
-                            sleep 0.25
-                            echo 66
-                            sudo systemctl restart hornet
-                            echo 100
-                            sleep 0.25
-                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
-                    fi
-                ;;
-                "4)")
-                    sudo nano $hornetDir/peering.json
-                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                        {
-                            echo 0
-                            sleep 0.25
-                            echo 66
-                            sudo systemctl restart hornet
-                            echo 100
-                            sleep 0.25
-                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
-                    fi
-                ;;
-                "5)")
-                    nodeVersion=$(hornet -v)
-                    if [ "$nodeVersion" != "HORNET 1.0.1" ] || [ "$currentBranch" = "develop" ]; then
-                        # Call dashboardLogin
-                        source $modules/hornet/dashboardLogin
-                        if (whiptail --title "Hornet Menu" --yesno "Would you like to restart hornet now?" 8 65); then
-                            {
-                                echo 0
-                                sleep 0.25
-                                echo 50
-                                sudo systemctl restart hornet
-                                echo 100
-                                sleep 0.25
-                            } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
-                        fi
-                    fi
-                ;;
-            esac
+            source $modules/hornet/hornetInfo
         ;;
         "2)")
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "Hornet Configurations" --menu "\nChoose an option" 12 65 0 \
+                    "1)" "Hornet configuration" \
+                    "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
+                )
+
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        source $modules/hornet/hornetConfiguration
+                    ;;
+                    "2)")
+                        while [ $exitCode -lt 1 ]; do
+                            CHOICE=$(
+                                whiptail --title "Hornet Configurations" --menu "\nChoose an option" 14 65 0 \
+                                "1)" "Peering.json" \
+                                "2)" "Mainnet.json" \
+                                "3)" "Testnet.json" 3>&2 2>&1 1>&3
+                            )
+
+                            exitstatus=$?
+                            if [ "$exitstatus" = "1" ]; then
+                                exitCode=1
+                            fi
+
+                            case $CHOICE in
+                                "1)")
+                                    sudo nano $hornetDir/peering.json
+                                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                                        {
+                                            echo 0
+                                            sleep 0.25
+                                            echo 66
+                                            sudo systemctl restart hornet
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                                    fi
+                                ;;
+                                "2)")
+                                    sudo nano $hornetDir/config.json
+                                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                                        {
+                                            echo 0
+                                            sleep 0.25
+                                            echo 66
+                                            sudo systemctl restart hornet
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                                    fi
+                                ;;
+                                "3)")
+                                    sudo nano $hornetDir/config_chrysalis_testnet.json
+                                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                                        {
+                                            echo 0
+                                            sleep 0.25
+                                            echo 66
+                                            sudo systemctl restart hornet
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while re-starting Hornet..." 6 65 0
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
             CHOICE=$(
                 whiptail --title "Hornet Debugging" --menu "\nChoose your option" 16 65 0 \
                 "1)" "Show Hornet log" \
@@ -196,9 +175,9 @@ while [ $counter -lt 1 ]; do
                 ;;
             esac
         ;;
-        "3)")
+        "4)")
             CHOICE=$(
-                whiptail --title "Hornet Installer" --menu "\nChoose your option" 16 65 0 \
+                whiptail --title "Hornet Installer" --menu "\nChoose your option" 15 65 0 \
                 "1)" "Update Hornet" \
                 "2)" "Install Hornet" \
                 "3)" "Remove Hornet" 3>&2 2>&1 1>&3
@@ -244,11 +223,11 @@ while [ $counter -lt 1 ]; do
                     fi
                 ;;
                 "2)")
-                    if (whiptail --title "Hornet Menu" --yesno --defaultno "Have you already modified Hornet.cfg in SWARM??" 8 65); then
-                        echo 0 > /dev/null 2>&1
-                    else
-                        sudo nano $configs/hornet.cfg
-                    fi
+                    # if (whiptail --title "Hornet Menu" --yesno --defaultno "Have you already modified Hornet.cfg in SWARM??" 8 65); then
+                    #     echo 0 > /dev/null 2>&1
+                    # else
+                    #     sudo nano $configs/hornet.cfg
+                    # fi
                     # INSTALL HORNET
                     if [ ! -f "/usr/bin/hornet" ]; then
                         {
@@ -291,7 +270,7 @@ while [ $counter -lt 1 ]; do
                                     sudo -u hornet wget -q -O $hornetDir/config_chrysalis_testnet.json https://raw.githubusercontent.com/gohornet/hornet/develop/config_chrysalis_testnet.json
                                 fi
                                 # Call Dashboard Login
-                                source $modules/hornet/dashboardLogin
+                                # source $modules/hornet/dashboardPassword
                                 # CALL MODULE CONFIGPARSER
                                 source $modules/hornet/configParser
                                 echo 80
@@ -303,7 +282,7 @@ while [ $counter -lt 1 ]; do
                                 echo 100
                                 sleep 0.2
                             } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
-                            whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports in your home router for peering\n\n$neighborPort/tcp" 8 65
+                            whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports in your home router for peering\n\n$gossipPort/tcp" 8 65
                         else
                             whiptail --title "Hornet Installer" --msgbox "Error while installing Hornet. Please check hornet.cfg and try again!" 8 65
                         fi
@@ -345,4 +324,4 @@ while [ $counter -lt 1 ]; do
         ;;
     esac
 done
-counter=0
+exitCode=0

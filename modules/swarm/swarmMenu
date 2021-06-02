@@ -1,34 +1,35 @@
 #!/bin/bash
-while [ $counter -lt 1 ]; do
-    clear
+while [ $exitCode -lt 1 ]; do
     CHOICE=$(
         whiptail --title "SWARM Menu" --menu "\nChoose an option" 16 65 0 \
-        "1)" "SWARM Configuration" \
-        "2)" "Manage Plugins" \
-        "3)" "Manage Security" \
+        "1)" "SWARM Info" \
+        "2)" "SWARM Configuration" \
+        "3)" "Manage Plugins" \
         "4)" "Manage SWARM" 3>&2 2>&1 1>&3
     )
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
-        counter=1
+        exitCode=1
     fi
     case $CHOICE in
         "1)")
-            # Change SWARM.cfg
-            sudo nano $configs/swarm.cfg
-            source $modules/swarm/themes
+            source $modules/swarm/swarmInfo
         ;;
         "2)")
+            source $modules/swarm/swarmConfiguration
+        ;;
+        "3)")
             CHOICE=$(
-                whiptail --title "SWARM Menu" --menu "\nChoose an option" 16 65 0 \
-                "1)" "Manage Watchdog" 3>&2 2>&1 1>&3
-                # "2)" "Manage DBPruner" 
+                whiptail --title "SWARM - Plugins" --menu "\nChoose an option" 12 65 0 \
+                "1)" "Manage Watchdog" \
+                "2)" "Manage Firewall" 3>&2 2>&1 1>&3
             )
             case $CHOICE in
                 "1)")
+                    crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled
                     # Control WATCHDOG
                     CHOICE=$(
-                        whiptail --title "Watchdog Menu" --menu "\nChoose an option" 16 65 0 \
+                        whiptail --title "Watchdog Menu" --menu "\nWatchdog: $watchdogStatus\n\nChoose an option" 14 65 0 \
                         "1)" "Enable Watchdog" \
                         "2)" "Disable Watchdog" 3>&2 2>&1 1>&3
                     )
@@ -49,80 +50,45 @@ while [ $counter -lt 1 ]; do
                         ;;
                     esac
                 ;;
-                # "2)")
-                #     # Control DBPRUNER
-                #     CHOICE=$(
-                #         whiptail --title "DBPruner Menu" --menu "\nChoose an option" 16 65 0 \
-                #         "1)" "Enable DBPruner" \
-                #         "2)" "Disable DBPruner" 3>&2 2>&1 1>&3
-                #     )
-
-                #     case $CHOICE in
-                #         "1)")
-                #             if [ $maxDbSize -gt 0 ]; then
-                #                 sudo chmod +x $plugins/dbPruner
-                #                 ( crontab -l | grep -v -F "$dbPrunerCronCmd" ; echo "$dbPrunerCronJob" ) | crontab -
-                #                 whiptail --title "DBPruner" --msgbox "DBPruner successfully activated!" 8 65
-                #             else
-                #                 maxDbSize=$(whiptail --inputbox "Please define the size in GB (min. 1):" 8 65 --title "DBPruner Menu" 3>&1 1>&2 2>&3)
-                #                 if [ $maxDbSize -gt 0 ]; then
-                #                     sudo sed -i 's/maxDbSize=.*/maxDbSize='$maxDbSize'/' $configs/swarm.cfg
-                #                     source $configs/swarm.cfg
-                #                     sudo chmod +x $plugins/dbPruner
-                #                     ( crontab -l | grep -v -F "$dbPrunerCronCmd" ; echo "$dbPrunerCronJob" ) | crontab -
-                #                     whiptail --title "DBPruner" --msgbox "DBPruner successfully activated!" 8 65
-                #                 fi
-                #             fi
-                #         ;;
-                #         "2)")
-                #             source $logs/dbPruner
-                #             if [ "$dbPrunerLock" = "false" ]; then
-                #                 ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
-                #                 sudo sed -i "s,pruningDate=.*,pruningDate=," $logs/dbPruner
-                #                 whiptail --title "DBPruner" --msgbox "DBPruner successfully deactivated!" 8 65
-                #             else
-                #                 whiptail --title "DBPruner" --msgbox "DBPruner is currently running, please try again later!" 8 65
-                #             fi
-                #         ;;
-                #     esac
-                # ;;
-            esac
-        ;;
-        "3)")
-            CHOICE=$(
-                whiptail --title "SWARM Menu" --menu "\nChoose an option" 16 65 0 \
-                "1)" "Firewall" 3>&2 2>&1 1>&3
-            )
-            if [ "$ufw" = "true" ]; then
-                case $CHOICE in
-                    "1)")
-                        CHOICE=$(
-                            whiptail --title "SWARM Menu" --menu "\nChoose an option" 16 65 0 \
-                            "1)" "Enable Firewall" \
-                            "2)" "Disable Firewall" 3>&2 2>&1 1>&3
-                        )
+                "2)")
+                    if [ "$ufw" = "true" ]; then
                         case $CHOICE in
                             "1)")
-                                sudo ufw default deny incoming > /dev/null 2>&1
-                                sshPort=$(sudo grep "Port [0-9]" /etc/ssh/sshd_config | awk  '{print $2}')
-                                sudo ufw allow $sshPort/tcp > /dev/null 2>&1
-                                sudo ufw --force enable
-                                whiptail --title "SWARM Menu" --msgbox "Firewall successfully activated!" 8 65
-                            ;;
-                            "2)")
-                                sudo ufw disable
-                                whiptail --title "SWARM Menu" --msgbox "Firewall successfully deactivated!" 8 65
+                                firewallStatus=$(systemctl show -p ActiveState --value ufw)
+                                if [ "$firewallStatus" = "active" ]; then
+                                    firewall=enabled
+                                else
+                                    firewall=disabled
+                                fi
+                                CHOICE=$(
+                                    whiptail --title "SWARM Menu" --menu "\nFirewall: $firewall\n\nChoose an option" 14 65 0 \
+                                    "1)" "Enable Firewall" \
+                                    "2)" "Disable Firewall" 3>&2 2>&1 1>&3
+                                )
+                                case $CHOICE in
+                                    "1)")
+                                        sudo ufw default deny incoming > /dev/null 2>&1
+                                        sshPort=$(sudo grep "Port [0-9]" /etc/ssh/sshd_config | awk  '{print $2}')
+                                        sudo ufw allow $sshPort/tcp > /dev/null 2>&1
+                                        sudo ufw --force enable
+                                        whiptail --title "SWARM Menu" --msgbox "Firewall successfully activated!" 8 65
+                                    ;;
+                                    "2)")
+                                        sudo ufw disable
+                                        whiptail --title "SWARM Menu" --msgbox "Firewall successfully deactivated!" 8 65
+                                    ;;
+                                esac
                             ;;
                         esac
-                    ;;
-                esac
-            else
-                case $CHOICE in
-                    "1)")
-                        whiptail --title "SWARM Menu" --msgbox "Error - No firewall found!" 8 65
-                    ;;
-                esac
-            fi
+                    else
+                        case $CHOICE in
+                            "1)")
+                                whiptail --title "SWARM Menu" --msgbox "Error - No firewall found!" 8 65
+                            ;;
+                        esac
+                    fi
+                ;;
+            esac
         ;;
         "4)")
             CHOICE=$(
@@ -160,7 +126,7 @@ while [ $counter -lt 1 ]; do
                                 ( cd $swarmDir ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
                                 ( cd $swarmDir ; sudo git checkout $inputBranch ) > /dev/null 2>&1
                                 ( cd $swarmDir ; sudo git pull ) > /dev/null 2>&1
-                                sudo chmod +x $swarmDir/swarm $plugins/watchdog
+                                sudo chmod +x $swarmDir/swarm $plugins/watchdog $plugins/dbPruner
                                 source $modules/swarm/updateParser
                                 whiptail --title "SWARM Menu" --msgbox "SWARM branch change detected! Exit SWARM..." 8 65
                                 clear
@@ -175,4 +141,4 @@ while [ $counter -lt 1 ]; do
         ;;
     esac
 done
-counter=0
+exitCode=0
