@@ -1,4 +1,6 @@
 #!/bin/bash
+source $configs/hornet.cfg
+source $configs/swarm.cfg
 
 if [ ! -z "$domain" ]; then
     if [ "$apiPort" = "443" ]; then
@@ -32,10 +34,6 @@ else
     checkSyncStatus=disabled
 fi
 
-# if [ -z "$pruningDate" ]; then
-#     pruningDate="N/A"
-# fi
-
 # Proxy Check
 if [ "$proxyCheck" = "true" ]; then
     proxyCheckStatus=enabled
@@ -54,11 +52,7 @@ else
     logPruning=disabled
 fi
 
-#DBPruner
-# crontab -l | grep -q "$dbPrunerCronCmd" && dbPrunerStatus=enabled || dbPrunerStatus=disabled
-
 # Watchdog
-#DBPruner
 crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled
 
 # DB size
@@ -75,6 +69,18 @@ else
     currentDbSize="N/A"
 fi
 
+if [ "$pruning" = "true" ]; then
+    pruningStatus=enabled
+else
+    pruningStatus=disabled
+fi
+
+if [ "$pow" = "true" ]; then
+    powStatus=enabled
+else
+    powStatus=disabled
+fi
+
 # OUTPUT
-whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: $nodeVersion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentDbSize\n\nWatchdog: $watchdogStatus\nNode updater: $nodeUpdateStatus\nSync-check: $checkSyncStatus\nProxy-check: $proxyCheckStatus\nLogpruning: $logPruning\nLast restart: $restartDate\n\nNode-URL: $nodeUrl" 21 65
+whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: $nodeVersion\nNetwork: $network\nHealthy: $healthy\nPruning: $pruningStatus\nDB size: $currentDbSize\nMax DB size: ${pruningDatabaseSize}GB\nDB Pruner: $dbPruner\nPoW: $powStatus\n\nWatchdog: $watchdogStatus\nSWARM updater: $swarmAutoUpdate\nNode updater: $nodeUpdateStatus\nSync-check: $checkSyncStatus\nProxy-check: $proxyCheckStatus\nLogpruning: $logPruning\nLast restart: $restartDate\n\nNode-URL: $nodeUrl" 21 65
 
