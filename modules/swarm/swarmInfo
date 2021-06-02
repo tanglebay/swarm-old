@@ -2,30 +2,8 @@
 source $configs/hornet.cfg
 source $configs/swarm.cfg
 
-if [ ! -z "$domain" ]; then
-    if [ "$apiPort" = "443" ]; then
-        nodeUrl="https://$domain"
-    else
-        nodeUrl="https://$domain:$apiPort"
-    fi
-else
-    nodeUrl="N/A"
-fi
-
-nodeVersion="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.version')"
-if [ -z "$nodeVersion" ]; then
-    nodeVersion="N/A"
-fi
-healthy="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
-if [ -z "$healthy" ]; then
-    healthy="N/A"
-else
-    if [ "$healthy" = "true" ]; then
-        healthy="Yes"
-    else
-        healthy="No"
-    fi
-fi
+# Watchdog
+crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled
 
 if [ "$nodeUpdate" = "true" ]; then
     nodeUpdateStatus=enabled
@@ -58,34 +36,6 @@ else
     logPruning=disabled
 fi
 
-# Watchdog
-crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled
-
-# DB size
-if [ -d "$hornetDir/${network}db" ]; then
-    getCurrentDbSize="$(du -sb $hornetDir/${network}db | cut -f1)"
-    let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
-    if [ "$getCurrentDbSizeInMb" -gt "999" ]; then
-        let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
-        currentDbSize="${getCurrentDbSizeInGb0}GB"
-    else
-        currentDbSize="${getCurrentDbSizeInMb}MB"
-    fi
-else
-    currentDbSize="N/A"
-fi
-
-if [ "$pruning" = "true" ]; then
-    pruningStatus=enabled
-else
-    pruningStatus=disabled
-fi
-
-if [ "$pow" = "true" ]; then
-    powStatus=enabled
-else
-    powStatus=disabled
-fi
 
 if [ "$swarmAutoUpdate" = "true" ]; then
     swarmAutoUpdateStatus=enabled
@@ -104,8 +54,8 @@ fi
 
 if [ "$watchdogStatus" = "enabled" ]; then
     # OUTPUT
-    whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: $nodeVersion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentDbSize\n\nPoW: $powStatus\nPruning: $pruningStatus\nDB Pruner: \"$dbPruner\"\nMax DB size: ${pruningDatabaseSize}GB\n\nWatchdog: $watchdogStatus\nSWARM updater: $swarmAutoUpdateStatus\nNode updater: $nodeUpdateStatus\nSync-check: $checkSyncStatus\nProxy-check: $proxyCheckStatus\nLogpruning: $logPruning\nLast restart: $restartDate\n\nFirewall: $firewall\n\nNode-URL: $nodeUrl" 27 65
+    whiptail --title "SWARM Info [v$version]" --msgbox "Theme: \"$theme\"\n\Watchdog: $watchdogStatus\n\nSWARM updater: $swarmAutoUpdateStatus\nNode updater: $nodeUpdateStatus\nSync-check: $checkSyncStatus\nMax unsync: $maxLmi milestones\nProxy-check: $proxyCheckStatus\nLogpruning: $logPruning\nMax log size: ${logSize}MB\n\nFirewall: $firewall" 22 65
 else
     # OUTPUT
-    whiptail --title "SWARM Info [v$version]" --msgbox "Hornet: $nodeVersion\nNetwork: $network\nHealthy: $healthy\nDB size: $currentDbSize\n\nPoW: $powStatus\nPruning: $pruningStatus\nDB Pruner: \"$dbPruner\"\nMax DB size: ${pruningDatabaseSize}GB\n\nWatchdog: $watchdogStatus\nFirewall: $firewall\n\nNode-URL: $nodeUrl" 27 65
+    whiptail --title "SWARM Info [v$version]" --msgbox "Theme: \"$theme\"\n\nWatchdog: $watchdogStatus\nFirewall: $firewall!" 14 65
 fi
