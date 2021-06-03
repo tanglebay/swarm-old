@@ -3,7 +3,7 @@ while [ $exitCode -lt 1 ]; do
     clear
     source $configs/hornet.cfg
     CHOICE=$(
-        whiptail --title "Hornet Configurations" --menu "\nChoose an option" 21 65 0 \
+        whiptail --title "Hornet Configurations" --menu "\nChoose an option" 22 65 0 \
         "1)" "Dashboard" \
         "2)" "Node Alias" \
         "3)" "Pruning" \
@@ -12,9 +12,10 @@ while [ $exitCode -lt 1 ]; do
         "6)" "Enable Plugins" \
         "7)" "Disable Plugins" \
         "8)" "Migration Validation" \
-        "9)" "Database Engine" \
-        "10)" "IOTA Network" \
-        "11)" "Hornet release Channel" 3>&2 2>&1 1>&3
+        "9)" "Database Revalidation" \
+        "1ß)" "Database Engine" \
+        "11)" "IOTA Network" \
+        "12)" "Hornet release Channel" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -43,7 +44,7 @@ while [ $exitCode -lt 1 ]; do
                 source $configs/hornet.cfg
                 # Hornet Dashboard
                 CHOICE=$(
-                    whiptail --title "Hornet - Dashboard" --menu "\nChoose an option" 12 65 0 \
+                    whiptail --title "Hornet - Dashboard" --menu "\nChoose an option" 14 65 0 \
                     "1)" "Dashboard Username" \
                     "2)" "Dashboard Password" 3>&2 2>&1 1>&3
                 )
@@ -347,8 +348,35 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "9)")
             source $configs/hornet.cfg
+            if [ "$autoRevalidation" = "true" ]; then
+                autoRevalidationStatus=enabled
+            else
+                autoRevalidationStatus=disabled
+            fi
             CHOICE=$(
-                whiptail --title "Hornet Database" --menu "\nDatabase: $dbEngine\n\nChoose an option" 14 65 0 \
+                whiptail --title "Hornet - DB Revalidation" --menu "\nDatabase Revalidation: $autoRevalidationStatus\n\nChoose an option" 16 65 0 \
+                "1)" "Enable DB revalidation" \
+                "2)" "Disable DB revalidation" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    autoRevalidation=true
+                    sudo sed -i 's/autoRevalidation=.*/autoRevalidation='$autoRevalidation'/' $configs/hornet.cfg
+                    source $modules/configParsers/autoRevalidation
+                    whiptail --title "Hornet - DB Revalidation" --msgbox "Hornet DB Revalidation enabled!" 8 65
+                ;;
+                "2)")
+                    autoRevalidation=false
+                    sudo sed -i 's/autoRevalidation=.*/autoRevalidation='$autoRevalidation'/' $configs/hornet.cfg
+                    source $modules/configParsers/autoRevalidation
+                    whiptail --title "Hornet - DB Revalidation" --msgbox "Hornet DB Revalidation disabled!" 8 65
+                ;;
+            esac
+        ;;
+        "10)")
+            source $configs/hornet.cfg
+            CHOICE=$(
+                whiptail --title "Hornet Database" --menu "\nDatabase: $dbEngine\n\nChoose an option" 16 65 0 \
                 "1)" "Set RocksDB (default)" \
                 "2)" "Set PebbleDB" \
                 "3)" "Set BoltDB" \
@@ -417,7 +445,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
-        "10)")
+        "11)")
             source $configs/hornet.cfg
             # Hornet Networks
             CHOICE=$(
@@ -446,7 +474,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
-        "11)")
+        "12)")
             source $configs/hornet.cfg
             # Hornet release channel
             CHOICE=$(
