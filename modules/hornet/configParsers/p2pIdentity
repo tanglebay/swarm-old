@@ -9,14 +9,9 @@ IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
 for hornetConfig in "${ARRAYhornetConfigs[@]}"
 do
     parser="$(jq '.p2p.identityPrivateKey' $hornetDir/$hornetConfig.json)"
-    if [ "$parser" = "\"\"" ]; then
+    if [ "$parser" != "\"$p2pIdentity\"" ]; then
         sudo jq '.p2p.identityPrivateKey = "'$p2pIdentity'"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
         sudo rm -rf $hornetDir/p2pstore
-    else
-        if [ "$parser" != "\"$p2pIdentity\"" ]; then
-            p2pIdentity=$parser
-            sudo sed -i 's/p2pIdentity=.*/p2pIdentity='$p2pIdentity'/' $configs/hornet.cfg
-        fi
     fi
 done
 unset ARRAYhornetConfigs
