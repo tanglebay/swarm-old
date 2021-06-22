@@ -198,9 +198,9 @@ while [ $exitCode -lt 1 ]; do
                             {
                                 echo 0
                                 sudo apt-get update > /dev/null 2>&1
-                                echo 25
+                                echo 33
                                 sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
-                                echo 65
+                                echo 66
                                 IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
                                 for hornetConfig in "${ARRAYhornetConfigs[@]}"
                                 do
@@ -210,17 +210,19 @@ while [ $exitCode -lt 1 ]; do
                                     fi
                                 done
                                 unset ARRAYhornetConfigs
-                                unset hornetConfig
-                                echo 75
-                                newVersion="$(hornet -v)"
-                                if [ "$version" != "$newVersion" ]; then
-                                # CALL MODULE CONFIGPARSER
-                                    sudo -u hornet wget -q -O $hornetDir/config_chrysalis_testnet.json https://raw.githubusercontent.com/gohornet/hornet/develop/config_chrysalis_testnet.json
-                                    source $modules/hornet/configParser
-                                    sudo systemctl restart hornet
-                                fi
+                                unset hornetConfig                                
                                 echo 100
+                                sleep 0.5
                             } | whiptail --gauge "Please wait while updating Hornet..." 6 65 0
+                            newVersion="$(hornet -v)"
+                            if [ "$version" != "$newVersion" ]; then
+                                {
+                                    # CALL MODULE CONFIGPARSER
+                                        sudo -u hornet wget -q -O $hornetDir/config_chrysalis_testnet.json https://raw.githubusercontent.com/gohornet/hornet/develop/config_chrysalis_testnet.json
+                                        source $modules/hornet/configParser
+                                        sudo systemctl restart hornet
+                                } | whiptail --gauge "Please wait while parsing the configuration..." 6 65 0
+                            fi
                             whiptail --title "Hornet Menu" --msgbox "Hornet update successfully" 8 65
                         else
                             whiptail --title "Hornet Menu" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
@@ -239,10 +241,10 @@ while [ $exitCode -lt 1 ]; do
                     if [ ! -f "/usr/bin/hornet" ]; then
                         {
                             echo 0
-                            echo 5
+                            echo 15
                             source $configs/hornet.cfg
                             sudo snap install go --classic > /dev/null 2>&1
-                            echo 10
+                            echo 39
                             wget -qO - https://ppa.hornet.zone/pubkey.txt | sudo apt-key add - > /dev/null 2>&1
                             if [ "$release" = "stable" ]; then
                             sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
@@ -252,11 +254,11 @@ while [ $exitCode -lt 1 ]; do
                                 sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
                                 sudo sh -c 'echo "deb http://ppa.hornet.zone alpha main" >> /etc/apt/sources.list.d/hornet.list'
                             fi
-                            echo 20
+                            echo 45
                             sudo apt-get -qq update > /dev/null 2>&1
-                            echo 40
-                            sudo apt-get -qq install hornet -y > /dev/null 2>&1
                             echo 60
+                            sudo apt-get -qq install hornet -y > /dev/null 2>&1
+                            echo 75
                             # Check which network
                             if [ "$network" = "mainnet" ]; then
                                 echo "" > /etc/default/hornet
@@ -264,15 +266,17 @@ while [ $exitCode -lt 1 ]; do
                             if [ "$network" = "testnet" ]; then
                                 echo "OPTIONS=\"--config config_chrysalis_testnet.json\"" > /etc/default/hornet
                             fi
+                            echo 90
                             # ONLY TEMP AND WILL BE REMOVED IN THE NEXT VERSIONS
                             if [ ! -f "/etc/systemd/system/multi-user.target.wants/hornet.service" ]; then
                                 sudo systemctl enable hornet > /dev/null 2>&1
                             fi
-                            echo 70
+                            echo 100
+                            sleep 0.5
                         } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
                         if [ -f "/usr/bin/hornet" ]; then
                             {
-                                echo 70
+                                echo 0
                                 if [ ! -f "$hornetDir/config_chrysalis_testnet.json" ]; then
                                     sudo -u hornet wget -q -O $hornetDir/config_chrysalis_testnet.json https://raw.githubusercontent.com/gohornet/hornet/develop/config_chrysalis_testnet.json
                                 fi
@@ -285,15 +289,12 @@ while [ $exitCode -lt 1 ]; do
 
                                 # CALL MODULE CONFIGPARSER
                                 source $modules/hornet/configParser
-                                echo 80
                                 if [ "$ufw" = "true" ]; then
                                     sudo ufw allow $gossipPort/tcp > /dev/null 2>&1
                                 fi
-                                echo 90
                                 sudo systemctl restart hornet > /dev/null 2>&1
-                                echo 100
                                 sleep 0.2
-                            } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
+                            } | whiptail --gauge "Please wait while preparing hornet..." 6 65 0
                             whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports in your home router for peering\n\n$gossipPort/tcp" 8 65
                         else
                             whiptail --title "Hornet Installer" --msgbox "Error while installing Hornet. Please check hornet.cfg and try again!" 8 65
