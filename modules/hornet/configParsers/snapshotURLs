@@ -11,3 +11,15 @@ if [ "$network" = "mainnet" ]; then
     unset deltaSnapshot
     unset parser
 fi
+if [ "$network" = "comnet" ]; then
+    fullSnapshot="https://comnet.tanglebay.com/ls/full_snapshot.bin"
+    deltaSnapshot="https://comnet.tanglebay.com/ls/delta_snapshot.bin"
+    parser="$(jq '.snapshots.downloadURLs' $hornetDir/config_comnet.json)"
+    if [[ $parser != *$fullSnapshot* ]] && [[ $parser != *$deltaSnapshot* ]]; then
+        sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . + {"full": "'$fullSnapshot'","delta": "'$deltaSnapshot'"}' $hornetDir/config_comnet.json|sponge $hornetDir/config_comnet.json
+        restartNode=true
+    fi
+    unset fullSnapshot
+    unset deltaSnapshot
+    unset parser
+fi
