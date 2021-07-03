@@ -28,6 +28,19 @@ while [ $exitCode -lt 1 ]; do
             if (whiptail --title "Hornet Menu" --yesno "Would you like to restart hornet now?" 8 65); then
                 {
                     echo 0
+                        IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+                        for hornetConfig in "${ARRAYhornetConfigs[@]}"
+                        do
+                            if [ ! -s "$hornetDir/$hornetConfig.json" ]; then
+                                if [ "$release" = "stable" ]; then
+                                    sudo -u hornet wget -q -O $hornetDir/$hornetConfig.json https://raw.githubusercontent.com/gohornet/hornet/main/$hornetConfig.json
+                                else
+                                    sudo -u hornet wget -q -O $hornetDir/$hornetConfig.json https://raw.githubusercontent.com/gohornet/hornet/develop/$hornetConfig.json
+                                fi
+                            fi
+                        done
+                        unset ARRAYhornetConfigs
+                        unset hornetConfig
                     echo 33
                     source $modules/hornet/configParser
                     echo 50
