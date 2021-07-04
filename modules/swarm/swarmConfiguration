@@ -1,11 +1,15 @@
 #!/bin/bash
-
+crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled
 while [ $exitCode -lt 1 ]; do
     CHOICE=$(
-        whiptail --title "SWARM Menu" --menu "\nChoose an option" 14 65 0 \
+        whiptail --title "SWARM Menu" --menu "\nWachtdog: $watchdogStatus\n\nChoose an option" 20 65 0 \
         "1)" "SWARM Theme" \
-        "2)" "SWARM Update" \
-        "3)" "Watchdog Settings" 3>&2 2>&1 1>&3
+        "2)" "SWARM Autoupdate [Watchdog]" \
+        "3)" "Hornet Updater [Watchdog]" \
+        "4)" "DB Reset [Watchdog]" \
+        "5)" "Sync Check [Watchdog]" \
+        "6)" "Proxy Check [Watchdog]" \
+        "7)" "SWARM Log pruning [Watchdog]" 3>&2 2>&1 1>&3
     )
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
@@ -72,10 +76,15 @@ while [ $exitCode -lt 1 ]; do
         "2)")
             while [ $exitCode -lt 1 ]; do
                 source $configs/swarm.cfg
+                if [ "$swarmAutoUpdate" = "true" ]; then
+                    swarmAutoUpdateStatus=enabled
+                else
+                    swarmAutoUpdateStatus=disabled
+                fi
                 CHOICE=$(
-                    whiptail --title "SWARM - Update" --menu "\nChoose an option" 14 65 0 \
-                    "1)" "Update Notifier" \
-                    "2)" "SWARM Autoupdate" 3>&2 2>&1 1>&3
+                    whiptail --title "SWARM - Update" --menu "\nSWARM Updater: $swarmAutoUpdateStatus\n\nChoose an option" 14 65 0 \
+                    "1)" "Enable SWARM autoupdater" \
+                    "2)" "Disable SWARM autoupdater" 3>&2 2>&1 1>&3
                 )
                 exitStatus=$?
                 if [ "$exitStatus" = "1" ]; then
@@ -83,64 +92,68 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ "$updateNotifier" = "true" ]; then
-                            updateNotifierStatus=enabled
-                        else
-                            updateNotifierStatus=disabled
-                        fi
-                        CHOICE=$(
-                            whiptail --title "SWARM - Update" --menu "\nNotifier: $updateNotifierStatus\n\nChoose an option" 14 65 0 \
-                            "1)" "Enable Notifier" \
-                            "2)" "Disable Notifier" 3>&2 2>&1 1>&3
-                        )
-                        case $CHOICE in
-                            "1)")
-                                sudo sed -i 's/updateNotifier=.*/updateNotifier=true/' $configs/swarm.cfg
-                                whiptail --title "Watchdog" --msgbox "SWARM update notifier enabled!" 8 65
-                            ;;
-                            "2)")
-                                sudo sed -i 's/updateNotifier=.*/updateNotifier=false/' $configs/swarm.cfg
-                                whiptail --title "Watchdog" --msgbox "SWARM update notifier disabled!" 8 65
-                            ;;
-                        esac
+                        sudo sed -i 's/swarmAutoUpdate=.*/swarmAutoUpdate=true/' $configs/swarm.cfg
+                        whiptail --title "SWARM - Update" --msgbox "SWARM updater enabled!" 8 65
                     ;;
                     "2)")
-                        if [ "$swarmAutoUpdate" = "true" ]; then
-                            swarmAutoUpdateStatus=enabled
-                        else
-                            swarmAutoUpdateStatus=disabled
-                        fi
-                        CHOICE=$(
-                            whiptail --title "SWARM - Update" --menu "\nSWARM Updater: $swarmAutoUpdateStatus\n\nChoose an option" 14 65 0 \
-                            "1)" "Enable SWARM updater" \
-                            "2)" "Disable SWARM updater" 3>&2 2>&1 1>&3
-                        )
-                        case $CHOICE in
-                            "1)")
-                                sudo sed -i 's/swarmAutoUpdate=.*/swarmAutoUpdate=true/' $configs/swarm.cfg
-                                whiptail --title "SWARM - Update" --msgbox "SWARM updater enabled!" 8 65
-                            ;;
-                            "2)")
-                                sudo sed -i 's/swarmAutoUpdate=.*/swarmAutoUpdate=false/' $configs/swarm.cfg
-                                whiptail --title "SWARM - Update" --msgbox "SWARM updater disabled!" 8 65
-                            ;;
-                        esac
+                        sudo sed -i 's/swarmAutoUpdate=.*/swarmAutoUpdate=false/' $configs/swarm.cfg
+                        whiptail --title "SWARM - Update" --msgbox "SWARM updater disabled!" 8 65
                     ;;
                 esac
             done
             exitCode=0
         ;;
         "3)")
-            crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled
+            if [ "$nodeUpdate" = "true" ]; then
+                nodeUpdateStatus=enabled
+            else
+                nodeUpdateStatus=disabled
+            fi
+            CHOICE=$(
+                whiptail --title "Watchdog - Updater" --menu "\nNode Updater: $nodeUpdateStatus\n\nChoose an option" 14 65 0 \
+                "1)" "Enable Hornet updater" \
+                "2)" "Disable Hornet updater" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    sudo sed -i 's/nodeUpdate=.*/nodeUpdate=true/' $configs/swarm.cfg
+                    whiptail --title "Watchdog - Updater" --msgbox "Hornet updater enabled!" 8 65
+                ;;
+                "2)")
+                    sudo sed -i 's/nodeUpdate=.*/nodeUpdate=false/' $configs/swarm.cfg
+                    whiptail --title "Watchdog - Updater" --msgbox "Hornet updater disabled!" 8 65
+                ;;
+            esac
+        ;;
+        "4)")
+            if [ "$allowDbReset" = "true" ]; then
+                allowDbResetStatus=enabled
+            else
+                allowDbResetStatus=disabled
+            fi
+            CHOICE=$(
+                whiptail --title "Watchdog - Database" --menu "\nAllow DB reset: $allowDbResetStatus\n\nChoose an option" 14 65 0 \
+                "1)" "Enable DB reset" \
+                "2)" "Disable DB reset" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    sudo sed -i 's/allowDbReset=.*/allowDbReset=true/' $configs/swarm.cfg
+                    whiptail --title "Watchdog - Database" --msgbox "DB reset enabled!" 8 65
+                ;;
+                "2)")
+                    sudo sed -i 's/allowDbReset=.*/allowDbReset=false/' $configs/swarm.cfg
+                    whiptail --title "Watchdog - Database" --msgbox "DB reset disabled!" 8 65
+                ;;
+            esac
+        ;;
+        "5)")
             while [ $exitCode -lt 1 ]; do
                 source $configs/swarm.cfg
                 CHOICE=$(
-                    whiptail --title "Watchdog - Settings" --menu "\nWatchdog: $watchdogStatus\n\nChoose an option" 17 65 0 \
-                    "1)" "Hornet Updater" \
-                    "2)" "DB Reset" \
-                    "3)" "Sync Check" \
-                    "4)" "Proxy Check" \
-                    "5)" "SWARM Log pruning" 3>&2 2>&1 1>&3
+                    whiptail --title "Watchdog - Settings" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "Sync Checker" \
+                    "2)" "Set max milestones" 3>&2 2>&1 1>&3
                 )
                 exitStatus=$?
                 if [ "$exitStatus" = "1" ]; then
@@ -148,169 +161,108 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ "$nodeUpdate" = "true" ]; then
-                            nodeUpdateStatus=enabled
+                        if [ "$checkSync" = "true" ]; then
+                            checkSyncStatus=enabled
                         else
-                            nodeUpdateStatus=disabled
+                            checkSyncStatus=disabled
                         fi
                         CHOICE=$(
-                            whiptail --title "Watchdog - Updater" --menu "\nNode Updater: $nodeUpdateStatus\n\nChoose an option" 14 65 0 \
-                            "1)" "Enable Hornet updater" \
-                            "2)" "Disable Hornet updater" 3>&2 2>&1 1>&3
+                            whiptail --title "Watchdog - Sync" --menu "\nSync check: $checkSyncStatus\n\nChoose an option" 14 65 0 \
+                            "1)" "Enable sync check" \
+                            "2)" "Disable sync check" 3>&2 2>&1 1>&3
                         )
                         case $CHOICE in
                             "1)")
-                                sudo sed -i 's/nodeUpdate=.*/nodeUpdate=true/' $configs/swarm.cfg
-                                whiptail --title "Watchdog - Updater" --msgbox "Hornet updater enabled!" 8 65
+                                sudo sed -i 's/checkSync=.*/checkSync=true/' $configs/swarm.cfg
+                                whiptail --title "Watchdog - Sync" --msgbox "Sync check enabled!" 8 65
                             ;;
                             "2)")
-                                sudo sed -i 's/nodeUpdate=.*/nodeUpdate=false/' $configs/swarm.cfg
-                                whiptail --title "Watchdog - Updater" --msgbox "Hornet updater disabled!" 8 65
+                                sudo sed -i 's/checkSync=.*/checkSync=false/' $configs/swarm.cfg
+                                whiptail --title "Watchdog - Sync" --msgbox "Sync check disabled!" 8 65
                             ;;
                         esac
                     ;;
                     "2)")
-                        if [ "$allowDbReset" = "true" ]; then
-                            allowDbResetStatus=enabled
+                        source $configs/swarm.cfg
+                        maxLmi=$(whiptail --inputbox "\nSet the maximum difference between LMI and LSMI before the resync starts and a new database/snapshot is initialized" 10 65 $maxLmi --title "Watchdog - Sync" 3>&1 1>&2 2>&3)
+                        if [ ! -z "$maxLmi" ] && [ $maxLmi -gt 0 ] 2>/dev/null; then
+                            sudo sed -i 's/maxLmi=.*/maxLmi='$maxLmi'/' $configs/swarm.cfg
+                            whiptail --title "Watchdog - Sync" --msgbox "Max milestones set to $maxLmi milestones!" 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "6)")
+            if [ "$proxyCheck" = "true" ]; then
+                proxyCheckStatus=enabled
+            else
+                proxyCheckStatus=disabled
+            fi
+            CHOICE=$(
+                whiptail --title "Watchdog - Proxy" --menu "\nProxy check: $proxyCheckStatus\n\nChoose an option" 14 65 0 \
+                "1)" "Enable proxy check" \
+                "2)" "Disable proxy check" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    sudo sed -i 's/proxyCheck=.*/proxyCheck=true/' $configs/swarm.cfg
+                    whiptail --title "Watchdog - Proxy" --msgbox "Proxy check enabled!" 8 65
+                ;;
+                "2)")
+                    sudo sed -i 's/proxyCheck=.*/proxyCheck=false/' $configs/swarm.cfg
+                    whiptail --title "Watchdog - Proxy" --msgbox "Proxy check disabled!" 8 65
+                ;;
+            esac
+        ;;
+        "7)")
+            while [ $exitCode -lt 1 ]; do
+                source $configs/swarm.cfg
+                if [ "$logPruning" = "true" ]; then
+                    logPruningStatus=enabled
+                else
+                    logPruningStatus=disabled
+                fi
+                CHOICE=$(
+                    whiptail --title "Watchdog - Log" --menu "\nLog pruning: $logPruningStatus\n\nChoose an option" 14 65 0 \
+                    "1)" "Log pruning" \
+                    "2)" "Set log size" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ "$logPruning" = "true" ]; then
+                            logPruningStatus=enabled
                         else
-                            allowDbResetStatus=disabled
+                            logPruningStatus=disabled
                         fi
                         CHOICE=$(
-                            whiptail --title "Watchdog - Database" --menu "\nAllow DB reset: $allowDbResetStatus\n\nChoose an option" 14 65 0 \
-                            "1)" "Enable DB reset" \
-                            "2)" "Disable DB reset" 3>&2 2>&1 1>&3
+                            whiptail --title "Watchdog - Log" --menu "\nLog pruning: $logPruningStatus\n\nChoose an option" 14 65 0 \
+                            "1)" "Enable log pruning" \
+                            "2)" "Disable log pruning" 3>&2 2>&1 1>&3
                         )
                         case $CHOICE in
                             "1)")
-                                sudo sed -i 's/allowDbReset=.*/allowDbReset=true/' $configs/swarm.cfg
-                                whiptail --title "Watchdog - Database" --msgbox "DB reset enabled!" 8 65
+                                sudo sed -i 's/logPruning=.*/logPruning=true/' $configs/swarm.cfg
+                                whiptail --title "Watchdog - Log" --msgbox "Log pruning enabled!" 8 65
                             ;;
                             "2)")
-                                sudo sed -i 's/allowDbReset=.*/allowDbReset=false/' $configs/swarm.cfg
-                                whiptail --title "Watchdog - Database" --msgbox "DB reset disabled!" 8 65
+                                sudo sed -i 's/logPruning=.*/logPruning=false/' $configs/swarm.cfg
+                                whiptail --title "Watchdog - Log" --msgbox "Log pruning disabled!" 8 65
                             ;;
                         esac
                     ;;
-                    "3)")
-                        while [ $exitCode -lt 1 ]; do
-                            source $configs/swarm.cfg
-                            CHOICE=$(
-                                whiptail --title "Watchdog - Settings" --menu "\nChoose an option" 14 65 0 \
-                                "1)" "Sync Checker" \
-                                "2)" "Set max milestones" 3>&2 2>&1 1>&3
-                            )
-                            exitStatus=$?
-                            if [ "$exitStatus" = "1" ]; then
-                                exitCode=1
-                            fi
-                            case $CHOICE in
-                                "1)")
-                                    if [ "$checkSync" = "true" ]; then
-                                        checkSyncStatus=enabled
-                                    else
-                                        checkSyncStatus=disabled
-                                    fi
-                                    CHOICE=$(
-                                        whiptail --title "Watchdog - Sync" --menu "\nSync check: $checkSyncStatus\n\nChoose an option" 14 65 0 \
-                                        "1)" "Enable sync check" \
-                                        "2)" "Disable sync check" 3>&2 2>&1 1>&3
-                                    )
-                                    case $CHOICE in
-                                        "1)")
-                                            sudo sed -i 's/checkSync=.*/checkSync=true/' $configs/swarm.cfg
-                                            whiptail --title "Watchdog - Sync" --msgbox "Sync check enabled!" 8 65
-                                        ;;
-                                        "2)")
-                                            sudo sed -i 's/checkSync=.*/checkSync=false/' $configs/swarm.cfg
-                                            whiptail --title "Watchdog - Sync" --msgbox "Sync check disabled!" 8 65
-                                        ;;
-                                    esac
-                                ;;
-                                "2)")
-                                    source $configs/swarm.cfg
-                                    maxLmi=$(whiptail --inputbox "\nSet the maximum difference between LMI and LSMI before the resync starts and a new database/snapshot is initialized" 10 65 $maxLmi --title "Watchdog - Sync" 3>&1 1>&2 2>&3)
-                                    if [ ! -z "$maxLmi" ] && [ $maxLmi -gt 0 ] 2>/dev/null; then
-                                        sudo sed -i 's/maxLmi=.*/maxLmi='$maxLmi'/' $configs/swarm.cfg
-                                        whiptail --title "Watchdog - Sync" --msgbox "Max milestones set to $maxLmi milestones!" 8 65
-                                    fi
-                                ;;
-                            esac
-                        done
-                        exitCode=0
-                    ;;
-                    "4)")
-                        if [ "$proxyCheck" = "true" ]; then
-                            proxyCheckStatus=enabled
-                        else
-                            proxyCheckStatus=disabled
+                    "2)")
+                        source $configs/swarm.cfg
+                        logSize=$(whiptail --inputbox "\nSet max log file size in Megabyte (MB)" 10 65 $logSize --title "Watchdog - Sync" 3>&1 1>&2 2>&3)
+                        if [ ! -z "$logSize" ] && [ $logSize -gt 0 ] 2>/dev/null; then
+                            sudo sed -i 's/logSize=.*/logSize='$logSize'/' $configs/swarm.cfg
+                            whiptail --title "Watchdog - Log" --msgbox "Log size set to ${logSize}MB!" 8 65
                         fi
-                        CHOICE=$(
-                            whiptail --title "Watchdog - Proxy" --menu "\nProxy check: $proxyCheckStatus\n\nChoose an option" 14 65 0 \
-                            "1)" "Enable proxy check" \
-                            "2)" "Disable proxy check" 3>&2 2>&1 1>&3
-                        )
-                        case $CHOICE in
-                            "1)")
-                                sudo sed -i 's/proxyCheck=.*/proxyCheck=true/' $configs/swarm.cfg
-                                whiptail --title "Watchdog - Proxy" --msgbox "Proxy check enabled!" 8 65
-                            ;;
-                            "2)")
-                                sudo sed -i 's/proxyCheck=.*/proxyCheck=false/' $configs/swarm.cfg
-                                whiptail --title "Watchdog - Proxy" --msgbox "Proxy check disabled!" 8 65
-                            ;;
-                        esac
-                    ;;
-                    "5)")
-                        while [ $exitCode -lt 1 ]; do
-                            source $configs/swarm.cfg
-                            if [ "$logPruning" = "true" ]; then
-                                logPruningStatus=enabled
-                            else
-                                logPruningStatus=disabled
-                            fi
-                            CHOICE=$(
-                                whiptail --title "Watchdog - Log" --menu "\nLog pruning: $logPruningStatus\n\nChoose an option" 14 65 0 \
-                                "1)" "Log pruning" \
-                                "2)" "Set log size" 3>&2 2>&1 1>&3
-                            )
-                            exitStatus=$?
-                            if [ "$exitStatus" = "1" ]; then
-                                exitCode=1
-                            fi
-                            case $CHOICE in
-                                "1)")
-                                    if [ "$logPruning" = "true" ]; then
-                                        logPruningStatus=enabled
-                                    else
-                                        logPruningStatus=disabled
-                                    fi
-                                    CHOICE=$(
-                                        whiptail --title "Watchdog - Log" --menu "\nLog pruning: $logPruningStatus\n\nChoose an option" 14 65 0 \
-                                        "1)" "Enable log pruning" \
-                                        "2)" "Disable log pruning" 3>&2 2>&1 1>&3
-                                    )
-                                    case $CHOICE in
-                                        "1)")
-                                            sudo sed -i 's/logPruning=.*/logPruning=true/' $configs/swarm.cfg
-                                            whiptail --title "Watchdog - Log" --msgbox "Log pruning enabled!" 8 65
-                                        ;;
-                                        "2)")
-                                            sudo sed -i 's/logPruning=.*/logPruning=false/' $configs/swarm.cfg
-                                            whiptail --title "Watchdog - Log" --msgbox "Log pruning disabled!" 8 65
-                                        ;;
-                                    esac
-                                ;;
-                                "2)")
-                                    source $configs/swarm.cfg
-                                    logSize=$(whiptail --inputbox "\nSet max log file size in Megabyte (MB)" 10 65 $logSize --title "Watchdog - Sync" 3>&1 1>&2 2>&3)
-                                    if [ ! -z "$logSize" ] && [ $logSize -gt 0 ] 2>/dev/null; then
-                                        sudo sed -i 's/logSize=.*/logSize='$logSize'/' $configs/swarm.cfg
-                                        whiptail --title "Watchdog - Log" --msgbox "Log size set to ${logSize}MB!" 8 65
-                                    fi
-                                ;;
-                            esac
-                        done
-                        exitCode=0
                     ;;
                 esac
             done
