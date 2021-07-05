@@ -53,40 +53,32 @@ while [ $exitCode -lt 1 ]; do
                 ;;
                 "2)")
                     if [ "$ufw" = "true" ]; then
+                        firewallStatus=$(systemctl show -p ActiveState --value ufw)
+                        if [ "$firewallStatus" = "active" ]; then
+                            firewall=enabled
+                        else
+                            firewall=disabled
+                        fi
+                        CHOICE=$(
+                            whiptail --title "SWARM Menu" --menu "\nFirewall: $firewall\n\nChoose an option" 14 65 0 \
+                            "1)" "Enable Firewall" \
+                            "2)" "Disable Firewall" 3>&2 2>&1 1>&3
+                        )
                         case $CHOICE in
                             "1)")
-                                firewallStatus=$(systemctl show -p ActiveState --value ufw)
-                                if [ "$firewallStatus" = "active" ]; then
-                                    firewall=enabled
-                                else
-                                    firewall=disabled
-                                fi
-                                CHOICE=$(
-                                    whiptail --title "SWARM Menu" --menu "\nFirewall: $firewall\n\nChoose an option" 14 65 0 \
-                                    "1)" "Enable Firewall" \
-                                    "2)" "Disable Firewall" 3>&2 2>&1 1>&3
-                                )
-                                case $CHOICE in
-                                    "1)")
-                                        sudo ufw default deny incoming > /dev/null 2>&1
-                                        sshPort=$(sudo grep "Port [0-9]" /etc/ssh/sshd_config | awk  '{print $2}')
-                                        sudo ufw allow $sshPort/tcp > /dev/null 2>&1
-                                        sudo ufw --force enable
-                                        whiptail --title "SWARM Menu" --msgbox "Firewall successfully activated!" 8 65
-                                    ;;
-                                    "2)")
-                                        sudo ufw disable
-                                        whiptail --title "SWARM Menu" --msgbox "Firewall successfully deactivated!" 8 65
-                                    ;;
-                                esac
+                                sudo ufw default deny incoming > /dev/null 2>&1
+                                sshPort=$(sudo grep "Port [0-9]" /etc/ssh/sshd_config | awk  '{print $2}')
+                                sudo ufw allow $sshPort/tcp > /dev/null 2>&1
+                                sudo ufw --force enable
+                                whiptail --title "SWARM Menu" --msgbox "Firewall successfully activated!" 8 65
+                            ;;
+                            "2)")
+                                sudo ufw disable
+                                whiptail --title "SWARM Menu" --msgbox "Firewall successfully deactivated!" 8 65
                             ;;
                         esac
                     else
-                        case $CHOICE in
-                            "1)")
-                                whiptail --title "SWARM Menu" --msgbox "Error - No firewall found!" 8 65
-                            ;;
-                        esac
+                        whiptail --title "SWARM Menu" --msgbox "Error - No firewall found!" 8 65
                     fi
                 ;;
             esac
