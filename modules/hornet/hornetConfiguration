@@ -3,7 +3,7 @@ while [ $exitCode -lt 1 ]; do
     clear
     source $configs/hornet.cfg
     CHOICE=$(
-        whiptail --title "Hornet Configurations" --menu "\nChoose an option" 25 65 0 \
+        whiptail --title "Hornet Configurations" --menu "\nChoose an option" 26 65 0 \
         "1)" "Dashboard" \
         "2)" "Node Alias" \
         "3)" "DB Pruning" \
@@ -15,10 +15,11 @@ while [ $exitCode -lt 1 ]; do
         "9)" "Database Revalidation" \
         "10)" "Gossip Port" \
         "11)" "Autopeering Port" \
-        "12)" "Migration Validation" \
-        "13)" "Database Engine" \
-        "14)" "IOTA Network" \
-        "15)" "Hornet release Channel" 3>&2 2>&1 1>&3
+        "12)" "Max Unknown Neighbors" \
+        "13)" "Migration Validation" \
+        "14)" "Database Engine" \
+        "15)" "IOTA Network" \
+        "16)" "Hornet release Channel" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -316,13 +317,13 @@ while [ $exitCode -lt 1 ]; do
             case $CHOICE in
                 "1)")
                     autoRevalidation=true
-                    sudo sed -i 's/autoRevalidation=.*/autoRevalidation='$autoRevalidation'/' $configs/hornet.cfg
+                    sudo sed -i 's/autoRevalidation=.*/autoRevalidation=true/' $configs/hornet.cfg
                     source $modules/hornet/configParsers/autoRevalidation
                     whiptail --title "Hornet - DB Revalidation" --msgbox "Hornet DB Revalidation enabled!" 8 65
                 ;;
                 "2)")
                     autoRevalidation=false
-                    sudo sed -i 's/autoRevalidation=.*/autoRevalidation='$autoRevalidation'/' $configs/hornet.cfg
+                    sudo sed -i 's/autoRevalidation=.*/autoRevalidation=false/' $configs/hornet.cfg
                     source $modules/hornet/configParsers/autoRevalidation
                     whiptail --title "Hornet - DB Revalidation" --msgbox "Hornet DB Revalidation disabled!" 8 65
                 ;;
@@ -358,6 +359,16 @@ while [ $exitCode -lt 1 ]; do
             whiptail --title "Hornet - Autopeering" --msgbox "Autopeering is not currently available in Hornet!" 8 65
         ;;
         "12)")
+            source $configs/hornet.cfg
+            currentMaxUnknownNeighbors=$maxUnknownNeighbors
+            maxUnknownNeighbors=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentMaxUnknownNeighbors --title "Hornet - Gossip" 3>&1 1>&2 2>&3)
+            if [ ! -z "$maxUnknownNeighbors" ] && [ "$currentMaxUnknownNeighbors" != "$maxUnknownNeighbors" ] && [ $maxUnknownNeighbors -eq $maxUnknownNeighbors ] 2>/dev/null; then
+                source $modules/hornet/configParsers/gossipUnknownPeersLimit
+                sudo sed -i 's/maxUnknownNeighbors=.*/maxUnknownNeighbors='$maxUnknownNeighbors'/' $configs/hornet.cfg
+                whiptail --title "Hornet - Gossip" --msgbox "Maximum of unknown neighbors set to \"$maxUnknownNeighbors\"!" 8 65
+            fi
+        ;;
+        "13)")
             if [ "$network" = "mainnet" ]; then
                 while [ $exitCode -lt 1 ]; do
                     clear
@@ -447,7 +458,7 @@ while [ $exitCode -lt 1 ]; do
                 whiptail --title "Hornet - Validation" --msgbox "The migration validation is only available for the mainnet!" 8 65
             fi
         ;;
-        "13)")
+        "14)")
             source $configs/hornet.cfg
             CHOICE=$(
                 whiptail --title "Hornet Database" --menu "\nDatabase: $dbEngine\n\nChoose an option" 16 65 0 \
@@ -519,7 +530,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
-        "14)")
+        "15)")
             source $configs/hornet.cfg
             # Hornet Networks
             CHOICE=$(
@@ -555,7 +566,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
-        "15)")
+        "16)")
             source $configs/hornet.cfg
             # Hornet release channel
             CHOICE=$(
