@@ -375,12 +375,11 @@ while [ $exitCode -lt 1 ]; do
                             echo 80
                             if [ ! -d "$hornetDir" ]; then
                                 sudo mkdir -p $hornetDir
-                                if [ ! -f "$hornetDir/peering.json" ]; then
+                                if [ ! -s "$hornetDir/peering.json" ]; then
                                     sudo wget -q -O $hornetDir/peering.json https://raw.githubusercontent.com/gohornet/hornet/main/peering.json
                                 fi
                                 chown -R hornet:hornet $hornetDir
                             fi
-                            source $modules/hornet/hornetConfigCheck
                             echo 100
                             sleep 0.5
                         } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
@@ -390,16 +389,6 @@ while [ $exitCode -lt 1 ]; do
                                 # TMP SECTION START
                                 sudo wget -q -O /usr/bin/hornet https://tanglebay.com/assets/hornet-${cpuArchitecture}64
                                 echo 25
-                                IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                                for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                                do
-                                    if [ ! -s "$hornetDir/$hornetConfig.json" ]; then
-                                        sudo chown hornet:hornet $hornetDir/$hornetConfig.json
-                                        sudo -u hornet wget -q -O $hornetDir/$hornetConfig.json https://raw.githubusercontent.com/gohornet/hornet/develop/$hornetConfig.json
-                                    fi
-                                done
-                                unset ARRAYhornetConfigs
-                                unset hornetConfig
                                 # TMP SECTION END
 
                                 # CALL MODULE CONFIGPARSER
