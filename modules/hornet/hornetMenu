@@ -341,10 +341,11 @@ while [ $exitCode -lt 1 ]; do
                         esac
                         {
                             echo 0
-                            echo 15
+                            echo 10
                             source $configs/hornet.cfg
+                            echo 20
                             sudo snap install go --classic > /dev/null 2>&1
-                            echo 39
+                            echo 30
                             wget -qO - https://ppa.hornet.zone/pubkey.txt | sudo apt-key add - > /dev/null 2>&1
                             if [ "$release" = "stable" ]; then
                             sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
@@ -354,11 +355,11 @@ while [ $exitCode -lt 1 ]; do
                                 sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
                                 sudo sh -c 'echo "deb http://ppa.hornet.zone alpha main" >> /etc/apt/sources.list.d/hornet.list'
                             fi
-                            echo 45
+                            echo 40
                             sudo apt-get -qq update > /dev/null 2>&1
-                            echo 60
+                            echo 50
                             sudo apt-get -qq install hornet -y > /dev/null 2>&1
-                            echo 75
+                            echo 60
                             # Check which network
                             if [ "$network" = "mainnet" ]; then
                                 echo "" > /etc/default/hornet
@@ -366,11 +367,20 @@ while [ $exitCode -lt 1 ]; do
                             if [ "$network" = "testnet" ]; then
                                 echo "OPTIONS=\"--config config_chrysalis_testnet.json\"" > /etc/default/hornet
                             fi
-                            echo 90
+                            echo 70
                             # ONLY TEMP AND WILL BE REMOVED IN THE NEXT VERSIONS
                             if [ ! -f "/etc/systemd/system/multi-user.target.wants/hornet.service" ]; then
                                 sudo systemctl enable hornet > /dev/null 2>&1
                             fi
+                            echo 80
+                            if [ ! -d "$hornetDir" ]; then
+                                sudo mkdir -p $hornetDir
+                                if [ ! -f "$hornetDir/peering.json" ]; then
+                                    sudo wget -q -O $hornetDir/peering.json https://raw.githubusercontent.com/gohornet/hornet/main/peering.json
+                                fi
+                                chown -R hornet:hornet $hornetDir
+                            fi
+                            source $modules/hornet/hornetConfigCheck
                             echo 100
                             sleep 0.5
                         } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
@@ -432,7 +442,8 @@ while [ $exitCode -lt 1 ]; do
                         sudo systemctl disable hornet > /dev/null 2>&1
                         echo 45
                         sleep 0.25
-                        sudo apt -qq remove hornet -y > /dev/null 2>&1
+                        #sudo apt -qq remove hornet -y > /dev/null 2>&1
+                        sudo apt -qq purge hornet -y > /dev/null 2>&1
                         echo 60
                         sleep 0.25
                         sudo apt -qq autoremove -y > /dev/null 2>&1
