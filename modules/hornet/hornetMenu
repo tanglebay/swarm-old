@@ -211,98 +211,40 @@ while [ $exitCode -lt 1 ]; do
             case $CHOICE in
                 "1)")
                     if [ -f "/usr/bin/hornet" ]; then
-                        CHOICE=$(
-                            whiptail --title "Hornet - Updater" --menu "\nChoose your option" 16 65 0 \
-                            "1)" "Update Hornet for amd64 (VPS)" \
-                            "2)" "Update Hornet for arm64 (RPi)" 3>&2 2>&1 1>&3
-                        )
-                        case $CHOICE in
-                            "1)")
-                                {
-                                    echo 0
-                                    echo 5
-                                    sudo systemctl stop hornet
-                                    echo 20
-                                    sudo wget -q -O /usr/bin/hornet https://tanglebay.com/assets/hornet-amd64
-                                    echo 40
-                                    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                                    for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                                    do
-                                        sudo -u hornet wget -q -O $hornetDir/$hornetConfig.json https://raw.githubusercontent.com/gohornet/hornet/develop/$hornetConfig.json
-                                    done
-                                    unset ARRAYhornetConfigs
-                                    unset hornetConfig
-                                    echo 60
-                                    source $modules/hornet/configParser
-                                    echo 80
-                                    sudo systemctl start hornet
-                                    echo 100
-                                } | whiptail --gauge "Please wait while updating Hornet..." 6 65 0
-                                whiptail --title "Hornet Menu" --msgbox "Hornet update successfully" 8 65
-                            ;;
-                            "2)")
-                                {
-                                    echo 0
-                                    echo 5
-                                    sudo systemctl stop hornet
-                                    echo 20
-                                    sudo wget -q -O /usr/bin/hornet https://tanglebay.com/assets/hornet-arm64
-                                    echo 40
-                                    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                                    for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                                    do
-                                        sudo -u hornet wget -q -O $hornetDir/$hornetConfig.json https://raw.githubusercontent.com/gohornet/hornet/develop/$hornetConfig.json
-                                    done
-                                    unset ARRAYhornetConfigs
-                                    unset hornetConfig
-                                    echo 60
-                                    source $modules/hornet/configParser
-                                    if [ "$ufw" = "true" ]; then
-                                        sudo ufw allow $autopeeringPort/udp > /dev/null 2>&1
+                        # Update HORNET
+                        source $modules/getVersions
+                        if [ "$nodeVersion" != "HORNET $latestHornet" ]; then
+                            {
+                                echo 0
+                                sudo apt-get update > /dev/null 2>&1
+                                echo 33
+                                sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
+                                echo 66
+                                IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+                                for hornetConfig in "${ARRAYhornetConfigs[@]}"
+                                do
+                                    if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
+                                        sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json > /dev/null 2>&1
+                                        sudo rm -rf $hornetDir/$hornetConfig.json.dpkg* > /dev/null 2>&1
                                     fi
-                                    echo 80
-                                    sudo systemctl start hornet
-                                    echo 100
-                                } | whiptail --gauge "Please wait while updating Hornet..." 6 65 0
-                                whiptail --title "Hornet Menu" --msgbox "Hornet update successfully" 8 65
-                            ;;
-                        esac
-
-                        # # Update HORNET
-                        # source $modules/getVersions
-                        # if [ "$nodeVersion" != "HORNET $latestHornet" ]; then
-                        #     {
-                        #         echo 0
-                        #         sudo apt-get update > /dev/null 2>&1
-                        #         echo 33
-                        #         sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
-                        #         echo 66
-                        #         IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                        #         for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                        #         do
-                        #             if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
-                        #                 sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json > /dev/null 2>&1
-                        #                 sudo rm -rf $hornetDir/$hornetConfig.json.dpkg* > /dev/null 2>&1
-                        #             fi
-                        #         done
-                        #         unset ARRAYhornetConfigs
-                        #         unset hornetConfig                                
-                        #         echo 100
-                        #         sleep 0.5
-                        #     } | whiptail --gauge "Please wait while updating Hornet..." 6 65 0
-                        #     newVersion="$(hornet -v)"
-                        #     if [ "$version" != "$newVersion" ]; then
-                        #         {
-                        #             # CALL MODULE CONFIGPARSER
-                        #                 sudo -u hornet wget -q -O $hornetDir/config_chrysalis_testnet.json https://raw.githubusercontent.com/gohornet/hornet/develop/config_chrysalis_testnet.json
-                        #                 source $modules/hornet/configParser
-                        #                 sudo systemctl restart hornet
-                        #         } | whiptail --gauge "Please wait while parsing the configuration..." 6 65 0
-                        #     fi
-                        #     whiptail --title "Hornet Menu" --msgbox "Hornet update successfully" 8 65
-                        # else
-                        #     whiptail --title "Hornet Menu" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
-                        # fi
+                                done
+                                unset ARRAYhornetConfigs
+                                unset hornetConfig                                
+                                echo 100
+                                sleep 0.5
+                            } | whiptail --gauge "Please wait while updating Hornet..." 6 65 0
+                            newVersion="$(hornet -v)"
+                            if [ "$version" != "$newVersion" ]; then
+                                {
+                                    # CALL MODULE CONFIGPARSER
+                                    source $modules/hornet/configParser
+                                    sudo systemctl restart hornet
+                                } | whiptail --gauge "Please wait while parsing the configuration..." 6 65 0
+                            fi
+                            whiptail --title "Hornet Menu" --msgbox "Hornet update successfully" 8 65
+                        else
+                            whiptail --title "Hornet Menu" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
+                        fi
                     else
                         whiptail --title "Hornet Installer" --msgbox "Sorry, but Hornet is not installed!" 8 65
                     fi
@@ -310,19 +252,6 @@ while [ $exitCode -lt 1 ]; do
                 "2)")
                     # INSTALL HORNET
                     if [ ! -f "/usr/bin/hornet" ]; then
-                        CHOICE=$(
-                            whiptail --title "Hornet - Installer" --menu "\nChoose your option" 16 65 0 \
-                            "1)" "Install Hornet for amd64 (VPS)" \
-                            "2)" "Install Hornet for arm64 (RPi)" 3>&2 2>&1 1>&3
-                        )
-                        case $CHOICE in
-                            "1)")
-                                cpuArchitecture="amd"
-                            ;;
-                            "2)")
-                                cpuArchitecture="arm"
-                            ;;
-                        esac
                         {
                             echo 0
                             echo 10
@@ -352,7 +281,6 @@ while [ $exitCode -lt 1 ]; do
                                 echo "OPTIONS=\"--config config_chrysalis_testnet.json\"" > /etc/default/hornet
                             fi
                             echo 70
-                            # ONLY TEMP AND WILL BE REMOVED IN THE NEXT VERSIONS
                             if [ ! -f "/etc/systemd/system/multi-user.target.wants/hornet.service" ]; then
                                 sudo systemctl enable hornet > /dev/null 2>&1
                             fi
@@ -370,20 +298,6 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/hornet" ]; then
                             {
                                 echo 0
-
-
-                                ######### TMP SECTION START ##############
-                                sudo wget -q -O /usr/bin/hornet https://tanglebay.com/assets/hornet-${cpuArchitecture}64
-                                IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                                for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                                do
-                                    sudo -u hornet wget -q -O $hornetDir/$hornetConfig.json https://raw.githubusercontent.com/gohornet/hornet/develop/$hornetConfig.json
-                                done
-                                unset ARRAYhornetConfigs
-                                unset hornetConfig
-                                ########## TMP SECTION END ###############
-
-
                                 echo 25
                                 # CALL MODULE CONFIGPARSER
                                 echo 50
