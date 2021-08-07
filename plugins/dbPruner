@@ -2,14 +2,13 @@
 source /var/lib/swarm/modules/variables
 source $configs/hornet.cfg
 source $configs/swarm.cfg
-#source $logs/dbPruner
 
 # Get Service Status
 isHealthy="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
 pruningDatabaseSize=${pruningDatabaseSize//[!0-9]/}
 
 
-if [ "$isHealthy" = "true" ] && [ ! -f "$logs/dbPruner.lock" ] && [ -n "$pruningDatabaseSize" ]; then
+if [ "$isHealthy" = "true" ] && [ ! -f "$plugins/dbPruner.lock" ] && [ -n "$pruningDatabaseSize" ]; then
     IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
     for hornetConfig in "${ARRAYhornetConfigs[@]}"
     do
@@ -41,7 +40,7 @@ if [ "$isHealthy" = "true" ] && [ ! -f "$logs/dbPruner.lock" ] && [ -n "$pruning
     let pruningDatabaseSize=$pruningDatabaseSize*1000
     if [ "$dbSize" -gt 0 ] && [ "$dbSize" -gt "$pruningDatabaseSize" ]; then
         # ADD LOCK
-        sudo touch $logs/dbPruner.lock
+        sudo touch $plugins/dbPruner.lock
         while [ $dbSize -gt $pruningDatabaseSize ] && [ "$killSwitch" != "true" ]; do
             # Start pruning process
             currentPruningIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.pruningIndex')"
@@ -67,18 +66,17 @@ if [ "$isHealthy" = "true" ] && [ ! -f "$logs/dbPruner.lock" ] && [ -n "$pruning
 
         if [ "$killSwitch" = "true" ]; then
             pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
-            echo "$pruningDate [DBPRUNER] - KillSwitch triggered -> $execPruning" >> $logs/swarm.log
+            echo "$pruningDate [dbPruner] - KillSwitch triggered -> $execPruning" >> $logs/swarm.log
             # Remove LOCK
-            sudo rm -rf $logs/dbPruner.lock
+            sudo rm -rf $plugins/dbPruner.lock
         fi
 
         if [ "$milestonesPruned" = "true" ]; then
-            # pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
-            # sudo sed -i "s,pruningDate=.*,pruningDate=\"$pruningDate\"," $logs/dbPruner
-            echo "$pruningDate [DBPRUNER] - Database pruned to milestones $pruningIndex" >> $logs/swarm.log
+            pruningDate=`date '+%d-%m-%Y %H-%M-%S'`
+            echo "$pruningDate [dbPruner] - Database pruned to milestones $pruningIndex" >> $logs/swarm.log
 
             # Remove LOCK
-            sudo rm -rf $logs/dbPruner.lock
+            sudo rm -rf $plugins/dbPruner.lock
         fi
     fi
     unset getDbSize
@@ -87,14 +85,6 @@ if [ "$isHealthy" = "true" ] && [ ! -f "$logs/dbPruner.lock" ] && [ -n "$pruning
     unset pruningDatabaseSize
     unset execPruning
     unset killSwitch
-# else
-#     if [ ! -n "$pruningDatabaseSize" ]; then
-#         ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
-#     else
-#         if ! [ "$pruningDatabaseSize" -eq "$pruningDatabaseSize" ]; then
-#             ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
-#         fi
-#     fi
 fi
 
 unset ARRAYhornetConfigs
