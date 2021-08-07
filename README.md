@@ -4,10 +4,12 @@
 
 **Please note that you use this script at your own risk and that I will not be liable for any damages that may occur**
 
-**Requirements**
+## Requirements
 - RPi 4 (min 4GB / 40GB SSD) or VPS (2Core/4GB/40GB)
 - Ubuntu 20.04 LTS (64Bit)
 - (Sub-) Domain
+
+## Installation
 
 **Download the latest release version of SWARM and run it. Do the following steps:**
 
@@ -18,6 +20,13 @@ curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh |
 2. After installting SWARM you can execute it with typing `swarm`
 
 **Notice**: Please make sure that your node is properly secured (e.g. firewall, SSH KeyAuth, regular system updates).
+
+## Ports
+- Gossip: `15600/tcp`
+- Autopeering: `14626/udp`
+- API (HTTPS): `443/tcp`
+- HTTP (letsencrypt): `80/tcp`
+
 
 # Tips
 
