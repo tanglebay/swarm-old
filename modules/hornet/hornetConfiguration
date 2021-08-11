@@ -110,10 +110,9 @@ while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
                     whiptail --title "Hornet - Pruning" --menu "\nStatus: $pruningStatus\n\nChoose an option" 18 65 0 \
                     "1)" "Enable/Disable pruning" \
-                    "2)" "Set pruning method" \
-                    "3)" "Set database size" \
-                    "4)" "Set pruning cooldown" \
-                    "5)" "Set pruning percentage" 3>&2 2>&1 1>&3
+                    "2)" "Set database size" \
+                    "3)" "Set pruning cooldown" \
+                    "4)" "Set pruning percentage" 3>&2 2>&1 1>&3
                 )
                 exitstatus=$?
                 if [ "$exitstatus" = "1" ]; then
@@ -147,27 +146,6 @@ while [ $exitCode -lt 1 ]; do
                         esac
                     ;;
                     "2)")
-                        CHOICE=$(
-                            whiptail --title "Hornet Pruning" --menu "\ndbPruner: $dbPruner\n\nChoose an option" 14 65 0 \
-                            "1)" "Set Hornet as pruner" \
-                            "2)" "Set SWARM as pruner" 3>&2 2>&1 1>&3
-                        )
-                        case $CHOICE in
-                            "1)")
-                                dbPruner=hornet
-                                sudo sed -i 's/^dbPruner=.*/dbPruner="'$dbPruner'"/' $configs/hornet.cfg
-                                source $modules/hornet/configParsers/pruning
-                                whiptail --title "Hornet Pruning" --msgbox "Pruning with Hornet set successfully!" 8 65
-                            ;;
-                            "2)")
-                                dbPruner=swarm
-                                sudo sed -i 's/^dbPruner=.*/dbPruner="'$dbPruner'"/' $configs/hornet.cfg
-                                source $modules/hornet/configParsers/pruning
-                                whiptail --title "Hornet Pruning" --msgbox "Pruning with SWARM set successfully!" 8 65
-                            ;;
-                        esac
-                    ;;
-                    "3)")
                         pruningDatabaseSize=$(whiptail --inputbox "\nSet the maximum size of the database in gigabyte." 10 65 $pruningDatabaseSize --title "Hornet - Pruning" 3>&1 1>&2 2>&3)
                         pruningDatabaseSize=${pruningDatabaseSize//[!0-9]/}
                         if [ ! -z "$pruningDatabaseSize" ] && [ $pruningDatabaseSize -eq $pruningDatabaseSize ] 2>/dev/null; then
@@ -176,7 +154,7 @@ while [ $exitCode -lt 1 ]; do
                             whiptail --title "Hornet Pruning" --msgbox "Pruning of the database set to ${pruningDatabaseSize}GB!" 8 65
                         fi
                     ;;
-                    "4)")
+                    "3)")
                         currentPruningCooldownTime=$pruningCooldownTime
                         pruningCooldownTime=$(whiptail --inputbox "\nSet the interval (minutes) at which pruning is performed when the maximum DB size is reached." 10 65 $pruningCooldownTime --title "Hornet - Pruning" 3>&1 1>&2 2>&3)
                         pruningCooldownTime=${pruningCooldownTime//[!0-9]/}
@@ -187,7 +165,7 @@ while [ $exitCode -lt 1 ]; do
                             whiptail --title "Hornet Pruning" --msgbox "Pruning cooldown time set to ${pruningCooldownTime}m!" 8 65
                         fi
                     ;;
-                    "5)")
+                    "4)")
                         pruningPercentage=$(whiptail --inputbox "\nSet how much percent of history should be pruned from the database" 10 65 $pruningPercentage --title "Hornet - Pruning" 3>&1 1>&2 2>&3)
                         if [ ! -z "$pruningPercentage" ]; then
                             source $modules/hornet/configParsers/pruningPercentage
