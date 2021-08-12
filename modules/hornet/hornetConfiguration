@@ -129,10 +129,17 @@ while [ $exitCode -lt 1 ]; do
                         esac
                     ;;
                     "2)")
-                        jwtToken=$(hornet tools jwt-api | awk 'NF>1{print $NF}')
-                        echo $jwtToken >> $logs/jwt.log
-                        echo "" >> $logs/jwt.log
-                        sudo nano $logs/jwt.log
+                        if (whiptail --title "Hornet - JWT Auth" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
+                            sudo systemctl stop hornet
+                            jwtToken=$( cd $hornetDir ; hornet tools jwt-api)
+                            echo $jwtToken >> $logs/jwt.log
+                            clear
+                            echo ""
+                            echo $jwtToken
+                            echo ""
+                            read -n 1 -s -r -p "Press any key to continue"
+                            sudo systemctl start hornet
+                        fi
                     ;;
                     "3)")
                         if [ -f "$logs/jwt.log" ]; then
