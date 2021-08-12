@@ -129,16 +129,20 @@ while [ $exitCode -lt 1 ]; do
                         esac
                     ;;
                     "2)")
-                        if (whiptail --title "Hornet - JWT Auth" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
-                            sudo systemctl stop hornet
-                            jwtToken=$( cd $hornetDir ; hornet tools jwt-api)
-                            echo $jwtToken >> $logs/jwt.log
-                            clear
-                            echo ""
-                            echo $jwtToken
-                            echo ""
-                            read -n 1 -s -r -p "Press any key to continue"
-                            sudo systemctl start hornet
+                        if [ "$jwtAuthEnabled" = "true" ]; then
+                            if (whiptail --title "Hornet - JWT Auth" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
+                                sudo systemctl stop hornet
+                                jwtToken=$( cd $hornetDir ; hornet tools jwt-api)
+                                echo $jwtToken >> $logs/jwt.log
+                                clear
+                                echo ""
+                                echo $jwtToken
+                                echo ""
+                                read -n 1 -s -r -p "Press any key to continue"
+                                sudo systemctl start hornet
+                            fi
+                        else
+                            whiptail --title "Hornet - JWT Auth" --msgbox "Please enable JWT-Auth before generating new JWT token!" 8 65
                         fi
                     ;;
                     "3)")
@@ -154,6 +158,7 @@ while [ $exitCode -lt 1 ]; do
                             sudo sed -i 's/^jwtAuthSalt=.*/jwtAuthSalt="'$jwtAuthSalt'"/' $configs/hornet.cfg
                             source $modules/hornet/configParsers/jwtAuthSalt
                             sudo rm -rf $logs/jwt.log
+                            whiptail --title "Hornet - JWT Auth" --msgbox "All JWT tokens will be revoked after restarting Hornet!" 8 65
                         fi
                     ;;
                 esac
