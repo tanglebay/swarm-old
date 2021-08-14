@@ -28,6 +28,17 @@ curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh |
 - HTTP (letsencrypt): `80/tcp`
 
 
+## Backup SWARM
+If you ever want to reinstall your server or SWARM, you can backup your SWARM configuration first.
+
+You can find the configuration files under the following path:
+```shell
+cd /var/lib/swarm/configs
+```
+
+After the reinstallation, simply replace the configurations with your backup, run a SWARM update to update the configuration files (if necessary) and then you can reinstall Hornet and the proxy and have all settings imported directly.
+
+
 # Tips
 
 **IOTA Address:**

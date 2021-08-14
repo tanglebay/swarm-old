@@ -114,6 +114,12 @@ if [ -f "$configs/hornet-backup.cfg" ]; then
     if [ -z "$dbPruner" ]; then
         sudo sed -i 's/^dbPruner=.*/dbPruner="hornet"/' $configs/hornet.cfg
     else
+        if [ "$dbPruner" = "swarm" ]; then
+            crontab -l | grep -q "$dbPrunerCronCmd" > /dev/null 2>&1 && ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab - > /dev/null 2>&1
+            dbPruner="hornet"
+            source $modules/hornet/configParsers/pruning
+            sudo systemctl restart hornet
+        fi
         sudo sed -i 's/^dbPruner=.*/dbPruner="'$dbPruner'"/' $configs/hornet.cfg
     fi
 
@@ -179,6 +185,18 @@ if [ -f "$configs/hornet-backup.cfg" ]; then
         sudo sed -i 's/^runAsEntryNode=.*/runAsEntryNode=false/' $configs/hornet.cfg
     else
         sudo sed -i 's/^runAsEntryNode=.*/runAsEntryNode='$runAsEntryNode'/' $configs/hornet.cfg
+    fi
+
+    if [ -z "$jwtAuthEnabled" ]; then
+        sudo sed -i 's/^jwtAuthEnabled=.*/jwtAuthEnabled=false/' $configs/hornet.cfg
+    else
+        sudo sed -i 's/^jwtAuthEnabled=.*/jwtAuthEnabled='$jwtAuthEnabled'/' $configs/hornet.cfg
+    fi
+
+    if [ -z "$jwtAuthSalt" ]; then
+        sudo sed -i 's/^jwtAuthSalt=.*/jwtAuthSalt="HORNET"/' $configs/hornet.cfg
+    else
+        sudo sed -i 's/^jwtAuthSalt=.*/jwtAuthSalt="'$jwtAuthSalt'"/' $configs/hornet.cfg
     fi
 
     # Delete Bak file

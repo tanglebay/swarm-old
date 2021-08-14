@@ -1,10 +1,14 @@
-## Version 0.6.5
-- Add check for restart/update when pruning
-- Add "autopeering" as default plugin
-- Change dbPruner lock file
-- Fix SWARM updateParser for autopeering
-- Update readme file
-- Update about file
+## Version 0.6.5 (upcoming version)
+- Added "autopeering" as default plugin
+- Added JWT-Auth configuration
+- Added Watchdog enabled per default (Installer)
+- Removed SWARM dbPruner
+- Removed Tangle Bay Delta Snapshot URL
+- Fixed multiple text strings
+- Fixed SWARM updateParser for autopeering
+- Updated Watchdog
+- Updated Readme file
+- Updated About file
 
 
 ## Version 0.6.4
@@ -17,37 +21,37 @@
 
 
 ## Version 0.6.3
-- Add hornet installation checks
-- Fix potential nginx error
-- Fix output error (hornet configuration)
-- Fix wrong Hornet config
+- Added hornet installation checks
+- Fixed potential nginx error
+- Fixed output error (hornet configuration)
+- Fixed wrong Hornet config
 
 
 ## Version 0.6.2
-- Incrase unknown peers to 4 to allow autopeering
+- Incrased unknown peers to 4 to allow autopeering
 
 
 ## Version 0.6.1
-- Add tmp autopeering binary
-- Add tmp autopeering configuration
-- Add Tangle Bay entry node check
-- Add force of SWARM of allowDbReset
+- Added tmp autopeering binary
+- Added tmp autopeering configuration
+- Added Tangle Bay entry node check
+- Added force of SWARM of allowDbReset
 
 
 ## Version 0.6.0
-- Add gossipUnknownPeersLimit configuration
-- Fix Hornet installation
-- Fix hornetInstallation
-- Fix pruningDatabaseSize
-- Fix Firewall menu
-- Fix Firewall status
-- Fix p2pIdentity
-- Fix autopeeringPort
-- Fix removal of the proxy
-- Fix all config parser
-- Update SWARM configuration menu
-- Update SWARM Info
-- Update comnet config to offical
+- Added gossipUnknownPeersLimit configuration
+- Fixed Hornet installation
+- Fixed hornetInstallation
+- Fixed pruningDatabaseSize
+- Fixed Firewall menu
+- Fixed Firewall status
+- Fixed p2pIdentity
+- Fixed autopeeringPort
+- Fixed removal of the proxy
+- Fixed all config parser
+- Updated SWARM configuration menu
+- Updated SWARM Info
+- Updated comnet config to offical
 - Bug fixes from 0.5.9
 
 
@@ -64,8 +68,8 @@
 
 
 ## Version 0.5.6
-- Add Tangle Bay as snapshot source
-- Fix progress bar
+- Added Tangle Bay as snapshot source
+- Fixed progress bar
 
 
 ## Version 0.5.5
