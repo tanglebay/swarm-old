@@ -6,6 +6,8 @@
 - Removed Tangle Bay Delta Snapshot URL
 - Fixed multiple text strings
 - Fixed SWARM updateParser for autopeering
+- Updated maxUnknownPeers from 4 to 2
+- Updated SWARM removal
 - Updated Watchdog
 - Updated Readme file
 - Updated About file
