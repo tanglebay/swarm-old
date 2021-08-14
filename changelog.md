@@ -4,11 +4,12 @@
 - Added Watchdog enabled per default (Installer)
 - Removed SWARM dbPruner
 - Removed Tangle Bay Delta Snapshot URL
+- Fixed multiple text strings
+- Fixed SWARM updateParser for autopeering
 - Updated Watchdog
 - Updated Readme file
 - Updated About file
-- Updated text strings
-- Fixed SWARM updateParser for autopeering
+
 
 ## Version 0.6.4
 - Added config status to swarm configuration
