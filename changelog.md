@@ -1,16 +1,19 @@
 ## Version 0.6.5 (upcoming version)
+### Added
 - Added "autopeering" as default plugin
 - Added JWT-Auth configuration
-- Added Watchdog enabled per default (Installer)
-- Removed SWARM dbPruner
-- Removed Tangle Bay Delta Snapshot URL
+- Enabled Watchdog per default via Installer
+### Changed
 - Fixed multiple text strings
 - Fixed SWARM updateParser for autopeering
-- Updated maxUnknownPeers from 4 to 2
+- Changed maxUnknownPeers from 4 to 2
 - Updated SWARM removal
 - Updated Watchdog
 - Updated Readme file
 - Updated About file
+### Removed
+- Removed SWARM dbPruner
+- Removed Tangle Bay Delta Snapshot URL
 
 
 ## Version 0.6.4
