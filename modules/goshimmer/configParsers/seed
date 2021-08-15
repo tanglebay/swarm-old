@@ -1,0 +1,12 @@
+#!/bin/bash
+
+if [ -z "$goshimmerSeed" ]; then
+    goshimmerSeed=$(openssl rand -base64 32)
+    sudo sed -i 's/^goshimmerSeed=.*/goshimmerSeed="'$goshimmerSeed'"/' $configs/goshimmer.cfg
+fi
+
+parser="$(jq '.autopeering.seed' $goshimmerDir/config.json)"
+if [ "$parser" != "\"$goshimmerSeed\"" ]; then
+    sudo jq '.autopeering.seed = "'$goshimmerSeed'"' $goshimmerDir/config.json|sponge $goshimmerDir/config.json
+    restartGoshimmer=true
+fi
