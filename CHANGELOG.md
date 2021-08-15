@@ -1,5 +1,6 @@
 ## Version 0.6.5 (upcoming version)
 ### Added
+- Added new node "GoShimmer"
 - Added "autopeering" as default plugin
 - Added JWT-Auth configuration
 - Enabled Watchdog per default via Installer
