@@ -1,6 +1,6 @@
 #!/bin/bash
 timeframe=`date '+%M'`
-if [ "$nodeUpdate" = "true" ] && [ "$timeframe" = "30" ] && [ -f "/usr/bin/hornet" ]; then
+if [ "$hornetAutoUpdate" = "true" ] && [ "$timeframe" = "30" ] && [ -f "/usr/bin/hornet" ]; then
     if [ "$release" = "stable" ]; then
         latestHornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
         latestHornet="${latestHornet:1}"
@@ -62,5 +62,17 @@ if [ "$nodeUpdate" = "true" ] && [ "$timeframe" = "30" ] && [ -f "/usr/bin/horne
                 fi
             fi
         fi
+    fi
+fi
+
+# GoShimmer AutoUpdater
+if [ "$goshimmerAutoUpdate" = "true" ] && [ "$timeframe" = "30" ] && [ -f "/usr/bin/goshimmer" ]; then
+    source $modules/goshimmer/getVersion
+    goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+    if [ "$goshimmerStatus" = "active "] && [ "$currentGoshimmerVersion" != "\"v$latestGoShimmerVersion\"" ]; then
+        sudo systemctl stop goshimmer
+        source $modules/goshimmer/configParser
+        sudo rm -rf $goshimmerDir/mainnetdb
+        sudo systemctl restart goshimmer
     fi
 fi
