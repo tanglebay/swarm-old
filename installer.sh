@@ -8,7 +8,7 @@ button=black,red
 "
 if [ ! -f "/var/lib/swarm/swarm" ]; then
     if [ $(id -u) -ne 0 ]; then
-        whiptail --title "SWARM" --msgbox "Please run SWARM installer with sudo or as root" 8 65
+        whiptail --title "SWARM" --msgbox "Please run SWARM installer with sudo or as root!" 8 65
         exit 0
     else
         if (whiptail --title "SWARM" --yesno "Do you want to install SWARM now?" 10 65); then
@@ -22,11 +22,9 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
                 sudo chmod +x $swarmDir/swarm $plugins/watchdog
                 ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
                 source $modules/alias
-                if [ "$restart" = "false" ]; then
-                    source $swarmDir/swarm
-                fi
+                source $swarmDir/swarm
             else
-                whiptail --title "SWARM" --msgbox "SWARM could not be successfully cloned from GitHub" 8 65
+                whiptail --title "SWARM" --msgbox "SWARM could not be successfully cloned from GitHub!" 8 65
             fi
         fi
     fi
