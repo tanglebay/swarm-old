@@ -5,7 +5,7 @@
 **Please note that you use this script at your own risk and that I will not be liable for any damages that may occur**
 
 ## Requirements
-- RPi 4 (min 4GB / 40GB SSD) or VPS (2Core/4GB/40GB)
+- VPS (2Core/4GB/40GB) *RPi 4 is not supported for GoShimmer**
 - Ubuntu 20.04 LTS (64Bit)
 - (Sub-) Domain
 
@@ -22,7 +22,13 @@ curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh |
 **Notice**: Please make sure that your node is properly secured (e.g. firewall, SSH KeyAuth, regular system updates).
 
 ## Ports
+### Hornet
 - Gossip: `15600/tcp`
+- Autopeering: `14626/udp`
+- API (HTTPS): `443/tcp`
+- HTTP (letsencrypt): `80/tcp`
+### GoShimmer
+- Gossip: `14666/tcp`
 - Autopeering: `14626/udp`
 - API (HTTPS): `443/tcp`
 - HTTP (letsencrypt): `80/tcp`
