@@ -61,30 +61,44 @@ fi
 
 # Check if the certificate for the domain already exist
 if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
-    rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
-    {
-    echo 0
-    sleep 0.25
-    sudo cat $templates/nginx_default.template > /etc/nginx/sites-enabled/default
-    echo 20
-    sleep 0.25
-    sudo find /etc/nginx/nginx.conf -type f -exec sed -i 's/# server_tokens off;/server_tokens off;/g' {} \;
-    sudo find /etc/nginx/nginx.conf -type f -exec sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g' {} \;
-    echo 40
-    sleep 0.25
-    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
-    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/443/'$apiPort'/g' {} \;
-    echo 60
-    sleep 0.25
-    sudo systemctl restart nginx
-    echo 80
-    if [ "$ufw" = "true" ]; then
-        sudo ufw allow $apiPort/tcp > /dev/null 2>&1
+    if [ -f "/usr/bin/hornet" ] && [ -f "/usr/bin/goshimmer" ]; then
+        proxyPortCheck=true
     fi
-    echo 100
-    sleep 0.25
-    } | whiptail --gauge "Please wait while SWARM deploying the config and restart the proxy..." 8 65 0
-    whiptail --title "Proxy Menu" --msgbox "Node Informations:\n\nURL: https://$domain:$apiPort" 12 65
+    if [ $hornetApiPort -ne $goshimmerApiPort ] || [ "$proxyPortCheck" != "true" ]; then
+        rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default
+        {
+        echo 0
+        echo 20
+        if [ -f "/usr/bin/hornet" ]; then
+            sudo cat $templates/nginx_hornet.template > /etc/nginx/sites-enabled/hornet
+            sudo find /etc/nginx/sites-enabled/hornet -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
+            sudo find /etc/nginx/sites-enabled/hornet -type f -exec sed -i 's/443/'$hornetApiPort'/g' {} \;
+        fi
+        sleep 0.25
+        echo 40
+        if [ -f "/usr/bin/goshimmer" ]; then
+            sudo cat $templates/nginx_goshimmer.template > /etc/nginx/sites-enabled/goshimmer
+            sudo find /etc/nginx/sites-enabled/goshimmer -type f -exec sed -i 's/domain.tld/'$domain'/g' {} \;
+            sudo find /etc/nginx/sites-enabled/goshimmer -type f -exec sed -i 's/443/'$goshimmerApiPort'/g' {} \;
+        fi
+        sleep 0.25
+        echo 60
+        sudo find /etc/nginx/nginx.conf -type f -exec sed -i 's/# server_tokens off;/server_tokens off;/g' {} \;
+        sudo find /etc/nginx/nginx.conf -type f -exec sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g' {} \;
+        sleep 0.25
+        echo 80
+        sudo systemctl restart nginx
+        if [ "$ufw" = "true" ]; then
+            sudo ufw allow $hornetApiPort/tcp > /dev/null 2>&1
+            sudo ufw allow $goshimmerApiPort/tcp > /dev/null 2>&1
+        fi
+        echo 100
+        sleep 0.25
+        } | whiptail --gauge "Please wait while SWARM deploying the config and restart the proxy..." 8 65 0
+        whiptail --title "Proxy Menu" --msgbox "Proxy configuration successfully applied!" 12 65
+    else
+        whiptail --title "Proxy Menu" --msgbox "The API ports (HTTPS) of Hornet and GoShimmer must be different!" 8 65
+    fi
 else
     whiptail --title "Proxy Menu" --msgbox "No SSL Certificate not found!!" 8 65
 fi
