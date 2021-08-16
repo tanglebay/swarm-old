@@ -222,15 +222,19 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/goshimmer" ]; then
                             {
                                 echo 50
+                                if ! [ -x "$(command -v apache2-utils)" ]; then
+                                    sudo apt -qq install apache2-utils -y > /dev/null 2>&1
+                                fi
+                                echo 60
                                 # CALL MODULE CONFIGPARSER
                                 source $modules/goshimmer/configParser
-                                echo 60
+                                echo 70
                                 if [ "$ufw" = "true" ]; then
                                     sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
                                     sudo ufw allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
                                 fi
                                 sudo systemctl restart goshimmer > /dev/null 2>&1
-                                echo 75
+                                echo 80
                                 sleep 2
                                 goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
                                 if [ "$goshimmerStatus" != "active" ]; then
@@ -252,27 +256,44 @@ while [ $exitCode -lt 1 ]; do
                         {
                             echo 0
                             sleep 0.25
-                            echo 15
+                            echo 10
                             sudo systemctl stop goshimmer > /dev/null 2>&1
                             sleep 0.25
-                            echo 30
+                            echo 20
                             sleep 0.25
                             sudo systemctl disable goshimmer > /dev/null 2>&1
-                            echo 45
+                            echo 30
                             sleep 0.25
                             sudo rm -rf /usr/bin/goshimmer /var/lib/goshimmer /lib/systemd/system/goshimmer.service /etc/default/goshimmer > /dev/null 2>&1
-                            echo 60
+                            echo 40
                             sleep 0.25
-                            echo 75
+                            echo 50
                             sudo systemctl daemon-reload > /dev/null 2>&1
-                            echo 90
+                            echo 60
                             if [ "$ufw" = "true" ]; then
                                 sudo ufw delete allow $goshimmerGossipPort/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
                             fi
+                            echo 70
                             sudo rm -rf $goshimmerDir > /dev/null 2>&1
+                            echo 80
                             if id hornet >/dev/null 2>&1; then
                                 sudo deluser goshimmer >/dev/null
+                            fi
+                            echo 90
+                            if [ -x "$(command -v apache2-utils)" ]; then
+                                sudo apt -qq purge apache-utils -y > /dev/null 2>&1
+                                sudo apt -qq autoremove -y > /dev/null 2>&1
+                            fi
+                            if [ -f "/etc/nginx/goshimmer/.htpasswd_dashboard" ]; then
+                                sudo rm -rf /etc/nginx/goshimmer/.htpasswd_dashboard > /dev/null 2>&1
+                            fi
+                            if [ -f "/etc/nginx/goshimmer/.htpasswd_webapi" ]; then
+                                sudo rm -rf /etc/nginx/goshimmer/.htpasswd_webapi > /dev/null 2>&1
+                            fi
+                            if [ -f "/etc7nginx/sites-enabled/goshimmer" ]; then
+                                sudo rm -rf /etc/nginx/sites-enabled/goshimmer > /dev/null 2>&1
+                                sudo systemctl reload nginx
                             fi
                             echo 100
                             sleep 0.25

@@ -1,25 +1,20 @@
 #!/bin/bash
 
-if [ ! -z "$goshimmerDashboardAuthEnabled" ]; then
-    parser="$(jq '.dashboard.basic_auth.enabled' $goshimmerDir/config.json)"
-    if [ "$parser" != "$goshimmerDashboardAuthEnabled" ]; then
-        sudo jq '.dashboard.basic_auth.enabled = '$goshimmerDashboardAuthEnabled'' $goshimmerDir/config.json|sponge $goshimmerDir/config.json
-        restartGoshimmer=true
-    fi
+if [ -d "/etc/nginx/goshimmer" ]; then
+    sudo mkdir -p /etc/nginx/goshimmer
 fi
 
-if [ ! -z "$goshimmerDashboardUsername" ]; then
-    parser="$(jq '.dashboard.basic_auth.username' $goshimmerDir/config.json)"
-    if [ "$parser" != "\"$goshimmerDashboardUsername\"" ]; then
-        sudo jq '.dashboard.basic_auth.username = "'$goshimmerDashboardUsername'"' $goshimmerDir/config.json|sponge $goshimmerDir/config.json
-        restartGoshimmer=true
+if [ "$goshimmerDashboardAuthEnabled" = "true" ]; then
+    sudo echo "auth_basic \"Restricted\";" > /etc/nginx/goshimmer/dashboardauth.conf
+    sudo echo "auth_basic_user_file /etc/nginx/goshimmer/.htpasswd_dashboard;" >> /etc/nginx/goshimmer/dashboardauth.conf
+    sudo htpasswd -bcB /etc/nginx/goshimmer/.htpasswd_dashboard $goshimmerDashboardUsername $goshimmerDashboardPassword > /dev/null 2>&1
+    if [ -f "/usr/sbin/nginx" ]; then
+        sudo systemctl reload nginx > /dev/null 2>&1
     fi
-fi
-
-if [ ! -z "$goshimmerDashboardPassword" ]; then
-    parser="$(jq '.dashboard.basic_auth.password' $goshimmerDir/config.json)"
-    if [ "$parser" != "\"$goshimmerDashboardPassword\"" ]; then
-        sudo jq '.dashboard.basic_auth.password = "'$goshimmerDashboardPassword'"' $goshimmerDir/config.json|sponge $goshimmerDir/config.json
-        restartGoshimmer=true
+else
+    sudo echo "" > /etc/nginx/goshimmer/dashboardauth.conf > /dev/null 2>&1
+    sudo rm -rf /etc/nginx/goshimmer/.htpasswd_dashboard > /dev/null 2>&1
+    if [ -f "/usr/sbin/nginx" ]; then
+        sudo systemctl reload nginx > /dev/null 2>&1
     fi
 fi
