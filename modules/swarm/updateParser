@@ -1,21 +1,44 @@
 #!/bin/bash
 
+# RLY OLD SHIT
 if [ -f "$configs/hornetCfgBak" ]; then
-    mv $configs/hornetCfgBak $configs/hornet-backup.cfg
+    sudo cp -rf $configs/hornetCfgBak $tmpswarm/hornet-backup.cfg
 fi
 if [ -f "$configs/swarmCfgBak" ]; then
-    mv $configs/swarmCfgBak $configs/swarm-backup.cfg
+    sudo cp -rf $configs/swarmCfgBak $tmpswarm/swarm-backup.cfg
 fi
 if [ -f "$configs/proxyCfgBak" ]; then
-    mv $configs/proxyCfgBak $configs/proxy-backup.cfg
+    sudo cp -rf $configs/proxyCfgBak $tmpswarm/proxy-backup.cfg
 fi
 if [ -f "$logs/watchdogBak" ]; then
-    mv $logs/watchdogBak $logs/watchdog-backup.cfg
+    sudo cp -rf $logs/watchdogBak $tmpswarm/watchdog-backup.cfg
+fi
+
+# BEFORE 0.6.5
+if [ ! -d "/tmp/swarm" ]; then
+    tmpdir="/tmp/swarm"
+    sudo mkdir -p $tmpdir
+fi
+if [ -f "$configs/hornet-backup.cfg" ]; then
+    sudo mv -f $configs/hornet-backup.cfg $tmpswarm/hornet-backup.cfg
+fi
+if [ -f "$configs/goshimmer-backup.cfg" ]; then
+    sudo mv -f $configs/goshimmer-backup.cfg $tmpswarm/goshimmer-backup.cfg
+fi
+if [ -f "$configs/swarm-backup.cfg" ]; then
+    sudo mv -f $configs/swarm-backup.cfg $tmpswarm/swarm-backup.cfg
+fi
+if [ -f "$configs/proxy-backup.cfg" ]; then
+    sudo mv -f $configs/proxy-backup.cfg $tmpswarm/proxy-backup.cfg
+fi
+if [ -f "$configs/watchdog-backup.cfg" ]; then
+    sudo mv -f $configs/watchdog-backup.cfg $tmpswarm/watchdog-backup.cfg
 fi
 
 ###########################################################################################################################
-if [ -f "$configs/hornet-backup.cfg" ]; then
-    source $configs/hornet-backup.cfg
+if [ -f "$tmpswarm/hornet-backup.cfg" ]; then
+    source $tmpswarm/hornet-backup.cfg
+
     # Upater for Hornet.cfg
     if [ -z "$release" ]; then
         sudo sed -i 's/^release=.*/release="stable"/' $configs/hornet.cfg
@@ -198,15 +221,12 @@ if [ -f "$configs/hornet-backup.cfg" ]; then
     else
         sudo sed -i 's/^jwtAuthSalt=.*/jwtAuthSalt="'$jwtAuthSalt'"/' $configs/hornet.cfg
     fi
-
-    # Delete Bak file
-    rm -rf $configs/hornet-backup.cfg
 fi
 
 ####################################################################################################################################
 
-if [ -f "$configs/goshimmer-backup.cfg" ]; then
-    source $configs/goshimmer-backup.cfg
+if [ -f "$tmpswarm/goshimmer-backup.cfg" ]; then
+    source $tmpswarm/goshimmer-backup.cfg
 
     if [ -z "$goshimmerDashboardAuthEnbaled" ]; then
         sudo sed -i 's/^goshimmerDashboardAuthEnbaled=.*/goshimmerDashboardAuthEnbaled="false"/' $configs/goshimmer.cfg
@@ -273,16 +293,13 @@ if [ -f "$configs/goshimmer-backup.cfg" ]; then
     else
         sudo sed -i 's/^goshimmerSeed=.*/goshimmerSeed="'$goshimmerSeed'"/' $configs/goshimmer.cfg
     fi
-
-    # Delete Bak file
-    sudo rm -rf $configs/goshimmer-backup.cfg
 fi
 
 ####################################################################################################################################
 
 
-if [ -f "$configs/proxy-backup.cfg" ]; then
-    source $configs/proxy-backup.cfg
+if [ -f "$tmpswarm/proxy-backup.cfg" ]; then
+    source $tmpswarm/proxy-backup.cfg
     # Upater for Nginx.cfg
     if [ -z "$domain" ]; then
         sudo sed -i 's/^domain=.*/domain="myhornetnode.domain.tld"/' $configs/proxy.cfg
@@ -301,15 +318,13 @@ if [ -f "$configs/proxy-backup.cfg" ]; then
     else
         sudo sed -i 's/^goshimmerApiPort=.*/goshimmerApiPort='$goshimmerApiPort'/' $configs/proxy.cfg
     fi
-
-    # Delete Bak file
-    sudo rm -rf $configs/proxy-backup.cfg
 fi
 
 ####################################################################################################################################
 
-if [ -f "$configs/swarm-backup.cfg" ]; then
-    source $configs/swarm-backup.cfg
+if [ -f "$tmpswarm/swarm-backup.cfg" ]; then
+    source $tmpswarm/swarm-backup.cfg
+
     # Upater for SWARM.cfg
     if [ -z "$updateNotifier" ]; then
         sudo sed -i 's/^updateNotifier=.*/updateNotifier=true/' $configs/swarm.cfg
@@ -392,25 +407,21 @@ if [ -f "$configs/swarm-backup.cfg" ]; then
     else
         sudo sed -i 's/^logSize=.*/logSize='$logSize'/' $configs/swarm.cfg
     fi
-
-    # Delete Bak file
-    sudo rm -rf $configs/swarm-backup.cfg
 fi
 
 ####################################################################################################################################
 
-if [ -f "$logs/watchdog-backup.cfg" ]; then
-    source $logs/watchdog-backup.cfg
+if [ -f "$tmpswarm/watchdog-backup.cfg" ]; then
+    source $tmpswarm/watchdog-backup.cfg
+
     # Updater for watchdog.log
     sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $logs/watchdog
     sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $logs/watchdog
     sudo sed -i 's/^gosshimmerStatusCounter=.*/gosshimmerStatusCounter='$gosshimmerStatusCounter'/' $logs/watchdog
     sudo sed -i 's/^gosshimmerSyncCounter=.*/gosshimmerSyncCounter='$gosshimmerSyncCounter'/' $logs/watchdog
-    # Delete Bak file
-    sudo rm -rf $logs/watchdog-backup.cfg
 fi
 
 ####################################################################################################################################
 
 #### REMOVE ALL BAKs
-rm -rf $logs/*-backup.cfg$ $configs/*-backup.cfg$
+rm -rf $tmpswarm
