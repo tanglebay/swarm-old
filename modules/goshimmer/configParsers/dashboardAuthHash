@@ -4,6 +4,7 @@ if [ -z "$goshimmerDashboardAuthHash" ]; then
     if [ ! -d "/etc/nginx/goshimmer" ]; then
         sudo mkdir -p /etc/nginx/goshimmer
     else
+        goshimmerDashboardAuthHash=$(sudo htpasswd -bnB $goshimmerDashboardAuthUsername $goshimmerDashboardAuthPassword)
         sudo htpasswd -bcB /etc/nginx/goshimmer/.htpasswd_dashboard $goshimmerDashboardAuthUsername $goshimmerDashboardAuthPassword
         sudo sed -i 's/^goshimmerDashboardAuthHash=.*/goshimmerDashboardAuthHash="'$goshimmerDashboardAuthHash'"/' $configs/goshimmer.cfg
         if [ -f "/usr/sbin/nginx" ]; then
@@ -11,12 +12,10 @@ if [ -z "$goshimmerDashboardAuthHash" ]; then
         fi
     fi
 else
-    parser=$(sudo htpasswd -bnB $goshimmerDashboardAuthUsername $goshimmerDashboardAuthPassword)
-    if [ "$parser" != "$goshimmerDashboardAuthHash" ]; then
-        sudo htpasswd -bcB /etc/nginx/goshimmer/.htpasswd_dashboard $goshimmerDashboardAuthUsername $goshimmerDashboardAuthPassword
-        sudo sed -i 's/^goshimmerDashboardAuthHash=.*/goshimmerDashboardAuthHash="'$parser'"/' $configs/goshimmer.cfg
-        if [ -f "/usr/sbin/nginx" ]; then
-            sudo systemctl reload nginx > /dev/null 2>&1
-        fi
+    goshimmerDashboardAuthHash=$(sudo htpasswd -bnB $goshimmerDashboardAuthUsername $goshimmerDashboardAuthPassword)
+    sudo htpasswd -bcB /etc/nginx/goshimmer/.htpasswd_dashboard $goshimmerDashboardAuthUsername $goshimmerDashboardAuthPassword
+    sudo sed -i 's/^goshimmerDashboardAuthHash=.*/goshimmerDashboardAuthHash="'$goshimmerDashboardAuthHash'"/' $configs/goshimmer.cfg
+    if [ -f "/usr/sbin/nginx" ]; then
+        sudo systemctl reload nginx > /dev/null 2>&1
     fi
 fi
