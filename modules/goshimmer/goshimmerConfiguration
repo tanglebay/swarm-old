@@ -47,8 +47,7 @@ while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
                     whiptail --title "GoShimmer - Dashboard" --menu "\nChoose an option" 14 65 0 \
                     "1)" "$goshimmerDashboardAuthEnabledMenu Dashboard-Auth" \
-                    "2)" "Dashboard Username" \
-                    "3)" "Dashboard Password" 3>&2 2>&1 1>&3
+                    "2)" "Dashboard Credentials" 3>&2 2>&1 1>&3
                 )
                 exitstatus=$?
                 if [ "$exitstatus" = "1" ]; then
@@ -73,25 +72,13 @@ while [ $exitCode -lt 1 ]; do
                         fi
                     ;;
                     "2)")
-                        goshimmerDashboardUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login:" 8 65 --title "GoShimmer - Dashboard" 3>&1 1>&2 2>&3)
-                        if [ ! -z "$goshimmerDashboardUsername" ]; then
-                            sudo sed -i 's/^goshimmerDashboardUsername=.*/goshimmerDashboardUsername="'$goshimmerDashboardUsername'"/' $configs/goshimmer.cfg
-                            source $modules/goshimmer/configParsers/dashboardAuth
-                            restartGoshimmer=true
-                            whiptail --title "GoShimmer - Dashboard" --msgbox "New username \"$goshimmerDashboardUsername\" applied!" 8 65
+                        goshimmerDashboardAuthUsername=$(whiptail --inputbox "\nPlease set a username for the dashboard login:" 8 65 --title "GoShimmer - Dashboard" 3>&1 1>&2 2>&3)
+                        goshimmerDashboardAuthPassword=$(whiptail --passwordbox "\nPlease set a secure password for your dashboard login:" 8 65 --title "GoShimmer - Dashboard" 3>&1 1>&2 2>&3)
+                        if [ ! -z "$goshimmerDashboardAuthUsername" ] && [ ! -z "$goshimmerDashboardAuthPassword" ]; then
+                            source $modules/goshimmer/configParsers/dashboardAuthHash
+                            whiptail --title "GoShimmer - Dashboard" --msgbox "New Dashboard credentials applied!" 8 65
                         else
-                            whiptail --title "GoShimmer - Dashboard" --msgbox "No valid username, please try again!" 8 65
-                        fi
-                    ;;
-                    "3)")
-                        goshimmerDashboardPassword=$(whiptail --passwordbox "\nPlease set a secure password for your dashboard login:" 8 65 --title "GoShimmer - Dashboard" 3>&1 1>&2 2>&3)
-                        if [ ! -z "$goshimmerDashboardPassword" ]; then
-                            sudo sed -i 's/^goshimmerDashboardPassword=.*/goshimmerDashboardPassword="'$goshimmerDashboardPassword'"/' $configs/goshimmer.cfg
-                            source $modules/goshimmer/configParsers/dashboardAuth
-                            restartGoshimmer=true
-                            whiptail --title "GoShimmer - Dashboard" --msgbox "New password successfully created!" 8 65
-                        else
-                            whiptail --title "GoShimmer - Dashboard" --msgbox "No valid password, please try again!" 8 65
+                            whiptail --title "GoShimmer - Dashboard" --msgbox "No valid credentials, please try again!" 8 65
                         fi
                     ;;
                 esac

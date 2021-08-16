@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ -z "$goshimmerWebapiAuthHash" ]; then
+    if [ ! -d "/etc/nginx/goshimmer" ]; then
+        sudo mkdir -p /etc/nginx/goshimmer
+    else
+        sudo htpasswd -bcB /etc/nginx/goshimmer/.htpasswd_webapi $goshimmerWebapiAuthUsername $goshimmerWebapiuthPassword
+        sudo sed -i 's/^goshimmerWebapiAuthHash=.*/goshimmerWebapiAuthHash="'$goshimmerWebapiAuthHash'"/' $configs/goshimmer.cfg
+        if [ -f "/usr/sbin/nginx" ]; then
+            sudo systemctl reload nginx > /dev/null 2>&1
+        fi
+    fi
+else
+    parser=$(sudo htpasswd -bnB $goshimmerWebapiAuthUsername $goshimmerWebapiAuthPassword)
+    if [ "$parser" != "$goshimmerWebapiAuthHash" ]; then
+        sudo htpasswd -bcB /etc/nginx/goshimmer/.htpasswd_webapi $goshimmerWebapiAuthUsername $goshimmerWebapiAuthPassword
+        sudo sed -i 's/^goshimmerWebapiAuthHash=.*/goshimmerWebapiAuthHash="'$parser'"/' $configs/goshimmer.cfg
+        if [ -f "/usr/sbin/nginx" ]; then
+            sudo systemctl reload nginx > /dev/null 2>&1
+        fi
+    fi
+fi
