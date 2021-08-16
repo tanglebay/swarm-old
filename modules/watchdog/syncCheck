@@ -58,19 +58,19 @@ if [ "$timeframe" = "00" ] || [ "$timeframe" = "30" ]; then
     goshimmerSyncStatus="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.synced')"
     if [ "$goshimmerCheckSync" = "true" ] && [ "$goshimmerStatus" = "active" ] && [ "$goshimmerSyncStatus" = "false" ] && [ -f "/usr/bin/goshimmer" ]; then
             restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-            sudo systemctl stop goshimmer
             if [ $goshimmerSyncCounter -gt 12 ]; then
+                sudo systemctl stop goshimmer
                 if [ "$goshimmerAllowDbReset" = "true" ]; then
                     sudo rm -rf $goshimmerDir/mainnetdb
                     sudo -u goshimmer wget -q -O $goshimmerDir/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
                     echo "$restartDate [WACHTDOG] - GOSHIMMER - Database deleted because node was not synced!" >> $logs/swarm.log
                 fi
                 goshimmerSyncCounter=0
+                sudo systemctl start goshimmer
+                            echo "$restartDate [WACHTDOG] - GOSHIMMER - GoShimmer restarted because not was not sync!" >> $logs/swarm.log
             else
                 let goshimmerSyncCounter=$goshimmerSyncCounter+1
             fi
-            sudo systemctl start goshimmer
-            echo "$restartDate [WACHTDOG] - GOSHIMMER - GoShimmer restarted because not was not sync!" >> $logs/swarm.log
             sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
         fi
     else
