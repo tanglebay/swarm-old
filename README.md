@@ -5,9 +5,9 @@
 **Please note that you use this script at your own risk and that I will not be liable for any damages that may occur**
 
 ## Requirements
-- VPS (2Core/4GB/40GB) *RPi 4 is not supported for GoShimmer**
+- VPS (2Core/4GB/40GB) **(RPi 4 is not supported for GoShimmer)**
 - Ubuntu 20.04 LTS (64Bit)
-- (Sub-) Domain
+- An existing (own) domain
 
 ## Installation
 
