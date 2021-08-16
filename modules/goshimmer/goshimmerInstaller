@@ -5,14 +5,14 @@ if ! id goshimmer >/dev/null 2>&1; then
 fi
 
 if [ ! -d "$goshimmerDir" ]; then
-    mkdir -p $goshimmerDir
-    sudo chown -R goshimmer:goshimmer $goshimmerDir
+    sudo -u goshimmer mkdir -p $goshimmerDir > /dev/null 2>&1
+    sudo chown -R goshimmer:goshimmer $goshimmerDir > /dev/null 2>&1
 fi
 
 # Create Service
 if [ ! -f "/lib/systemd/system/goshimmer.service" ]; then
-    sudo cp -r $swarmDir/templates/goshimmer/goshimmer.service /lib/systemd/system/goshimmer.service
-    if [ ! -f "> /etc/default/goshimmer" ];
+    sudo cp -rf $swarmDir/templates/goshimmer/goshimmer.service /lib/systemd/system/goshimmer.service
+    if [ ! -f "/etc/default/goshimmer" ];
         echo "OPTIONS=\"--config $goshimmerDir/config.json\"" > /etc/default/goshimmer
     fi
     if [ ! -f "/etc/systemd/system/multi-user.target.wants/goshimmer.service" ]; then
@@ -22,24 +22,26 @@ if [ ! -f "/lib/systemd/system/goshimmer.service" ]; then
 fi
 
 # Create dir if not exist
-sudo mkdir -p /tmp/goshimmer
+sudo mkdir -p /tmp/goshimmer  > /dev/null 2>&1
 
 # Download latest goshimmer
 sudo wget -q -O /tmp/goshimmer/goshimmer-${latestGoshimmer}_Linux_x86_64.tar.gz https://github.com/iotaledger/goshimmer/releases/download/v${latestGoshimmer}/goshimmer-${latestGoshimmer}_Linux_x86_64.tar.gz
 
 # Unzip archive
-( cd /tmp/goshimmer ; sudo tar -xzf /tmp/goshimmer/goshimmer-${latestGoshimmer}_Linux_x86_64.tar.gz )
+( cd /tmp/goshimmer ; sudo tar -xzf /tmp/goshimmer/goshimmer-${latestGoshimmer}_Linux_x86_64.tar.gz ) > /dev/null 2>&1
 
 # Copy binary
-cp -r /tmp/goshimmer/goshimmer /usr/bin/goshimmer > /dev/null 2>&1
+sudo cp -rf /tmp/goshimmer/goshimmer /usr/bin/goshimmer > /dev/null 2>&1
 
 # Copy config
-sudo -u goshimmer cp -r /tmp/goshimmer/config.json $goshimmerDir/config.json > /dev/null 2>&1
+sudo cp -rf /tmp/goshimmer/config.json $goshimmerDir/config.json > /dev/null 2>&1
 
 # Download latest snapshot
-sudo -u goshimmer wget -q -O $goshimmerDir/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
+sudo wget -q -O $goshimmerDir/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
 
 # Remove temporary files
-sudo rm -rf /tmp/goshimmer
+sudo rm -rf /tmp/goshimmer  > /dev/null 2>&1
 
+# Set owner
+sudo chown -R goshimmer:goshimmer $goshimmerDir > /dev/null 2>&1
 
