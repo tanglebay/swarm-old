@@ -146,7 +146,7 @@ while [ $exitCode -lt 1 ]; do
                     esac
                 ;;
                 "3)")
-                    if (whiptail --title "GoShimmer Menu" --yesno --defaultno "Are you sure you want to delete the GoShimmer database?" 8 65); then
+                    if (whiptail --title "GoShimmer Menu" --yesno --defaultno "Do you really want to remove the goshimmer database?" 8 65); then
                         source $configs/goshimmer.cfg
                         {
                             echo 0
@@ -210,7 +210,7 @@ while [ $exitCode -lt 1 ]; do
                             echo 40
                             source $modules/goshimmer/goshimmerInstaller
                         } | whiptail --gauge "Please wait while installing GoShimmer..." 6 65 0
-                        if [ -f "/usr/bin/GoShimmer" ]; then
+                        if [ -f "/usr/bin/goshimmer" ]; then
                             {
                                 echo 50
                                 # CALL MODULE CONFIGPARSER
@@ -230,7 +230,7 @@ while [ $exitCode -lt 1 ]; do
                                 echo 100
                                 sleep 0.2
                             } | whiptail --gauge "Please wait while GoShimmer will be prepared..." 6 65 0
-                            whiptail --title "GoShimmer Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports in your home router for peering\n\n$goshimmerGossipPort/tcp" 8 65
+                            whiptail --title "GoShimmer Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports in your home router for peering\n\nGossip: $goshimmerGossipPort/tcp\nAutopeering: $goshimmerAutopeeringPort/udp" 10 65
                         else
                             whiptail --title "GoShimmer Installer" --msgbox "Error while installing GoShimmer. Please check GoShimmer.cfg and try again!" 8 65
                         fi
@@ -239,35 +239,37 @@ while [ $exitCode -lt 1 ]; do
                     fi
                 ;;
                 "3)")
-                    {
-                        echo 0
-                        sleep 0.25
-                        echo 15
-                        sudo systemctl stop goshimmer > /dev/null 2>&1
-                        sleep 0.25
-                        echo 30
-                        sleep 0.25
-                        sudo systemctl disable goshimmer > /dev/null 2>&1
-                        echo 45
-                        sleep 0.25
-                        sudo rm -rf /usr/bin/goshimmer /var/lib/goshimmer /lib/systemd/system/goshimmer.service /etc/default/goshimmer > /dev/null 2>&1
-                        echo 60
-                        sleep 0.25
-                        echo 75
-                        sudo systemctl daemon-reload > /dev/null 2>&1
-                        echo 90
-                        if [ "$ufw" = "true" ]; then
-                            sudo ufw delete allow $goshimmerGossipPort/tcp > /dev/null 2>&1
-                            sudo ufw delete allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
-                        fi
-                        sudo rm -rf $goshimmerDir > /dev/null 2>&1
-                        if id hornet >/dev/null 2>&1; then
-                            sudo deluser goshimmer >/dev/null
-                        fi
-                        echo 100
-                        sleep 0.25
-                    } | whiptail --gauge "Please wait while GoShimmer will be removed..." 6 65 0
-                    whiptail --title "GoShimmer Menu" --msgbox "GoShimmer successfully removed" 8 65
+                    if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Do you really want to remove GoShimmer?" 8 65); then
+                        {
+                            echo 0
+                            sleep 0.25
+                            echo 15
+                            sudo systemctl stop goshimmer > /dev/null 2>&1
+                            sleep 0.25
+                            echo 30
+                            sleep 0.25
+                            sudo systemctl disable goshimmer > /dev/null 2>&1
+                            echo 45
+                            sleep 0.25
+                            sudo rm -rf /usr/bin/goshimmer /var/lib/goshimmer /lib/systemd/system/goshimmer.service /etc/default/goshimmer > /dev/null 2>&1
+                            echo 60
+                            sleep 0.25
+                            echo 75
+                            sudo systemctl daemon-reload > /dev/null 2>&1
+                            echo 90
+                            if [ "$ufw" = "true" ]; then
+                                sudo ufw delete allow $goshimmerGossipPort/tcp > /dev/null 2>&1
+                                sudo ufw delete allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
+                            fi
+                            sudo rm -rf $goshimmerDir > /dev/null 2>&1
+                            if id hornet >/dev/null 2>&1; then
+                                sudo deluser goshimmer >/dev/null
+                            fi
+                            echo 100
+                            sleep 0.25
+                        } | whiptail --gauge "Please wait while GoShimmer will be removed..." 6 65 0
+                        whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer successfully removed" 8 65
+                    fi
                 ;;
             esac
         ;;
