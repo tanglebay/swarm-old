@@ -1,20 +1,21 @@
 ## Version 0.6.5 (upcoming version)
 ### Added
 - Added new node "GoShimmer"
-- Added "autopeering" as default plugin
-- Added JWT-Auth configuration
+- Added "autopeering" as default plugin for Hornet
+- Added JWT-Auth configuration for Hornet
 - Enabled Watchdog per default via Installer
 ### Changed
-- Fixed multiple text strings
+- Fixed multiple text strings in SWARM
 - Fixed SWARM updateParser for autopeering
-- Changed maxUnknownPeers from 4 to 2
+- Fixed swarm mode switch (config lost)
+- Changed maxUnknownPeers from 4 to 2 for Hornet
 - Updated SWARM removal
 - Updated Watchdog
 - Updated Readme file
 - Updated About file
 ### Removed
 - Removed SWARM dbPruner
-- Removed Tangle Bay Delta Snapshot URL
+- Removed Tangle Bay Delta Snapshot URL for Hornet
 
 
 ## Version 0.6.4
