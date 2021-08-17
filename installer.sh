@@ -12,15 +12,26 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
         exit 0
     else
         if (whiptail --title "SWARM" --yesno "Do you want to install SWARM now?" 10 65); then
-            if [ ! -x "$(command -v git)" ]; then
-                sudo apt -qq update > /dev/null 2>&1
-                sudo apt -qq install git -y > /dev/null 2>&1
-            fi
-            sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm
+            {
+                echo 0
+                echo 10
+                if [ ! -x "$(command -v git)" ]; then
+                    sudo apt -qq update > /dev/null 2>&1
+                    sudo apt -qq install git -y > /dev/null 2>&1
+                fi
+                echo 30
+                sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm > /dev/null 2>&1
+                echo 50
+                if [ -f "/var/lib/swarm/swarm" ]; then
+                    source /var/lib/swarm/modules/variables
+                    sudo chmod +x $swarmDir/swarm $plugins/watchdog
+                    echo 70
+                    ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
+                    echo 100
+                fi
+            } | whiptail --gauge "Please wait while SWARM is installed..." 8 65 0
             if [ -f "/var/lib/swarm/swarm" ]; then
                 source /var/lib/swarm/modules/variables
-                sudo chmod +x $swarmDir/swarm $plugins/watchdog
-                ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
                 source $modules/alias
                 source $swarmDir/swarm
             else
