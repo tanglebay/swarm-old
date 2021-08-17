@@ -154,15 +154,22 @@ while [ $exitCode -lt 1 ]; do
                         whiptail --title "Proxy Menu" --msgbox "Please set your domain first before continuing!" 8 65
                     else
                         if [ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
-                            # Run the nginx module for the proxy
-                            email=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-                            if [ ! -z "$email" ]; then
-                                source $modules/proxy/proxyDeployment
+                            if [ $hornetApiPort -eq $goshimmerApiPort ] && [ -f "/usr/bin/hornet" ] && [ -f "/usr/bin/goshimmer" ]; then
+                                whiptail --title "Proxy - Deployment" --msgbox "The same ports are used for Hornet and GoShimmer!\nPlease set different ports in the proxy configuration.!" 9 65
                             else
-                                whiptail --title "Proxy - Deployment" --msgbox "No valid email address entered!" 8 65
-                            fi
+                                # Run the nginx module for the proxy
+                                email=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+                                if [ ! -z "$email" ]; then
+                                    source $modules/proxy/proxyDeployment
+                                else
+                                    whiptail --title "Proxy - Deployment" --msgbox "No valid email address entered!" 8 65
+                                fi
                         else
-                            source $modules/proxy/proxyDeployment
+                            if [ $hornetApiPort -eq $goshimmerApiPort ] && [ -f "/usr/bin/hornet" ] && [ -f "/usr/bin/goshimmer" ]; then
+                                whiptail --title "Proxy - Deployment" --msgbox "The same ports are used for Hornet and GoShimmer!\nPlease set different ports in the proxy configuration.!" 9 65
+                            else
+                                source $modules/proxy/proxyDeployment
+                            fi
                         fi
                     fi
                 ;;
