@@ -1,3 +1,6 @@
+## Version 0.6.7
+- Hotfix for v0.6.5 & v0.6.6
+
 ## Version 0.6.6
 ### Added
 - PledgeID to goshimmerInfo
