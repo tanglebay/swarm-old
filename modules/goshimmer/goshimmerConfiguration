@@ -227,14 +227,18 @@ while [ $exitCode -lt 1 ]; do
             source $configs/goshimmer.cfg
             currentGoshimmerAutopeeringPort=$goshimmerAutopeeringPort
             goshimmerAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port for the automatic neighbors detection." 10 65 $goshimmerAutopeeringPort --title "GoShimmer - Autopeering" 3>&1 1>&2 2>&3)
-            if [ ! -z "$goshimmerAutopeeringPort" ] && [ $currentGoshimmerAutopeeringPort -ne $goshimmerAutopeeringPort ] && [ $goshimmerAutopeeringPort -eq $goshimmerAutopeeringPort ] 2>/dev/null; then
-                if [ "$ufw" = "true" ]; then
-                    sudo ufw delete allow $currentGoshimmerAutopeeringPort/udp > /dev/null 2>&1
-                    sudo ufw allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
+            if [ $goshimmerAutopeeringPort -eq $hornetAutopeeringPort ]; then
+                whiptail --title "GoShimmer - Autopeering" --msgbox "Autopeering port \"$goshimmerAutopeeringPort\" is already in use for Hornet!" 8 65
+            else
+                if [ ! -z "$goshimmerAutopeeringPort" ] && [ $currentGoshimmerAutopeeringPort -ne $goshimmerAutopeeringPort ] && [ $goshimmerAutopeeringPort -eq $goshimmerAutopeeringPort ] 2>/dev/null; then
+                    if [ "$ufw" = "true" ]; then
+                        sudo ufw delete allow $currentGoshimmerAutopeeringPort/udp > /dev/null 2>&1
+                        sudo ufw allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
+                    fi
+                    source $modules/goshimmer/configParsers/autopeeringPort
+                    sudo sed -i 's/^goshimmerAutopeeringPort=.*/goshimmerAutopeeringPort='$goshimmerAutopeeringPort'/' $configs/goshimmer.cfg
+                    whiptail --title "GoShimmer - Autopeering" --msgbox "Autopeering port was set to \"$goshimmerAutopeeringPort/udp\"!" 8 65
                 fi
-                source $modules/goshimmer/configParsers/autopeeringPort
-                sudo sed -i 's/^goshimmerAutopeeringPort=.*/goshimmerAutopeeringPort='$goshimmerAutopeeringPort'/' $configs/goshimmer.cfg
-                whiptail --title "GoShimmer - Autopeering" --msgbox "Autopeering port was set to \"$goshimmerAutopeeringPort/udp\"!" 8 65
             fi
         ;;
     esac
