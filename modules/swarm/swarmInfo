@@ -4,17 +4,42 @@ source $configs/swarm.cfg
 # Watchdog
 crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled > /dev/null 2>&1
 
-if [ "$nodeUpdate" = "true" ]; then
-    nodeUpdateStatus=enabled
+if [ "$hornetAutoUpdate" = "true" ]; then
+    hornetAutoUpdateStatus=enabled
 else
-    nodeUpdateStatus=disabled
+    hornetAutoUpdateStatus=disabled
+fi
+
+if [ "$goshimmerAutoUpdate" = "true" ]; then
+    goshimmerAutoUpdateStatus=enabled
+else
+    goshimmerAutoUpdateStatus=disabled
 fi
 
 # Sync Check
-if [ "$checkSync" = "true" ]; then
-    checkSyncStatus=enabled
+if [ "$hornetCheckSync" = "true" ]; then
+    hornetCheckSyncStatus=enabled
 else
-    checkSyncStatus=disabled
+    hornetCheckSyncStatus=disabled
+fi
+
+# Sync Check
+if [ "$goshimmerCheckSync" = "true" ]; then
+    goshimmerCheckSyncStatus=enabled
+else
+    goshimmerCheckSyncStatus=disabled
+fi
+
+if [ "$hornetAllowDbReset" = "true" ]; then
+    hornetAllowDbResetStatus=enabled
+else
+    hornetAllowDbResetStatus=disabled
+fi
+
+if [ "$goshimmerAllowDbReset" = "true" ]; then
+    goshimmerAllowDbResetStatus=enabled
+else
+    goshimmerAllowDbResetStatus=disabled
 fi
 
 # Proxy Check
@@ -29,16 +54,10 @@ if [ -z "$restartDate" ]; then
 fi
 
 # Log Pruning
-if [ "$logPruning" = "true" ]; then
-    logPruning=enabled
+if [ "$logRotation" = "true" ]; then
+    logRotation=enabled
 else
-    logPruning=disabled
-fi
-
-if [ "$allowDbReset" = "true" ]; then
-    allowDbResetStatus=enabled
-else
-    allowDbResetStatus=disabled
+    logRotation=disabled
 fi
 
 if [ "$swarmAutoUpdate" = "true" ]; then
@@ -59,7 +78,7 @@ fi
 if [ "$swarmInfo" = "true" ]; then
     if [ "$watchdogStatus" = "enabled" ]; then
         # OUTPUT
-        whiptail --title "SWARM Info [v$version]" --msgbox "Theme: \"$theme\"\n\nWatchdog: $watchdogStatus\n\nSWARM updater: $swarmAutoUpdateStatus\nHornet updater: $nodeUpdateStatus\nSync-check: $checkSyncStatus\nMax unsync: $maxLmi milestones\nDB reset: $allowDbResetStatus\nProxy-check: $proxyCheckStatus\nLogpruning: $logPruning\nMax log size: ${logSize} MB\n\nFirewall: $firewall" 20 65
+        whiptail --title "SWARM Info [v$version]" --msgbox "Theme: \"$theme\"\n\nWatchdog: $watchdogStatus\n\nSWARM updater: $swarmAutoUpdateStatus\nProxy-check: $proxyCheckStatus\nLog rotation: $logRotation\nMax log size: ${logSize} MB\n\nHornet Autoupdater: $hornetAutoUpdateStatus\nHornet Sync-check: $hornetCheckSyncStatus\nMax unsync: $maxLmi milestones\nHornet DB-Reset: $hornetAllowDbResetStatus\n\nGoShimmer Autoupdater: $goshimmerAutoUpdateStatus\nGoShimmer Sync-check: $goshimmerCheckSyncStatus\nGoShimmer DB-Reset: $goshimmerAllowDbResetStatus\n\nFirewall: $firewall" 28 65
     else
         # OUTPUT
         whiptail --title "SWARM Info [v$version]" --msgbox "Theme: \"$theme\"\n\nWatchdog: $watchdogStatus\nFirewall: $firewall!" 14 65

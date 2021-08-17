@@ -12,16 +12,21 @@ server {
         location /health {
                 auth_basic off;
                 proxy_pass http://localhost:14265/health;
+                proxy_pass_request_headers on;
                 proxy_set_header        Host $host;
                 proxy_set_header        X-Real-IP $remote_addr;
-                proxy_set_header        X-Forwarded-Proto $scheme;
                 proxy_set_header        X-Real-SslId $ssl_session_id;
+                proxy_set_header        X-Forwarded-For   $proxy_add_x_forwarded_for;
+                proxy_set_header        X-Forwarded-Proto $scheme;
+                proxy_set_header        X-Forwarded-Host  $host;
+                proxy_set_header        X-Forwarded-Port  $server_port;
         }
 
         location /mqtt {
                 proxy_pass http://localhost:14265/mqtt;
                 proxy_http_version  1.1;
                 proxy_cache_bypass  $http_upgrade;
+                proxy_pass_request_headers on;
                 proxy_set_header        Upgrade $http_upgrade;
                 proxy_set_header        Connection "upgrade";                
                 proxy_set_header        Host $host;
@@ -37,6 +42,7 @@ server {
                 auth_basic off;
                 proxy_pass http://localhost:14265;
                 default_type  application/json;
+                proxy_pass_request_headers on;
                 proxy_set_header        Host $host;
                 proxy_set_header        X-Real-IP $remote_addr;
                 proxy_set_header        X-Forwarded-Proto $scheme;
@@ -51,6 +57,7 @@ server {
                 proxy_pass http://localhost:8081;
                 proxy_http_version  1.1;
                 proxy_cache_bypass  $http_upgrade;
+                proxy_pass_request_headers on;
                 proxy_set_header        Upgrade $http_upgrade;
                 proxy_set_header        Connection "upgrade";                
                 proxy_set_header        Host $host;
@@ -60,18 +67,11 @@ server {
                 proxy_set_header        X-Forwarded-Proto $scheme;
                 proxy_set_header        X-Forwarded-Host  $host;
                 proxy_set_header        X-Forwarded-Port  $server_port;
+                proxy_set_header Connection "keep-alive";
         }
 
-    listen [::]:443 ssl http2 deferred;
-    listen 443 ssl http2 deferred;
+    listen [::]:443 ssl http2;
+    listen 443 ssl http2;
     ssl_certificate /etc/letsencrypt/live/domain.tld/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/domain.tld/privkey.pem;
-}
-
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-    server_name _;
-    server_tokens off;
-    return 301 https://domain.tld$request_uri;
 }

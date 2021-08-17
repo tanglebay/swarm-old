@@ -26,7 +26,7 @@ while [ $exitCode -lt 1 ]; do
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
-        if [ "$restartNode" = "true" ]; then
+        if [ "$restartHornet" = "true" ]; then
             if (whiptail --title "Hornet Menu" --yesno "Would you like to apply the changes and restart hornet?" 8 65); then
                 {
                     echo 0
@@ -38,7 +38,7 @@ while [ $exitCode -lt 1 ]; do
                     echo 100
                     sleep 0.25
                 } | whiptail --gauge "Please wait while Hornet restarts..." 6 65 0
-                unset restartNode
+                unset restartHornet
             fi
         fi
     fi
@@ -308,7 +308,10 @@ while [ $exitCode -lt 1 ]; do
                 sudo sed -i 's/^enablePlugins=.*/enablePlugins="'$enablePlugins'"/' $configs/hornet.cfg
                 if [ ! -z "$enablePlugins" ]; then
                     whiptail --title "Hornet - Plugins" --msgbox "The following plugins are enabled: $enablePlugins!" 8 65
+                else
+                    whiptail --title "GoShimmer - Plugins" --msgbox "There are no plugins enabled for Hornet!" 8 65
                 fi
+                restartHornet=true
             fi
         ;;
         "8)")
@@ -321,7 +324,10 @@ while [ $exitCode -lt 1 ]; do
                 sudo sed -i 's/^disablePlugins=.*/disablePlugins="'$disablePlugins'"/' $configs/hornet.cfg
                 if [ ! -z "$disablePlugins" ]; then
                     whiptail --title "Hornet Plugins" --msgbox "The following plugins are disabled: $disablePlugins!" 8 65
+                else
+                    whiptail --title "GoShimmer - Plugins" --msgbox "There are no plugins disabled for Hornet!" 8 65
                 fi
+                restartHornet=true
             fi
         ;;
         "9)")
@@ -330,9 +336,9 @@ while [ $exitCode -lt 1 ]; do
                 source $configs/hornet.cfg
                 # Hornet Dashboard
                 CHOICE=$(
-                    whiptail --title "Hornet - P2PIdentity" --menu "\nChoose an option" 14 65 0 \
-                    "1)" "Set P2PIdentity" \
-                    "2)" "Generate P2PIdentity" 3>&2 2>&1 1>&3
+                    whiptail --title "Hornet - p2pIdentity" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "Set p2pIdentity" \
+                    "2)" "Generate p2pIdentity" 3>&2 2>&1 1>&3
                 )
                 exitstatus=$?
                 if [ "$exitstatus" = "1" ]; then
@@ -342,18 +348,18 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         source $configs/hornet.cfg
                         currentP2PIdentity=$p2pIdentity
-                        p2pIdentity=$(whiptail --inputbox "\nSet your own private key for the P2PIdentity" 10 65 --title "Hornet - P2P Indentity" 3>&1 1>&2 2>&3)
+                        p2pIdentity=$(whiptail --inputbox "\nSet your own private key for the p2pIdentity" 10 65 --title "Hornet - p2pIndentity" 3>&1 1>&2 2>&3)
                         if [ "$p2pIdentity" != "$currentP2PIdentity" ] && [ ! -z "$p2pIdentity" ]; then
                             source $modules/hornet/configParsers/p2pIdentity
                             sudo sed -i 's/^p2pIdentity=.*/p2pIdentity="'$p2pIdentity'"/' $configs/hornet.cfg
-                            whiptail --title "Hornet - P2PIdentity" --msgbox "The following P2P Identity key set: \n$p2pIdentity!" 10 65
+                            whiptail --title "Hornet - p2pIdentity" --msgbox "The following P2P Identity key was set: \n$p2pIdentity!" 10 65
                         fi
                     ;;
                     "2)")
-                        if (whiptail --title "Hornet - Database" --yesno --defaultno "Are you sure you want to generate a new P2PIdentity (existing one will be deleted)?" 8 65); then
+                        if (whiptail --title "Hornet - p2pIdentity" --yesno --defaultno "Are you sure you want to generate a new P2PIdentity (the existing one will be deleted)?" 8 65); then
                             unset p2pIdentity
                             source $modules/hornet/configParsers/p2pIdentity
-                            whiptail --title "Hornet - P2PIdentity" --msgbox "The following P2P Identity key set: \n$p2pIdentity!" 10 65
+                            whiptail --title "Hornet - p2pIdentity" --msgbox "The following p2pIdentity key was set: \n$p2pIdentity!" 10 65
                             source $configs/hornet.cfg
                         fi
                     ;;
@@ -390,30 +396,34 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "11)")
             source $configs/hornet.cfg
-            currentGossipPort=$gossipPort
-            gossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $gossipPort --title "Hornet - Gossip" 3>&1 1>&2 2>&3)
-            if [ ! -z "$gossipPort" ] && [ "$currentGossipPort" != "$gossipPort" ] && [ $gossipPort -eq $gossipPort ] 2>/dev/null; then
+            currentHornetGossipPort=$hornetGossipPort
+            hornetGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $hornetGossipPort --title "Hornet - Gossip" 3>&1 1>&2 2>&3)
+            if [ ! -z "$hornetGossipPort" ] && [ "$currentHornetGossipPort" != "$hornetGossipPort" ] && [ $hornetGossipPort -eq $hornetGossipPort ] 2>/dev/null; then
                 if [ "$ufw" = "true" ]; then
-                    sudo ufw delete allow $currentGossipPort/tcp > /dev/null 2>&1
-                    sudo ufw allow $gossipPort/tcp > /dev/null 2>&1
+                    sudo ufw delete allow $currentHornetGossipPort/tcp > /dev/null 2>&1
+                    sudo ufw allow $hornetGossipPort/tcp > /dev/null 2>&1
                 fi
                 source $modules/hornet/configParsers/gossipPort
-                sudo sed -i 's/^gossipPort=.*/gossipPort='$gossipPort'/' $configs/hornet.cfg
-                whiptail --title "Hornet - Gossip" --msgbox "Gossip port set to \"$gossipPort/tcp\"!" 8 65
+                sudo sed -i 's/^hornetGossipPort=.*/hornetGossipPort='$hornetGossipPort'/' $configs/hornet.cfg
+                whiptail --title "Hornet - Gossip" --msgbox "Gossip port set to \"$hornetGossipPort/tcp\"!" 8 65
             fi
         ;;
         "12)")
             source $configs/hornet.cfg
-            currentAutopeeringPort=$autopeeringPort
-            autopeeringPort=$(whiptail --inputbox "\nSet the autopeering port for the automatic neighbors detection." 10 65 $autopeeringPort --title "Hornet - Autopeering" 3>&1 1>&2 2>&3)
-            if [ ! -z "$autopeeringPort" ] && [ "$currentAutopeeringPort" != "$autopeeringPort" ] && [ $autopeeringPort -eq $autopeeringPort ] 2>/dev/null; then
-                if [ "$ufw" = "true" ]; then
-                    sudo ufw delete allow $currentAutopeeringPort/udp > /dev/null 2>&1
-                    sudo ufw allow $autopeeringPort/udp > /dev/null 2>&1
+            currentHornetAutopeeringPort=$hornetAutopeeringPort
+            hornetAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port for the automatic neighbors detection." 10 65 $hornetAutopeeringPort --title "Hornet - Autopeering" 3>&1 1>&2 2>&3)
+            if [ $hornetAutopeeringPort -eq $goshimmerAutopeeringPort ]; then
+                whiptail --title "Hornet - Autopeering" --msgbox "Autopeering port \"$hornetAutopeeringPort\" is already in use for GoShimmer!" 8 65
+            else
+                if [ ! -z "$hornetAutopeeringPort" ] && [ "$currentHornetAutopeeringPort" != "$hornetAutopeeringPort" ] && [ $hornetAutopeeringPort -eq $hornetAutopeeringPort ] 2>/dev/null; then
+                    if [ "$ufw" = "true" ]; then
+                        sudo ufw delete allow $currentHornetAutopeeringPort/udp > /dev/null 2>&1
+                        sudo ufw allow $hornetAutopeeringPort/udp > /dev/null 2>&1
+                    fi
+                    source $modules/hornet/configParsers/autopeeringPort
+                    sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort='$hornetAutopeeringPort'/' $configs/hornet.cfg
+                    whiptail --title "Hornet - Autopeering" --msgbox "Autopeering port set to \"$hornetAutopeeringPort/udp\"!" 8 65
                 fi
-                source $modules/hornet/configParsers/autopeeringPort
-                sudo sed -i 's/^autopeeringPort=.*/autopeeringPort='$autopeeringPort'/' $configs/hornet.cfg
-                whiptail --title "Hornet - Autopeering" --msgbox "Autopeering port set to \"$autopeeringPort/udp\"!" 8 65
             fi
         ;;
         "13)")
@@ -640,7 +650,7 @@ while [ $exitCode -lt 1 ]; do
                         sudo sed -i 's/^release=.*/release='$release'/' $configs/hornet.cfg
                         source $modules/hornet/releaseChannel
                         source $modules/hornet/configParser
-                        restartNode=true
+                        restartHornet=true
                     fi
                 ;;
                 "2)")
@@ -650,7 +660,7 @@ while [ $exitCode -lt 1 ]; do
                         sudo sed -i 's/^release=.*/release='$release'/' $configs/hornet.cfg
                         source $modules/hornet/releaseChannel
                         source $modules/hornet/configParser
-                        restartNode=true
+                        restartHornet=true
                     fi
                 ;;
             esac
