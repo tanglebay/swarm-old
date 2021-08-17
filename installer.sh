@@ -1,4 +1,5 @@
 #!/bin/bash
+clear
 export NEWT_COLORS="
 root=blue,blue
 window=white
