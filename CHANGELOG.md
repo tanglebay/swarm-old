@@ -1,4 +1,11 @@
-## Version 0.6.5 (upcoming version)
+## Version 0.6.6
+### Added
+- PledgeID to goshimmerInfo
+### Changed
+- Hotfix swarmAutoUpdater
+- Fixed goshimmerInfo box size
+
+## Version 0.6.5
 ### Added
 - Added new node "GoShimmer"
 - Added "autopeering" as default plugin for Hornet
