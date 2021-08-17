@@ -12,12 +12,21 @@ fi
 
 # Check if release is changed
 if [ "$release" != "$currentRelease" ]; then
-    sudo apt -qq purge hornet -y > /dev/null 2>&1
-    sudo apt -qq update > /dev/null 2>&1
-    sudo apt -qq dist-upgrade -y > /dev/null 2>&1
-    sudo apt -qq upgrade -y > /dev/null 2>&1
-    sudo systemctl restart hornet
-    # sudo sed -i 's/dbPrunerLock=.*/dbPrunerLock=false/' $logs/dbPruner
-    # sudo sed -i 's/pruningDate=.*/pruningDate=/' $logs/dbPruner
+    {
+        echo 0
+        echo 10
+        sudo systemctl stop hornet
+        echo 20
+        sudo apt -qq purge hornet -y > /dev/null 2>&1
+        echo 35
+        sudo apt -qq autoremove -y > /dev/null 2>&1
+        echo 50
+        sudo apt -qq update -y > /dev/null 2>&1
+        echo 70
+        sudo apt -qq install hornet -y > /dev/null 2>&1
+        echo 90
+        sudo systemctl restart hornet
+        echo 100
+    } | whiptail --gauge "Please wait while Hornet is reinstalled......." 8 65 0
     whiptail --title "Hornet Configuration" --msgbox "New release channel ($release) applied and Hornet was reinstalled!" 8 65
 fi
