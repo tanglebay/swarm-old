@@ -1,34 +1,66 @@
 #!/bin/bash
 
-if [ ! -d "$tmpswarm" ]; then
-    sudo mkdir -p $tmpswarm > /dev/null 2>&1
-fi
-
-sudo cp -rf $configs/swarm.cfg $tmpswarm/swarm.cfg
-sudo cp -rf $configs/hornet.cfg $tmpswarm/hornet.cfg
-sudo cp -rf $configs/goshimmer.cfg $tmpswarm/goshimmer.cfg
-sudo cp -rf $configs/proxy.cfg $tmpswarm/proxy.cfg
-sudo cp -rf $logs/watchdog $tmpswarm/watchdog.cfg
-
-currentBranch=$( cd $swarmDir ; git rev-parse --abbrev-ref HEAD )
-( cd $swarmDir ; sudo git pull ) > /dev/null 2>&1
-( cd $swarmDir ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
-sudo chmod +x $swarmDir/swarm $plugins/watchdog > /dev/null 2>&1
-#source $modules/variables
-source $modules/swarm/updateParser
-
-if [ -f "/usr/bin/hornet" ]; then
-    # source $configs/hornet.cfg
-    source $modules/hornet/configParser
-fi
-
-if [ -f "/usr/bin/goshimmer" ]; then
-    # source $configs/hornet.cfg
-    source $modules/goshimmer/configParser
-fi
-
 if [ "$swarmManualUpdate" = "true" ]; then
+    {
+        echo 0
+        echo 10
+        if [ ! -d "$tmpswarm" ]; then
+            sudo mkdir -p $tmpswarm > /dev/null 2>&1
+        fi
+        echo 25
+        sudo cp -rf $configs/swarm.cfg $tmpswarm/swarm.cfg
+        sudo cp -rf $configs/hornet.cfg $tmpswarm/hornet.cfg
+        sudo cp -rf $configs/goshimmer.cfg $tmpswarm/goshimmer.cfg
+        sudo cp -rf $configs/proxy.cfg $tmpswarm/proxy.cfg
+        sudo cp -rf $logs/watchdog $tmpswarm/watchdog.cfg
+        echo 50
+        currentBranch=$( cd $swarmDir ; git rev-parse --abbrev-ref HEAD )
+        ( cd $swarmDir ; sudo git pull ) > /dev/null 2>&1
+        ( cd $swarmDir ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
+        sudo chmod +x $swarmDir/swarm $plugins/watchdog > /dev/null 2>&1
+        echo 75
+        #source $modules/variables
+        source $modules/swarm/updateParser
+        if [ -f "/usr/bin/hornet" ]; then
+            # source $configs/hornet.cfg
+            source $modules/hornet/configParser
+        fi
+
+        if [ -f "/usr/bin/goshimmer" ]; then
+            # source $configs/hornet.cfg
+            source $modules/goshimmer/configParser
+        fi
+        echo 100
+
+    } | whiptail --gauge "Updating SWARM..." 6 65 0
     whiptail --title "SWARM Menu" --msgbox "SWARM successfully updated!" 8 65
     clear
     exit 0
+else
+    if [ ! -d "$tmpswarm" ]; then
+        sudo mkdir -p $tmpswarm > /dev/null 2>&1
+    fi
+
+    sudo cp -rf $configs/swarm.cfg $tmpswarm/swarm.cfg
+    sudo cp -rf $configs/hornet.cfg $tmpswarm/hornet.cfg
+    sudo cp -rf $configs/goshimmer.cfg $tmpswarm/goshimmer.cfg
+    sudo cp -rf $configs/proxy.cfg $tmpswarm/proxy.cfg
+    sudo cp -rf $logs/watchdog $tmpswarm/watchdog.cfg
+
+    currentBranch=$( cd $swarmDir ; git rev-parse --abbrev-ref HEAD )
+    ( cd $swarmDir ; sudo git pull ) > /dev/null 2>&1
+    ( cd $swarmDir ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
+    sudo chmod +x $swarmDir/swarm $plugins/watchdog > /dev/null 2>&1
+
+    #source $modules/variables
+    source $modules/swarm/updateParser
+    if [ -f "/usr/bin/hornet" ]; then
+        # source $configs/hornet.cfg
+        source $modules/hornet/configParser
+    fi
+
+    if [ -f "/usr/bin/goshimmer" ]; then
+        # source $configs/hornet.cfg
+        source $modules/goshimmer/configParser
+    fi
 fi
