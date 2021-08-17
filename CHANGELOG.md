@@ -9,6 +9,7 @@
 - Fixed SWARM updateParser for autopeering
 - Fixed swarm mode switch (config lost)
 - Changed maxUnknownPeers from 4 to 2 for Hornet
+- Updated Installer.sh script
 - Updated SWARM removal
 - Updated Watchdog
 - Updated Readme file
