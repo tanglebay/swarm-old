@@ -1,3 +1,7 @@
+## Version 0.6.8
+### Changed
+- Fixed autoNodeUpdater
+
 ## Version 0.6.7
 - Hotfix for v0.6.5 & v0.6.6
 
