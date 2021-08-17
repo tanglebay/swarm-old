@@ -6,11 +6,13 @@ IFS=', ' read -r -a ARRAYdisablePlugins <<< "$disablePlugins"
 for hornetConfig in "${ARRAYhornetConfigs[@]}"
 do
     sudo jq '.node.disablePlugins |= []' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
-    for disablePlugin in "${ARRAYdisablePlugins[@]}"
-    do
-        sudo jq '.node.disablePlugins |= .+ ["'$disablePlugin'"]' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
-        restartNode=true
-    done
+    if [ ! -z "$disablePlugins" ]; then
+        for disablePlugin in "${ARRAYdisablePlugins[@]}"
+        do
+            sudo jq '.node.disablePlugins |= .+ ["'$disablePlugin'"]' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+            restartNode=true
+        done
+    fi
 done
 unset ARRAYdisablePlugins
 unset ARRAYhornetConfigs
