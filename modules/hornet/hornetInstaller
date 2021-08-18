@@ -49,6 +49,7 @@ if [ ! -f "/usr/bin/hornet" ]; then
         sleep 0.5
     } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
     if [ -f "/usr/bin/hornet" ]; then
+        source $configs/hornet.cfg
         {
             echo 0
             echo 10
@@ -67,15 +68,15 @@ if [ ! -f "/usr/bin/hornet" ]; then
                 sudo ufw allow $hornetAutopeeringPort/udp > /dev/null 2>&1
             fi
             echo 80
-            sudo systemctl restart hornet > /dev/null 2>&1
+            sudo systemctl start hornet > /dev/null 2>&1
             sleep 2
             status="$(systemctl show -p ActiveState --value hornet)"
             if [ "$status" != "active" ]; then
-                sudo systemctl start hornet
+                sudo systemctl restart hornet > /dev/null 2>&1
             fi
             echo 100
         } | whiptail --gauge "Please wait while Hornet will be prepared..." 6 65 0
-        whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports in your home router for peering\n\nGossip: $hornetGossipPort/tcp\nAutopeering: $hornetAutopeeringPort" 10 65
+        whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports in your home router for peering\n\nGossip: $hornetGossipPort/tcp\nAutopeering: $hornetAutopeeringPort" 15 65
     else
         whiptail --title "Hornet Installer" --msgbox "Error while installing Hornet. Please check hornet.cfg and try again!" 8 65
     fi

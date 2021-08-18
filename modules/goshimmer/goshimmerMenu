@@ -220,6 +220,7 @@ while [ $exitCode -lt 1 ]; do
                             source $modules/goshimmer/goshimmerInstaller
                         } | whiptail --gauge "Please wait while installing GoShimmer..." 6 65 0
                         if [ -f "/usr/bin/goshimmer" ]; then
+                            source $configs/goshimmer.cfg
                             {
                                 echo 50
                                 if ! [ -x "$(command -v apache2-utils)" ]; then
@@ -233,18 +234,17 @@ while [ $exitCode -lt 1 ]; do
                                     sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
                                     sudo ufw allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
                                 fi
-                                sudo systemctl restart goshimmer > /dev/null 2>&1
+                                sudo systemctl start goshimmer > /dev/null 2>&1
                                 echo 80
                                 sleep 2
                                 goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
                                 if [ "$goshimmerStatus" != "active" ]; then
-                                    sudo systemctl start goshimmer
+                                    sudo systemctl restart goshimmer > /dev/null 2>&1
                                 fi
                                 echo 100
                                 sleep 0.2
                             } | whiptail --gauge "Please wait while GoShimmer will be prepared..." 6 65 0
-                            whiptail --title "GoShimmer Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports in your home router for peering\n\nGossip: $goshimmerGossipPort/tcp\nAutopeering: $goshimmerAutopeeringPort/udp" 16 65
-                            fi
+                            whiptail --title "GoShimmer Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports in your home router for peering\n\nGossip: $goshimmerGossipPort/tcp\nAutopeering: $goshimmerAutopeeringPort/udp" 15 65
                         else
                             whiptail --title "GoShimmer Installer" --msgbox "Error while installing GoShimmer. Please check GoShimmer.cfg and try again!" 8 65
                         fi
