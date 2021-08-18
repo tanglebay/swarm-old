@@ -1,7 +1,9 @@
 #!/bin/bash
 
-if [ ! -z "$pruningPercentage" ]; then
-pruningPercentage=$(echo ${runingPercentage%.*})
+if [ -z "$pruningPercentage" ]; then
+    pruningPercentage=5
+else
+    pruningPercentage=$(echo ${runingPercentage%.*})
 fi
 
 if [ "$pruning" = "true" ]; then
@@ -10,7 +12,7 @@ if [ "$pruning" = "true" ]; then
     for hornetConfig in "${ARRAYhornetConfigs[@]}"
     do
         parser="$(jq '.pruning.size.thresholdPercentage' $hornetDir/$hornetConfig.json)"
-        if [ $parser -ne $pruningPercentage ]; then
+        if [ "$parser" != "$pruningPercentage" ]; then
             sudo jq '.pruning.size.thresholdPercentage = '$pruningPercentage'' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
             restartHornet=true
         fi
