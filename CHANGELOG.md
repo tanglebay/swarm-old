@@ -1,10 +1,19 @@
+## Version 0.6.9
+### Changed
+- Fixed autoNodeUpdate
+- Fixed Hornet pruningPercentage
+
+
 ## Version 0.6.8
 ### Added
 - Added port check when installing hornet/goshimmer
+- Added system update to the installer
 ### Changed
 - Fixed autoNodeUpdater
 - Fixed release channel for Hornet
 - Fixed config parsing for Hornet
+- Fixed packages installation
+- Fixed general bugs
 
 ## Version 0.6.7
 - Hotfix for v0.6.5 & v0.6.6
