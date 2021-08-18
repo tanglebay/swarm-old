@@ -24,7 +24,7 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
                 echo 80
                 sudo apt -qq autoremove -y > /dev/null 2>&1
                 echo 100
-            } | whiptail --gauge "Please wait while your system is checked for updates...." 8 65 0
+            } | whiptail --gauge "Please wait while your system is checked for updates..." 8 65 0
             {
                 echo 0
                 echo 10
