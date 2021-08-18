@@ -1,33 +1,16 @@
 #!/bin/bash
 
-if [ "$pruning" = "true" ]; then
-    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
 
-    for hornetConfig in "${ARRAYhornetConfigs[@]}"
-    do
-        parser="$(jq '.pruning.size.enabled' $hornetDir/$hornetConfig.json)"
-        if [ "$parser" != "$pruning" ]; then
-            if [ "$pruning" = "true" ] || [ "$pruning" = "false" ]; then
-                sudo jq '.pruning.size.enabled = '$pruning'' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
-                restartHornet=true
-            fi
-        fi
-    done
-    unset ARRAYhornetConfigs
-    unset hornetConfig
-
-else
-    crontab -l | grep -q "$dbPrunerCronCmd" > /dev/null 2>&1 && ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab - > /dev/null 2>&1
-
-    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-    for hornetConfig in "${ARRAYhornetConfigs[@]}"
-    do
-        parser="$(jq '.pruning.size.enabled' $hornetDir/$hornetConfig.json)"
-        if [ "$parser" != "false" ]; then
-            sudo jq '.pruning.size.enabled = false' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    parser="$(jq '.pruning.size.enabled' $hornetDir/$hornetConfig.json)"
+    if [ "$parser" != "$pruning" ]; then
+        if [ "$pruning" = "true" ] || [ "$pruning" = "false" ]; then
+            sudo jq '.pruning.size.enabled = '$pruning'' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
             restartHornet=true
         fi
-    done
-    unset ARRAYhornetConfigs
-    unset hornetConfig
-fi
+    fi
+done
+unset ARRAYhornetConfigs
+unset hornetConfig

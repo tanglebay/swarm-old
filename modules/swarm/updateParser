@@ -40,6 +40,12 @@ fi
 if [ -f "$tmpswarm/hornet.cfg" ]; then
     source $tmpswarm/hornet.cfg
 
+    ############# TMP CODE ###################
+    if [ "$dbPruner" = "swarm" ]; then
+        crontab -l | grep -q "$dbPrunerCronCmd" > /dev/null 2>&1 && ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab - > /dev/null 2>&1
+    fi
+    ##########################################
+
     # Upater for Hornet.cfg
     if [ -z "$release" ]; then
         sudo sed -i 's/^release=.*/release="stable"/' $configs/hornet.cfg
@@ -139,18 +145,6 @@ if [ -f "$tmpswarm/hornet.cfg" ]; then
         sudo sed -i 's/^pruning=.*/pruning='$pruning'/' $configs/hornet.cfg
     fi
 
-    if [ -z "$dbPruner" ]; then
-        sudo sed -i 's/^dbPruner=.*/dbPruner="hornet"/' $configs/hornet.cfg
-    else
-        if [ "$dbPruner" = "swarm" ]; then
-            crontab -l | grep -q "$dbPrunerCronCmd" > /dev/null 2>&1 && ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab - > /dev/null 2>&1
-            dbPruner="hornet"
-            source $modules/hornet/configParsers/pruning
-            sudo systemctl restart hornet
-        fi
-        sudo sed -i 's/^dbPruner=.*/dbPruner="'$dbPruner'"/' $configs/hornet.cfg
-    fi
-
     if [ -z "$pruningDatabaseSize" ]; then
         sudo sed -i 's/^pruningDatabaseSize=.*/pruningDatabaseSize=/' $configs/hornet.cfg
     else
@@ -226,7 +220,7 @@ if [ -f "$tmpswarm/hornet.cfg" ]; then
         sudo sed -i 's/^jwtAuthSalt=.*/jwtAuthSalt="HORNET"/' $configs/hornet.cfg
     else
         sudo sed -i 's/^jwtAuthSalt=.*/jwtAuthSalt="'$jwtAuthSalt'"/' $configs/hornet.cfg
-    fi
+    fi    
 fi
 
 ####################################################################################################################################
