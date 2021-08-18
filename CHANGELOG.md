@@ -2,6 +2,7 @@
 ### Changed
 - Fixed autoNodeUpdate
 - Fixed Hornet pruningPercentage
+- Fixed general bugs
 
 
 ## Version 0.6.8
