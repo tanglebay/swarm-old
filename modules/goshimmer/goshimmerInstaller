@@ -9,6 +9,9 @@ if [ ! -d "$goshimmerDir" ]; then
     sudo chown -R goshimmer:goshimmer $goshimmerDir > /dev/null 2>&1
 fi
 
+# Install GO
+sudo snap install go --classic > /dev/null 2>&1
+
 # Create Service
 if [ ! -f "/lib/systemd/system/goshimmer.service" ]; then
     sudo cp -rf $swarmDir/templates/goshimmer/goshimmer.service /lib/systemd/system/goshimmer.service
@@ -45,3 +48,8 @@ sudo rm -rf /tmp/goshimmer > /dev/null 2>&1
 # Set owner
 sudo chown -R goshimmer:goshimmer $goshimmerDir > /dev/null 2>&1
 
+# Port Check
+if [ $goshimmerAutopeeringPort -eq $hornetAutopeeringPort ] && [ -f "/usr/bin/hornet" ]; then
+    let goshimmerAutopeeringPort=$goshimmerAutopeeringPort+1
+    sudo sed -i 's/^goshimmerAutopeeringPort=.*/goshimmerAutopeeringPort='$goshimmerAutopeeringPort'/' $configs/goshimmer.cfg
+fi
