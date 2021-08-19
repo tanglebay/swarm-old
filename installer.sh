@@ -13,18 +13,13 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
         exit 0
     else
         if (whiptail --title "SWARM" --yesno "Do you want to install SWARM now?" 10 65); then
-            {
-                echo 0
-                echo 20
-                sudo apt -qq update -y > /dev/null 2>&1
-                echo 40
-                sudo apt -qq dist-upgrade -y > /dev/null 2>&1
-                echo 60
-                sudo apt -qq upgrade -y > /dev/null 2>&1
-                echo 80
-                sudo apt -qq autoremove -y > /dev/null 2>&1
-                echo 100
-            } | whiptail --gauge "Please wait while your system is checked for updates..." 8 65 0
+            whiptail --title "SWARM" --msgbox "Your system must first be checked for updates, this may take some time!" 8 65
+            clear
+            sudo apt -qq update -y > /dev/null 2>&1
+            sudo apt -qq dist-upgrade -y > /dev/null 2>&1
+            sudo apt -qq upgrade -y > /dev/null 2>&1
+            sudo apt -qq autoremove -y > /dev/null 2>&1
+            clear
             {
                 echo 0
                 echo 10
