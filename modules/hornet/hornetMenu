@@ -257,32 +257,24 @@ while [ $exitCode -lt 1 ]; do
                 "3)")
                     {
                         echo 0
-                        sleep 0.25
                         ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab -
                         echo 15
-                        sleep 0.25
-                        ( crontab -l | grep -v -F "$dbPrunerCronCmd" ) | crontab -
-                        echo 30
-                        sleep 0.25
                         sudo systemctl stop hornet > /dev/null 2>&1
+                        echo 30
                         sudo systemctl disable hornet > /dev/null 2>&1
                         echo 45
-                        sleep 0.25
-                        #sudo apt -qq remove hornet -y > /dev/null 2>&1
                         sudo apt -qq purge hornet -y > /dev/null 2>&1
                         echo 60
-                        sleep 0.25
                         sudo apt -qq autoremove -y > /dev/null 2>&1
                         echo 75
                         sudo systemctl daemon-reload > /dev/null 2>&1
                         echo 90
                         if [ "$ufw" = "true" ]; then
-                            sudo ufw delete allow $gossipPort/tcp > /dev/null 2>&1
-                            sudo ufw delete allow $autopeeringPort/udp > /dev/null 2>&1
+                            sudo ufw delete allow $hornetGossipPort/tcp > /dev/null 2>&1
+                            sudo ufw delete allow $hornetAutopeeringPort/udp > /dev/null 2>&1
                         fi
                         sudo rm -rf $hornetDir > /dev/null 2>&1
                         echo 100
-                        sleep 0.25
                     } | whiptail --gauge "Please wait while Hornet will be removed..." 6 65 0
                     whiptail --title "Hornet Menu" --msgbox "Hornet successfully removed" 8 65
                 ;;
