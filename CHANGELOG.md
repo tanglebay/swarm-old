@@ -1,3 +1,10 @@
+## Version 0.7.0
+### Added
+- Added server IP4/IP6 to swarmInfo
+### Changed
+- Fixed goshimmer (auto) update
+- Fixed general bugs
+
 ## Version 0.6.9
 ### Changed
 - Fixed autoNodeUpdate
