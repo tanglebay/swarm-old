@@ -1,8 +1,10 @@
-# SWARM
+<center><h1>SWARM</h1>
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/TangleBay/swarm?style=for-the-badge) [![Support Server](https://img.shields.io/discord/591914197219016707.svg?label=Discord&logo=Discord&colorB=7289da&style=for-the-badge)](https://discord.tanglebay.com)
 
-**Please note that you use this script at your own risk and that I will not be liable for any damages that may occur**
+<h1>About</h1>
+SWARM is a script that allows you to easily install and manage an IOTA node. The most important configuration options are given via simple and selectable menu items. About the additional feature "Watchdog", the status of the nodes can be monitored, as well as automatically install updates. A reverse proxy installation is also offered for secure access via HTTPS.
+</center>
 
 ## Requirements
 - VPS (2Core/4GB/40GB) **(RPi 4 is not supported for GoShimmer)**
@@ -10,6 +12,8 @@
 - An existing (own) domain
 
 ## Installation
+
+**Please note that you use this script at your own risk and that I will not be liable for any damages that may occur**
 
 **Download the latest release version of SWARM and run it. Do the following steps:**
 
