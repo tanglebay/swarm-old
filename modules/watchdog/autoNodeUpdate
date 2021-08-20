@@ -2,12 +2,10 @@
 
 if [ "$timeframe" = "00" ] || [ "$timeframe" = "15" ] || [ "$timeframe" = "30" ] || [ "$timeframe" = "45" ]; then
     if [ "$hornetAutoUpdate" = "true" ] && [ -f "/usr/bin/hornet" ]; then
-        if [ "$release" = "stable" ]; then
-            latestHornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
-            latestHornet="${latestHornet:1}"
-            version="$(hornet -v)"
+        source $modules/hornet/getVersion
+        if [ "$hornetRelease" = "stable" ]; then
             if [ ! -z "$latestHornet" ]; then
-                if [ "$version" != "HORNET $latestHornet" ]; then
+                if [ "$hornetVersion" != "HORNET $latestHornet" ]; then
                     sudo apt-get update
                     sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
                     IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
@@ -21,11 +19,10 @@ if [ "$timeframe" = "00" ] || [ "$timeframe" = "15" ] || [ "$timeframe" = "30" ]
                     unset ARRAYhornetConfigs
                     unset hornetConfig
 
-                    newVersion="$(hornet -v)"
-                    if [ "$version" != "$newVersion" ]; then
+                    newHornetVersion="$(hornet -v)"
+                    if [ "$hornetVersion" != "$newHornetVersion" ]; then
                         restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                        sudo -u hornet wget -q -O $hornetDir/config_chrysalis_testnet.json https://raw.githubusercontent.com/gohornet/hornet/develop/config_chrysalis_testnet.json
-                    # CALL MODULE CONFIGPARSER
+                        # CALL MODULE CONFIGPARSER
                         source $modules/hornet/configParser
                         sudo systemctl restart hornet
                         echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Hornet version installed and Hornet restarted!" >> $logs/swarm.log
@@ -34,11 +31,8 @@ if [ "$timeframe" = "00" ] || [ "$timeframe" = "15" ] || [ "$timeframe" = "30" ]
             fi
         fi
         if [ "$release" = "testing" ]; then
-            latestHornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | head -n 1)"
-            latestHornet="${latestHornet:1}"
-            version="$(hornet -v)"
             if [ ! -z "$latestHornet" ]; then
-                if [ "$version" != "HORNET $latestHornet" ]; then
+                if [ "$hornetVersion" != "HORNET $latestHornet" ]; then
                     sudo apt-get update
                     sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
                     IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
@@ -52,10 +46,9 @@ if [ "$timeframe" = "00" ] || [ "$timeframe" = "15" ] || [ "$timeframe" = "30" ]
                     unset ARRAYhornetConfigs
                     unset hornetConfig
 
-                    newVersion="$(hornet -v)"
-                    if [ "$version" != "$newVersion" ]; then
+                    newHornetVersion="$(hornet -v)"
+                    if [ "$hornetVersion" != "$newHornetVersion" ]; then
                         restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                        sudo -u hornet wget -q -O $hornetDir/config_chrysalis_testnet.json https://raw.githubusercontent.com/gohornet/hornet/develop/config_chrysalis_testnet.json
                         # CALL MODULE CONFIGPARSER
                         source $modules/hornet/configParser
                         sudo systemctl restart hornet

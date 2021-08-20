@@ -47,18 +47,24 @@ if [ -f "$tmpswarm/hornet.cfg" ]; then
     ##########################################
 
     # Upater for Hornet.cfg
-    if [ -z "$release" ]; then
-        sudo sed -i 's/^release=.*/release="stable"/' $configs/hornet.cfg
-    else
-        sudo sed -i 's/^release=.*/release="'$release'"/' $configs/hornet.cfg
+    if [ ! -z "$release" ]; then
+        hornetRelease="$release"
     fi
-
-    if [ -z "$network" ]; then
-        sudo sed -i 's/^network=.*/network="mainnet"/' $configs/hornet.cfg
+    if [ -z "$hornetRelease" ]; then
+        sudo sed -i 's/^hornetRelease=.*/hornetRelease="stable"/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^network=.*/network="'$network'"/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetRelease=.*/hornetRelease="'$release'"/' $configs/hornet.cfg
     fi
-
+    ####
+    if [ ! -z "$network" ]; then
+        hornetNetwork="$network"
+    fi
+    if [ -z "$hornetNetwork" ]; then
+        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork="mainnet"/' $configs/hornet.cfg
+    else
+        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork="'$hornetNetwork'"/' $configs/hornet.cfg
+    fi
+    ####
     if [ -z "$hornetNodeAlias" ]; then
         sudo sed -i 's/^hornetNodeAlias=.*/hornetNodeAlias="Hornet"/' $configs/hornet.cfg
     else
@@ -68,39 +74,51 @@ if [ -f "$tmpswarm/hornet.cfg" ]; then
             sudo sed -i 's/^hornetNodeAlias=.*/hornetNodeAlias="'$hornetNodeAlias'"/' $configs/hornet.cfg
         fi
     fi
-
-    if [ -z "$disablePlugins" ]; then
-        sudo sed -i 's/^disablePlugins=.*/disablePlugins=""/' $configs/hornet.cfg
-    else
-        sudo sed -i 's/^disablePlugins=.*/disablePlugins="'$disablePlugins'"/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$disablePlugins" ]; then
+        hornetDisablePlugins="$disablePlugins"
     fi
-
-    if [ -z "$enablePlugins" ]; then
-        autopeeringDisabled=$(echo $disablePlugins | grep -o autopeering)
-        if [ -z "$autopeeringDisabled" ]; then
-            sudo sed -i 's/^enablePlugins=.*/enablePlugins="autopeering"/' $configs/hornet.cfg
+    if [ -z "$hornetDisablePlugins" ]; then
+        sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins=""/' $configs/hornet.cfg
+    else
+        sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins="'$hornetDisablePlugins'"/' $configs/hornet.cfg
+    fi
+    ####
+    if [ ! -z "$enablePlugins" ]; then
+        hornetEnablePlugins="$enablePlugins"
+    fi
+    if [ -z "$hornetEnablePlugins" ]; then
+        hornetAutopeeringDisabled=$(echo $hornetDisablePlugins | grep -o autopeering)
+        if [ -z "$hornetAutopeeringDisabled" ]; then
+            sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="autopeering"/' $configs/hornet.cfg
         else
-            sudo sed -i 's/^enablePlugins=.*/enablePlugins=""/' $configs/hornet.cfg
+            sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins=""/' $configs/hornet.cfg
         fi
     else
-        autopeeringEnabled=$(echo $enablePlugins | grep -o autopeering)
-        autopeeringDisabled=$(echo $disablePlugins | grep -o autopeering)
-        if [ -z "$autopeeringEnabled" ] && [ -z "$autopeeringDisabled" ]; then
-            enablePlugins="autopeering,$enablePlugins"
+        hornetAutopeeringEnabled=$(echo $hornetEnablePlugins | grep -o autopeering)
+        hornetAutopeeringDisabled=$(echo $hornetDisablePlugins | grep -o autopeering)
+        if [ -z "$hornetAutopeeringEnabled" ] && [ -z "$hornetAutopeeringDisabled" ]; then
+            hornetEnablePlugins="autopeering,$hornetEnablePlugins"
         fi
-        sudo sed -i 's/^enablePlugins=.*/enablePlugins="'$enablePlugins'"/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="'$hornetEnablePlugins'"/' $configs/hornet.cfg
     fi
-
-    if [ -z "$maxUnknownNeighbors" ]; then
-        sudo sed -i 's/^maxUnknownNeighbors=.*/maxUnknownNeighbors=2/' $configs/hornet.cfg
-    else
-        sudo sed -i 's/^maxUnknownNeighbors=.*/maxUnknownNeighbors='$maxUnknownNeighbors'/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$maxUnknownNeighbors" ]; then
+        hornetUnknownPeersLimit=$maxUnknownNeighbors
     fi
-
-    if [ -z "$snapshotInterval" ]; then
-        sudo sed -i 's/^snapshotInterval=.*/snapshotInterval=8640/' $configs/hornet.cfg
+    if [ -z "$hornetUnknownPeersLimit" ]; then
+        sudo sed -i 's/^hornetUnknownPeersLimit=.*/hornetUnknownPeersLimit=2/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^snapshotInterval=.*/snapshotInterval='$snapshotInterval'/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetUnknownPeersLimit=.*/hornetUnknownPeersLimit='$hornetUnknownPeersLimit'/' $configs/hornet.cfg
+    fi
+    ####
+    if [ ! -z "$snapshotInterval" ]; then
+        hornetSnapshotInterval=$snapshotInterval
+    fi
+    if [ -z "$hornetSnapshotInterval" ]; then
+        sudo sed -i 's/^hornetSnapshotInterval=.*/hornetSnapshotInterval=8640/' $configs/hornet.cfg
+    else
+        sudo sed -i 's/^hornetSnapshotInterval=.*/hornetSnapshotInterval='$hornetSnapshotInterval'/' $configs/hornet.cfg
     fi
 
     if [ -z "$hornetGossipPort" ]; then
@@ -114,80 +132,116 @@ if [ -f "$tmpswarm/hornet.cfg" ]; then
     else
         sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort='$hornetAutopeeringPort'/' $configs/hornet.cfg
     fi
-
-    if [ -z "$pow" ]; then
-        sudo sed -i 's/^pow=.*/pow=false/' $configs/hornet.cfg
-    else
-        sudo sed -i 's/^pow=.*/pow='$pow'/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$pow" ]; then
+        hornetPow="$pow"
     fi
-
-    if [ -z "$powWorkerCount" ]; then
-        sudo sed -i 's/^powWorkerCount=.*/powWorkerCount=1/' $configs/hornet.cfg
+    if [ -z "$hornetPow" ]; then
+        sudo sed -i 's/^hornetPow=.*/hornetPow=false/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^powWorkerCount=.*/powWorkerCount='$powWorkerCount'/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetPow=.*/hornetPow='$hornetPow'/' $configs/hornet.cfg
     fi
-
-    if [ -z "$dbEngine" ]; then
-        sudo sed -i 's/^dbEngine=.*/dbEngine="rocksdb"/' $configs/hornet.cfg
+    ###
+    if [ ! -z "$powWorkerCount" ]; then
+        hornetPowWorkerCount=$powWorkerCount
+    fi
+    if [ -z "$hornetPowWorkerCount" ]; then
+        sudo sed -i 's/^hornetPowWorkerCount=.*/hornetPowWorkerCount=1/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^dbEngine=.*/dbEngine="'$dbEngine'"/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetPowWorkerCount=.*/hornetPowWorkerCount='$hornetPowWorkerCount'/' $configs/hornet.cfg
     fi
-
-    if [ -z "$autoRevalidation" ]; then
-        sudo sed -i 's/^autoRevalidation=.*/autoRevalidation=false/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$dbEngine" ]; then
+        hornetDbEngine="$dbEngine"
+    fi
+    if [ -z "$hornetDbEngine" ]; then
+        sudo sed -i 's/^hornetDbEngine=.*/hornetDbEngine="rocksdb"/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^autoRevalidation=.*/autoRevalidation='$autoRevalidation'/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetDbEngine=.*/hornetDbEngine="'$hornetDbEngine'"/' $configs/hornet.cfg
     fi
-
-    if [ -z "$pruning" ]; then
-        sudo sed -i 's/^pruning=.*/pruning=true/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$autoRevalidation" ]; then
+        hornetAutoRevalidation=$autoRevalidation
+    fi
+    if [ -z "$hornetAutoRevalidation" ]; then
+        sudo sed -i 's/^hornetAutoRevalidation=.*/hornetAutoRevalidation=false/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^pruning=.*/pruning='$pruning'/' $configs/hornet.cfg
+        if [ ]
+        sudo sed -i 's/^hornetAutoRevalidation=.*/hornetAutoRevalidation='$hornetAutoRevalidation'/' $configs/hornet.cfg
     fi
-
-    if [ -z "$pruningDatabaseSize" ]; then
-        sudo sed -i 's/^pruningDatabaseSize=.*/pruningDatabaseSize=/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$pruning" ]; then
+        hornetPruning=$pruning
+    fi
+    if [ -z "$hornetPruning" ]; then
+        sudo sed -i 's/^hornetPruning=.*/hornetPruning=true/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^pruningDatabaseSize=.*/pruningDatabaseSize='$pruningDatabaseSize'/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetPruning=.*/hornetPruning='$hornetPruning'/' $configs/hornet.cfg
     fi
-
-    if [ -z "$pruningPercentage" ]; then
-        sudo sed -i 's/^pruningPercentage=.*/pruningPercentage=5/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$pruningDatabaseSize" ]; then
+        hornetPruningDatabaseSize=$pruningDatabaseSize
+    fi
+    if [ -z "$hornetPruningDatabaseSize" ]; then
+        sudo sed -i 's/^hornetPruningDatabaseSize=.*/hornetPruningDatabaseSize=/' $configs/hornet.cfg
     else
-        pruningPercentage=$(echo ${pruningPercentage%.*})
-        sudo sed -i 's/^pruningPercentage=.*/pruningPercentage='$pruningPercentage'/' $configs/hornet.cfg      
+        sudo sed -i 's/^hornetPruningDatabaseSize=.*/hornetPruningDatabaseSize='$hornetPruningDatabaseSize'/' $configs/hornet.cfg
     fi
-
-    if [ -z "$pruningCooldownTime" ]; then
-        sudo sed -i 's/^pruningCooldownTime=.*/pruningCooldownTime=5/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$pruningPercentage" ]; then
+        hornetPruningPercentage=$pruningPercentage
+    fi
+    if [ -z "$hornetPruningPercentage" ]; then
+        sudo sed -i 's/^hornetPruningPercentage=.*/hornetPruningPercentage=5/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^pruningCooldownTime=.*/pruningCooldownTime='$pruningCooldownTime'/' $configs/hornet.cfg
+        hornetPruningPercentage=$(echo ${pruningPercentage%.*})
+        sudo sed -i 's/^hornetPruningPercentage=.*/hornetPruningPercentage='$hornetPruningPercentage'/' $configs/hornet.cfg      
     fi
-
-    if [ -z "$username" ]; then
-        sudo sed -i 's/^username=.*/username=""/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$pruningCooldownTime" ]; then
+        hornetPruningCooldownTime=$pruningCooldownTime
+    fi
+    if [ -z "$hornetPruningCooldownTime" ]; then
+        sudo sed -i 's/^hornetPruningCooldownTime=.*/hornetPruningCooldownTime=5/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^username=.*/username="'$username'"/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetPruningCooldownTime=.*/hornetPruningCooldownTime='$hornetPruningCooldownTime'/' $configs/hornet.cfg
     fi
-
-    if [ -z "$passwordHash" ]; then
-        sudo sed -i 's/^passwordHash=.*/passwordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$username" ]; then
+        hornetUsername="$username"
+    if [ -z "$hornetUsername" ]; then
+        sudo sed -i 's/^hornetUsername=.*/hornetUsername=""/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^passwordHash=.*/passwordHash="'$passwordHash'"/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetUsername=.*/hornetUsername="'$hornetUsername'"/' $configs/hornet.cfg
     fi
-
-    if [ -z "$passwordSalt" ]; then
-        sudo sed -i 's/^passwordSalt=.*/passwordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$passwordHash" ]; then
+        hornetPasswordHash="$passwordHash"
+    fi
+    if [ -z "$hornetPasswordHash" ]; then
+        sudo sed -i 's/^hornetPasswordHash=.*/hornetPasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^passwordSalt=.*/passwordSalt="'$passwordSalt'"/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetPasswordHash=.*/hornetPasswordHash="'$hornetPasswordHash'"/' $configs/hornet.cfg
     fi
-
-    if [ -z "$p2pIdentity" ]; then
-        sudo sed -i 's/^p2pIdentity=.*/p2pIdentity=""/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$passwordSalt" ]; then
+        hornetPasswordSalt="$passwordSalt"
+    fi
+    if [ -z "$hornetPasswordSalt" ]; then
+        sudo sed -i 's/^hornetPasswordSalt=.*/hornetPasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^p2pIdentity=.*/p2pIdentity="'$p2pIdentity'"/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetPasswordSalt=.*/hornetPasswordSalt="'$hornetPasswordSalt'"/' $configs/hornet.cfg
     fi
-
+    ####
+    if [ ! -z "$p2pIdentity" ]; then
+        hornetP2pIdentity="$p2pIdentity"
+    fi
+    if [ -z "$hornetP2pIdentity" ]; then
+        sudo sed -i 's/^hornetP2pIdentity=.*/hornetP2pIdentity=""/' $configs/hornet.cfg
+    else
+        sudo sed -i 's/^hornetP2pIdentity=.*/hornetP2pIdentity="'$hornetP2pIdentity'"/' $configs/hornet.cfg
+    fi
+    ####
     if [ "$network" = "mainnet" ]; then
         if [ -z "$validation" ]; then
             sudo sed -i 's/^validation=.*/validation=true/' $configs/hornet.cfg
@@ -197,29 +251,38 @@ if [ -f "$tmpswarm/hornet.cfg" ]; then
     else
         sudo sed -i 's/^validation=.*/validation=false/' $configs/hornet.cfg
     fi
-
+    ####
     if [ -z "$validationLog" ]; then
         sudo sed -i 's/^validationLog=.*/validationLog=false/' $configs/hornet.cfg
     else
         sudo sed -i 's/^validationLog=.*/validationLog='$validationLog'/' $configs/hornet.cfg
     fi
-
-    if [ -z "$runAsEntryNode" ]; then
-        sudo sed -i 's/^runAsEntryNode=.*/runAsEntryNode=false/' $configs/hornet.cfg
-    else
-        sudo sed -i 's/^runAsEntryNode=.*/runAsEntryNode='$runAsEntryNode'/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$runAsEntryNode" ]; then
+        hornetRunAsEntryNode=$runAsEntryNode
     fi
-
-    if [ -z "$jwtAuthEnabled" ]; then
-        sudo sed -i 's/^jwtAuthEnabled=.*/jwtAuthEnabled=false/' $configs/hornet.cfg
+    if [ -z "$hornetRunAsEntryNode" ]; then
+        sudo sed -i 's/^hornetRunAsEntryNode=.*/hornetRunAsEntryNode=false/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^jwtAuthEnabled=.*/jwtAuthEnabled='$jwtAuthEnabled'/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetRunAsEntryNode=.*/hornetRunAsEntryNode='$hornetRunAsEntryNode'/' $configs/hornet.cfg
     fi
-
-    if [ -z "$jwtAuthSalt" ]; then
-        sudo sed -i 's/^jwtAuthSalt=.*/jwtAuthSalt="HORNET"/' $configs/hornet.cfg
+    ####
+    if [ ! -z "$jwtAuthEnabled" ]; then
+        hornetJwtAuthEnabled=$jwtAuthEnabled
+    fi
+    if [ -z "$hornetJwtAuthEnabled" ]; then
+        sudo sed -i 's/^hornetJwtAuthEnabled=.*/hornetJwtAuthEnabled=false/' $configs/hornet.cfg
     else
-        sudo sed -i 's/^jwtAuthSalt=.*/jwtAuthSalt="'$jwtAuthSalt'"/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetJwtAuthEnabled=.*/hornetJwtAuthEnabled='$hornetJwtAuthEnabled'/' $configs/hornet.cfg
+    fi
+    ####
+    if [ ! -z "$jwtAuthSalt" ]; then
+        hornetJwtAuthSalt="$jwtAuthSalt"
+    fi
+    if [ -z "$hornetJwtAuthSalt" ]; then
+        sudo sed -i 's/^hornetJwtAuthSalt=.*/hornetJwtAuthSalt="HORNET"/' $configs/hornet.cfg
+    else
+        sudo sed -i 's/^hornetJwtAuthSalt=.*/hornetJwtAuthSalt="'$hornetJwtAuthSalt'"/' $configs/hornet.cfg
     fi    
 fi
 

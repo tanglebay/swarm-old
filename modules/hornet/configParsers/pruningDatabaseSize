@@ -1,18 +1,18 @@
 #!/bin/bash
-if [ "$pruning" = "true" ]; then
-    if [ -d "$hornetDir/${network}db" ]; then
-        getDiskSize=$(df -h $hornetDir/${network}db | awk '{print $2}')
+if [ "$hornetPruning" = "true" ]; then
+    if [ -d "$hornetDir/${hornetNetwork}db" ]; then
+        getDiskSize=$(df -h $hornetDir/${hornetNetwork}db | awk '{print $2}')
         getDiskSize=$(echo $getDiskSize | awk '{print $2}')
         diskSize=${getDiskSize//[!0-9]/}
         if [ -z "$pruningDatabaseSize" ]; then
-            pruningDatabaseSize=$diskSize
+            hornetPruningDatabaseSize=$diskSize
         else
-            pruningDatabaseSize=${pruningDatabaseSize//[!0-9]/}
+            hornetPruningDatabaseSize=${hornetPruningDatabaseSize//[!0-9]/}
         fi
         let bufferSize=$diskSize-$pruningDatabaseSize
         if [ $bufferSize -lt 15 ]; then
-            let pruningDatabaseSize=$diskSize-15
-            sudo sed -i 's/^pruningDatabaseSize=.*/pruningDatabaseSize='$pruningDatabaseSize'/' $configs/hornet.cfg
+            let hornetPruningDatabaseSize=$diskSize-15
+            sudo sed -i 's/^hornetPruningDatabaseSize=.*/hornetPruningDatabaseSize='$hornetPruningDatabaseSize'/' $configs/hornet.cfg
         fi
 
         IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
@@ -20,8 +20,8 @@ if [ "$pruning" = "true" ]; then
         for hornetConfig in "${ARRAYhornetConfigs[@]}"
         do
             parser="$(jq '.pruning.size.targetSize' $hornetDir/$hornetConfig.json)"
-            if [ "$parser" != "\"${pruningDatabaseSize}GB\"" ]; then
-                sudo jq '.pruning.size.targetSize = "'$pruningDatabaseSize'GB"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+            if [ "$parser" != "\"${hornetPruningDatabaseSize}GB\"" ]; then
+                sudo jq '.pruning.size.targetSize = "'$hornetPruningDatabaseSize'GB"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
                 restartHornet=true
             fi
         done
