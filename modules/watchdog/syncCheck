@@ -57,7 +57,7 @@ if [ "$timeframe" = "00" ] || [ "$timeframe" = "30" ]; then
     goshimmerSyncStatus="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.synced')"
     if [ "$goshimmerCheckSync" = "true" ] && [ "$goshimmerStatus" = "active" ] && [ "$goshimmerSyncStatus" = "false" ] && [ -f "/usr/bin/goshimmer" ]; then
             getGoshimmerTangleTime=$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.time')
-            if [ $getGoshimmerTangleTime -eq $goshimmerTangleTime ]; then
+            if [ "$getGoshimmerTangleTime" = "$goshimmerTangleTime" ]; then
                 restartDate=`date '+%d-%m-%Y %H-%M-%S'`
                 if [ $goshimmerSyncCounter -gt 4 ]; then
                     sudo systemctl stop goshimmer
@@ -73,8 +73,12 @@ if [ "$timeframe" = "00" ] || [ "$timeframe" = "30" ]; then
                     let goshimmerSyncCounter=$goshimmerSyncCounter+1
                 fi
             else
-                sudo sed -i 's/^goshimmerTangleTime=.*/goshimmerTangleTime='$goshimmerTangleTime'/' $logs/watchdog
+                if [ "$goshimmerSyncCounter" -gt "0" ]; then
+                    let goshimmerSyncCounter=$goshimmerSyncCounter-1
+                    sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
+                fi
             fi
+            sudo sed -i 's/^goshimmerTangleTime=.*/goshimmerTangleTime='$getGoshimmerTangleTime'/' $logs/watchdog
             sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
     else
         if [ "$goshimmerSyncCounter" -gt "0" ]; then
