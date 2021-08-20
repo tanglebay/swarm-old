@@ -3,7 +3,11 @@
 - Added server IP4/IP6 to swarmInfo
 ### Changed
 - Fixed goshimmer (auto) update
+- Fixed missing checks
+- Fixed Watchdog sync check
+- Fixed all old Hornet variables
 - Fixed general bugs
+
 
 ## Version 0.6.9
 ### Changed
