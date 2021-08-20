@@ -5,7 +5,7 @@ while [ $exitCode -lt 1 ]; do
         whiptail --title "SWARM Menu" --menu "\nChoose an option" 16 65 0 \
         "1)" "SWARM Info" \
         "2)" "SWARM Configuration" \
-        "3)" "Manage Plugins" \
+        "3)" "SWARM Tools" \
         "4)" "Manage SWARM" 3>&2 2>&1 1>&3
     )
     exitstatus=$?
@@ -22,66 +22,7 @@ while [ $exitCode -lt 1 ]; do
             source $modules/swarm/swarmConfiguration
         ;;
         "3)")
-            CHOICE=$(
-                whiptail --title "SWARM - Plugins" --menu "\nChoose an option" 12 65 0 \
-                "1)" "Manage Watchdog" \
-                "2)" "Manage Firewall" 3>&2 2>&1 1>&3
-            )
-            case $CHOICE in
-                "1)")
-                    crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled > /dev/null 2>&1
-                    # Control WATCHDOG
-                    CHOICE=$(
-                        whiptail --title "Watchdog Menu" --menu "\nWatchdog: $watchdogStatus\n\nChoose an option" 14 65 0 \
-                        "1)" "Enable Watchdog" \
-                        "2)" "Disable Watchdog" 3>&2 2>&1 1>&3
-                    )
-
-                    case $CHOICE in
-                        "1)")
-                            sudo chmod +x $plugins/watchdog
-                            ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
-                            whiptail --title "Watchdog" --msgbox "Watchdog successfully activated!" 8 65
-                        ;;
-                        "2)")
-                            ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
-                            sudo sed -i "s,^statusCounter=.*,statusCounter=0," $logs/watchdog
-                            sudo sed -i "s,^restartDate=.*,restartDate=," $logs/watchdog
-                            whiptail --title "Watchdog" --msgbox "Watchdog successfully deactivated!" 8 65
-                        ;;
-                    esac
-                ;;
-                "2)")
-                    if [ "$ufw" = "true" ]; then
-                        firewallStatus=$(ufw status | grep -o "inactive")
-                        if [ "$firewallStatus" = "inactive" ]; then
-                            firewall=disabled
-                        else
-                            firewall=enabled
-                        fi
-                        CHOICE=$(
-                            whiptail --title "SWARM Menu" --menu "\nFirewall: $firewall\n\nChoose an option" 14 65 0 \
-                            "1)" "Enable Firewall" \
-                            "2)" "Disable Firewall" 3>&2 2>&1 1>&3
-                        )
-                        case $CHOICE in
-                            "1)")
-                                sudo ufw default deny incoming > /dev/null 2>&1
-                                sshPort=$(sudo grep "Port [0-9]" /etc/ssh/sshd_config | awk  '{print $2}')
-                                sudo ufw allow $sshPort/tcp > /dev/null 2>&1
-                                sudo ufw --force enable > /dev/null 2>&1
-                                whiptail --title "SWARM Menu" --msgbox "Firewall successfully activated!" 8 65
-                            ;;
-                            "2)")
-                                sudo ufw disable > /dev/null 2>&1
-                                whiptail --title "SWARM Menu" --msgbox "Firewall successfully deactivated!" 8 65
-                            ;;
-                        esac
-                    else
-                        whiptail --title "SWARM Menu" --msgbox "Error - No firewall found!" 8 65
-                    fi
-                ;;
-            esac
+            source $modules/swarm/swarmTools
         ;;
         "4)")
             CHOICE=$(
