@@ -4,56 +4,52 @@ if [ "$timeframe" = "00" ] || [ "$timeframe" = "15" ] || [ "$timeframe" = "30" ]
     if [ "$hornetAutoUpdate" = "true" ] && [ -f "/usr/bin/hornet" ]; then
         source $modules/hornet/getVersion
         if [ "$hornetRelease" = "stable" ]; then
-            if [ ! -z "$latestHornet" ]; then
-                if [ "$hornetVersion" != "HORNET $latestHornet" ]; then
-                    sudo apt-get update
-                    sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
-                    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                    for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                    do
-                        if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
-                        sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json
-                        sudo rm -rf $hornetDir/$hornetConfig.json.dpkg*
-                        fi
-                    done
-                    unset ARRAYhornetConfigs
-                    unset hornetConfig
-
-                    newHornetVersion="$(hornet -v)"
-                    if [ "$hornetVersion" != "$newHornetVersion" ]; then
-                        restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                        # CALL MODULE CONFIGPARSER
-                        source $modules/hornet/configParser
-                        sudo systemctl restart hornet
-                        echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Hornet version installed and Hornet restarted!" >> $logs/swarm.log
+            if [ "$hornetVersion" != "$latestHornetVersion" ]; then
+                sudo apt-get update
+                sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
+                IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+                for hornetConfig in "${ARRAYhornetConfigs[@]}"
+                do
+                    if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
+                    sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json
+                    sudo rm -rf $hornetDir/$hornetConfig.json.dpkg*
                     fi
+                done
+                unset ARRAYhornetConfigs
+                unset hornetConfig
+
+                newHornetVersion=$(hornet -v | awk '{ print $2 }')
+                if [ "$hornetVersion" != "$newHornetVersion" ]; then
+                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    # CALL MODULE CONFIGPARSER
+                    source $modules/hornet/configParser
+                    sudo systemctl restart hornet
+                    echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Hornet version installed and Hornet restarted!" >> $logs/swarm.log
                 fi
             fi
         fi
         if [ "$release" = "testing" ]; then
-            if [ ! -z "$latestHornet" ]; then
-                if [ "$hornetVersion" != "HORNET $latestHornet" ]; then
-                    sudo apt-get update
-                    sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
-                    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                    for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                    do
-                        if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
-                        sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json
-                        sudo rm -rf $hornetDir/$hornetConfig.json.dpkg*
-                        fi
-                    done
-                    unset ARRAYhornetConfigs
-                    unset hornetConfig
-
-                    newHornetVersion="$(hornet -v)"
-                    if [ "$hornetVersion" != "$newHornetVersion" ]; then
-                        restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                        # CALL MODULE CONFIGPARSER
-                        source $modules/hornet/configParser
-                        sudo systemctl restart hornet
-                        echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Hornet version installed and Hornet restarted!" >> $logs/swarm.log
+            if [ "$hornetVersion" != "$latestHornetVersion" ]; then
+                sudo apt-get update
+                sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
+                IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+                for hornetConfig in "${ARRAYhornetConfigs[@]}"
+                do
+                    if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
+                    sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json
+                    sudo rm -rf $hornetDir/$hornetConfig.json.dpkg*
                     fi
+                done
+                unset ARRAYhornetConfigs
+                unset hornetConfig
+
+                newHornetVersion=$(hornet -v | awk '{ print $2 }')
+                if [ "$hornetVersion" != "$newHornetVersion" ]; then
+                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    # CALL MODULE CONFIGPARSER
+                    source $modules/hornet/configParser
+                    sudo systemctl restart hornet
+                    echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Hornet version installed and Hornet restarted!" >> $logs/swarm.log
                 fi
             fi
         fi

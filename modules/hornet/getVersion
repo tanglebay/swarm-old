@@ -2,15 +2,20 @@
 
 # Local node version
 if [ -f "/usr/bin/hornet" ]; then
-    hornetVersion="$(hornet -v)"
+    hornetVersion=$(hornet -v | awk '{ print $2 }')
 fi
 
 # Latest Hornet version
 if [ "$hornetRelease" = "stable" ]; then
-    latestHornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
-    latestHornet="${latestHornet:1}"
+    latestHornetVersion="$(curl -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')"
+    latestHornetVersion="${latestHornetVersion:1}"
 fi
 if [ "$hornetRelease" = "testing" ]; then
-    latestHornet="$(curl -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | head -n 1)"
-    latestHornet="${latestHornet:1}"
+    latestHornetVersion="$(curl -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | head -n 1)"
+    latestHornetVersion="${latestHornetVersion:1}"
+fi
+
+# Replace var if empty
+if [ -z "$latestHornetVersion" ]; then
+    latestHornetVersion=$hornetVersion
 fi
