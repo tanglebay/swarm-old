@@ -1,3 +1,7 @@
+## Version 0.7.1
+- Hotfix for hornet plugin parsing
+
+
 ## Version 0.7.0
 ### Added
 - Added server IP4/IP6 to SWARM tools
