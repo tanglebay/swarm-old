@@ -191,21 +191,21 @@ while [ $exitCode -lt 1 ]; do
                             echo 0
                             echo 50
                             sudo systemctl stop hornet
-                            sudo rm -rf $hornetDir/${network}db $hornetDir/snapshots/${network}/*.bin $hornetDir/p2pstore
+                            sudo rm -rf $hornetDir/${hornetNetwork}db $hornetDir/snapshots/${hornetNetwork}/*.bin $hornetDir/p2pstore
                             sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter=0/' $logs/watchdog
                             sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter=0/' $logs/watchdog
                             sudo systemctl start hornet
                             echo 100
                             sleep 0.25
                         } | whiptail --gauge "Please wait while the cleanup is running..." 6 65 0
-                        whiptail --title "Hornet Menu" --msgbox "${network}DB successfully reset" 8 65
+                        whiptail --title "Hornet Menu" --msgbox "${hornetNetwork}DB successfully reset" 8 65
                     fi
                 ;;
             esac
         ;;
         "4)")
             CHOICE=$(
-                whiptail --title "Hornet Installer" --menu "\nChoose your option" 16 65 0 \
+                whiptail --title "Hornet - Installer" --menu "\nChoose your option" 16 65 0 \
                 "1)" "Update Hornet" \
                 "2)" "Install Hornet" \
                 "3)" "Remove Hornet" 3>&2 2>&1 1>&3
@@ -213,42 +213,44 @@ while [ $exitCode -lt 1 ]; do
             case $CHOICE in
                 "1)")
                     if [ -f "/usr/bin/hornet" ]; then
-                        # Update HORNET
-                        source $modules/getVersions
-                        if [ "$nodeVersion" != "HORNET $latestHornet" ]; then
-                            {
-                                echo 0
-                                sudo apt-get update > /dev/null 2>&1
-                                echo 33
-                                sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
-                                echo 66
-                                IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                                for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                                do
-                                    if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
-                                        sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json > /dev/null 2>&1
-                                        sudo rm -rf $hornetDir/$hornetConfig.json.dpkg* > /dev/null 2>&1
-                                    fi
-                                done
-                                unset ARRAYhornetConfigs
-                                unset hornetConfig                                
-                                echo 100
-                                sleep 0.5
-                            } | whiptail --gauge "Please wait while Hornet is updated..." 6 65 0
-                            newVersion="$(hornet -v)"
-                            if [ "$version" != "$newVersion" ]; then
+                        if (whiptail --title "Hornet - Installer" --yesno --defaultno "Do you really want to update Hornet?" 8 65); then
+                            # Update HORNET
+                            source $modules/hornet/getVersion
+                            if [ "$hornetVersion" != "HORNET $latestHornet" ]; then
                                 {
-                                    # CALL MODULE CONFIGPARSER
-                                    source $modules/hornet/configParser
-                                    sudo systemctl restart hornet
-                                } | whiptail --gauge "Please wait while parsing the configuration..." 6 65 0
+                                    echo 0
+                                    sudo apt-get update > /dev/null 2>&1
+                                    echo 33
+                                    sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
+                                    echo 66
+                                    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+                                    for hornetConfig in "${ARRAYhornetConfigs[@]}"
+                                    do
+                                        if [ -f "$hornetDir/$hornetConfig.json.dpkg-dist" ]; then
+                                            sudo cp -r $hornetDir/$hornetConfig.json.dpkg-dist $hornetDir/$hornetConfig.json > /dev/null 2>&1
+                                            sudo rm -rf $hornetDir/$hornetConfig.json.dpkg* > /dev/null 2>&1
+                                        fi
+                                    done
+                                    unset ARRAYhornetConfigs
+                                    unset hornetConfig                                
+                                    echo 100
+                                    sleep 0.5
+                                } | whiptail --gauge "Please wait while Hornet is updated..." 6 65 0
+                                newHornetVersion="$(hornet -v)"
+                                if [ "$hornetVersion" != "$newHornetVersion" ]; then
+                                    {
+                                        # CALL MODULE CONFIGPARSER
+                                        source $modules/hornet/configParser
+                                        sudo systemctl restart hornet
+                                    } | whiptail --gauge "Please wait while parsing the configuration..." 6 65 0
+                                fi
+                                whiptail --title "Hornet Menu" --msgbox "Hornet successfully updated" 8 65
+                            else
+                                whiptail --title "Hornet Menu" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
                             fi
-                            whiptail --title "Hornet Menu" --msgbox "Hornet successfully updated" 8 65
-                        else
-                            whiptail --title "Hornet Menu" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
                         fi
                     else
-                        whiptail --title "Hornet Installer" --msgbox "Sorry, but Hornet is not installed!" 8 65
+                        whiptail --title "Hornet - Installer" --msgbox "Sorry, but Hornet is not installed!" 8 65
                     fi
                 ;;
                 "2)")
@@ -257,26 +259,30 @@ while [ $exitCode -lt 1 ]; do
                 "3)")
                     {
                         echo 0
-                        ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab -
-                        echo 15
+                        echo 10
                         sudo systemctl stop hornet > /dev/null 2>&1
-                        echo 30
+                        echo 20
                         sudo systemctl disable hornet > /dev/null 2>&1
-                        echo 45
+                        echo 30
                         sudo apt -qq purge hornet -y > /dev/null 2>&1
                         echo 60
                         sudo apt -qq autoremove -y > /dev/null 2>&1
-                        echo 75
+                        echo 70
                         sudo systemctl daemon-reload > /dev/null 2>&1
-                        echo 90
+                        echo 80
                         if [ "$ufw" = "true" ]; then
                             sudo ufw delete allow $hornetGossipPort/tcp > /dev/null 2>&1
                             sudo ufw delete allow $hornetAutopeeringPort/udp > /dev/null 2>&1
                         fi
                         sudo rm -rf $hornetDir > /dev/null 2>&1
+                        echo 90
+                        if [ -f "/etc/nginx/sites-enabled/hornet" ]; then
+                            sudo rm -rf /etc/nginx/sites-enabled/hornet > /dev/null 2>&1
+                            sudo systemctl reload nginx
+                        fi
                         echo 100
                     } | whiptail --gauge "Please wait while Hornet will be removed..." 6 65 0
-                    whiptail --title "Hornet Menu" --msgbox "Hornet successfully removed" 8 65
+                    whiptail --title "Hornet - Installer" --msgbox "Hornet successfully removed" 8 65
                 ;;
             esac
         ;;

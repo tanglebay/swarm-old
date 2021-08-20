@@ -13,12 +13,13 @@ while [ $exitCode -lt 1 ]; do
     fi
     CHOICE=$(
         whiptail --title "SWARM Menu" --menu "\nWachtdog: $watchdogStatus\n\nChoose an option" 18 65 0 \
-        "1)" "SWARM Theme" \
-        "2)" "$swarmAutoUpdateMenu SWARM Autoupdate" \
-        "3)" "Hornet [Watchdog]" \
-        "4)" "GoShimmer [Watchdog]" \
-        "5)" "$proxyCheckMenu Proxy Check" \
-        "6)" "Log Rotation [SWARM]" 3>&2 2>&1 1>&3
+        "1)" "Watchdog [SWARM]" \
+        "2)" "SWARM Theme" \
+        "3)" "$swarmAutoUpdateMenu SWARM Autoupdate" \
+        "4)" "Hornet [Watchdog]" \
+        "5)" "GoShimmer [Watchdog]" \
+        "6)" "$proxyCheckMenu Proxy Check" \
+        "7)" "Log Rotation [SWARM]" 3>&2 2>&1 1>&3
     )
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
@@ -26,6 +27,28 @@ while [ $exitCode -lt 1 ]; do
     fi
     case $CHOICE in
         "1)")
+            crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled > /dev/null 2>&1
+            # Control WATCHDOG
+            CHOICE=$(
+                whiptail --title "Watchdog Menu" --menu "\nWatchdog: $watchdogStatus\n\nChoose an option" 14 65 0 \
+                "1)" "Enable Watchdog" \
+                "2)" "Disable Watchdog" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    sudo chmod +x $plugins/watchdog
+                    ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
+                    whiptail --title "Watchdog" --msgbox "Watchdog successfully activated!" 8 65
+                ;;
+                "2)")
+                    ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
+                    sudo sed -i "s,^statusCounter=.*,statusCounter=0," $logs/watchdog
+                    sudo sed -i "s,^restartDate=.*,restartDate=," $logs/watchdog
+                    whiptail --title "Watchdog" --msgbox "Watchdog successfully deactivated!" 8 65
+                ;;
+            esac
+        ;;
+        "2)")
             while [ $exitCode -lt 1 ]; do
                 source $configs/swarm.cfg
                 CHOICE=$(
@@ -82,7 +105,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "2)")
+        "3)")
             while [ $exitCode -lt 1 ]; do
                 source $configs/swarm.cfg
                 if [ "$swarmAutoUpdate" = "true" ]; then
@@ -112,7 +135,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "3)")
+        "4)")
             while [ $exitCode -lt 1 ]; do
                 source $configs/swarm.cfg
                 if [ "$hornetAutoUpdate" = "true" ]; then
@@ -204,7 +227,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "4)")
+        "5)")
             while [ $exitCode -lt 1 ]; do
                 source $configs/swarm.cfg
                 if [ "$goshimmerAutoUpdate" = "true" ]; then
@@ -271,7 +294,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "5)")
+        "6)")
             if [ "$proxyCheck" = "true" ]; then
                 proxyCheck=false
                 proxyCheckMenu="disabled"
@@ -282,7 +305,7 @@ while [ $exitCode -lt 1 ]; do
             sudo sed -i 's/^proxyCheck=.*/proxyCheck='$proxyCheck'/' $configs/swarm.cfg
             whiptail --title "Watchdog - Proxy" --msgbox "Proxy check $proxyCheckMenu!" 8 65
         ;;
-        "6)")
+        "7)")
             while [ $exitCode -lt 1 ]; do
                 source $configs/swarm.cfg
                 if [ "$logRotation" = "true" ]; then

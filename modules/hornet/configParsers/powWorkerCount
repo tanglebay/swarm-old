@@ -1,16 +1,16 @@
 #!/bin/bash
 
-powWorkerCount=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
-let powWorkerCount=$powWorkerCount-1
+hornetPowWorkerCount=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
+let hornetPowWorkerCount=$hornetPowWorkerCount-1
 
-if [ "$powWorkerCount" -ge 1 ] 2>/dev/null; then
+if [ "$hornetPowWorkerCount" -ge 1 ] 2>/dev/null; then
     IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
     for hornetConfig in "${ARRAYhornetConfigs[@]}"
     do
         parser="$(jq '.restAPI.powWorkerCount' $hornetDir/$hornetConfig.json)"
-        if [ $parser -ne $powWorkerCount ]; then
-            sudo jq '.restAPI.powWorkerCount = '$powWorkerCount'' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
-            sudo sed -i 's/^powWorkerCount=.*/powWorkerCount='$powWorkerCount'/' $configs/hornet.cfg
+        if [ "$parser" != "$hornetPowWorkerCount" ]; then
+            sudo jq '.restAPI.powWorkerCount = '$hornetPowWorkerCount'' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
+            sudo sed -i 's/^hornetPowWorkerCount=.*/hornetPowWorkerCount='$hornetPowWorkerCount'/' $configs/hornet.cfg
             restartHornet=true
         fi
     done

@@ -26,6 +26,11 @@ if [ ! -f "/lib/systemd/system/goshimmer.service" ]; then
     sudo systemctl daemon-reload
 fi
 
+goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+if [ "$goshimmerStatus" = "active" ]; then
+    sudo systemctl stop goshimmer
+fi
+
 # Create dir if not exist
 sudo mkdir -p /tmp/goshimmer > /dev/null 2>&1
 
@@ -36,10 +41,14 @@ sudo wget -q -O /tmp/goshimmer/goshimmer-${latestGoshimmerVersion}_Linux_x86_64.
 ( cd /tmp/goshimmer ; sudo tar -xzf /tmp/goshimmer/goshimmer-${latestGoshimmerVersion}_Linux_x86_64.tar.gz ) > /dev/null 2>&1
 
 # Copy binary
-sudo cp -rf /tmp/goshimmer/goshimmer /usr/bin/goshimmer > /dev/null 2>&1
+if [ -f "/tmp/goshimmer/goshimmer" ]; then
+    sudo cp -rf /tmp/goshimmer/goshimmer /usr/bin/goshimmer > /dev/null 2>&1
+fi
 
 # Copy config
-sudo cp -rf /tmp/goshimmer/config.json $goshimmerDir/config.json > /dev/null 2>&1
+if [ -f "/tmp/goshimmer/config.json" ]; then
+    sudo cp -rf /tmp/goshimmer/config.json $goshimmerDir/config.json > /dev/null 2>&1
+fi
 
 # Download latest snapshot
 sudo wget -q -O $goshimmerDir/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
