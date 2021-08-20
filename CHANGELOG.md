@@ -1,6 +1,6 @@
 ## Version 0.7.0
 ### Added
-- Added server IP4/IP6 to swarmInfo
+- Added server IP4/IP6 to SWARM tools
 ### Changed
 - Fixed goshimmer (auto) update
 - Fixed missing checks
