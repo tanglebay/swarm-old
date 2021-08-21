@@ -1,3 +1,10 @@
+## Version 0.7.2
+### Added
+- Added system updates to SWARM tools
+### Changed
+- Fixed missing check before remove Hornet
+
+
 ## Version 0.7.1
 - Hotfix for hornet plugin parsing
 
