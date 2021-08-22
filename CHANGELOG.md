@@ -1,8 +1,10 @@
 ## Version 0.7.2
 ### Added
+- Added node "Bee" to SWARM
 - Added system updates to SWARM tools
 ### Changed
 - Fixed missing check before remove Hornet
+- Fixed general bugs
 
 
 ## Version 0.7.1
