@@ -45,6 +45,29 @@ else
     fi
 fi
 
+# Bee Status Check
+if [ "$beeStatus" != "active" ] && [ -f "/usr/bin/bee" ]; then
+    sudo systemctl stop bee
+    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+    if [ "$beeStatusCounter" -ge "2" ]; then
+        if [ "$beeAllowDbReset" = "true" ]; then
+            sudo rm -rf $beeDir/storage $beeDir/snapshots
+            echo "$restartDate [WACHTDOG] - BEE - Database deleted because max. inactive counter reached" >> $logs/swarm.log
+        fi
+        beeStatusCounter=0
+    else
+        let beeStatusCounter=$beeStatusCounter+1
+    fi
+    sudo systemctl restart bee
+    sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $logs/watchdog
+    echo "$restartDate [WACHTDOG] - BEE - Node restarted because service was not active" >> $logs/swarm.log
+else
+    if [ "$beeStatusCounter" -gt "0" ]; then
+        let beeStatusCounter=$beeStatusCounter-1
+        sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $logs/watchdog
+    fi
+fi
+
 # GoShimmer Status Check
 if [ "$goshimmerStatus" != "active" ] && [ -f "/usr/bin/goshimmer" ]; then
     sudo systemctl stop goshimmer
