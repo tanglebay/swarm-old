@@ -26,11 +26,6 @@ if [ ! -f "/lib/systemd/system/bee.service" ]; then
     sudo systemctl daemon-reload
 fi
 
-beeStatus="$(systemctl show -p ActiveState --value bee)"
-if [ "$beeStatus" = "active" ]; then
-    sudo systemctl stop bee
-fi
-
 # Create dir if not exist
 sudo mkdir -p /tmp/bee > /dev/null 2>&1
 
@@ -46,14 +41,18 @@ if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip" ]; then
 fi
 
 # Copy binary
-if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee" ]; then
+if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee" ] && [ -f "/tmp/bee/config.toml" ]; then
+    beeStatus="$(systemctl show -p ActiveState --value bee)"
+    if [ "$beeStatus" = "active" ]; then
+        sudo systemctl stop bee
+    fi
+
     sudo cp -rf /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee /usr/bin/bee > /dev/null 2>&1
     sudo chmod +x /usr/bin/bee
-fi
 
-# Copy config
-if [ -f "/tmp/bee/config.toml" ]; then
     sudo cp -rf /tmp/bee/config.toml $beeDir/config.toml > /dev/null 2>&1
+
+    restartBee=true
 fi
 
 # Remove temporary files
