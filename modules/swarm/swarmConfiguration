@@ -17,9 +17,10 @@ while [ $exitCode -lt 1 ]; do
         "2)" "SWARM Theme" \
         "3)" "$swarmAutoUpdateMenu SWARM Autoupdate" \
         "4)" "Hornet [Watchdog]" \
-        "5)" "GoShimmer [Watchdog]" \
-        "6)" "$proxyCheckMenu Proxy Check" \
-        "7)" "Log Rotation [SWARM]" 3>&2 2>&1 1>&3
+        "5)" "Bee [Watchdog]" \
+        "6)" "GoShimmer [Watchdog]" \
+        "7)" "$proxyCheckMenu Proxy Check" \
+        "8)" "Log Rotation [SWARM]" 3>&2 2>&1 1>&3
     )
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
@@ -209,14 +210,14 @@ while [ $exitCode -lt 1 ]; do
                                         hornetCheckSyncMenu="enabled"
                                     fi
                                     sudo sed -i 's/^hornetCheckSync=.*/hornetCheckSync='$hornetCheckSync'/' $configs/swarm.cfg
-                                    whiptail --title "SWARM - Hornet" --msgbox "Hornet sync check $hornetCheckSyncMenu!" 8 65
+                                    whiptail --title "SWARM - Hornet Sync" --msgbox "Hornet sync check $hornetCheckSyncMenu!" 8 65
                                 ;;
                                 "2)")
                                     source $configs/swarm.cfg
-                                    maxLmi=$(whiptail --inputbox "\nSet the maximum difference between LMI and LSMI before the resync starts and a new database/snapshot is initialized" 10 65 $maxLmi --title "Watchdog - Sync" 3>&1 1>&2 2>&3)
-                                    if [ ! -z "$maxLmi" ] && [ $maxLmi -gt 0 ] 2>/dev/null; then
-                                        sudo sed -i 's/^maxLmi=.*/maxLmi='$maxLmi'/' $configs/swarm.cfg
-                                        whiptail --title "Watchdog - Sync" --msgbox "Max milestones set to $maxLmi milestones!" 8 65
+                                    hornetMaxMilestones=$(whiptail --inputbox "\nSet the maximum difference between LMI and LSMI before the resync starts and a new database/snapshot is initialized" 10 65 $hornetMaxMilestones --title "Watchdog - Hornet Sync" 3>&1 1>&2 2>&3)
+                                    if [ $hornetMaxMilestones -eq $hornetMaxMilestones ] && [ $hornetMaxMilestones -gt 0 ] 2>/dev/null; then
+                                        sudo sed -i 's/^hornetMaxMilestones=.*/hornetMaxMilestones='$hornetMaxMilestones'/' $configs/swarm.cfg
+                                        whiptail --title "Watchdog - Hornet Sync" --msgbox "Max milestones for Hornet set to $hornetMaxMilestones milestones!" 8 65
                                     fi
                                 ;;
                             esac
@@ -228,6 +229,98 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "5)")
+            while [ $exitCode -lt 1 ]; do
+                source $configs/swarm.cfg
+                if [ "$beeAutoUpdate" = "true" ]; then
+                    beeAutoUpdateMenu="Disable"
+                else
+                    beeAutoUpdateMenu="Enable"
+                fi
+                if [ "$beeAllowDbReset" = "true" ]; then
+                    beeAllowDbResetMenu="Forbid"
+                else
+                    beeAllowDbResetMenu="Allow"
+                fi
+
+                CHOICE=$(
+                    whiptail --title "SWARM - Bee" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "$beeAutoUpdateMenu Bee AutoUpdater" \
+                    "2)" "$beeAllowDbResetMenu Bee database reset" \
+                    "3)" "Bee Sync-Check" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ "$beeAutoUpdate" = "true" ]; then
+                            beeAutoUpdate=false
+                            beeAutoUpdateMenu="disabled"
+                        else
+                            beeAutoUpdate=true
+                            beeAutoUpdateMenu="enabled"
+                        fi
+                        sudo sed -i 's/^beeAutoUpdate=.*/beeAutoUpdate='$beeAutoUpdate'/' $configs/swarm.cfg
+                        whiptail --title "Watchdog - Bee" --msgbox "Bee AutoUpdater $beeAutoUpdateMenu!" 8 65
+                    ;;
+                    "2)")
+                        if [ "$beeAllowDbReset" = "true" ]; then
+                            beeAllowDbReset=false
+                            beeAllowDbResetMenu="disabled"
+                        else
+                            beeAllowDbReset=true
+                            beeAllowDbResetMenu="enabled"
+                        fi
+                        sudo sed -i 's/^beeAllowDbReset=.*/beeAllowDbReset='$beeAllowDbReset'/' $configs/swarm.cfg
+                        whiptail --title "SWARM - Bee" --msgbox "Delete Bee database $beeAllowDbResetMenu for Watchdog!" 8 65
+                    ;;
+                    "3)")
+                        while [ $exitCode -lt 1 ]; do
+                            source $configs/swarm.cfg
+                            if [ "$beeCheckSync" = "true" ]; then
+                                beeCheckSyncMenu="Disable"
+                            else
+                                beeCheckSyncMenu="Enable"
+                            fi
+                            CHOICE=$(
+                                whiptail --title "Watchdog - Bee" --menu "\nChoose an option" 14 65 0 \
+                                "1)" "$beeCheckSyncMenu Sync-Check" \
+                                "2)" "Set max milestones" 3>&2 2>&1 1>&3
+                            )
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
+                            fi
+                            case $CHOICE in
+                                "1)")
+                                    if [ "$beeCheckSync" = "true" ]; then
+                                        beeCheckSync=false
+                                        beeCheckSyncMenu="disabled"
+                                    else
+                                        beeCheckSync=true
+                                        beeCheckSyncMenu="enabled"
+                                    fi
+                                    sudo sed -i 's/^beeCheckSync=.*/beeCheckSync='$beeCheckSync'/' $configs/swarm.cfg
+                                    whiptail --title "SWARM - Bee Sync" --msgbox "Bee sync check $beeCheckSyncMenu!" 8 65
+                                ;;
+                                "2)")
+                                    source $configs/swarm.cfg
+                                    beeMaxLmi=$(whiptail --inputbox "\nSet the maximum difference between LMI and LSMI before the resync starts and a new database/snapshot is initialized" 10 65 $beeMaxMilestones --title "Watchdog - Bee Sync" 3>&1 1>&2 2>&3)
+                                    if [ $beeMaxMilestones -eq $beeMaxMilestones ] && [ $beeMaxMilestones -gt 0 ] 2>/dev/null; then
+                                        sudo sed -i 's/^beeMaxMilestones=.*/beeMaxMilestones='$beeMaxMilestones'/' $configs/swarm.cfg
+                                        whiptail --title "Watchdog - Bee Sync" --msgbox "Max milestones for Bee set to $beeMaxMilestones milestones!" 8 65
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "6)")
             while [ $exitCode -lt 1 ]; do
                 source $configs/swarm.cfg
                 if [ "$goshimmerAutoUpdate" = "true" ]; then
@@ -294,7 +387,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "6)")
+        "7)")
             if [ "$proxyCheck" = "true" ]; then
                 proxyCheck=false
                 proxyCheckMenu="disabled"
@@ -305,7 +398,7 @@ while [ $exitCode -lt 1 ]; do
             sudo sed -i 's/^proxyCheck=.*/proxyCheck='$proxyCheck'/' $configs/swarm.cfg
             whiptail --title "Watchdog - Proxy" --msgbox "Proxy check $proxyCheckMenu!" 8 65
         ;;
-        "7)")
+        "8)")
             while [ $exitCode -lt 1 ]; do
                 source $configs/swarm.cfg
                 if [ "$logRotation" = "true" ]; then
