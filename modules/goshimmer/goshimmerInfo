@@ -1,58 +1,60 @@
 #!/bin/bash
-source $configs/goshimmer.cfg
-
-goshimmerStatus=$(systemctl show -p ActiveState --value goshimmer)
-
-goshimmerVersion="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.version')"
-if [ -z "$goshimmerVersion" ]; then
-    goshimmerVersion="N/A"
-else
-    goshimmerVersion="${goshimmerVersion%\"}"
-    goshimmerVersion="${goshimmerVersion#\"}"
-fi
-synced="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.synced')"
-if [ -z "$synced" ]; then
-    synced="N/A"
-else
-    if [ "$synced" = "true" ]; then
-        synced="Yes"
-    else
-        synced="No"
-    fi
-fi
-
-goshimmerPledgeId="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.identityID')"
-if [ -z "$goshimmerPledgeId" ]; then
-    goshimmerPledgeId="N/A"
-fi
-
-# DB size
-if [ -d "$goshimmerDir/mainnetdb" ]; then
-    getCurrentDbSize="$(du -sb $goshimmerDir/mainnetdb | cut -f1)"
-    let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
-    if [ $getCurrentDbSizeInMb -gt 999 ]; then
-        let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
-        currentDbSize="${getCurrentDbSizeInGb} GB"
-    else
-        currentDbSize="${getCurrentDbSizeInMb} MB"
-    fi
-else
-    currentDbSize="N/A"
-fi
-
-if [ "$goshimmerDashboardAuthEnabled" = "true" ]; then
-    goshimmerDashboardAuthEnabledStatus=enabled
-else
-    goshimmerDashboardAuthEnabledStatus=disabled
-fi
-
-if [ "$goshimmerWebapiAuthEnabled" = "true" ]; then
-    goshimmerWebapiAuthEnabledStatus=enabled
-else
-    goshimmerWebapiAuthEnabledStatus=disabled
-fi
 
 if [ -f "/usr/bin/goshimmer" ]; then
+
+    source $configs/goshimmer.cfg
+
+    goshimmerStatus=$(systemctl show -p ActiveState --value goshimmer)
+
+    goshimmerVersion="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.version')"
+    if [ -z "$goshimmerVersion" ]; then
+        goshimmerVersion="N/A"
+    else
+        goshimmerVersion="${goshimmerVersion%\"}"
+        goshimmerVersion="${goshimmerVersion#\"}"
+    fi
+    synced="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.synced')"
+    if [ -z "$synced" ]; then
+        synced="N/A"
+    else
+        if [ "$synced" = "true" ]; then
+            synced="Yes"
+        else
+            synced="No"
+        fi
+    fi
+
+    goshimmerPledgeId="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.identityID')"
+    if [ -z "$goshimmerPledgeId" ]; then
+        goshimmerPledgeId="N/A"
+    fi
+
+    # DB size
+    if [ -d "$goshimmerDir/mainnetdb" ]; then
+        getCurrentDbSize="$(du -sb $goshimmerDir/mainnetdb | cut -f1)"
+        let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+        if [ $getCurrentDbSizeInMb -gt 999 ]; then
+            let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+            currentDbSize="${getCurrentDbSizeInGb} GB"
+        else
+            currentDbSize="${getCurrentDbSizeInMb} MB"
+        fi
+    else
+        currentDbSize="N/A"
+    fi
+
+    if [ "$goshimmerDashboardAuthEnabled" = "true" ]; then
+        goshimmerDashboardAuthEnabledStatus=enabled
+    else
+        goshimmerDashboardAuthEnabledStatus=disabled
+    fi
+
+    if [ "$goshimmerWebapiAuthEnabled" = "true" ]; then
+        goshimmerWebapiAuthEnabledStatus=enabled
+    else
+        goshimmerWebapiAuthEnabledStatus=disabled
+    fi
+
     # OUTPUT
     whiptail --title "GoShimmer Info" --msgbox "Goshimmer: $goshimmerStatus\nVersion: $goshimmerVersion\nSynced: $synced\nDB size: $currentDbSize\n\nDashboard-Auth: $goshimmerDashboardAuthEnabledStatus\nWebAPI-Auth: $goshimmerWebapiAuthEnabledStatus\nGossip Port: ${goshimmerGossipPort}/tcp\nAutopeering Port: ${goshimmerAutopeeringPort}/udp\n\nEnabled Plugins: \"$goshimmerEnablePlugins\"\nDisabled Plugins: \"$goshimmerDisablePlugins\"\n\nPledgeID: $goshimmerPledgeId" 24 68
 else
