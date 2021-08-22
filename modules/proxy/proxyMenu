@@ -25,6 +25,7 @@ while [ $exitCode -lt 1 ]; do
                     whiptail --title "Proxy Menu" --menu "\nChoose an option" 14 65 0 \
                     "1)" "Set Domain" \
                     "2)" "Set Hornet (HTTPS) Port" \
+                    "3)" "Set Bee (HTTPS) Port" \
                     "3)" "Set GoShimmer (HTTPS) Port" 3>&2 2>&1 1>&3
                 )
 
@@ -51,8 +52,8 @@ while [ $exitCode -lt 1 ]; do
                         source $configs/proxy.cfg
                         currentHornetApiPort=$hornetApiPort
                         hornetApiPort=$(whiptail --inputbox "\nSet your API port for Hornet" 10 65 $hornetApiPort --title "Proxy - Hornet API" 3>&1 1>&2 2>&3)
-                        if [ $hornetApiPort -eq $goshimmerApiPort ]; then
-                            whiptail --title "Proxy - Hornet API" --msgbox "The port \"$hornetApiPort\" is already used by GoShimmer, please change the port there first or use a different one." 8 65
+                        if [ $hornetApiPort -eq $goshimmerApiPort ] || [ $hornetApiPort -eq $beeApiPort ]; then
+                            whiptail --title "Proxy - Hornet API" --msgbox "The port \"$hornetApiPort\" is already used by GoShimmer or Bee, please change the port there first or use a different one." 8 65
                         else
                             if [ ! -z "$hornetApiPort" ] && [ $hornetApiPort -eq $hornetApiPort ] 2>/dev/null; then
                                 if [ "$currentHornetApiPort" != "$hornetApiPort" ]; then
@@ -66,10 +67,27 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "3)")
                         source $configs/proxy.cfg
+                        currentBeeApiPort=$beeApiPort
+                        beeApiPort=$(whiptail --inputbox "\nSet your API port for Bee" 10 65 $beeApiPort --title "Proxy - Bee API" 3>&1 1>&2 2>&3)
+                        if [ $beeApiPort -eq $goshimmerApiPort ] || [ $beeApiPort -eq $hornetApiPort ]; then
+                            whiptail --title "Proxy - Hornet API" --msgbox "The port \"$beeApiPort\" is already used by GoShimmer or Hornet, please change the port there first or use a different one." 8 65
+                        else
+                            if [ ! -z "$beeApiPort" ] && [ $beeApiPort -eq $beeApiPort ] 2>/dev/null; then
+                                if [ "$currentBeeApiPort" != "$beeApiPort" ]; then
+                                    ufw delete allow $currentBeeApiPort/tcp > /dev/null 2>&1
+                                    ufw allow $beeApiPort/tcp > /dev/null 2>&1
+                                    sudo sed -i 's/^beeApiPort=.*/beeApiPort='$beeApiPort'/' $configs/proxy.cfg
+                                    whiptail --title "Proxy - Bee API" --msgbox "Your Bee API port was set to \"$beeApiPort\"" 8 65
+                                fi
+                            fi
+                        fi
+                    ;;
+                    "4)")
+                        source $configs/proxy.cfg
                         currentGoshimmerApiPort=$goshimmerApiPort
                         goshimmerApiPort=$(whiptail --inputbox "\nSet your API port for GoShimmer" 10 65 $goshimmerApiPort --title "Proxy - GoShimmer API" 3>&1 1>&2 2>&3)
-                        if [ $hornetApiPort -eq $goshimmerApiPort ]; then
-                            whiptail --title "Proxy - GoShimmer API" --msgbox "The port \"$goshimmerApiPort\" is already used by Hornet, please change the port there first or use a different one." 8 65
+                        if [ $hornetApiPort -eq $goshimmerApiPort ] || [ $beeApiPort -eq $goshimmerApiPort ]; then
+                            whiptail --title "Proxy - GoShimmer API" --msgbox "The port \"$goshimmerApiPort\" is already used by Hornet or Bee, please change the port there first or use a different one." 8 65
                         else
                             if [ ! -z "$goshimmerApiPort" ] && [ $goshimmerApiPort -eq $goshimmerApiPort ] 2>/dev/null; then
                                 if [ "$currentGoshimmerApiPort" != "$goshimmerApiPort" ]; then
@@ -154,8 +172,8 @@ while [ $exitCode -lt 1 ]; do
                         whiptail --title "Proxy Menu" --msgbox "Please set your domain first before continuing!" 8 65
                     else
                         if [ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
-                            if [ $hornetApiPort -eq $goshimmerApiPort ] && [ -f "/usr/bin/hornet" ] && [ -f "/usr/bin/goshimmer" ]; then
-                                whiptail --title "Proxy - Deployment" --msgbox "The same ports are used for Hornet and GoShimmer!\n\nPlease set different ports in the proxy configuration." 10 65
+                            if [ $hornetApiPort -eq $goshimmerApiPort ] || [ $beeApiPort -eq $goshimmerApiPort ] || [ $hornetApiPort -eq $beeApiPort ] > /dev/null 2>&1; then
+                                whiptail --title "Proxy - Deployment" --msgbox "The same ports are used for Hornet, Bee or GoShimmer!\n\nPlease set different ports in the proxy configuration." 10 65
                             else
                                 # Run the nginx module for the proxy
                                 email=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
@@ -166,8 +184,8 @@ while [ $exitCode -lt 1 ]; do
                                 fi
                             fi
                         else
-                            if [ $hornetApiPort -eq $goshimmerApiPort ] && [ -f "/usr/bin/hornet" ] && [ -f "/usr/bin/goshimmer" ]; then
-                                whiptail --title "Proxy - Deployment" --msgbox "The same ports are used for Hornet and GoShimmer!\n\nPlease set different ports in the proxy configuration." 10 65
+                            if [ $hornetApiPort -eq $goshimmerApiPort ] || [ $beeApiPort -eq $goshimmerApiPort ] || [ $hornetApiPort -eq $beeApiPort ] > /dev/null 2>&1; then
+                                whiptail --title "Proxy - Deployment" --msgbox "The same ports are used for Hornet, Bee or GoShimmer!\n\nPlease set different ports in the proxy configuration." 10 65
                             else
                                 source $modules/proxy/proxyDeployment
                             fi
@@ -180,6 +198,7 @@ while [ $exitCode -lt 1 ]; do
                         if [ "$ufw" = "true" ]; then
                             sudo ufw delete allow 80/tcp > /dev/null 2>&1
                             sudo ufw delete allow $hornetApiPort/tcp > /dev/null 2>&1
+                            sudo ufw delete allow $beeApiPort/tcp > /dev/null 2>&1
                             sudo ufw delete allow $goshimmerApiPort/tcp > /dev/null 2>&1
                         fi
                         echo 20
