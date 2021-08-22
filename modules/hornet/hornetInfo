@@ -1,78 +1,79 @@
 #!/bin/bash
-source $configs/hornet.cfg
-
-hornetStatus=$(systemctl show -p ActiveState --value hornet)
-
-hornetVersion=$(hornet -v | awk '{ print $2 }')
-if [ -z "$hornetVersion" ]; then
-    hornetVersion="N/A"
-fi
-
-hornetHealthy="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
-if [ -z "$hornetHealthy" ]; then
-    hornetHealthy="N/A"
-else
-    if [ "$hornetHealthy" = "true" ]; then
-        hornetHealthy="Yes"
-    else
-        hornetHealthy="No"
-    fi
-fi
-
-# DB size
-if [ -d "$hornetDir/${hornetNetwork}db" ]; then
-    getCurrentDbSize="$(du -sb $hornetDir/${hornetNetwork}db | cut -f1)"
-    let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
-    if [ $getCurrentDbSizeInMb -gt 999 ]; then
-        let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
-        currentHornetDbSize="${getCurrentDbSizeInGb} GB"
-    else
-        currentHornetDbSize="${getCurrentDbSizeInMb} MB"
-    fi
-else
-    currentHornetDbSize="N/A"
-fi
-
-if [ "$hornetJwtAuthEnabled" = "true" ]; then
-    hornetJwtAuthEnabledStatus=enabled
-else
-    hornetJwtAuthEnabledStatus=disabled
-fi
-
-if [ "$hornetAutoRevalidation" = "true" ]; then
-    hornetAutoRevalidationStatus=enabled
-else
-    hornetAutoRevalidationStatus=disabled
-fi
-
-if [ "$hornetPruning" = "true" ]; then
-    hornetPruningStatus=enabled
-else
-    hornetPruningStatus=disabled
-fi
-
-if [ "$hornetPow" = "true" ]; then
-    hornetPowStatus=enabled
-else
-    hornetPowStatus=disabled
-fi
-
-if [ "$hornetValidation" = "true" ]; then
-    hornetValidationStatus=enabled
-else
-    hornetValidationStatus=disabled
-fi
-
-if [ "$hornetValidationLog" = "true" ]; then
-    hornetValidationLogStatus=enabled
-else
-    hornetValidationLogStatus=disabled
-fi
-
 if [ -f "/usr/bin/hornet" ]; then
+
+    source $configs/hornet.cfg
+
+    hornetStatus=$(systemctl show -p ActiveState --value hornet)
+
+    hornetVersion=$(hornet -v | awk '{ print $2 }')
+    if [ -z "$hornetVersion" ]; then
+        hornetVersion="N/A"
+    fi
+
+    hornetHealthy="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+    if [ -z "$hornetHealthy" ]; then
+        hornetHealthy="N/A"
+    else
+        if [ "$hornetHealthy" = "true" ]; then
+            hornetHealthy="Yes"
+        else
+            hornetHealthy="No"
+        fi
+    fi
+
+    # DB size
+    if [ -d "$hornetDir/${hornetNetwork}db" ]; then
+        getCurrentDbSize="$(du -sb $hornetDir/${hornetNetwork}db | cut -f1)"
+        let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+        if [ $getCurrentDbSizeInMb -gt 999 ]; then
+            let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+            currentHornetDbSize="${getCurrentDbSizeInGb} GB"
+        else
+            currentHornetDbSize="${getCurrentDbSizeInMb} MB"
+        fi
+    else
+        currentHornetDbSize="N/A"
+    fi
+
+    if [ "$hornetJwtAuthEnabled" = "true" ]; then
+        hornetJwtAuthEnabledStatus=enabled
+    else
+        hornetJwtAuthEnabledStatus=disabled
+    fi
+
+    if [ "$hornetAutoRevalidation" = "true" ]; then
+        hornetAutoRevalidationStatus=enabled
+    else
+        hornetAutoRevalidationStatus=disabled
+    fi
+
+    if [ "$hornetPruning" = "true" ]; then
+        hornetPruningStatus=enabled
+    else
+        hornetPruningStatus=disabled
+    fi
+
+    if [ "$hornetPow" = "true" ]; then
+        hornetPowStatus=enabled
+    else
+        hornetPowStatus=disabled
+    fi
+
+    if [ "$hornetValidation" = "true" ]; then
+        hornetValidationStatus=enabled
+    else
+        hornetValidationStatus=disabled
+    fi
+
+    if [ "$hornetValidationLog" = "true" ]; then
+        hornetValidationLogStatus=enabled
+    else
+        hornetValidationLogStatus=disabled
+    fi
+
     # OUTPUT
-    whiptail --title "Hornet Info [v$version]" --msgbox "Hornet: $hornetStatus\nVersion: v$hornetVersion\nNetwork: $hornetNetwork\nHealthy: $hornetHealthy\nDB size: $currentHornetDbSize\n\nAlias: $hornetNodeAlias\nJWT-Auth: $hornetJwtAuthEnabledStatus\nPoW: $hornetPowStatus\nLS Interval: $hornetSnapshotInterval milestones\nGossip Port: ${hornetGossipPort}/tcp\nAutopeering Port: ${hornetAutopeeringPort}/udp\nDB Engine: $hornetDbEngine\nDB Revalidation: $hornetAutoRevalidation\n\nPruning: $hornetPruningStatus\nMax DB size: ${hornetPruningDatabaseSize} GB\nPruning % (Hornet): ${hornetPruningPercentage}%\nPruning Cooldown: $hornetPruningCooldownTime minutes\n\nEnabled Plugins: \"$hornetEnablePlugins\"\nDisabled Plugins: \"$hornetDisablePlugins\"\n\nValidation: $hornetValidationStatus\nValidation Log: $hornetValidationLogStatus" 34 68
+    whiptail --title "Hornet Info" --msgbox "Hornet: $hornetStatus\nVersion: v$hornetVersion\nNetwork: $hornetNetwork\nHealthy: $hornetHealthy\nDB size: $currentHornetDbSize\n\nAlias: $hornetNodeAlias\nJWT-Auth: $hornetJwtAuthEnabledStatus\nPoW: $hornetPowStatus\nLS Interval: $hornetSnapshotInterval milestones\nGossip Port: ${hornetGossipPort}/tcp\nAutopeering Port: ${hornetAutopeeringPort}/udp\nDB Engine: $hornetDbEngine\nDB Revalidation: $hornetAutoRevalidation\n\nPruning: $hornetPruningStatus\nMax DB size: ${hornetPruningDatabaseSize} GB\nPruning % (Hornet): ${hornetPruningPercentage}%\nPruning Cooldown: $hornetPruningCooldownTime minutes\n\nEnabled Plugins: \"$hornetEnablePlugins\"\nDisabled Plugins: \"$hornetDisablePlugins\"\n\nValidation: $hornetValidationStatus\nValidation Log: $hornetValidationLogStatus" 34 68
 else
     # OUTPUT
-    whiptail --title "Hornet Info [v$version]" --msgbox "Hornet not installed!" 8 65
+    whiptail --title "Hornet Info" --msgbox "Hornet not installed!" 8 65
 fi

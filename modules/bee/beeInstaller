@@ -1,0 +1,69 @@
+#!/bin/bash
+
+if ! id bee >/dev/null 2>&1; then
+    useradd --no-create-home --system bee >/dev/null
+fi
+
+if [ ! -d "$beeDir" ]; then
+    sudo mkdir -p $beeDir > /dev/null 2>&1
+    sudo chown -R bee:bee $beeDir > /dev/null 2>&1
+fi
+
+# Install Unzip
+if ! [ -x "$(command -v unzip)" ] > /dev/null 2>&1; then
+    sudo apt -qq install unzip -y > /dev/null 2>&1
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/bee.service" ]; then
+    sudo cp -rf $swarmDir/templates/bee/bee.service /lib/systemd/system/bee.service
+    if [ ! -f "/etc/default/bee" ]; then
+        echo "OPTIONS=\"--config config.toml\"" > /etc/default/bee
+    fi
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/bee.service" ]; then
+        sudo systemctl enable bee > /dev/null 2>&1
+    fi
+    sudo systemctl daemon-reload
+fi
+
+beeStatus="$(systemctl show -p ActiveState --value bee)"
+if [ "$beeStatus" = "active" ]; then
+    sudo systemctl stop bee
+fi
+
+# Create dir if not exist
+sudo mkdir -p /tmp/bee > /dev/null 2>&1
+
+# Download latest bee
+sudo wget -q -O /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/bee-node-${latestBeeVersion}-linux-x86-64.zip
+
+# Download config
+sudo wget -q -O /tmp/bee/config.toml https://tanglebay.com/assets/bee/config.toml
+
+# Unzip archive
+if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip" ]; then
+    sudo unzip /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip -d /tmp/bee > /dev/null 2>&1
+fi
+
+# Copy binary
+if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee" ]; then
+    sudo cp -rf /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee /usr/bin/bee > /dev/null 2>&1
+    sudo chmod +x /usr/bin/bee
+fi
+
+# Copy config
+if [ -f "/tmp/bee/config.toml" ]; then
+    sudo cp -rf /tmp/bee/config.toml $beeDir/config.toml > /dev/null 2>&1
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/bee > /dev/null 2>&1
+
+# Set owner
+sudo chown -R bee:bee $beeDir > /dev/null 2>&1
+
+# Port Check
+# if [ $beeAutopeeringPort -eq $goshimmerAutopeeringPort ] && [ -f "/usr/bin/goshimmer" ]; then
+#     let beeAutopeeringPort=$beeAutopeeringPort+1
+#     sudo sed -i 's/^beeAutopeeringPort=.*/beeAutopeeringPort='$beeAutopeeringPort'/' $configs/bee.cfg
+# fi

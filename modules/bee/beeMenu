@@ -1,0 +1,305 @@
+#!/bin/bash
+if [ ! -f "/usr/bin/hornet" ] && [ "$currentBranch" = "develop" ]; then
+    # Bee MENU
+    while [ $exitCode -lt 1 ]; do
+        clear
+        CHOICE=$(
+            whiptail --title "Bee Menu" --menu "\nChoose an option" 16 65 0 \
+            "1)" "Bee Info" \
+            "2)" "Bee Configurations" \
+            "3)" "Bee Debugging" \
+            "4)" "Bee Installer" 3>&2 2>&1 1>&3
+        )
+        exitstatus=$?
+        if [ "$exitstatus" = "1" ]; then
+            exitCode=1
+        fi
+
+        case $CHOICE in
+            "1)")
+                source $modules/bee/beeInfo
+            ;;
+            "2)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    CHOICE=$(
+                        whiptail --title "Bee - Configurations" --menu "\nChoose an option" 16 65 0 \
+                        "1)" "Bee configuration" \
+                        "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
+                    )
+
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+
+                    case $CHOICE in
+                        "1)")
+                            if [ -f "/usr/bin/bee" ]; then
+                                source $modules/bee/beeConfiguration
+                            else
+                                whiptail --title "Bee - Configuration" --msgbox "Bee installation not found, please install Bee first!" 8 65
+                            fi
+                        ;;
+                        "2)")
+                            while [ $exitCode -lt 1 ]; do
+                                clear
+                                CHOICE=$(
+                                    whiptail --title "Bee - Configurations" --menu "\nChoose an option" 16 65 0 \
+                                    "1)" "Config.toml" \
+                                    "2)" "GoShimmer.cfg (SWARM)" 3>&2 2>&1 1>&3
+                                )
+
+                                exitstatus=$?
+                                if [ "$exitstatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+
+                                case $CHOICE in
+                                    "1)")
+                                        sudo nano $beeDir/config.toml
+                                        if (whiptail --title "Bee Menu" --yesno --defaultno "Would you like to restart Bee now?" 8 65); then
+                                            {
+                                                echo 0
+                                                echo 50
+                                                sudo systemctl restart bee
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while Bee is restarting..." 6 65 0
+                                        fi
+                                    ;;
+                                    "2)")
+                                        sudo nano $configs/bee.cfg
+                                        if (whiptail --title "Bee Menu" --yesno --defaultno "Would you like to restart Bee now?" 8 65); then
+                                            {
+                                                echo 0
+                                                source $modules/bee/configParser
+                                                echo 50
+                                                sudo systemctl restart bee
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while Bee is restarting..." 6 65 0
+                                        fi
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "3)")
+                while [ $exitCode -lt 1 ]; do
+                    CHOICE=$(
+                        whiptail --title "Bee - Debugging" --menu "\nChoose your option" 16 65 0 \
+                        "1)" "Show Bee log" \
+                        "2)" "Start/Stop Bee" \
+                        "3)" "Reset Bee Database" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            # Display last 65 lines of log
+                            sudo journalctl -fu bee | less -FRSXM
+                            clear
+                        ;;
+                        "2)")
+                            CHOICE=$(
+                                whiptail --title "Bee Menu" --menu "\nChoose your option" 16 65 0 \
+                                "1)" "Restart Bee" \
+                                "2)" "Start Bee" \
+                                "3)" "Stop Bee" \
+                                "4)" "Status Bee" 3>&2 2>&1 1>&3
+                            )
+                            case $CHOICE in
+                                "1)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl restart bee
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while Bee is restarting..." 6 65 0
+                                    whiptail --title "Bee - Debugging" --msgbox "Bee successfully restarted" 8 65
+                                ;;
+                                "2)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl start bee
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while Bee is starting..." 6 65 0
+                                    whiptail --title "Bee - Debugging" --msgbox "Bee successfully started" 8 65
+                                ;;
+                                "3)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl stop bee
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while Bee is stopping..." 6 65 0
+                                    whiptail --title "Bee - Debugging" --msgbox "Bee successfully stopped" 8 65
+                                ;;
+                                "4)")
+                                    beeStatus="$(sudo systemctl status bee)"
+                                    whiptail --title "Bee - Debugging" --msgbox "$beeStatus" 15 65
+                                ;;
+                            esac
+                        ;;
+                        "3)")
+                            if (whiptail --title "Bee - Debugging" --yesno --defaultno "Do you really want to remove the Bee database?" 8 65); then
+                                source $configs/bee.cfg
+                                {
+                                    echo 0
+                                    echo 50
+                                    sudo systemctl stop bee
+                                    sudo rm -rf $beeDir/storage $beeDir/snapshots
+                                    sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter=0/' $logs/watchdog
+                                    sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter=0/' $logs/watchdog
+                                    sudo systemctl start bee
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the cleanup is running..." 6 65 0
+                                whiptail --title "Bee - Debugging" --msgbox "Bee database successfully reset" 8 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "4)")
+                CHOICE=$(
+                    whiptail --title "Bee - Installer" --menu "\nChoose your option" 16 65 0 \
+                    "1)" "Update Bee" \
+                    "2)" "Install Bee" \
+                    "3)" "Remove Bee" 3>&2 2>&1 1>&3
+                )
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/bee" ]; then
+                            if (whiptail --title "Bee - Installer" --yesno --defaultno "Do you really want to update Bee?" 8 65); then
+                                # Update Bee
+                                source $modules/bee/getVersion
+                                if [ -z "$beeVersion" ]; then
+                                    beeVersion="NA"
+                                fi
+                                beeStatus="$(systemctl show -p ActiveState --value bee)"
+                                if [ "$beeStatus" = "active" ] && [ "$beeVersion" != "$latestBeeVersion" ] && [ "$beeVersion" != "NA" ]; then
+                                    {
+                                        echo 0
+                                        echo 10
+                                        source $modules/bee/beeInstaller
+                                        echo 50
+                                        source $modules/bee/configParser
+                                        echo 90
+                                        sudo systemctl restart bee
+                                        echo 100
+                                        sleep 0.5
+                                    } | whiptail --gauge "Please wait while Bee is updated..." 6 65 0
+                                    whiptail --title "Bee - Installer" --msgbox "Bee successfully updated" 8 65
+                                else
+                                    whiptail --title "Bee - Installer" --msgbox "Congratulations, you have already installed the latest version of Bee!" 8 65
+                                fi
+                            fi
+                        else
+                            whiptail --title "Bee - Installer" --msgbox "Sorry, but Bee is not installed!" 8 65
+                        fi
+                    ;;
+                    "2)")
+                        # INSTALL Bee
+                        if [ ! -f "/usr/bin/bee" ]; then
+                            {
+                                echo 0
+                                echo 10
+                                source $configs/bee.cfg
+                                echo 30
+                                source $modules/bee/getVersion
+                                echo 40
+                                source $modules/bee/beeInstaller
+                            } | whiptail --gauge "Please wait while installing Bee..." 6 65 0
+                            if [ -f "/usr/bin/bee" ]; then
+                                source $configs/bee.cfg
+                                {
+                                    echo 50
+                                    echo 60
+                                    # CALL MODULE CONFIGPARSER
+                                    source $modules/bee/configParser
+                                    echo 70
+                                    if [ "$ufw" = "true" ]; then
+                                        sudo ufw allow $beeGossipPort/tcp > /dev/null 2>&1
+                                    fi
+                                    sudo systemctl start bee > /dev/null 2>&1
+                                    echo 80
+                                    sleep 2
+                                    beeStatus="$(systemctl show -p ActiveState --value bee)"
+                                    if [ "$beeStatus" != "active" ]; then
+                                        sudo systemctl restart bee > /dev/null 2>&1
+                                    fi
+                                    echo 100
+                                    sleep 0.2
+                                } | whiptail --gauge "Please wait while Bee will be prepared..." 6 65 0
+                                whiptail --title "Bee - Installer" --msgbox "Bee installation finished!\n\nYou need to open the following ports in your home router for peering\n\nGossip: $beeGossipPort/tcp" 15 65
+                            else
+                                whiptail --title "Bee - Installer" --msgbox "Error while installing Bee. Please check Bee.cfg and try again!" 8 65
+                            fi
+                        else
+                            whiptail --title "Bee - Installer" --msgbox "Bee already installed or not set in the SWARM.cfg!" 8 65
+                        fi
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee - Installer" --yesno --defaultno "Do you really want to remove Bee?" 8 65); then
+                            {
+                                echo 0
+                                sleep 0.25
+                                echo 10
+                                sudo systemctl stop bee > /dev/null 2>&1
+                                sleep 0.25
+                                echo 20
+                                sleep 0.25
+                                sudo systemctl disable bee > /dev/null 2>&1
+                                echo 30
+                                sleep 0.25
+                                sudo rm -rf /usr/bin/bee /var/lib/bee /lib/systemd/system/bee.service /etc/default/bee > /dev/null 2>&1
+                                echo 40
+                                sleep 0.25
+                                echo 50
+                                sudo systemctl daemon-reload > /dev/null 2>&1
+                                echo 60
+                                if [ "$ufw" = "true" ]; then
+                                    sudo ufw delete allow $beeGossipPort/tcp > /dev/null 2>&1
+                                fi
+                                echo 70
+                                sudo rm -rf $beeDir > /dev/null 2>&1
+                                echo 80
+                                if id bee >/dev/null 2>&1; then
+                                    sudo deluser bee >/dev/null
+                                fi
+                                echo 90
+                                if [ -x "$(command -v unzip)" ]; then
+                                    sudo apt -qq purge unzip -y > /dev/null 2>&1
+                                    sudo apt -qq autoremove -y > /dev/null 2>&1
+                                fi
+                                if [ -f "/etc/nginx/sites-enabled/bee" ]; then
+                                    sudo rm -rf /etc/nginx/sites-enabled/bee > /dev/null 2>&1
+                                    sudo systemctl reload nginx
+                                fi
+                                echo 100
+                                sleep 0.25
+                            } | whiptail --gauge "Please wait while Bee will be removed..." 6 65 0
+                            whiptail --title "Bee - Installer" --msgbox "Bee successfully removed" 8 65
+                        fi
+                    ;;
+                esac
+            ;;
+        esac
+    done
+    exitCode=0
+else
+    whiptail --title "Bee Menu" --msgbox "Only Bee or Hornet can be used, please remove Hornet first before you can use Bee!" 8 65
+fi

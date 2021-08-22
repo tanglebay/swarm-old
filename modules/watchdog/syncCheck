@@ -3,7 +3,7 @@
 source $logs/watchdog
 
 if [ -n "$hornetSyncCounter" ]; then
-    if ! [ "$hornetSyncCounter" -eq "$hornetSyncCounter" ] 2>/dev/null; then
+    if [ $hornetSyncCounter -ne $hornetSyncCounter ] 2>/dev/null; then
         hornetSyncCounter=0
         sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $logs/watchdog
     fi
@@ -12,8 +12,18 @@ else
     sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $logs/watchdog
 fi
 
+if [ -n "$beeSyncCounter" ]; then
+    if [ $beeSyncCounter -ne $beeSyncCounter ] 2>/dev/null; then
+        beeSyncCounter=0
+        sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $logs/watchdog
+    fi
+else
+    beeSyncCounter=0
+    sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $logs/watchdog
+fi
+
 if [ -n "$goshimmerSyncCounter" ]; then
-    if ! [ "$goshimmerSyncCounter" -eq "$goshimmerSyncCounter" ] 2>/dev/null; then
+    if [ $goshimmerSyncCounter -ne $goshimmerSyncCounter ] 2>/dev/null; then
         goshimmerSyncCounter=0
         sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
     fi
@@ -22,68 +32,102 @@ else
     sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
 fi
 
-
-# Hornet Sync Check
-hornetSyncStatus="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
-if [ "$hornetCheckSync" = "true" ] && [ "$hornetStatus" = "active" ] && [ "$hornetSyncStatus" = "false" ] && [ -f "/usr/bin/hornet" ]; then
-    lmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
-    cmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.confirmedMilestoneIndex')"
-    let dlmi="$lmi-$cmi"
-    if [ "$dlmi" -gt "$maxLmi" ]; then
-        restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-        sudo systemctl stop hornet
-        if [ $hornetSyncCounter -gt 5 ]; then
-            if [ "$hornetAllowDbReset" = "true" ]; then
-                sudo rm -rf $hornetDir/${hornetNetwork}db $hornetDir/snapshots/${hornetNetwork}/*.bin
-                echo "$restartDate [WACHTDOG] - HORNET - ${hornetNetwork}DB deleted because too many milestones behind!" >> $logs/swarm.log
+if [ -f "/usr/bin/hornet" ]; then
+    # Hornet Sync Check
+    hornetSyncStatus="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+    if [ "$hornetCheckSync" = "true" ] && [ "$hornetStatus" = "active" ] && [ "$hornetSyncStatus" = "false" ]; then
+        lmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
+        cmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.confirmedMilestoneIndex')"
+        let dlmi="$lmi-$cmi"
+        if [ "$dlmi" -gt "$hornetMaxMilestones" ]; then
+            restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+            sudo systemctl stop hornet
+            if [ $hornetSyncCounter -gt 5 ]; then
+                if [ "$hornetAllowDbReset" = "true" ]; then
+                    sudo rm -rf $hornetDir/${hornetNetwork}db $hornetDir/snapshots/${hornetNetwork}/*.bin
+                    echo "$restartDate [WACHTDOG] - HORNET - ${hornetNetwork}DB deleted because too many milestones behind!" >> $logs/swarm.log
+                fi
+                hornetSyncCounter=0
+            else
+                let hornetSyncCounter=$hornetSyncCounter+1
             fi
-            hornetSyncCounter=0
-        else
-            let hornetSyncCounter=$hornetSyncCounter+1
+            sudo systemctl start hornet
+            echo "$restartDate [WACHTDOG] - HORNET - Node restarted because max milestones difference reached!" >> $logs/swarm.log
+            sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $logs/watchdog
         fi
-        sudo systemctl start hornet
-        echo "$restartDate [WACHTDOG] - HORNET - Hornet restarted because maxLmi reached!" >> $logs/swarm.log
-        sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $logs/watchdog
-    fi
-else
-    if [ "$hornetSyncCounter" -gt "0" ]; then
-        let hornetSyncCounter=$hornetSyncCounter-1
-        sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $logs/watchdog
+    else
+        if [ "$hornetSyncCounter" -gt "0" ]; then
+            let hornetSyncCounter=$hornetSyncCounter-1
+            sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $logs/watchdog
+        fi
     fi
 fi
 
-# GoShimmer Sync Check
-if [ "$timeframe" = "00" ] || [ "$timeframe" = "30" ]; then
-    goshimmerSyncStatus="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.synced')"
-    if [ "$goshimmerCheckSync" = "true" ] && [ "$goshimmerStatus" = "active" ] && [ "$goshimmerSyncStatus" = "false" ] && [ -f "/usr/bin/goshimmer" ]; then
-            getGoshimmerTangleTime=$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.time')
-            if [ "$getGoshimmerTangleTime" = "$goshimmerTangleTime" ]; then
-                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                if [ $goshimmerSyncCounter -gt 4 ]; then
-                    sudo systemctl stop goshimmer
-                    if [ "$goshimmerAllowDbReset" = "true" ]; then
-                        sudo rm -rf $goshimmerDir/mainnetdb
-                        sudo -u goshimmer wget -q -O $goshimmerDir/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
-                        echo "$restartDate [WACHTDOG] - GOSHIMMER - Database deleted because node was not synced!" >> $logs/swarm.log
-                    fi
-                    goshimmerSyncCounter=0
-                    sudo systemctl start goshimmer
-                    echo "$restartDate [WACHTDOG] - GOSHIMMER - GoShimmer restarted because not was not sync!" >> $logs/swarm.log
-                else
-                    let goshimmerSyncCounter=$goshimmerSyncCounter+1
+if [ -f "/usr/bin/bee" ]; then
+    # Bee Sync Check
+    beeSyncStatus="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+    if [ "$beeCheckSync" = "true" ] && [ "$beeStatus" = "active" ] && [ "$beeSyncStatus" = "false" ]; then
+        lmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
+        cmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.confirmedMilestoneIndex')"
+        let dlmi="$lmi-$cmi"
+        if [ "$dlmi" -gt "$beeMaxMilestones" ]; then
+            restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+            sudo systemctl stop bee
+            if [ $beeSyncCounter -gt 5 ]; then
+                if [ "$beeAllowDbReset" = "true" ]; then
+                    sudo rm -rf $beeDir/storage $hornetDir/snapshots
+                    echo "$restartDate [WACHTDOG] - BEE - Database deleted because too many milestones behind!" >> $logs/swarm.log
                 fi
+                beeSyncCounter=0
             else
-                if [ "$goshimmerSyncCounter" -gt "0" ]; then
-                    let goshimmerSyncCounter=$goshimmerSyncCounter-1
-                    sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
-                fi
+                let beeSyncCounter=$beeSyncCounter+1
             fi
-            sudo sed -i 's/^goshimmerTangleTime=.*/goshimmerTangleTime='$getGoshimmerTangleTime'/' $logs/watchdog
-            sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
+            sudo systemctl start bee
+            echo "$restartDate [WACHTDOG] - BEE - Node restarted because max milestones difference reached!" >> $logs/swarm.log
+            sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $logs/watchdog
+        fi
     else
-        if [ "$goshimmerSyncCounter" -gt "0" ]; then
-            let goshimmerSyncCounter=$goshimmerSyncCounter-1
-            sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
+        if [ "$beeSyncCounter" -gt "0" ]; then
+            let beeSyncCounter=$beeSyncCounter-1
+            sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $logs/watchdog
+        fi
+    fi
+fi
+
+if [ -f "/usr/bin/goshimmer" ]; then
+    # GoShimmer Sync Check
+    if [ "$timeframe" = "00" ] || [ "$timeframe" = "30" ]; then
+        goshimmerSyncStatus="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.synced')"
+        if [ "$goshimmerCheckSync" = "true" ] && [ "$goshimmerStatus" = "active" ] && [ "$goshimmerSyncStatus" = "false" ]; then
+                getGoshimmerTangleTime=$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.time')
+                if [ "$getGoshimmerTangleTime" = "$goshimmerTangleTime" ]; then
+                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    if [ $goshimmerSyncCounter -gt 4 ]; then
+                        sudo systemctl stop goshimmer
+                        if [ "$goshimmerAllowDbReset" = "true" ]; then
+                            sudo rm -rf $goshimmerDir/mainnetdb
+                            sudo -u goshimmer wget -q -O $goshimmerDir/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
+                            echo "$restartDate [WACHTDOG] - GOSHIMMER - Database deleted because node was not synced!" >> $logs/swarm.log
+                        fi
+                        goshimmerSyncCounter=0
+                        sudo systemctl start goshimmer
+                        echo "$restartDate [WACHTDOG] - GOSHIMMER - GoShimmer restarted because not was not sync!" >> $logs/swarm.log
+                    else
+                        let goshimmerSyncCounter=$goshimmerSyncCounter+1
+                    fi
+                else
+                    if [ "$goshimmerSyncCounter" -gt "0" ]; then
+                        let goshimmerSyncCounter=$goshimmerSyncCounter-1
+                        sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
+                    fi
+                fi
+                sudo sed -i 's/^goshimmerTangleTime=.*/goshimmerTangleTime='$getGoshimmerTangleTime'/' $logs/watchdog
+                sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
+        else
+            if [ "$goshimmerSyncCounter" -gt "0" ]; then
+                let goshimmerSyncCounter=$goshimmerSyncCounter-1
+                sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
+            fi
         fi
     fi
 fi

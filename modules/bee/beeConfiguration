@@ -1,0 +1,251 @@
+#!/bin/bash
+while [ $exitCode -lt 1 ]; do
+    clear
+    source $configs/bee.cfg
+    CHOICE=$(
+        whiptail --title "Bee - Configurations" --menu "\nChoose an option" 21 65 0 \
+        "1)" "Bee Peers" \
+        "2)" "Dashboard" \
+        "3)" "Node Alias" \
+        "4)" "DB Pruning" \
+        "5)" "Proof of Work" \
+        "6)" "Local Snapshots" \
+        "7)" "Identity" \
+        "8)" "Gossip Port" \
+        "9)" "Unknown Peers Limit" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+        if [ "$restartBee" = "true" ]; then
+            if (whiptail --title "Bee Menu" --yesno "Would you like to apply the changes and restart Bee?" 8 65); then
+                {
+                    echo 0
+                    echo 33
+                    source $modules/bee/configParser
+                    echo 50
+                    sudo systemctl restart bee
+                    sleep 0.25
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while the changes are applied and Bee is restarted..." 6 65 0
+                unset restartBee
+            fi
+        fi
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $modules/bee/beePeersConfiguration
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $configs/bee.cfg
+                # Hornet Dashboard
+                CHOICE=$(
+                    whiptail --title "Bee - Dashboard" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "Dashboard Username" \
+                    "2)" "Dashboard Password" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        beeUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $beeUsername --title "Bee - Dashboard" 3>&1 1>&2 2>&3)
+                        if [ ! -z "$beeUsername" ]; then
+                            source $modules/bee/configParsers/username
+                            if [ "$newBeeUsername" = "true" ]; then
+                                sudo sed -i 's/^beeUsername=.*/beeUsername="'$beeUsername'"/' $configs/bee.cfg
+                                whiptail --title "Bee - Dashboard" --msgbox "New username \"$beeUsername\" applied!" 8 65
+                                unset newBeeUsername
+                            else
+                                whiptail --title "Bee - Dashboard" --msgbox "No username change detected!" 8 65
+                            fi
+                        else
+                            whiptail --title "Bee - Dashboardn" --msgbox "No valid username, please try again!" 8 65
+                        fi
+                    ;;
+                    "2)")
+                        source $modules/bee/dashboardPwdGen
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            beeAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $beeAlias --title "Bee - Alias" 3>&1 1>&2 2>&3)
+            if [ ! -z "$beeAlias" ]; then
+                source $modules/bee/configParsers/alias
+                if [ "$newBeeAlias" = "true" ]; then
+                    sudo sed -i 's/beeAlias=.*/beeAlias="'$beeAlias'"/' $configs/bee.cfg
+                    whiptail --title "Bee Configuration" --msgbox "New alias \"$beeAlias\" applied!" 8 65
+                    unset newBeeAlias
+                else
+                    whiptail --title "Bee - Configuration" --msgbox "No node alias change detected!" 8 65
+                fi
+            fi
+        ;;
+        "4)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $configs/bee.cfg
+                # Hornet Pruning
+                if [ "$beePruningEnabled" = "true" ]; then
+                    beePruningEnabledStatus=enabled
+                else
+                    beePruningEnabledStatus=disabled
+                fi
+                CHOICE=$(
+                    whiptail --title "Bee - Pruning" --menu "\nStatus: $beePruningEnabledStatus\n\nChoose an option" 18 65 0 \
+                    "1)" "Enable/Disable pruning" \
+                    "2)" "Set pruning after Milestones" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        CHOICE=$(
+                            whiptail --title "Bee - Pruning" --menu "\nStatus: $beePruningEnabledStatus\n\nChoose an option" 14 65 0 \
+                            "1)" "Enable pruning" \
+                            "2)" "Disable pruning" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                beePruningEnabled=true
+                                source $modules/bee/configParsers/pruningEnabled
+                                sudo sed -i 's/^beePruningEnabled=.*/beePruningEnabled='$beePruningEnabled'/' $configs/bee.cfg
+                                whiptail --title "Bee - Pruning" --msgbox "Pruning was successfully activated!" 8 65
+                            ;;
+                            "2)")
+                                beePruningEnabled=false
+                                source $modules/bee/configParsers/pruningEnabled
+                                sudo sed -i 's/^beePruningEnabled=.*/beePruningEnabled='$beePruningEnabled'/' $configs/bee.cfg
+                                whiptail --title "Bee - Pruning" --msgbox "Pruning was successfully deactivated!" 8 65
+                            ;;
+                        esac
+                    ;;
+                    "2)")
+                        currentBeePruningDelay=$beePruningDelay
+                        beePruningDelay=$(whiptail --inputbox "\nSet the interval (milestones) at which pruning is performed." 10 65 $beePruningDelay --title "Bee - Pruning" 3>&1 1>&2 2>&3)
+                        if [ $beePruningDelay -gt 0 ] && [ $beePruningDelay -eq $beePruningDelay ] && [ $currentBeePruningDelay -ne $beePruningDelay ]> /dev/null 2>&1; then
+                            source $modules/bee/configParsers/pruningDelay
+                            sudo sed -i 's/^beePruningDelay=.*/beePruningDelay='$beePruningDelay'/' $configs/hornet.cfg
+                            whiptail --title "Bee - Pruning" --msgbox "Pruning delay set to ${beePruningDelay} milestones!" 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "5)")
+            source $configs/bee.cfg
+            if [ "$beePowEnabled" = "true" ]; then
+                beePowEnabledStatus=enabled
+            else
+                beePowEnabledStatus=disabled
+            fi
+            CHOICE=$(
+                whiptail --title "Bee - PoW" --menu "\nPOW: $beePowEnabledStatus\n\nChoose an option" 14 65 0 \
+                "1)" "Enable PoW" \
+                "2)" "Disable PoW" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    beePowEnabled=true
+                    source $modules/hornet/configParsers/powEnabled
+                    sudo sed -i 's/^beePowEnabled=.*/beePowEnabled='$beePowEnabled'/' $configs/bee.cfg
+                    whiptail --title "Bee - PoW" --msgbox "PoW has been enabled!" 8 65
+                ;;
+                "2)")
+                    beePowEnabled=false
+                    source $modules/hornet/configParsers/pow
+                    sudo sed -i 's/^beePowEnabled=.*/beePowEnabled='$beePowEnabled'/' $configs/bee.cfg
+                    whiptail --title "Bee - PoW" --msgbox "PoW has been disabeld!!" 8 65
+                ;;
+            esac
+        ;;
+        "6)")
+            source $configs/bee.cfg
+            beeSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $beeSnapshotInterval --title "Bee - Snapshots" 3>&1 1>&2 2>&3)
+            if [ ! -z "$beeSnapshotInterval" ] && [ $beeSnapshotInterval -eq $beeSnapshotInterval ] 2>/dev/null; then
+                source $modules/bee/configParsers/snapshotInterval
+                sudo sed -i 's/^beeSnapshotInterval=.*/beeSnapshotInterval='$beeSnapshotInterval'/' $configs/bee.cfg
+                if [ "$newBeeSnapshotInterval" = "true" ]; then
+                    whiptail --title "Bee - Snapshots" --msgbox "Snapshot interval changed to $beeSnapshotInterval milestones!" 8 65
+                else
+                    whiptail --title "Bee - Snapshots" --msgbox "No new snapshot interval detected!" 8 65
+                fi
+                unset newBeeSnapshotInterval
+            fi
+        ;;
+        "7)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $configs/hornet.cfg
+                # Hornet Dashboard
+                CHOICE=$(
+                    whiptail --title "Hornet - p2pIdentity" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "Set p2pIdentity" \
+                    "2)" "Generate p2pIdentity" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        source $configs/bee.cfg
+                        currentBeeIdentity=$beeIdentity
+                        beeIdentity=$(whiptail --inputbox "\nSet your own private key for the node identity" 10 65 --title "Bee - Indentity" 3>&1 1>&2 2>&3)
+                        if [ "$beeIdentity" != "$currentBeeIdentity" ] && [ ! -z "$beeIdentity" ]; then
+                            source $modules/bee/configParsers/identity
+                            sudo sed -i 's/^beeIdentity=.*/beeIdentity="'$beeIdentity'"/' $configs/bee.cfg
+                            whiptail --title "Bee - p2pIdentity" --msgbox "The following Identity key was set: \n$beeIdentity!" 10 65
+                        fi
+                    ;;
+                    "2)")
+                        if (whiptail --title "Bee - Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
+                            unset beeIdentity
+                            source $modules/bee/configParsers/identity
+                            whiptail --title "Bee - Identity" --msgbox "The following Identity key was set: \n$beeIdentity" 12 65
+                            source $configs/bee.cfg
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "8)")
+            source $configs/bee.cfg
+            currentBeeGossipPort=$beeGossipPort
+            beeGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $beeGossipPort --title "Bee - Gossip" 3>&1 1>&2 2>&3)
+            if [ ! -z "$beeGossipPort" ] && [ $currentBeeGossipPort -ne $beeGossipPort ] && [ $beeGossipPort -eq $beeGossipPort ] 2>/dev/null; then
+                if [ "$ufw" = "true" ]; then
+                    sudo ufw delete allow $currentBeeGossipPort/tcp > /dev/null 2>&1
+                    sudo ufw allow $beeGossipPort/tcp > /dev/null 2>&1
+                fi
+                source $modules/bee/configParsers/gossipPort
+                sudo sed -i 's/^beeGossipPort=.*/beeGossipPort='$beeGossipPort'/' $configs/bee.cfg
+                whiptail --title "Bee - Gossip" --msgbox "Gossip port set to \"$beeGossipPort/tcp\"!" 8 65
+            fi
+        ;;
+        "9)")
+            source $configs/bee.cfg
+            currentBeeMaxUnknownPeers=$beeMaxUnknownPeers
+            beeMaxUnknownPeers=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentBeeMaxUnknownPeers --title "Bee - Gossip" 3>&1 1>&2 2>&3)
+            if [ $currentBeeMaxUnknownPeers -ne $beeMaxUnknownPeers ] && [ $beeMaxUnknownPeers -eq $beeMaxUnknownPeers ] 2>/dev/null; then
+                source $modules/bee/configParsers/maxUnknownPeers
+                sudo sed -i 's/^beeMaxUnknownPeers=.*/beeMaxUnknownPeers='$beeMaxUnknownPeers'/' $configs/bee.cfg
+                whiptail --title "Bee - Gossip" --msgbox "Maximum of unknown neighbors set to \"$beeMaxUnknownPeers\"!" 8 65
+            fi
+        ;;
+    esac
+done
+sudo chown -R bee:bee $beeDir/config.toml
+exitCode=0

@@ -36,6 +36,10 @@ curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh |
 - Autopeering: `14626/udp`
 - API (HTTPS): `443/tcp`
 - HTTP (letsencrypt): `80/tcp`
+### Bee
+- Gossip: `15600/tcp`
+- API (HTTPS): `443/tcp`
+- HTTP (letsencrypt): `80/tcp`
 ### GoShimmer
 - Gossip: `14666/tcp`
 - Autopeering: `14626/udp`
