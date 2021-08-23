@@ -1,3 +1,14 @@
+## Version 0.7.3
+### Added
+- Added Bee module to update coo public keys
+- Added Bee module to update snapshot url's
+### Changed
+- Fixed called peers update with SWARM update
+- Fixed output error when removing SWARM
+- Fixed missing checks for Bee installation/update
+- Fixed proxy where possible unused ports are opened
+
+
 ## Version 0.7.2
 ### Added
 - Added node "Bee" to SWARM
