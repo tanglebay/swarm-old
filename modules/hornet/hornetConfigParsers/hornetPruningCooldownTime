@@ -1,0 +1,17 @@
+#!/bin/bash
+if [ "$hornetPruning" = "true" ]; then
+    pruningCooldownTime=${pruningCooldownTime//[!0-9]/}
+
+    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+    for hornetConfig in "${ARRAYhornetConfigs[@]}"
+    do
+        parser="$(jq '.pruning.size.cooldownTime' $hornetHome/$hornetConfig.json)"
+        if [ "$parser" != "\"${hornetPruningCooldownTime}m\"" ]; then
+            sudo jq '.pruning.size.cooldownTime = "'$hornetPruningCooldownTime'm"' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+            restartHornet=true
+        fi
+    done
+    unset ARRAYhornetConfigs
+    unset hornetConfig
+fi

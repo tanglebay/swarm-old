@@ -1,0 +1,34 @@
+#!/bin/bash
+hornetVersion=$(hornet -v | awk '{ print $2 }')
+inputPassword=$(whiptail --passwordbox "\nPlease set a secure password for your dashboard login:" 8 65 --title "Hornet - Dashboard" 3>&1 1>&2 2>&3)
+if [ ! -z "$inputPassword" ] && [ -f "/usr/bin/hornet" ]; then
+    {
+        echo 0
+        export HORNET_TOOL_PASSWORD="$inputPassword"
+        echo 10
+        if [ "$hornetVersion" = "1.0.2" ] || [ "$hornetVersion" = "1.0.3" ] || [ "$hornetVersion" = "1.0.4" ]; then
+            hornetPwdHash=$(/usr/bin/hornet tools pwdhash)
+        else
+            hornetPwdHash=$(/usr/bin/hornet tools pwd-hash)
+        fi
+        echo 20
+        hornetPasswordHash=$(echo $hornetPwdHash | grep -o "Your hash:.*" | awk '{print $3}')
+        echo 30
+        hornetPasswordSalt=$(echo $hornetPwdHash | grep -o "Your salt:.*" | awk '{print $3}')
+        echo 40
+        sudo sed -i 's/^hornetPasswordHash=.*/hornetPasswordHash="'$hornetPasswordHash'"/' $swarmConfigs/hornet.cfg
+        echo 50
+        sudo sed -i 's/^hornetPasswordSalt=.*/hornetPasswordSalt="'$hornetPasswordSalt'"/' $swarmConfigs/hornet.cfg
+        echo 60
+        source $hornetConfigParsers/hornetDashboardPasswordHash
+        echo 70
+        source $hornetConfigParsers/hornetDashboardPasswordSalt
+        echo 80
+        export HORNET_TOOL_PASSWORD=""
+        unset inputPassword
+        echo 100
+        sleep 0.25
+    } | whiptail --gauge "Please wait while generating Dashboard login..." 8 65 0
+    whiptail --title "Hornet Configuration" --msgbox "New password created successfully!" 8 65
+    restartHornet=true
+fi

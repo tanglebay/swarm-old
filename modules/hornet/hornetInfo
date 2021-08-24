@@ -1,7 +1,7 @@
 #!/bin/bash
 if [ -f "/usr/bin/hornet" ]; then
 
-    source $configs/hornet.cfg
+    source $swarmConfigs/hornet.cfg
 
     hornetStatus=$(systemctl show -p ActiveState --value hornet)
 
@@ -22,8 +22,8 @@ if [ -f "/usr/bin/hornet" ]; then
     fi
 
     # DB size
-    if [ -d "$hornetDir/${hornetNetwork}db" ]; then
-        getCurrentDbSize="$(du -sb $hornetDir/${hornetNetwork}db | cut -f1)"
+    if [ -d "$hornetHome/${hornetNetwork}db" ]; then
+        getCurrentDbSize="$(du -sb $hornetHome/${hornetNetwork}db | cut -f1)"
         let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
         if [ $getCurrentDbSizeInMb -gt 999 ]; then
             let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
@@ -47,16 +47,16 @@ if [ -f "/usr/bin/hornet" ]; then
         hornetAutoRevalidationStatus=disabled
     fi
 
-    if [ "$hornetPruning" = "true" ]; then
-        hornetPruningStatus=enabled
+    if [ "$hornetPruningEnabled" = "true" ]; then
+        hornetPruningEnabledStatus=enabled
     else
-        hornetPruningStatus=disabled
+        hornetPruningEnabledStatus=disabled
     fi
 
-    if [ "$hornetPow" = "true" ]; then
-        hornetPowStatus=enabled
+    if [ "$hornetPowEnabled" = "true" ]; then
+        hornetPowEnabledStatus=enabled
     else
-        hornetPowStatus=disabled
+        hornetPowEnabledStatus=disabled
     fi
 
     if [ "$hornetValidation" = "true" ]; then
@@ -72,7 +72,7 @@ if [ -f "/usr/bin/hornet" ]; then
     fi
 
     # OUTPUT
-    whiptail --title "Hornet Info" --msgbox "Hornet: $hornetStatus\nVersion: v$hornetVersion\nNetwork: $hornetNetwork\nHealthy: $hornetHealthy\nDB size: $currentHornetDbSize\n\nAlias: $hornetNodeAlias\nJWT-Auth: $hornetJwtAuthEnabledStatus\nPoW: $hornetPowStatus\nLS Interval: $hornetSnapshotInterval milestones\nGossip Port: ${hornetGossipPort}/tcp\nAutopeering Port: ${hornetAutopeeringPort}/udp\nDB Engine: $hornetDbEngine\nDB Revalidation: $hornetAutoRevalidation\n\nPruning: $hornetPruningStatus\nMax DB size: ${hornetPruningDatabaseSize} GB\nPruning % (Hornet): ${hornetPruningPercentage}%\nPruning Cooldown: $hornetPruningCooldownTime minutes\n\nEnabled Plugins: \"$hornetEnablePlugins\"\nDisabled Plugins: \"$hornetDisablePlugins\"\n\nValidation: $hornetValidationStatus\nValidation Log: $hornetValidationLogStatus" 34 68
+    whiptail --title "Hornet Info" --msgbox "Hornet: $hornetStatus\nVersion: v$hornetVersion\nNetwork: $hornetNetwork\nHealthy: $hornetHealthy\nDB size: $currentHornetDbSize\n\nAlias: $hornetAlias\nJWT-Auth: $hornetJwtAuthEnabledStatus\nPoW: $hornetPowEnabledStatus\nLS Interval: $hornetSnapshotInterval milestones\nGossip Port: ${hornetGossipPort}/tcp\nAutopeering Port: ${hornetAutopeeringPort}/udp\nDB Revalidation: $hornetAutoRevalidation\n\nPruning: $hornetPruningEnabledStatus\nMax DB size: ${hornetPruningDatabaseSize} GB\nPruning % (Hornet): ${hornetPruningPercentage}%\nPruning Cooldown: $hornetPruningCooldownTime minutes\n\nEnabled Plugins: \"$hornetEnablePlugins\"\nDisabled Plugins: \"$hornetDisablePlugins\"\n\nValidation: $hornetValidationStatus\nValidation Log: $hornetValidationLogStatus" 34 68
 else
     # OUTPUT
     whiptail --title "Hornet Info" --msgbox "Hornet not installed!" 8 65

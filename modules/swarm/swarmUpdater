@@ -4,43 +4,47 @@ if [ "$swarmManualUpdate" = "true" ]; then
     {
         echo 0
         echo 10
-        if [ ! -d "$tmpswarm" ]; then
-            sudo mkdir -p $tmpswarm > /dev/null 2>&1
+        if [ ! -d "$swarmTmp" ]; then
+            sudo mkdir -p $swarmTmp > /dev/null 2>&1
         fi
         echo 25
-        sudo cp -rf $configs/swarm.cfg $tmpswarm/swarm.cfg
-        sudo cp -rf $configs/hornet.cfg $tmpswarm/hornet.cfg
-        sudo cp -rf $configs/bee.cfg $tmpswarm/bee.cfg
-        sudo cp -rf $configs/goshimmer.cfg $tmpswarm/goshimmer.cfg
-        sudo cp -rf $configs/proxy.cfg $tmpswarm/proxy.cfg
-        sudo cp -rf $logs/watchdog $tmpswarm/watchdog.cfg
+        sudo cp -rf $swarmConfigs/swarm.cfg $swarmTmp/swarm.cfg
+        sudo cp -rf $swarmConfigs/hornet.cfg $swarmTmp/hornet.cfg
+        sudo cp -rf $swarmConfigs/bee.cfg $swarmTmp/bee.cfg
+        sudo cp -rf $swarmConfigs/goshimmer.cfg $swarmTmp/goshimmer.cfg
+        sudo cp -rf $swarmConfigs/proxy.cfg $swarmTmp/proxy.cfg
+        sudo cp -rf $watchdogLog $swarmTmp/watchdog.cfg
         echo 50
-        currentBranch=$( cd $swarmDir ; git rev-parse --abbrev-ref HEAD )
-        ( cd $swarmDir ; sudo git pull ) > /dev/null 2>&1
-        ( cd $swarmDir ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
-        sudo chmod +x $swarmDir/swarm $plugins/watchdog > /dev/null 2>&1
+        currentBranch=$( cd $swarmHome ; git rev-parse --abbrev-ref HEAD )
+        ( cd $swarmHome ; sudo git pull ) > /dev/null 2>&1
+        ( cd $swarmHome ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
+        sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
         echo 75
-        #source $modules/variables
-        source $modules/swarm/updateParser
+
+        # Load new env
+        source /var/lib/swarm/environment
+
+        source $swarmModules/swarmParser
+
         if [ -f "/usr/bin/hornet" ]; then
-            # source $configs/hornet.cfg
-            source $modules/hornet/configParser
+            # source $swarmConfigs/hornet.cfg
+            source $hornetModules/hornetParser
             if [ "$restartHornet" = "true" ]; then
                 sudo systemctl restart hornet
                 unset restartHornet
             fi
         fi
         if [ -f "/usr/bin/bee" ]; then
-            # source $configs/hornet.cfg
-            source $modules/bee/configParser
+            # source $swarmConfigs/hornet.cfg
+            source $beeModules/beeParser
             if [ "$restartBee" = "true" ]; then
                 sudo systemctl restart bee
                 unset restartBee
             fi
         fi
         if [ -f "/usr/bin/goshimmer" ]; then
-            # source $configs/hornet.cfg
-            source $modules/goshimmer/configParser
+            # source $swarmConfigs/hornet.cfg
+            source $goshimmerModules/beeParser
             if [ "$restartGoshimmer" = "true" ]; then
                 sudo systemctl restart goshimmer
                 unset restartGoshimmer
@@ -53,27 +57,30 @@ if [ "$swarmManualUpdate" = "true" ]; then
     clear
     exit 0
 else
-    if [ ! -d "$tmpswarm" ]; then
-        sudo mkdir -p $tmpswarm > /dev/null 2>&1
+    if [ ! -d "$swarmTmp" ]; then
+        sudo mkdir -p $swarmTmp > /dev/null 2>&1
     fi
 
-    sudo cp -rf $configs/swarm.cfg $tmpswarm/swarm.cfg
-    sudo cp -rf $configs/hornet.cfg $tmpswarm/hornet.cfg
-    sudo cp -rf $configs/bee.cfg $tmpswarm/bee.cfg
-    sudo cp -rf $configs/goshimmer.cfg $tmpswarm/goshimmer.cfg
-    sudo cp -rf $configs/proxy.cfg $tmpswarm/proxy.cfg
-    sudo cp -rf $logs/watchdog $tmpswarm/watchdog.cfg
+    sudo cp -rf $swarmConfigs/swarm.cfg $swarmTmp/swarm.cfg
+    sudo cp -rf $swarmConfigs/hornet.cfg $swarmTmp/hornet.cfg
+    sudo cp -rf $swarmConfigs/bee.cfg $swarmTmp/bee.cfg
+    sudo cp -rf $swarmConfigs/goshimmer.cfg $swarmTmp/goshimmer.cfg
+    sudo cp -rf $swarmConfigs/proxy.cfg $swarmTmp/proxy.cfg
+    sudo cp -rf $watchdogLog $swarmTmp/watchdog.cfg
 
-    currentBranch=$( cd $swarmDir ; git rev-parse --abbrev-ref HEAD )
-    ( cd $swarmDir ; sudo git pull ) > /dev/null 2>&1
-    ( cd $swarmDir ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
-    sudo chmod +x $swarmDir/swarm $plugins/watchdog > /dev/null 2>&1
+    currentBranch=$( cd $swarmHome ; git rev-parse --abbrev-ref HEAD )
+    ( cd $swarmHome ; sudo git pull ) > /dev/null 2>&1
+    ( cd $swarmHome ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
+    sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
 
-    #source $modules/variables
-    source $modules/swarm/updateParser
+    # Load new env
+    source /var/lib/swarm/environment
+
+    source $swarmModules/swarmParser
+
     if [ -f "/usr/bin/hornet" ]; then
-        # source $configs/hornet.cfg
-        source $modules/hornet/configParser
+        # source $swarmConfigs/hornet.cfg
+        source $hornetModules/hornetParser
         if [ "$restartHornet" = "true" ]; then
             sudo systemctl restart hornet
             unset restartHornet
@@ -81,15 +88,15 @@ else
     fi
     if [ -f "/usr/bin/bee" ]; then
         ignoreBeePeersParser=true
-        source $modules/bee/configParser
+        source $beeModules/beeParser
         if [ "$restartBee" = "true" ]; then
             sudo systemctl restart bee
             unset restartBee
         fi
     fi
     if [ -f "/usr/bin/goshimmer" ]; then
-        # source $configs/hornet.cfg
-        source $modules/goshimmer/configParser
+        # source $swarmConfigs/hornet.cfg
+        source $goshimmerModules/goshimmerParser
         if [ "$restartGoshimmer" = "true" ]; then
             sudo systemctl restart goshimmer
             unset restartGoshimmer

@@ -1,7 +1,7 @@
 #!/bin/bash
 while [ $exitCode -lt 1 ]; do
     clear
-    source $configs/goshimmer.cfg
+    source $swarmConfigs/goshimmer.cfg
     CHOICE=$(
         whiptail --title "GoShimmer Configurations" --menu "\nChoose an option" 18 65 0 \
         "1)" "Dashboard-Auth" \
@@ -21,7 +21,7 @@ while [ $exitCode -lt 1 ]; do
                 {
                     echo 0
                     echo 33
-                    source $modules/goshimmer/configParser
+                    source $goshimmerModules/goshimmerParser
                     echo 50
                     sudo systemctl restart goshimmer
                     sleep 0.25
@@ -37,7 +37,7 @@ while [ $exitCode -lt 1 ]; do
         "1)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $configs/goshimmer.cfg
+                source $swarmConfigs/goshimmer.cfg
                 if [ "$goshimmerDashboardAuthEnabled" = "true" ]; then
                     goshimmerDashboardAuthEnabledMenu="Disable"
                 else
@@ -66,8 +66,8 @@ while [ $exitCode -lt 1 ]; do
                                     goshimmerDashboardAuthEnabled=true
                                     goshimmerDashboardAuthEnabledMenu="enabled"
                                 fi
-                                sudo sed -i 's/^goshimmerDashboardAuthEnabled=.*/goshimmerDashboardAuthEnabled='$goshimmerDashboardAuthEnabled'/' $configs/goshimmer.cfg
-                                source $modules/goshimmer/configParsers/dashboardAuth
+                                sudo sed -i 's/^goshimmerDashboardAuthEnabled=.*/goshimmerDashboardAuthEnabled='$goshimmerDashboardAuthEnabled'/' $swarmConfigs/goshimmer.cfg
+                                source $goshimmerConfigParsers/goshimmerDashboardAuth
                                 whiptail --title "GoShimmer - Dashboard" --msgbox "Dashboard authentication $goshimmerDashboardAuthEnabledMenu!" 8 65
                             fi
                         else
@@ -78,7 +78,7 @@ while [ $exitCode -lt 1 ]; do
                         goshimmerDashboardAuthUsername=$(whiptail --inputbox "\nPlease set a username for the dashboard login:" 8 65 --title "GoShimmer - Dashboard" 3>&1 1>&2 2>&3)
                         goshimmerDashboardAuthPassword=$(whiptail --passwordbox "\nPlease set a secure password for your dashboard login:" 8 65 --title "GoShimmer - Dashboard" 3>&1 1>&2 2>&3)
                         if [ ! -z "$goshimmerDashboardAuthUsername" ] && [ ! -z "$goshimmerDashboardAuthPassword" ]; then
-                            source $modules/goshimmer/configParsers/dashboardAuthHash
+                            source $goshimmerConfigParsers/goshimmerDashboardAuthHash
                             whiptail --title "GoShimmer - Dashboard" --msgbox "New Dashboard credentials applied!" 8 65
                         else
                             whiptail --title "GoShimmer - Dashboard" --msgbox "No valid credentials, please try again!" 8 65
@@ -93,7 +93,7 @@ while [ $exitCode -lt 1 ]; do
         "2)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $configs/goshimmer.cfg
+                source $swarmConfigs/goshimmer.cfg
                 if [ "$goshimmerWebapiAuthEnabled" = "true" ]; then
                     goshimmerWebapiAuthEnabledMenu="Disable"
                 else
@@ -122,8 +122,8 @@ while [ $exitCode -lt 1 ]; do
                                     goshimmerWebapiAuthEnabled=true
                                     goshimmerWebapiAuthEnabledMenu="enabled"
                                 fi
-                                sudo sed -i 's/^goshimmerWebapiAuthEnabled=.*/goshimmerWebapiAuthEnabled='$goshimmerWebapiAuthEnabled'/' $configs/goshimmer.cfg
-                                source $modules/goshimmer/configParsers/webapiAuth
+                                sudo sed -i 's/^goshimmerWebapiAuthEnabled=.*/goshimmerWebapiAuthEnabled='$goshimmerWebapiAuthEnabled'/' $swarmConfigs/goshimmer.cfg
+                                source $goshimmerconfigParsers/goshimmerWebapiAuth
                                 whiptail --title "GoShimmer - WebAPI" --msgbox "WebAPI authentication $goshimmerWebapiAuthEnabledMenu!" 8 65
                             fi
                         else
@@ -134,7 +134,7 @@ while [ $exitCode -lt 1 ]; do
                         goshimmerWebapiAuthUsername=$(whiptail --inputbox "\nPlease set a username for the webAPI login:" 8 65 --title "GoShimmer - WebAPI" 3>&1 1>&2 2>&3)
                         goshimmerWebapiAuthPassword=$(whiptail --passwordbox "\nPlease set a secure password for the webAPI login:" 8 65 --title "GoShimmer - WebAPI" 3>&1 1>&2 2>&3)
                         if [ ! -z "$goshimmerWebapiAuthUsername" ] && [ ! -z "$goshimmerWebapiAuthPassword" ]; then
-                            source $modules/goshimmer/configParsers/webapiAuthHash
+                            source $goshimmerConfigParsers/goshimmerWebapiAuthHash
                             whiptail --title "GoShimmer - WebAPI" --msgbox "New Dashboard credentials applied!" 8 65
                         else
                             whiptail --title "GoShimmer - WebAPI" --msgbox "No valid credentials, please try again!" 8 65
@@ -147,13 +147,13 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "3)")
-            source $configs/goshimmer.cfg
+            source $swarmConfigs/goshimmer.cfg
             currentGoshimmerEnablePlugins=$goshimmerEnablePlugins
             goshimmerEnablePlugins=$(whiptail --inputbox "\nEnable plugins (seperated with a comma e.g: mqtt,spammer,etc.)" 10 65 $goshimmerEnablePlugins --title "GoShimmer - Plugins" 3>&1 1>&2 2>&3)
             goshimmerEnablePlugins=$(echo $goshimmerEnablePlugins | tr -d ' ')
             if [ "$goshimmerEnablePlugins" != "$currentGoshimmerEnablePlugins" ]; then
-                source $modules/goshimmer/configParsers/enablePlugins
-                sudo sed -i 's/^goshimmerEnablePlugins=.*/goshimmerEnablePlugins="'$goshimmerEnablePlugins'"/' $configs/goshimmer.cfg
+                source $goshimmerConfigParsers/goshimmerEnablePlugins
+                sudo sed -i 's/^goshimmerEnablePlugins=.*/goshimmerEnablePlugins="'$goshimmerEnablePlugins'"/' $swarmConfigs/goshimmer.cfg
                 if [ ! -z "$goshimmerEnablePlugins" ]; then
                     whiptail --title "GoShimmer - Plugins" --msgbox "The following plugins are enabled: $goshimmerEnablePlugins!" 8 65
                 else
@@ -163,14 +163,14 @@ while [ $exitCode -lt 1 ]; do
             fi
         ;;
         "4)")
-            source $configs/goshimmer.cfg
+            source $swarmConfigs/goshimmer.cfg
             currentGoshimmerDisablePlugins=$goshimmerDisablePlugins
             goshimmerDisablePlugins=$(whiptail --inputbox "\nDisable plugins (seperated with a comma e.g: mqtt,spammer,etc.)" 10 65 $goshimmerDisablePlugins --title "GoShimmer - Plugins" 3>&1 1>&2 2>&3)
             goshimmerDisablePlugins=$(echo $goshimmerDisablePlugins | tr -d ' ')
             if [ "$goshimmerDisablePlugins" != "$currentGoshimmerDisablePlugins" ]; then
-                source $modules/goshimmer/configParsers/disablePlugins
-                sudo sed -i 's/^goshimmerDisablePlugins=.*/goshimmerDisablePlugins="'$goshimmerDisablePlugins'"/' $configs/goshimmer.cfg
-                if [ ! -z "$disablePlugins" ]; then
+                source $goshimmerConfigParsers/goshimmerDisablePlugins
+                sudo sed -i 's/^goshimmerDisablePlugins=.*/goshimmerDisablePlugins="'$goshimmerDisablePlugins'"/' $swarmConfigs/goshimmer.cfg
+                if [ ! -z "$goshimmerDisablePlugins" ]; then
                     whiptail --title "GoShimmer Plugins" --msgbox "The following plugins are disabled: $goshimmerDisablePlugins!" 8 65
                 else
                     whiptail --title "GoShimmer - Plugins" --msgbox "There are no plugins disabled for GoShimmer!" 8 65
@@ -181,7 +181,7 @@ while [ $exitCode -lt 1 ]; do
         "5)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $configs/goshimmer.cfg
+                source $swarmConfigs/goshimmer.cfg
                 # goshimmer Dashboard
                 CHOICE=$(
                     whiptail --title "GoShimmer - Node ID" --menu "\nChoose an option" 14 65 0 \
@@ -194,21 +194,21 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        source $configs/goshimmer.cfg
+                        source $swarmConfigs/goshimmer.cfg
                         currentGoshimmerSeed=$goshimmerSeed
                         goshimmerSeed=$(whiptail --inputbox "\nSet your existing seed for the goshimmer node" 10 65 --title "GoShimmer - Node ID" 3>&1 1>&2 2>&3)
                         if [ "$goshimmerSeed" != "$currentGoshimmerSeed" ] && [ ! -z "$goshimmerSeed" ]; then
-                            source $modules/goshimmer/configParsers/seed
-                            sudo sed -i 's~^goshimmerSeed=.*~goshimmerSeed="'$goshimmerSeed'"~g' $configs/goshimmer.cfg
+                            source $goshimmerConfigParsers/goshimmerSeed
+                            sudo sed -i 's~^goshimmerSeed=.*~goshimmerSeed="'$goshimmerSeed'"~g' $swarmConfigs/goshimmer.cfg
                             whiptail --title "GoShimmer - Node ID" --msgbox "The following Seed was set: \n$goshimmerSeed!" 10 65
                         fi
                     ;;
                     "2)")
                         if (whiptail --title "GoShimmer - Database" --yesno --defaultno "Are you sure you want to generate a new Seed (the existing one will be deleted)?" 8 65); then
                             unset goshimmerSeed
-                            source $modules/goshimmer/configParsers/seed
+                            source $goshimmerConfigParsers/goshimmerSeed
                             whiptail --title "goshimmer - Node ID" --msgbox "The following Seed was set:\n\n$goshimmerSeed" 10 65
-                            source $configs/goshimmer.cfg
+                            source $swarmConfigs/goshimmer.cfg
                         fi
                     ;;
                 esac
@@ -216,7 +216,7 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "6)")
-            source $configs/goshimmer.cfg
+            source $swarmConfigs/goshimmer.cfg
             currentGoshimmerGossipPort=$goshimmerGossipPort
             goshimmerGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $goshimmerGossipPort --title "GoShimmer - Gossip" 3>&1 1>&2 2>&3)
             if [ ! -z "$goshimmerGossipPort" ] && [ $currentGoshimmerGossipPort -ne $goshimmerGossipPort ] && [ $goshimmerGossipPort -eq $goshimmerGossipPort ] 2>/dev/null; then
@@ -224,13 +224,13 @@ while [ $exitCode -lt 1 ]; do
                     sudo ufw delete allow $currentGoshimmerGossipPort/tcp > /dev/null 2>&1
                     sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
                 fi
-                source $modules/goshimmer/configParsers/gossipPort
-                sudo sed -i 's/^goshimmerGossipPort=.*/goshimmerGossipPort='$goshimmerGossipPort'/' $configs/goshimmer.cfg
+                source $goshimmerConfigParsers/goshimmerGossipPort
+                sudo sed -i 's/^goshimmerGossipPort=.*/goshimmerGossipPort='$goshimmerGossipPort'/' $swarmConfigs/goshimmer.cfg
                 whiptail --title "GoShimmer - Gossip" --msgbox "Gossip port was set to \"$goshimmerGossipPort/tcp\"!" 8 65
             fi
         ;;
         "7)")
-            source $configs/goshimmer.cfg
+            source $swarmConfigs/goshimmer.cfg
             currentGoshimmerAutopeeringPort=$goshimmerAutopeeringPort
             goshimmerAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port for the automatic neighbors detection." 10 65 $goshimmerAutopeeringPort --title "GoShimmer - Autopeering" 3>&1 1>&2 2>&3)
             if [ $goshimmerAutopeeringPort -eq $hornetAutopeeringPort ]; then
@@ -241,8 +241,8 @@ while [ $exitCode -lt 1 ]; do
                         sudo ufw delete allow $currentGoshimmerAutopeeringPort/udp > /dev/null 2>&1
                         sudo ufw allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
                     fi
-                    source $modules/goshimmer/configParsers/autopeeringPort
-                    sudo sed -i 's/^goshimmerAutopeeringPort=.*/goshimmerAutopeeringPort='$goshimmerAutopeeringPort'/' $configs/goshimmer.cfg
+                    source $goshimmerConfigParsers/goshimmerAutopeeringPort
+                    sudo sed -i 's/^goshimmerAutopeeringPort=.*/goshimmerAutopeeringPort='$goshimmerAutopeeringPort'/' $swarmConfigs/goshimmer.cfg
                     whiptail --title "GoShimmer - Autopeering" --msgbox "Autopeering port was set to \"$goshimmerAutopeeringPort/udp\"!" 8 65
                 fi
             fi

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    parser="$(jq '.pruning.size.enabled' $hornetHome/$hornetConfig.json)"
+    if [ "$parser" != "$hornetPruningEnabled" ]; then
+        if [ "$hornetPruningEnabled" = "true" ] || [ "$hornetPruningEnabled" = "false" ]; then
+            sudo jq '.pruning.size.enabled = '$hornetPruningEnabled'' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+            restartHornet=true
+        fi
+    fi
+done
+unset ARRAYhornetConfigs
+unset hornetConfig

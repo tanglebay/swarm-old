@@ -1,0 +1,17 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    parser="$(jq '.restAPI.powEnabled' $hornetHome/$hornetConfig.json)"
+    if [ "$hornetPowEnabled" = "true" ] || [ "$hornetPowEnabled" = "false" ]; then
+        if [ "$parser" != "$hornetPowEnabled" ]; then
+            sudo jq '.restAPI.powEnabled = '$hornetPowEnabled'' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+            restartHornet=true
+        fi
+    fi
+done
+
+unset ARRAYhornetConfigs
+unset hornetConfig

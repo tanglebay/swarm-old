@@ -1,0 +1,23 @@
+#!/bin/bash
+if [ "$network" = "mainnet" ]; then
+    hornetFullSnapshot="https://mainnet.tanglebay.com/ls/full_snapshot.bin"
+    parser="$(jq '.snapshots.downloadURLs' $hornetHome/config.json)"
+    if [[ $parser != *$hornetFullSnapshot* ]]; then
+        sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . + {"full": "'$hornetFullSnapshot'"}' $hornetHome/config.json|sponge $hornetHome/config.json
+        restartHornet=true
+    fi
+    unset hornetFullSnapshot
+    unset parser
+fi
+if [ "$network" = "comnet" ]; then
+    hornetFullSnapshot="https://comnet.tanglebay.com/ls/full_snapshot.bin"
+    hornetDeltaSnapshot="https://comnet.tanglebay.com/ls/delta_snapshot.bin"
+    parser="$(jq '.snapshots.downloadURLs' $hornetHome/config_comnet.json)"
+    if [[ $parser != *$hornetFullSnapshot* ]] && [[ $parser != *$hornetDeltaSnapshot* ]]; then
+        sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . + {"full": "'$hornetFullSnapshot'","delta": "'$hornetDeltaSnapshot'"}' $hornetHome/config_comnet.json|sponge $hornetHome/config_comnet.json
+        restartHornet=true
+    fi
+    unset hornetFullSnapshot
+    unset hornetDeltaSnapshot
+    unset parser
+fi

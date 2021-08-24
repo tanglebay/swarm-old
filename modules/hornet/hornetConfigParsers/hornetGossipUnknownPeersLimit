@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ -n "$hornetUnknownPeersLimit" ] && [ "$hornetUnknownPeersLimit" -ge 0 ] 2>/dev/null; then
+    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+    for hornetConfig in "${ARRAYhornetConfigs[@]}"
+    do
+        parser="$(jq '.p2p.gossip.unknownPeersLimit' $hornetHome/$hornetConfig.json)"
+        if [ "$parser" != "$hornetUnknownPeersLimit" ]; then
+            sudo jq '.p2p.gossip.unknownPeersLimit = '$hornetUnknownPeersLimit'' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+            restartHornet=true
+        fi
+    done
+    unset ARRAYhornetConfigs
+    unset hornetConfig
+fi

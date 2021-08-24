@@ -16,7 +16,7 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
-            source $modules/goshimmer/goshimmerInfo
+            source $goshimmerModules/goshimmerInfo
         ;;
         "2)")
             while [ $exitCode -lt 1 ]; do
@@ -35,7 +35,7 @@ while [ $exitCode -lt 1 ]; do
                 case $CHOICE in
                     "1)")
                         if [ -f "/usr/bin/goshimmer" ]; then
-                            source $modules/goshimmer/goshimmerConfiguration
+                            source $goshimmerModules/goshimmerConfiguration
                         else
                             whiptail --title "GoShimmer Configuration" --msgbox "GoShimmer installation not found, please install GoShimmer first!" 8 65
                         fi
@@ -68,11 +68,11 @@ while [ $exitCode -lt 1 ]; do
                                     fi
                                 ;;
                                 "2)")
-                                    sudo nano $configs/goshimmer.cfg
+                                    sudo nano $swarmConfigs/goshimmer.cfg
                                     if (whiptail --title "GoShimmer Menu" --yesno --defaultno "Would you like to restart GoShimmer now?" 8 65); then
                                         {
                                             echo 0
-                                            source $modules/goshimmer/configParser
+                                            source $goshimmerModules/goshimmerParser
                                             echo 50
                                             sudo systemctl restart goshimmer
                                             echo 100
@@ -153,7 +153,7 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "3)")
                         if (whiptail --title "GoShimmer Menu" --yesno --defaultno "Do you really want to remove the goshimmer database?" 8 65); then
-                            source $configs/goshimmer.cfg
+                            source $swarmConfigs/goshimmer.cfg
                             {
                                 echo 0
                                 echo 50
@@ -185,7 +185,7 @@ while [ $exitCode -lt 1 ]; do
                     if [ -f "/usr/bin/goshimmer" ]; then
                         if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Do you really want to update GoShimmer?" 8 65); then
                             # Update GoShimmer
-                            source $modules/goshimmer/getVersion
+                            source $goshimmerModules/goshimmerVersion
                             if [ -z "$goshimmerVersion" ]; then
                                 goshimmerVersion="NA"
                             fi
@@ -194,11 +194,11 @@ while [ $exitCode -lt 1 ]; do
                                 {
                                     echo 0
                                     echo 20
-                                    source $modules/goshimmer/goshimmerInstaller
+                                    source $goshimmerModules/goshimmerInstaller
                                     echo 50
-                                    source $modules/goshimmer/configParser
+                                    source $goshimmerModules/goshimmerParser
                                     echo 70
-                                    sudo rm -rf $goshimmerDir/mainnetdb
+                                    sudo rm -rf $goshimmerHome/mainnetdb
                                     echo 90
                                     sudo systemctl restart goshimmer
                                     echo 100
@@ -219,14 +219,14 @@ while [ $exitCode -lt 1 ]; do
                         {
                             echo 0
                             echo 10
-                            source $configs/goshimmer.cfg
+                            source $swarmConfigs/goshimmer.cfg
                             echo 30
-                            source $modules/goshimmer/getVersion
+                            source $goshimmerModules/goshimmerVersion
                             echo 40
-                            source $modules/goshimmer/goshimmerInstaller
+                            source $goshimmerModules/goshimmerInstaller
                         } | whiptail --gauge "Please wait while installing GoShimmer..." 8 65 0
                         if [ -f "/usr/bin/goshimmer" ]; then
-                            source $configs/goshimmer.cfg
+                            source $swarmConfigs/goshimmer.cfg
                             {
                                 echo 50
                                 if ! [ -x "$(command -v apache2-utils)" ]; then
@@ -234,7 +234,7 @@ while [ $exitCode -lt 1 ]; do
                                 fi
                                 echo 60
                                 # CALL MODULE CONFIGPARSER
-                                source $modules/goshimmer/configParser
+                                source $goshimmerModules/goshimmerParser
                                 echo 70
                                 if [ "$ufw" = "true" ]; then
                                     sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
@@ -282,7 +282,7 @@ while [ $exitCode -lt 1 ]; do
                                 sudo ufw delete allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
                             fi
                             echo 70
-                            sudo rm -rf $goshimmerDir > /dev/null 2>&1
+                            sudo rm -rf $goshimmerHome > /dev/null 2>&1
                             echo 80
                             if id hornet >/dev/null 2>&1; then
                                 sudo deluser goshimmer >/dev/null
