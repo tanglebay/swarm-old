@@ -332,6 +332,7 @@ while [ $exitCode -lt 1 ]; do
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/hornet.cfg
+                hornetVersion=$(hornet -v | awk '{ print $2 }')
                 # Hornet Dashboard
                 CHOICE=$(
                     whiptail --title "Hornet - Identity" --menu "\nChoose an option" 14 65 0 \
@@ -344,21 +345,41 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        source $swarmConfigs/hornet.cfg
-                        currentHornetIdentity=$hornetIdentity
-                        hornetIdentity=$(whiptail --inputbox "\nSet your own private key for the Identity" 10 65 --title "Hornet - Identity" 3>&1 1>&2 2>&3)
-                        if [ "$hornetIdentity" != "$currentHornetIdentity" ] && [ ! -z "$hornetIdentity" ]; then
-                            source $hornetConfigParsers/hornetIdentity
-                            sudo sed -i 's~^hornetIdentity=.*~hornetIdentity="'$hornetIdentity'"~' $swarmConfigs/hornet.cfg
-                            whiptail --title "Hornet - Identity" --msgbox "The following Identity key was set: \n$hornetIdentity!" 10 65
+                        if [ "$hornetVersion" = "1.0.2" ] || [ "$hornetVersion" = "1.0.3" ] || [ "$hornetVersion" = "1.0.4" ]; then
+                            source $swarmConfigs/hornet.cfg
+                            currentHornetP2pIdentity=$hornetP2pIdentity
+                            hornetP2pIdentity=$(whiptail --inputbox "\nSet your own private key for the Identity" 10 65 --title "Hornet - Identity" 3>&1 1>&2 2>&3)
+                            if [ "$hornetP2pIdentity" != "$currentHornetP2pIdentity" ] && [ ! -z "$hornetP2pIdentity" ]; then
+                                source $hornetConfigParsers/hornetIdentity
+                                sudo sed -i 's~^hornetP2pIdentity=.*~hornetP2pIdentity="'$hornetP2pIdentity'"~' $swarmConfigs/hornet.cfg
+                                whiptail --title "Hornet - Identity" --msgbox "The following Identity key was set: \n$hornetP2pIdentity!" 10 65
+                            fi
+                        else
+                            source $swarmConfigs/hornet.cfg
+                            currentHornetIdentity=$hornetIdentity
+                            hornetIdentity=$(whiptail --inputbox "\nSet your own private key for the Identity" 10 65 --title "Hornet - Identity" 3>&1 1>&2 2>&3)
+                            if [ "$hornetIdentity" != "$currentHornetIdentity" ] && [ ! -z "$hornetIdentity" ]; then
+                                source $hornetConfigParsers/hornetIdentity
+                                sudo sed -i 's~^hornetIdentity=.*~hornetIdentity="'$hornetIdentity'"~' $swarmConfigs/hornet.cfg
+                                whiptail --title "Hornet - Identity" --msgbox "The following Identity key was set: \n$hornetIdentity!" 10 65
+                            fi
                         fi
                     ;;
                     "2)")
-                        if (whiptail --title "Hornet - Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
-                            unset hornetIdentity
-                            source $hornetConfigParsers/hornetIdentity
-                            whiptail --title "Hornet - Identity" --msgbox "The following p2pIdentity key was set: \n$hornetIdentity" 12 65
-                            source $swarmConfigs/hornet.cfg
+                        if [ "$hornetVersion" = "1.0.2" ] || [ "$hornetVersion" = "1.0.3" ] || [ "$hornetVersion" = "1.0.4" ]; then
+                            if (whiptail --title "Hornet - Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
+                                unset hornetP2pIdentity
+                                source $hornetConfigParsers/hornetIdentity
+                                whiptail --title "Hornet - Identity" --msgbox "The following p2pIdentity key was set: \n$hornetP2pIdentity" 12 65
+                                source $swarmConfigs/hornet.cfg
+                            fi
+                        else
+                            if (whiptail --title "Hornet - Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
+                                unset hornetIdentity
+                                source $hornetConfigParsers/hornetIdentity
+                                whiptail --title "Hornet - Identity" --msgbox "The following p2pIdentity key was set: \n$hornetIdentity" 12 65
+                                source $swarmConfigs/hornet.cfg
+                            fi
                         fi
                     ;;
                 esac
