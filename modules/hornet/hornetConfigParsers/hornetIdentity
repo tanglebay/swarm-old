@@ -5,17 +5,17 @@ hornetVersion=$(hornet -v | awk '{ print $2 }')
 if [ "$hornetVersion" = "1.0.2" ] || [ "$hornetVersion" = "1.0.3" ] || [ "$hornetVersion" = "1.0.4" ]; then
     if [ -z "$hornetP2pIdentity" ]; then
         hornetP2pIdentity=$(hornet tools p2pidentity | grep '[a-zA-Z0-9]\{100\}' | awk '{ print $NF }')
-        sudo sed -i 's/^hornetP2pIdentity=.*/hornetP2pIdentity="'$hornetP2pIdentity'"/' $configs/hornet.cfg
+        sudo sed -i 's/^hornetP2pIdentity=.*/hornetP2pIdentity="'$hornetP2pIdentity'"/' $swarmConfigs/hornet.cfg
     fi
 
     IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
 
     for hornetConfig in "${ARRAYhornetConfigs[@]}"
     do
-        parser="$(jq '.p2p.identityPrivateKey' $hornetDir/$hornetConfig.json)"
+        parser="$(jq '.p2p.identityPrivateKey' $hornetHome/$hornetConfig.json)"
         if [ "$parser" != "\"$hornetP2pIdentity\"" ]; then
-            sudo jq '.p2p.identityPrivateKey = "'$hornetP2pIdentity'"' $hornetDir/$hornetConfig.json|sponge $hornetDir/$hornetConfig.json
-            sudo rm -rf $hornetDir/p2pstore
+            sudo jq '.p2p.identityPrivateKey = "'$hornetP2pIdentity'"' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+            sudo rm -rf $hornetHome/p2pstore
             restartHornet=true
         fi
     done
