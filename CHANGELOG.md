@@ -2,11 +2,16 @@
 ### Added
 - Added Bee module to update coo public keys
 - Added Bee module to update snapshot url's
+- Added new Hornet identity generation for Hornet v1.0.5
+- Added new Hornet password generation for Hornet v1.0.5
 ### Changed
+- Changed variables for SWARM
+- Changed file names in SWARM
 - Fixed called peers update with SWARM update
 - Fixed output error when removing SWARM
 - Fixed missing checks for Bee installation/update
 - Fixed proxy where possible unused ports are opened
+- Fixed general bugs
 
 
 ## Version 0.7.2
