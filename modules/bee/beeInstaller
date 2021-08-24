@@ -4,9 +4,9 @@ if ! id bee >/dev/null 2>&1; then
     useradd --no-create-home --system bee >/dev/null
 fi
 
-if [ ! -d "$beeDir" ]; then
-    sudo mkdir -p $beeDir > /dev/null 2>&1
-    sudo chown -R bee:bee $beeDir > /dev/null 2>&1
+if [ ! -d "$beeHome" ]; then
+    sudo mkdir -p $beeHome > /dev/null 2>&1
+    sudo chown -R bee:bee $beeHome > /dev/null 2>&1
 fi
 
 # Install Unzip
@@ -16,7 +16,7 @@ fi
 
 # Create Service
 if [ ! -f "/lib/systemd/system/bee.service" ]; then
-    sudo cp -rf $swarmDir/templates/bee/bee.service /lib/systemd/system/bee.service
+    sudo cp -rf $swarmHome/templates/bee/bee.service /lib/systemd/system/bee.service
     if [ ! -f "/etc/default/bee" ]; then
         echo "OPTIONS=\"--config config.toml\"" > /etc/default/bee
     fi
@@ -50,11 +50,11 @@ if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee" ] && [ -f "/tmp
     sudo cp -rf /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee /usr/bin/bee > /dev/null 2>&1
     sudo chmod +x /usr/bin/bee
 
-    sudo cp -rf /tmp/bee/config.toml $beeDir/config.toml > /dev/null 2>&1
+    sudo cp -rf /tmp/bee/config.toml $beeHome/config.toml > /dev/null 2>&1
 
     # Run installer modules
-    source $modules/bee/beeConfigParsers/beeCoordinatorPublicKeys
-    source $modules/bee/beeConfigParsers/beeSnapshotDownloadUrl
+    source $beeConfigParsers/beeCoordinatorPublicKeys
+    source $beeConfigParsers/beeSnapshotDownloadUrl
 
     restartBee=true
     beeUpdated=true
@@ -64,10 +64,10 @@ fi
 sudo rm -rf /tmp/bee > /dev/null 2>&1
 
 # Set owner
-sudo chown -R bee:bee $beeDir > /dev/null 2>&1
+sudo chown -R bee:bee $beeHome > /dev/null 2>&1
 
 # Port Check
 # if [ $beeAutopeeringPort -eq $goshimmerAutopeeringPort ] && [ -f "/usr/bin/goshimmer" ]; then
 #     let beeAutopeeringPort=$beeAutopeeringPort+1
-#     sudo sed -i 's/^beeAutopeeringPort=.*/beeAutopeeringPort='$beeAutopeeringPort'/' $configs/bee.cfg
+#     sudo sed -i 's/^beeAutopeeringPort=.*/beeAutopeeringPort='$beeAutopeeringPort'/' $swarmConfigs/bee.cfg
 # fi

@@ -15,14 +15,14 @@ while [ $exitCode -lt 1 ]; do
     case $CHOICE in
         "1)")
             swarmInfo=true
-            source $modules/swarm/swarmInfo
+            source $swarmModules/swarmInfo
             unset swarmInfo
         ;;
         "2)")
-            source $modules/swarm/swarmConfiguration
+            source $swarmModules/swarmConfiguration
         ;;
         "3)")
-            source $modules/swarm/swarmTools
+            source $swarmModules/swarmTools
         ;;
         "4)")
             CHOICE=$(
@@ -37,13 +37,13 @@ while [ $exitCode -lt 1 ]; do
                     # Update SWARM
                     if (whiptail --title "SWARM Menu" --yesno --defaultno "Do you really want to update SWARM?" 8 65); then
                         swarmManualUpdate=true
-                        source $modules/swarm/swarmUpdater
+                        source $swarmModules/swarmUpdater
                         unset swarmManualUpdate
                         exit 0
                     fi
                 ;;
                 "2)")
-                    source $modules/swarm/removeSwarm
+                    source $swarmModules/removeSwarm
                 ;;
                 "3)")
                     sudo nano $logs/swarm.log
@@ -55,16 +55,18 @@ while [ $exitCode -lt 1 ]; do
                         if [ "$inputBranch" = "master" ] || [ "$inputBranch" = "develop" ]; then
                             # Check SWARM branch
                             if [ "$currentbranch" != "$inputBranch" ]; then
-                                sudo cp -rf $configs/swarm.cfg $tmpswarm/swarm.cfg
-                                sudo cp -rf $configs/hornet.cfg $tmpswarm/hornet.cfg
-                                sudo cp -rf $configs/goshimmer.cfg $tmpswarm/goshimmer.cfg
-                                sudo cp -rf $configs/proxy.cfg $tmpswarm/proxy.cfg
-                                sudo cp -rf $logs/watchdog $tmpswarm/watchdog.cfg
-                                ( cd $swarmDir ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
-                                ( cd $swarmDir ; sudo git checkout $inputBranch ) > /dev/null 2>&1
-                                ( cd $swarmDir ; sudo git pull ) > /dev/null 2>&1
-                                sudo chmod +x $swarmDir/swarm $plugins/watchdog > /dev/null 2>&1
-                                source $modules/swarm/updateParser
+                                sudo cp -rf $swarmConfigs/swarm.cfg $swarmTmp/swarm.cfg
+                                sudo cp -rf $swarmConfigs/hornet.cfg $swarmTmp/hornet.cfg
+                                sudo cp -rf $swarmConfigs/goshimmer.cfg $swarmTmp/goshimmer.cfg
+                                sudo cp -rf $swarmConfigs/proxy.cfg $swarmTmp/proxy.cfg
+                                sudo cp -rf $logs/watchdog $swarmTmp/watchdog.cfg
+                                ( cd $swarmHome ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
+                                ( cd $swarmHome ; sudo git checkout $inputBranch ) > /dev/null 2>&1
+                                ( cd $swarmHome ; sudo git pull ) > /dev/null 2>&1
+                                source /var/lib/swarm/environment
+                                sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
+
+                                source $swarmModules/swarmParser
                                 whiptail --title "SWARM Menu" --msgbox "SWARM branch change detected! Exit SWARM..." 8 65
                                 clear
                                 exit 0

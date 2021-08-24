@@ -4,9 +4,9 @@ if ! id goshimmer >/dev/null 2>&1; then
     useradd --no-create-home --system goshimmer >/dev/null
 fi
 
-if [ ! -d "$goshimmerDir" ]; then
-    sudo mkdir -p $goshimmerDir > /dev/null 2>&1
-    sudo chown -R goshimmer:goshimmer $goshimmerDir > /dev/null 2>&1
+if [ ! -d "$goshimmerHome" ]; then
+    sudo mkdir -p $goshimmerHome > /dev/null 2>&1
+    sudo chown -R goshimmer:goshimmer $goshimmerHome > /dev/null 2>&1
 fi
 
 # Install GO
@@ -16,9 +16,9 @@ fi
 
 # Create Service
 if [ ! -f "/lib/systemd/system/goshimmer.service" ]; then
-    sudo cp -rf $swarmDir/templates/goshimmer/goshimmer.service /lib/systemd/system/goshimmer.service
+    sudo cp -rf $swarmHome/templates/goshimmer/goshimmer.service /lib/systemd/system/goshimmer.service
     if [ ! -f "/etc/default/goshimmer" ]; then
-        echo "OPTIONS=\"--config $goshimmerDir/config.json\"" > /etc/default/goshimmer
+        echo "OPTIONS=\"--config $goshimmerHome/config.json\"" > /etc/default/goshimmer
     fi
     if [ ! -f "/etc/systemd/system/multi-user.target.wants/goshimmer.service" ]; then
         sudo systemctl enable goshimmer > /dev/null 2>&1
@@ -42,10 +42,10 @@ if [ -f "/tmp/goshimmer/goshimmer" ] && [ -f "/tmp/goshimmer/config.json" ]; the
         sudo systemctl stop goshimmer
     fi
     sudo cp -rf /tmp/goshimmer/goshimmer /usr/bin/goshimmer > /dev/null 2>&1
-    sudo cp -rf /tmp/goshimmer/config.json $goshimmerDir/config.json > /dev/null 2>&1
+    sudo cp -rf /tmp/goshimmer/config.json $goshimmerHome/config.json > /dev/null 2>&1
 
     # Download latest snapshot
-    sudo wget -q -O $goshimmerDir/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
+    sudo wget -q -O $goshimmerHome/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
 
     restartGoshimmer=true
 fi
@@ -61,5 +61,5 @@ sudo chown -R goshimmer:goshimmer $goshimmerDir > /dev/null 2>&1
 # Port Check
 if [ $goshimmerAutopeeringPort -eq $hornetAutopeeringPort ] && [ -f "/usr/bin/hornet" ]; then
     let goshimmerAutopeeringPort=$goshimmerAutopeeringPort+1
-    sudo sed -i 's/^goshimmerAutopeeringPort=.*/goshimmerAutopeeringPort='$goshimmerAutopeeringPort'/' $configs/goshimmer.cfg
+    sudo sed -i 's/^goshimmerAutopeeringPort=.*/goshimmerAutopeeringPort='$goshimmerAutopeeringPort'/' $swarmConfigs/goshimmer.cfg
 fi

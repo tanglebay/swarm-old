@@ -5,7 +5,7 @@ if [ ! -f "/usr/bin/hornet" ]; then
     {
         echo 0
         echo 10
-        source $configs/hornet.cfg
+        source $swarmConfigs/hornet.cfg
         echo 20
         sudo snap install go --classic > /dev/null 2>&1
         echo 30
@@ -38,30 +38,30 @@ if [ ! -f "/usr/bin/hornet" ]; then
             sudo systemctl enable hornet > /dev/null 2>&1
         fi
         echo 80
-        if [ ! -d "$hornetDir" ]; then
-            sudo mkdir -p $hornetDir
-            if [ ! -s "$hornetDir/peering.json" ]; then
-                sudo wget -q -O $hornetDir/peering.json https://raw.githubusercontent.com/gohornet/hornet/main/peering.json
+        if [ ! -d "$hornetHome" ]; then
+            sudo mkdir -p $hornetHome
+            if [ ! -s "$hornetHome/peering.json" ]; then
+                sudo wget -q -O $hornetHome/peering.json https://raw.githubusercontent.com/gohornet/hornet/main/peering.json
             fi
-            chown -R hornet:hornet $hornetDir
+            chown -R hornet:hornet $hornetHome
         fi
         echo 100
         sleep 0.5
     } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
     if [ -f "/usr/bin/hornet" ]; then
-        source $configs/hornet.cfg
+        source $swarmConfigs/hornet.cfg
         {
             echo 0
             echo 10
             # Port Check
             if [ $goshimmerAutopeeringPort -eq $hornetAutopeeringPort ] && [ -f "/usr/bin/goshimmer" ]; then
                 let hornetAutopeeringPort=$hornetAutopeeringPort+1
-                sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort='$hornetAutopeeringPort'/' $configs/hornet.cfg
+                sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort='$hornetAutopeeringPort'/' $swarmConfigs/hornet.cfg
             fi
             echo 20
             # CALL MODULE CONFIGPARSER
             echo 40
-            source $modules/hornet/configParser
+            source $hornetModules/hornetParser
             echo 60
             if [ "$ufw" = "true" ]; then
                 sudo ufw allow $hornetGossipPort/tcp > /dev/null 2>&1

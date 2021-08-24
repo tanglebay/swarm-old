@@ -1,0 +1,19 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+IFS=', ' read -r -a ARRAYhornetDisablePlugins <<< "$hornetDisablePlugins"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    sudo jq '.node.disablePlugins |= []' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+    if [ ! -z "$hornetDisablePlugins" ]; then
+        for hornetDisablePlugin in "${ARRAYhornetDisablePlugins[@]}"
+        do
+            sudo jq '.node.disablePlugins |= .+ ["'$hornetDisablePlugin'"]' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+        done
+    fi
+done
+unset ARRAYhornetDisablePlugins
+unset ARRAYhornetConfigs
+unset hornetConfig
+unset hornetDisablePlugin

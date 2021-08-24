@@ -1,7 +1,7 @@
 #!/bin/bash
 while [ $exitCode -lt 1 ]; do
     clear
-    source $configs/hornet.cfg
+    source $swarmConfigs/hornet.cfg
     CHOICE=$(
         whiptail --title "Hornet Configurations" --menu "\nChoose an option" 27 65 0 \
         "1)" "Dashboard" \
@@ -30,7 +30,7 @@ while [ $exitCode -lt 1 ]; do
                 {
                     echo 0
                     echo 33
-                    source $modules/hornet/configParser
+                    source $hornetModules/hornetParser
                     echo 50
                     sudo systemctl restart hornet
                     sleep 0.25
@@ -46,7 +46,7 @@ while [ $exitCode -lt 1 ]; do
         "1)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $configs/hornet.cfg
+                source $swarmConfigs/hornet.cfg
                 # Hornet Dashboard
                 CHOICE=$(
                     whiptail --title "Hornet - Dashboard" --menu "\nChoose an option" 14 65 0 \
@@ -61,9 +61,9 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         hornetUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $hornetUsername --title "Hornet - Dashboard" 3>&1 1>&2 2>&3)
                         if [ ! -z "$hornetUsername" ]; then
-                            source $modules/hornet/configParsers/dashboardUsername
+                            source $hornetConfigParsers/hornetDashboardUsername
                             if [ "$newHornetUsername" = "true" ]; then
-                                sudo sed -i 's/^hornetUsername=.*/hornetUsername="'$hornetUsername'"/' $configs/hornet.cfg
+                                sudo sed -i 's/^hornetUsername=.*/hornetUsername="'$hornetUsername'"/' $swarmConfigs/hornet.cfg
                                 whiptail --title "Hornet - Dashboard" --msgbox "New username \"$hornetUsername\" applied!" 8 65
                                 unset newHornetUsername
                             else
@@ -74,7 +74,7 @@ while [ $exitCode -lt 1 ]; do
                         fi
                     ;;
                     "2)")
-                        source $modules/hornet/hornetDashboardPwdGen
+                        source $hornetModules/hornetDashboardPwdGen
                     ;;
                 esac
             done
@@ -83,7 +83,7 @@ while [ $exitCode -lt 1 ]; do
         "2)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $configs/hornet.cfg
+                source $swarmConfigs/hornet.cfg
                 # Hornet JWT
                 CHOICE=$(
                     whiptail --title "Hornet - JWT Auth" --menu "\nChoose an option" 16 65 0 \
@@ -111,14 +111,14 @@ while [ $exitCode -lt 1 ]; do
                         case $CHOICE in
                             "1)")
                                 hornetJwtAuthEnabled=true
-                                source $modules/hornet/configParsers/jwtAuthEnabled
-                                sudo sed -i 's/^hornetJwtAuthEnabled=.*/hornetJwtAuthEnabled='$hornetJwtAuthEnabled'/' $configs/hornet.cfg
+                                source $hornetConfigParsers/hornetJwtAuthEnabled
+                                sudo sed -i 's/^hornetJwtAuthEnabled=.*/hornetJwtAuthEnabled='$hornetJwtAuthEnabled'/' $swarmConfigs/hornet.cfg
                                 whiptail --title "Hornet - JWT Auth" --msgbox "JWT-Auth was successfully activated!" 8 65
                             ;;
                             "2)")
                                 hornetJwtAuthEnabled=false
-                                source $modules/hornet/configParsers/jwtAuthEnabled
-                                sudo sed -i 's/^hornetJwtAuthEnabled=.*/hornetJwtAuthEnabled='$hornetJwtAuthEnabled'/' $configs/hornet.cfg
+                                source $hornetConfigParsers/hornetJwtAuthEnabled
+                                sudo sed -i 's/^hornetJwtAuthEnabled=.*/hornetJwtAuthEnabled='$hornetJwtAuthEnabled'/' $swarmConfigs/hornet.cfg
                                 whiptail --title "Hornet - JWT Auth" --msgbox "JWT-Auth was successfully deactivated!" 8 65
                             ;;
                         esac
@@ -150,8 +150,8 @@ while [ $exitCode -lt 1 ]; do
                     "4)")
                         if (whiptail --title "Hornet - JWT Auth" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
                             jwtAuthSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
-                            sudo sed -i 's/^hornetJwtAuthSalt=.*/hornetJwtAuthSalt="'$hornetJwtAuthSalt'"/' $configs/hornet.cfg
-                            source $modules/hornet/configParsers/jwtAuthSalt
+                            sudo sed -i 's/^hornetJwtAuthSalt=.*/hornetJwtAuthSalt="'$hornetJwtAuthSalt'"/' $swarmConfigs/hornet.cfg
+                            source $hornetConfigParsers/hornetJwtAuthSalt
                             sudo rm -rf $logs/hornetJwt.log
                             whiptail --title "Hornet - JWT Auth" --msgbox "All JWT tokens will be revoked after restarting Hornet!" 8 65
                         fi
@@ -163,9 +163,9 @@ while [ $exitCode -lt 1 ]; do
         "3)")
             hornetNodeAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $hornetNodeAlias --title "Hornet - Alias" 3>&1 1>&2 2>&3)
             if [ ! -z "$hornetNodeAlias" ]; then
-                source $modules/hornet/configParsers/alias
+                source $hornetConfigParsers/hornetAlias
                 if [ "$newHornetNodeAlias" = "true" ]; then
-                    sudo sed -i 's/hornetNodeAlias=.*/hornetNodeAlias="'$hornetNodeAlias'"/' $configs/hornet.cfg
+                    sudo sed -i 's/hornetNodeAlias=.*/hornetNodeAlias="'$hornetNodeAlias'"/' $swarmConfigs/hornet.cfg
                     whiptail --title "Hornet - Alias" --msgbox "New alias \"$hornetNodeAlias\" applied!" 8 65
                     unset newHornetNodeAlias
                 else
@@ -176,7 +176,7 @@ while [ $exitCode -lt 1 ]; do
         "4)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $configs/hornet.cfg
+                source $swarmConfigs/hornet.cfg
                 # Hornet Pruning
                 if [ "$pruning" = "true" ]; then
                     pruningStatus=enabled
@@ -208,15 +208,15 @@ while [ $exitCode -lt 1 ]; do
                         )
                         case $CHOICE in
                             "1)")
-                                hornetPruning=true
-                                source $modules/hornet/configParsers/pruning
-                                sudo sed -i 's/^hornetPruning=.*/hornetPruning='$hornetPruning'/' $configs/hornet.cfg
+                                hornetPruningEnabled=true
+                                source $hornetConfigParsers/hornetPruningEnabled
+                                sudo sed -i 's/^hornetPruningEnabeld=.*/hornetPruningEnabled='$hornetPruningEnabled'/' $swarmConfigs/hornet.cfg
                                 whiptail --title "Hornet - Pruning" --msgbox "Pruning was successfully activated!" 8 65
                             ;;
                             "2)")
-                                hornetPruning=false
-                                source $modules/hornet/configParsers/pruning
-                                sudo sed -i 's/^hornetPruning=.*/hornetPruning='$hornetPruning'/' $configs/hornet.cfg
+                                hornetPruningEnabled=false
+                                source $hornetConfigParsers/hornetPruningEnabled
+                                sudo sed -i 's/^hornetPruningEnabled=.*/hornetPruningEnabled='$hornetPruningEnabled'/' $swarmConfigs/hornet.cfg
                                 whiptail --title "Hornet - Pruning" --msgbox "Pruning was successfully deactivated!" 8 65
                             ;;
                         esac
@@ -225,8 +225,8 @@ while [ $exitCode -lt 1 ]; do
                         hornetPruningDatabaseSize=$(whiptail --inputbox "\nSet the maximum size of the database in gigabyte." 10 65 $hornetPruningDatabaseSize --title "Hornet - Pruning" 3>&1 1>&2 2>&3)
                         hornetPruningDatabaseSize=${hornetPruningDatabaseSize//[!0-9]/}
                         if [ ! -z "$hornetPruningDatabaseSize" ] && [ $hornetPruningDatabaseSize -eq $hornetPruningDatabaseSize ] 2>/dev/null; then
-                            source $modules/hornet/configParsers/pruningDatabaseSize
-                            sudo sed -i 's/^hornetPruningDatabaseSize=.*/hornetPruningDatabaseSize='$hornetPruningDatabaseSize'/' $configs/hornet.cfg
+                            source $hornetConfigParsers/hornetPruningDatabaseSize
+                            sudo sed -i 's/^hornetPruningDatabaseSize=.*/hornetPruningDatabaseSize='$hornetPruningDatabaseSize'/' $swarmConfigs/hornet.cfg
                             whiptail --title "Hornet - Pruning" --msgbox "Pruning of the database set to ${hornetPruningDatabaseSize}GB!" 8 65
                         fi
                     ;;
@@ -235,17 +235,16 @@ while [ $exitCode -lt 1 ]; do
                         hornetPruningCooldownTime=$(whiptail --inputbox "\nSet the interval (minutes) at which pruning is performed when the maximum DB size is reached." 10 65 $hornetPruningCooldownTime --title "Hornet - Pruning" 3>&1 1>&2 2>&3)
                         hornetPruningCooldownTime=${hornetPruningCooldownTime//[!0-9]/}
                         if [ $hornetPruningCooldownTime -gt 0 ] && [ $hornetPruningCooldownTime -lt 60 ]; then
-                            source $modules/hornet/configParsers/pruningCooldownTime
-                            sudo sed -i 's/^hornetPruningCooldownTime=.*/hornetPruningCooldownTime='$hornetPruningCooldownTime'/' $configs/hornet.cfg
-                            source $modules/hornet/configParsers/pruning
+                            source $hornetConfigParsers/hornetPruningCooldownTime
+                            sudo sed -i 's/^hornetPruningCooldownTime=.*/hornetPruningCooldownTime='$hornetPruningCooldownTime'/' $swarmConfigs/hornet.cfg
                             whiptail --title "Hornet - Pruning" --msgbox "Pruning cooldown time set to ${hornetPruningCooldownTime} minutes!" 8 65
                         fi
                     ;;
                     "4)")
                         hornetPruningPercentage=$(whiptail --inputbox "\nSet how much percent of history should be pruned from the database" 10 65 $hornetPruningPercentage --title "Hornet - Pruning" 3>&1 1>&2 2>&3)
                         if [ ! -z "$hornetPruningPercentage" ] && [ $hornetPruningPercentage -eq $hornetPruningPercentage ]; then
-                            source $modules/hornet/configParsers/pruningPercentage
-                            sudo sed -i 's/^hornetPruningPercentage=.*/hornetPruningPercentage='$hornetPruningPercentage'/' $configs/hornet.cfg
+                            source $hornetConfigParsers/hornetPruningPercentage
+                            sudo sed -i 's/^hornetPruningPercentage=.*/hornetPruningPercentage='$hornetPruningPercentage'/' $swarmConfigs/hornet.cfg
                             whiptail --title "Hornet - Pruning" --msgbox "Pruning percentage set to ${hornetPruningPercentage}%!" 8 65
                         fi
                     ;;
@@ -254,7 +253,7 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "5)")
-            source $configs/hornet.cfg
+            source $swarmConfigs/hornet.cfg
             if [ "$hornetPow" = "true" ]; then
                 hornetPowStatus=enabled
             else
@@ -267,29 +266,29 @@ while [ $exitCode -lt 1 ]; do
             )
             case $CHOICE in
                 "1)")
-                    hornetPow=true
-                    source $modules/hornet/configParsers/pow
-                    source $modules/hornet/configParsers/powWorkerCount
-                    sudo sed -i 's/^hornetPow=.*/hornetPow='$hornetPow'/' $configs/hornet.cfg
-                    sudo sed -i 's/^hornetPowWorkerCount=.*/hornetPowWorkerCount='$hornetPowWorkerCount'/' $configs/hornet.cfg
+                    hornetPowEnabled=true
+                    source $hornetConfigParsers/hornetPowEnabled
+                    source $hornetConfigParsers/hornetPowWorkerCount
+                    sudo sed -i 's/^hornetPowEnabled=.*/hornetPowEnabled='$hornetPowEnabled'/' $swarmConfigs/hornet.cfg
+                    sudo sed -i 's/^hornetPowWorkerCount=.*/hornetPowWorkerCount='$hornetPowWorkerCount'/' $swarmConfigs/hornet.cfg
                     whiptail --title "Hornet - PoW" --msgbox "PoW has been enabled!" 8 65
                 ;;
                 "2)")
-                    hornetPow=false
-                    source $modules/hornet/configParsers/pow
-                    source $modules/hornet/configParsers/powWorkerCount
-                    sudo sed -i 's/^hornetPow=.*/hornetPow='$hornetPow'/' $configs/hornet.cfg
-                    sudo sed -i 's/^hornetPowWorkerCount=.*/hornetPowWorkerCount='$hornetPowWorkerCount'/' $configs/hornet.cfg
+                    hornetPowEnabled=false
+                    source $hornetConfigParsers/hornetPowEnabled
+                    source $hornetConfigParsers/hornetPowWorkerCount
+                    sudo sed -i 's/^hornetPowEnabled=.*/hornetPowEnabled='$hornetPowEnabled'/' $swarmConfigs/hornet.cfg
+                    sudo sed -i 's/^hornetPowWorkerCount=.*/hornetPowWorkerCount='$hornetPowWorkerCount'/' $swarmConfigs/hornet.cfg
                     whiptail --title "Hornet - PoW" --msgbox "PoW has been disabeld!!" 8 65
                 ;;
             esac
         ;;
         "6)")
-            source $configs/hornet.cfg
+            source $swarmConfigs/hornet.cfg
             hornetSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $hornetSnapshotInterval --title "Hornet - Snapshots" 3>&1 1>&2 2>&3)
             if [ ! -z "$hornetSnapshotInterval" ] && [ $hornetSnapshotInterval -eq $hornetSnapshotInterval ] 2>/dev/null; then
-                source $modules/hornet/configParsers/snapshotInterval
-                sudo sed -i 's/^hornetSnapshotInterval=.*/hornetSnapshotInterval='$hornetSnapshotInterval'/' $configs/hornet.cfg
+                source $hornetConfigParsers/hornetSnapshotInterval
+                sudo sed -i 's/^hornetSnapshotInterval=.*/hornetSnapshotInterval='$hornetSnapshotInterval'/' $swarmConfigs/hornet.cfg
                 if [ "$newHornetSnapshotInterval" = "true" ]; then
                     whiptail --title "Hornet - Snapshots" --msgbox "Snapshot interval changed to $hornetSnapshotInterval milestones!" 8 65
                 else
@@ -298,13 +297,13 @@ while [ $exitCode -lt 1 ]; do
             fi
         ;;
         "7)")
-            source $configs/hornet.cfg
+            source $swarmConfigs/hornet.cfg
             currentHornetEnablePlugins=$hornetEnablePlugins
             hornetEnablePlugins=$(whiptail --inputbox "\nEnable plugins (seperated with a comma e.g: mqtt,spammer,etc.)" 10 65 $hornetEnablePlugins --title "Hornet - Plugins" 3>&1 1>&2 2>&3)
             hornetEnablePlugins=$(echo $hornetEnablePlugins | tr -d ' ')
             if [ "$hornetEnablePlugins" != "$currentHornetEnablePlugins" ]; then
-                source $modules/hornet/configParsers/enablePlugins
-                sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="'$hornetEnablePlugins'"/' $configs/hornet.cfg
+                source $hornetConfigParsers/hornetEnablePlugins
+                sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="'$hornetEnablePlugins'"/' $swarmConfigs/hornet.cfg
                 if [ ! -z "$hornetEnablePlugins" ]; then
                     whiptail --title "Hornet - Plugins" --msgbox "The following plugins are enabled:\n$hornetEnablePlugins" 14 65
                 else
@@ -314,13 +313,13 @@ while [ $exitCode -lt 1 ]; do
             fi
         ;;
         "8)")
-            source $configs/hornet.cfg
+            source $swarmConfigs/hornet.cfg
             currentHornetDisablePlugins=$hornetDisablePlugins
             hornetDisablePlugins=$(whiptail --inputbox "\nDisable plugins (seperated with a comma e.g: mqtt,spammer,etc.)" 10 65 $hornetDisablePlugins --title "Hornet - Plugins" 3>&1 1>&2 2>&3)
             hornetDisablePlugins=$(echo $hornetDisablePlugins | tr -d ' ')
             if [ "$hornetDisablePlugins" != "$currentHornetDisablePlugins" ]; then
-                source $modules/hornet/configParsers/disablePlugins
-                sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins="'$hornetDisablePlugins'"/' $configs/hornet.cfg
+                source $hornetConfigParsers/hornetDisablePlugins
+                sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins="'$hornetDisablePlugins'"/' $swarmConfigs/hornet.cfg
                 if [ ! -z "$hornetDisablePlugins" ]; then
                     whiptail --title "Hornet Plugins" --msgbox "The following plugins are disabled:\n$hornetDisablePlugins" 14 65
                 else
@@ -332,12 +331,12 @@ while [ $exitCode -lt 1 ]; do
         "9)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $configs/hornet.cfg
+                source $swarmConfigs/hornet.cfg
                 # Hornet Dashboard
                 CHOICE=$(
-                    whiptail --title "Hornet - p2pIdentity" --menu "\nChoose an option" 14 65 0 \
-                    "1)" "Set p2pIdentity" \
-                    "2)" "Generate p2pIdentity" 3>&2 2>&1 1>&3
+                    whiptail --title "Hornet - Identity" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "Set Identity" \
+                    "2)" "Generate Identity" 3>&2 2>&1 1>&3
                 )
                 exitstatus=$?
                 if [ "$exitstatus" = "1" ]; then
@@ -345,21 +344,21 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        source $configs/hornet.cfg
-                        currentHornetIdentityKey=$hornetIdentityKey
-                        hornetIdentityKey=$(whiptail --inputbox "\nSet your own private key for the Identity" 10 65 --title "Hornet - Indentity" 3>&1 1>&2 2>&3)
-                        if [ "$hornetIdentityKey" != "$currentHornetIdentityKey" ] && [ ! -z "$hornetIdentityKey" ]; then
-                            source $modules/hornet/configParsers/identityKey
-                            sudo sed -i 's~^hornetIdentityKey=.*~hornetIdentityKey="'$hornetIdentityKey'"~' $configs/hornet.cfg
-                            whiptail --title "Hornet - Identity" --msgbox "The following Identity key was set: \n$hornetIdentityKey!" 10 65
+                        source $swarmConfigs/hornet.cfg
+                        currentHornetIdentity=$hornetIdentity
+                        hornetIdentity=$(whiptail --inputbox "\nSet your own private key for the Identity" 10 65 --title "Hornet - Identity" 3>&1 1>&2 2>&3)
+                        if [ "$hornetIdentity" != "$currentHornetIdentity" ] && [ ! -z "$hornetIdentity" ]; then
+                            source $hornetConfigParsers/hornetIdentity
+                            sudo sed -i 's~^hornetIdentity=.*~hornetIdentity="'$hornetIdentity'"~' $swarmConfigs/hornet.cfg
+                            whiptail --title "Hornet - Identity" --msgbox "The following Identity key was set: \n$hornetIdentity!" 10 65
                         fi
                     ;;
                     "2)")
                         if (whiptail --title "Hornet - Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
-                            unset hornetIdentityKey
-                            source $modules/hornet/configParsers/identityKey
-                            whiptail --title "Hornet - Identity" --msgbox "The following p2pIdentity key was set: \n$hornetIdentityKey" 12 65
-                            source $configs/hornet.cfg
+                            unset hornetIdentity
+                            source $hornetConfigParsers/hornetIdentity
+                            whiptail --title "Hornet - Identity" --msgbox "The following p2pIdentity key was set: \n$hornetIdentity" 12 65
+                            source $swarmConfigs/hornet.cfg
                         fi
                     ;;
                 esac
@@ -367,7 +366,7 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "10)")
-            source $configs/hornet.cfg
+            source $swarmConfigs/hornet.cfg
             if [ "$hornetAutoRevalidation" = "true" ]; then
                 hornetAutoRevalidationStatus=enabled
             else
@@ -381,20 +380,20 @@ while [ $exitCode -lt 1 ]; do
             case $CHOICE in
                 "1)")
                     hornetAutoRevalidation=true
-                    sudo sed -i 's/^hornetAutoRevalidation=.*/hornetAutoRevalidation=true/' $configs/hornet.cfg
-                    source $modules/hornet/configParsers/autoRevalidation
+                    sudo sed -i 's/^hornetAutoRevalidation=.*/hornetAutoRevalidation=true/' $swarmConfigs/hornet.cfg
+                    source $hornetConfigParsers/hornetAutoRevalidation
                     whiptail --title "Hornet - DB Revalidation" --msgbox "Hornet DB Revalidation enabled!" 8 65
                 ;;
                 "2)")
                     hornetAutoRevalidation=false
-                    sudo sed -i 's/^hornetAutoRevalidation=.*/hornetAutoRevalidation=false/' $configs/hornet.cfg
-                    source $modules/hornet/configParsers/autoRevalidation
+                    sudo sed -i 's/^hornetAutoRevalidation=.*/hornetAutoRevalidation=false/' $swarmConfigs/hornet.cfg
+                    source $hornetConfigParsers/hornetAutoRevalidation
                     whiptail --title "Hornet - DB Revalidation" --msgbox "Hornet DB Revalidation disabled!" 8 65
                 ;;
             esac
         ;;
         "11)")
-            source $configs/hornet.cfg
+            source $swarmConfigs/hornet.cfg
             currentHornetGossipPort=$hornetGossipPort
             hornetGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $hornetGossipPort --title "Hornet - Gossip" 3>&1 1>&2 2>&3)
             if [ ! -z "$hornetGossipPort" ] && [ "$currentHornetGossipPort" != "$hornetGossipPort" ] && [ $hornetGossipPort -eq $hornetGossipPort ] 2>/dev/null; then
@@ -402,14 +401,14 @@ while [ $exitCode -lt 1 ]; do
                     sudo ufw delete allow $currentHornetGossipPort/tcp > /dev/null 2>&1
                     sudo ufw allow $hornetGossipPort/tcp > /dev/null 2>&1
                 fi
-                source $modules/hornet/configParsers/gossipPort
-                sudo sed -i 's/^hornetGossipPort=.*/hornetGossipPort='$hornetGossipPort'/' $configs/hornet.cfg
+                source $hornetConfigParsers/hornetGossipPort
+                sudo sed -i 's/^hornetGossipPort=.*/hornetGossipPort='$hornetGossipPort'/' $swarmConfigs/hornet.cfg
                 whiptail --title "Hornet - Gossip" --msgbox "Gossip port set to \"$hornetGossipPort/tcp\"!" 8 65
                 restartHornet=true
             fi
         ;;
         "12)")
-            source $configs/hornet.cfg
+            source $swarmConfigs/hornet.cfg
             currentHornetAutopeeringPort=$hornetAutopeeringPort
             hornetAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port for the automatic neighbors detection." 10 65 $hornetAutopeeringPort --title "Hornet - Autopeering" 3>&1 1>&2 2>&3)
             if [ $hornetAutopeeringPort -eq $goshimmerAutopeeringPort ] 2>/dev/null; then
@@ -420,19 +419,19 @@ while [ $exitCode -lt 1 ]; do
                         sudo ufw delete allow $currentHornetAutopeeringPort/udp > /dev/null 2>&1
                         sudo ufw allow $hornetAutopeeringPort/udp > /dev/null 2>&1
                     fi
-                    source $modules/hornet/configParsers/autopeeringPort
-                    sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort='$hornetAutopeeringPort'/' $configs/hornet.cfg
+                    source $hornetConfigParsers/hornetAutopeeringPort
+                    sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort='$hornetAutopeeringPort'/' $swarmConfigs/hornet.cfg
                     whiptail --title "Hornet - Autopeering" --msgbox "Autopeering port set to \"$hornetAutopeeringPort/udp\"!" 8 65
                 fi
             fi
         ;;
         "13)")
-            source $configs/hornet.cfg
+            source $swarmConfigs/hornet.cfg
             currentHornetUnknownPeersLimit=$hornetUnknownPeersLimit
             hornetUnknownPeersLimit=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentHornetUnknownPeersLimit --title "Hornet - Gossip" 3>&1 1>&2 2>&3)
             if [ "$currentHornetUnknownPeersLimit" != "$hornetUnknownPeersLimit" ] && [ $hornetUnknownPeersLimit -eq $hornetUnknownPeersLimit ] && [ ! -z "$hornetUnknownPeersLimit" ] 2>/dev/null; then
-                source $modules/hornet/configParsers/gossipUnknownPeersLimit
-                sudo sed -i 's/^hornetUnknownPeersLimit=.*/hornetUnknownPeersLimit='$hornetUnknownPeersLimit'/' $configs/hornet.cfg
+                source $hornetConfigParsers/hornetGossipUnknownPeersLimit
+                sudo sed -i 's/^hornetUnknownPeersLimit=.*/hornetUnknownPeersLimit='$hornetUnknownPeersLimit'/' $swarmConfigs/hornet.cfg
                 whiptail --title "Hornet - Gossip" --msgbox "Maximum of unknown neighbors set to \"$hornetUnknownPeersLimit\"!" 8 65
             fi
         ;;
@@ -440,7 +439,7 @@ while [ $exitCode -lt 1 ]; do
             if [ "$hornetNetwork" = "mainnet" ]; then
                 while [ $exitCode -lt 1 ]; do
                     clear
-                    source $configs/hornet.cfg
+                    source $swarmConfigs/hornet.cfg
                     if [ "$hornetValidation" = "true" ]; then
                         hornetValidationStatus=enabled
                     else
@@ -470,8 +469,8 @@ while [ $exitCode -lt 1 ]; do
                             case $CHOICE in
                                 "1)")
                                     hornetValidation=true
-                                    source $modules/hornet/configParsers/validation
-                                    sudo sed -i 's/^hornetValidation=.*/hornetValidation='$hornetValidation'/' $configs/hornet.cfg
+                                    source $hornetConfigParsers/hornetValidation
+                                    sudo sed -i 's/^hornetValidation=.*/hornetValidation='$hornetValidation'/' $swarmConfigs/hornet.cfg
                                     if [ "$newHornetValidation" = "true" ]; then
                                         whiptail --title "Hornet - Validation" --msgbox "Migration validation enabled!" 8 65
                                     else
@@ -480,8 +479,8 @@ while [ $exitCode -lt 1 ]; do
                                 ;;
                                 "2)")
                                     hornetValidation=false
-                                    source $modules/hornet/configParsers/validation
-                                    sudo sed -i 's/^hornetValidation=.*/hornetValidation='$hornetValidation'/' $configs/hornet.cfg
+                                    source $hornetConfigParsers/hornetValidation
+                                    sudo sed -i 's/^hornetValidation=.*/hornetValidation='$hornetValidation'/' $swarmConfigs/hornet.cfg
                                     if [ "$newHornetValidation" = "true" ]; then
                                         whiptail --title "Hornet - Validation" --msgbox "Migration validation disabled!" 8 65
                                     else
@@ -499,8 +498,8 @@ while [ $exitCode -lt 1 ]; do
                             case $CHOICE in
                                 "1)")
                                     hornetValidationLog=true
-                                    source $modules/hornet/configParsers/validationLog
-                                    sudo sed -i 's/^hornetValidationLog=.*/hornetValidationLog='$hornetValidationLog'/' $configs/hornet.cfg
+                                    source $hornetConfigParsers/hornetValidationLog
+                                    sudo sed -i 's/^hornetValidationLog=.*/hornetValidationLog='$hornetValidationLog'/' $swarmConfigs/hornet.cfg
                                     if [ "$newHornetValidationLog" = "true" ]; then
                                         whiptail --title "Hornet - Validation" --msgbox "Log for migration validation enabled!" 8 65
                                     else
@@ -509,8 +508,8 @@ while [ $exitCode -lt 1 ]; do
                                 ;;
                                 "2)")
                                     hornetValidationLog=false
-                                    source $modules/hornet/configParsers/validationLog
-                                    sudo sed -i 's/^hornetValidationLog=.*/hornetValidationLog='$hornetValidationLog'/' $configs/hornet.cfg
+                                    source $hornetConfigParsers/hornetValidationLog
+                                    sudo sed -i 's/^hornetValidationLog=.*/hornetValidationLog='$hornetValidationLog'/' $swarmConfigs/hornet.cfg
                                     if [ "$newHornetValidationLog" = "true" ]; then
                                         whiptail --title "Hornet - Validation" --msgbox "Migration validation disabled!" 8 65
                                     else
@@ -527,7 +526,7 @@ while [ $exitCode -lt 1 ]; do
             fi
         ;;
         "15)")
-            source $configs/hornet.cfg
+            source $swarmConfigs/hornet.cfg
             # Hornet Networks
             CHOICE=$(
                 whiptail --title "Hornet - Network" --menu "\nCurrent network: $hornetNetwork\n\nChoose an option" 16 65 0 \
@@ -540,30 +539,30 @@ while [ $exitCode -lt 1 ]; do
                     if (whiptail --title "Hornet - Network" --yesno --defaultno "Are you sure you want to change the network to mainnet (the old database will be deleted)?" 8 65); then
                         currentHornetNetwork=$hornetNetwork
                         hornetNetwork=mainnet
-                        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork='$hornetNetwork'/' $configs/hornet.cfg
-                        source $modules/hornet/hornetNetwork
+                        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork='$hornetNetwork'/' $swarmConfigs/hornet.cfg
+                        source $hornetModules/hornetNetwork
                     fi
                 ;;
                 "2)")
                     if (whiptail --title "Hornet - Network" --yesno --defaultno "Are you sure you want to change the network to comnet (the old database will be deleted)?" 8 65); then
                         currentHornetNetwork=$hornetNetwork
                         hornetNetwork=comnet
-                        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork='$hornetNetwork'/' $configs/hornet.cfg
-                        source $modules/hornet/hornetNetwork
+                        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork='$hornetNetwork'/' $swarmConfigs/hornet.cfg
+                        source $hornetModules/hornetNetwork
                     fi
                 ;;
                 "3)")
                     if (whiptail --title "Hornet - Network" --yesno --defaultno "Are you sure you want to change the network to testnet (the old database will be deleted)?" 8 65); then
                         currentHornetNetwork=$hornetNetwork
                         hornetNetwork=testnet
-                        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork='$hornetNetwork'/' $configs/hornet.cfg
-                        source $modules/hornet/hornetNetwork
+                        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork='$hornetNetwork'/' $swarmConfigs/hornet.cfg
+                        source $hornetModules/hornetNetwork
                     fi
                 ;;
             esac
         ;;
         "16)")
-            source $configs/hornet.cfg
+            source $swarmConfigs/hornet.cfg
             # Hornet release channel
             CHOICE=$(
                 whiptail --title "Hornet - Release" --menu "\nSet \"stable\" for official release or \"testing\" for releases under development\n\nChoose an option" 16 65 0 \
@@ -575,9 +574,9 @@ while [ $exitCode -lt 1 ]; do
                     if (whiptail --title "Hornet - Release" --yesno --defaultno "Are you sure you want to change the release channel to stable (hornet will be reinstalled)?" 8 65); then
                         currentHornetRelease=$hornetRelease
                         hornetRelease=stable
-                        sudo sed -i 's/^hornetRelease=.*/hornetRelease='$hornetRelease'/' $configs/hornet.cfg
-                        source $modules/hornet/releaseChannel
-                        source $modules/hornet/configParser
+                        sudo sed -i 's/^hornetRelease=.*/hornetRelease='$hornetRelease'/' $swarmConfigs/hornet.cfg
+                        source $hornetModules/hornetReleaseChannel
+                        source $hornetModules/hornetParser
                         restartHornet=true
                     fi
                 ;;
@@ -585,9 +584,9 @@ while [ $exitCode -lt 1 ]; do
                     if (whiptail --title "Hornet - Release" --yesno --defaultno "Are you sure you want to change the release channel to stable (hornet will be reinstalled)?" 8 65); then
                         currentHornetRelease=$hornetRelease
                         hornetRelease=testing
-                        sudo sed -i 's/^hornetRelease=.*/hornetRelease='$hornetRelease'/' $configs/hornet.cfg
-                        source $modules/hornet/releaseChannel
-                        source $modules/hornet/configParser
+                        sudo sed -i 's/^hornetRelease=.*/hornetRelease='$hornetRelease'/' $swarmConfigs/hornet.cfg
+                        source $hornetModules/hornetReleaseChannel
+                        source $hornetModules/hornetParser
                         restartHornet=true
                     fi
                 ;;
@@ -595,5 +594,5 @@ while [ $exitCode -lt 1 ]; do
         ;;
     esac
 done
-sudo chown -R hornet:hornet $hornetDir/*.json
+sudo chown -R hornet:hornet $hornetHome/*.json
 exitCode=0

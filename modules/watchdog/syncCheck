@@ -1,35 +1,35 @@
 #!/bin/bash
 
-source $logs/watchdog
+source $watchdogLog
 
 if [ -n "$hornetSyncCounter" ]; then
     if [ $hornetSyncCounter -ne $hornetSyncCounter ] 2>/dev/null; then
         hornetSyncCounter=0
-        sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $logs/watchdog
+        sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $watchdogLog
     fi
 else
     hornetSyncCounter=0
-    sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $logs/watchdog
+    sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $watchdogLog
 fi
 
 if [ -n "$beeSyncCounter" ]; then
     if [ $beeSyncCounter -ne $beeSyncCounter ] 2>/dev/null; then
         beeSyncCounter=0
-        sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $logs/watchdog
+        sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $watchdogLog
     fi
 else
     beeSyncCounter=0
-    sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $logs/watchdog
+    sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $watchdogLog
 fi
 
 if [ -n "$goshimmerSyncCounter" ]; then
     if [ $goshimmerSyncCounter -ne $goshimmerSyncCounter ] 2>/dev/null; then
         goshimmerSyncCounter=0
-        sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
+        sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $watchdogLog
     fi
 else
     goshimmerSyncCounter=0
-    sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
+    sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $watchdogLog
 fi
 
 if [ -f "/usr/bin/hornet" ]; then
@@ -44,21 +44,21 @@ if [ -f "/usr/bin/hornet" ]; then
             sudo systemctl stop hornet
             if [ $hornetSyncCounter -gt 5 ]; then
                 if [ "$hornetAllowDbReset" = "true" ]; then
-                    sudo rm -rf $hornetDir/${hornetNetwork}db $hornetDir/snapshots/${hornetNetwork}/*.bin
-                    echo "$restartDate [WACHTDOG] - HORNET - ${hornetNetwork}DB deleted because too many milestones behind!" >> $logs/swarm.log
+                    sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots/${hornetNetwork}/*.bin
+                    echo "$restartDate [WACHTDOG] - HORNET - The ${hornetNetwork}DB was deleted because too many milestones behind!" >> $swarmLog
                 fi
                 hornetSyncCounter=0
             else
                 let hornetSyncCounter=$hornetSyncCounter+1
             fi
             sudo systemctl start hornet
-            echo "$restartDate [WACHTDOG] - HORNET - Node restarted because max milestones difference reached!" >> $logs/swarm.log
-            sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $logs/watchdog
+            echo "$restartDate [WACHTDOG] - HORNET - Node restarted because max milestones difference reached!" >> $swarmLog
+            sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $watchdogLog
         fi
     else
         if [ "$hornetSyncCounter" -gt "0" ]; then
             let hornetSyncCounter=$hornetSyncCounter-1
-            sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $logs/watchdog
+            sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $watchdogLog
         fi
     fi
 fi
@@ -75,21 +75,21 @@ if [ -f "/usr/bin/bee" ]; then
             sudo systemctl stop bee
             if [ $beeSyncCounter -gt 5 ]; then
                 if [ "$beeAllowDbReset" = "true" ]; then
-                    sudo rm -rf $beeDir/storage $hornetDir/snapshots
-                    echo "$restartDate [WACHTDOG] - BEE - Database deleted because too many milestones behind!" >> $logs/swarm.log
+                    sudo rm -rf $beeHome/storage $beeHome/snapshots
+                    echo "$restartDate [WACHTDOG] - BEE - Database deleted because too many milestones behind!" >> $swarmLog
                 fi
                 beeSyncCounter=0
             else
                 let beeSyncCounter=$beeSyncCounter+1
             fi
             sudo systemctl start bee
-            echo "$restartDate [WACHTDOG] - BEE - Node restarted because max milestones difference reached!" >> $logs/swarm.log
-            sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $logs/watchdog
+            echo "$restartDate [WACHTDOG] - BEE - Node restarted because max milestones difference reached!" >> $swarmLog
+            sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $watchdogLog
         fi
     else
         if [ "$beeSyncCounter" -gt "0" ]; then
             let beeSyncCounter=$beeSyncCounter-1
-            sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $logs/watchdog
+            sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $watchdogLog
         fi
     fi
 fi
@@ -105,28 +105,28 @@ if [ -f "/usr/bin/goshimmer" ]; then
                     if [ $goshimmerSyncCounter -gt 4 ]; then
                         sudo systemctl stop goshimmer
                         if [ "$goshimmerAllowDbReset" = "true" ]; then
-                            sudo rm -rf $goshimmerDir/mainnetdb
+                            sudo rm -rf $goshimmerHome/mainnetdb
                             sudo -u goshimmer wget -q -O $goshimmerDir/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
-                            echo "$restartDate [WACHTDOG] - GOSHIMMER - Database deleted because node was not synced!" >> $logs/swarm.log
+                            echo "$restartDate [WACHTDOG] - GOSHIMMER - Database deleted because node was not synced!" >> $swarmLog
                         fi
                         goshimmerSyncCounter=0
                         sudo systemctl start goshimmer
-                        echo "$restartDate [WACHTDOG] - GOSHIMMER - GoShimmer restarted because not was not sync!" >> $logs/swarm.log
+                        echo "$restartDate [WACHTDOG] - GOSHIMMER - GoShimmer restarted because not was not sync!" >> $swarmLog
                     else
                         let goshimmerSyncCounter=$goshimmerSyncCounter+1
                     fi
                 else
                     if [ "$goshimmerSyncCounter" -gt "0" ]; then
                         let goshimmerSyncCounter=$goshimmerSyncCounter-1
-                        sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
+                        sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $watchdogLog
                     fi
                 fi
-                sudo sed -i 's/^goshimmerTangleTime=.*/goshimmerTangleTime='$getGoshimmerTangleTime'/' $logs/watchdog
-                sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
+                sudo sed -i 's/^goshimmerTangleTime=.*/goshimmerTangleTime='$getGoshimmerTangleTime'/' $watchdogLog
+                sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $watchdogLog
         else
             if [ "$goshimmerSyncCounter" -gt "0" ]; then
                 let goshimmerSyncCounter=$goshimmerSyncCounter-1
-                sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $logs/watchdog
+                sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $watchdogLog
             fi
         fi
     fi

@@ -23,8 +23,8 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
                 sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm > /dev/null 2>&1
                 echo 50
                 if [ -f "/var/lib/swarm/swarm" ]; then
-                    source /var/lib/swarm/modules/variables
-                    sudo chmod +x $swarmDir/swarm $plugins/watchdog
+                    source /var/lib/swarm/environment
+                    sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog
                     echo 70
                     ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
                     echo 100
@@ -32,8 +32,8 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
             } | whiptail --gauge "Please wait while SWARM is installed..." 8 65 0
             if [ -f "/var/lib/swarm/swarm" ]; then
                 source /var/lib/swarm/modules/variables
-                source $modules/alias
-                source $swarmDir/swarm
+                source $swarmHome/alias
+                source $swarmHome/swarm
             else
                 whiptail --title "SWARM" --msgbox "SWARM could not be successfully cloned from GitHub!" 8 65
             fi

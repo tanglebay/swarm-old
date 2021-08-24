@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ -z "$hornetIdentity" ] || [ ! -f "$hornetHome/p2pstore/identity.key" ]; then
+    if [ ! -f "$hornetHome/p2pstore/identity.key" ]; then
+        ( cd $hornetHome ; sudo -u hornet /usr/bin/hornet tools p2pidentity-gen )
+    fi
+    hornetIdentity=$(cat $hornetHome/p2pstore/identity.key | sed -n '2 p')
+    sudo sed -i 's~^hornetIdentity=.*~hornetIdentity="'$hornetIdentity'"~' $swarmConfigs/hornet.cfg
+fi
+
+parser=$(cat $hornetHome/p2pstore/identity.key | sed -n '2 p')
+if [ "$parser" != "$hornetIdentity" ]; then
+    sed -i '2 s~.*~'$hornetIdentity'~' $hornetHome/p2pstore/identity.key
+    restartHornet=true
+fi
