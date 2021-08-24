@@ -17,7 +17,7 @@ if [ ! -f "/usr/bin/hornet" ]; then
 
         case $CHOICE in
             "1)")
-                source $modules/bee/beeInfo
+                source $beeModules/beeInfo
             ;;
             "2)")
                 while [ $exitCode -lt 1 ]; do
@@ -36,7 +36,7 @@ if [ ! -f "/usr/bin/hornet" ]; then
                     case $CHOICE in
                         "1)")
                             if [ -f "/usr/bin/bee" ]; then
-                                source $modules/bee/beeConfiguration
+                                source $beeModules/beeConfiguration
                             else
                                 whiptail --title "Bee - Configuration" --msgbox "Bee installation not found, please install Bee first!" 8 65
                             fi
@@ -57,7 +57,7 @@ if [ ! -f "/usr/bin/hornet" ]; then
 
                                 case $CHOICE in
                                     "1)")
-                                        sudo nano $beeDir/config.toml
+                                        sudo nano $beeHome/config.toml
                                         if (whiptail --title "Bee Menu" --yesno --defaultno "Would you like to restart Bee now?" 8 65); then
                                             {
                                                 echo 0
@@ -73,7 +73,7 @@ if [ ! -f "/usr/bin/hornet" ]; then
                                         if (whiptail --title "Bee Menu" --yesno --defaultno "Would you like to restart Bee now?" 8 65); then
                                             {
                                                 echo 0
-                                                source $modules/bee/configParser
+                                                source $beeModules/beeParser
                                                 echo 50
                                                 sudo systemctl restart bee
                                                 echo 100
@@ -159,7 +159,7 @@ if [ ! -f "/usr/bin/hornet" ]; then
                                     echo 0
                                     echo 50
                                     sudo systemctl stop bee
-                                    sudo rm -rf $beeDir/storage $beeDir/snapshots
+                                    sudo rm -rf $beeHome/storage $beeHome/snapshots
                                     sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter=0/' $logs/watchdog
                                     sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter=0/' $logs/watchdog
                                     sudo systemctl start bee
@@ -185,7 +185,7 @@ if [ ! -f "/usr/bin/hornet" ]; then
                         if [ -f "/usr/bin/bee" ]; then
                             if (whiptail --title "Bee - Installer" --yesno --defaultno "Do you really want to update Bee?" 8 65); then
                                 # Update Bee
-                                source $modules/bee/getVersion
+                                source $beeModules/beeVersion
                                 if [ -z "$beeVersion" ]; then
                                     beeVersion="NA"
                                 fi
@@ -194,9 +194,9 @@ if [ ! -f "/usr/bin/hornet" ]; then
                                     {
                                         echo 0
                                         echo 10
-                                        source $modules/bee/beeInstaller
+                                        source $beeModules/beeInstaller
                                         echo 50
-                                        source $modules/bee/configParser
+                                        source $beeModules/beeConfigParser
                                         echo 90
                                         sudo systemctl restart bee
                                         echo 100
@@ -219,17 +219,17 @@ if [ ! -f "/usr/bin/hornet" ]; then
                                 echo 10
                                 source $configs/bee.cfg
                                 echo 30
-                                source $modules/bee/getVersion
+                                source $beeModules/beeVersion
                                 echo 40
-                                source $modules/bee/beeInstaller
+                                source $beeModules/beeInstaller
                             } | whiptail --gauge "Please wait while installing Bee..." 8 65 0
-                            if [ -f "/usr/bin/bee" ]; then
+                            if [ -f "/usr/bin/bee" ] && [ "$beeUpdated" = "true" ]; then
                                 source $configs/bee.cfg
                                 {
                                     echo 50
                                     echo 60
                                     # CALL MODULE CONFIGPARSER
-                                    source $modules/bee/configParser
+                                    source $beeModules/beeParser
                                     echo 70
                                     if [ "$ufw" = "true" ]; then
                                         sudo ufw allow $beeGossipPort/tcp > /dev/null 2>&1
@@ -246,10 +246,10 @@ if [ ! -f "/usr/bin/hornet" ]; then
                                 } | whiptail --gauge "Please wait while Bee will be prepared..." 8 65 0
                                 whiptail --title "Bee - Installer" --msgbox "Bee installation finished!\n\nYou need to open the following ports in your home router for peering\n\nGossip: $beeGossipPort/tcp" 15 65
                             else
-                                whiptail --title "Bee - Installer" --msgbox "Error while installing Bee. Please check Bee.cfg and try again!" 8 65
+                                whiptail --title "Bee - Installer" --msgbox "Error while installing Bee! Please try again" 8 65
                             fi
                         else
-                            whiptail --title "Bee - Installer" --msgbox "Bee already installed or not set in the SWARM.cfg!" 8 65
+                            whiptail --title "Bee - Installer" --msgbox "Bee already installed!" 8 65
                         fi
                     ;;
                     "3)")
