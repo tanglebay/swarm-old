@@ -1,0 +1,31 @@
+#!/bin/bash
+
+sudo systemctl stop goshimmer > /dev/null 2>&1
+
+sudo systemctl disable goshimmer > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/goshimmer /var/lib/goshimmer /lib/systemd/system/goshimmer.service /etc/default/goshimmer > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+if [ "$ufw" = "true" ]; then
+    sudo ufw delete allow $goshimmerGossipPort/tcp > /dev/null 2>&1
+    sudo ufw delete allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
+fi
+
+sudo rm -rf $goshimmerHome > /dev/null 2>&1
+
+if id hornet >/dev/null 2>&1; then
+    sudo deluser goshimmer >/dev/null
+fi
+
+if [ -x "$(command -v apache2-utils)" ]; then
+    sudo apt -qq purge apache-utils -y > /dev/null 2>&1
+    sudo apt -qq autoremove -y > /dev/null 2>&1
+fi
+
+if [ -f "/etc/nginx/sites-enabled/goshimmer" ]; then
+    sudo rm -rf /etc/nginx/sites-enabled/goshimmer > /dev/null 2>&1
+    sudo rm -rf /etc/nginx/goshimmer > /dev/null 2>&1
+    sudo systemctl reload nginx
+fi

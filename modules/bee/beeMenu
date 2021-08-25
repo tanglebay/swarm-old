@@ -223,22 +223,24 @@ if [ ! -f "/usr/bin/hornet" ]; then
                                 echo 40
                                 source $beeModules/beeInstaller
                                 echo 50
-                                source $swarmConfigs/bee.cfg
-                                echo 60
-                                # CALL MODULE CONFIGPARSER
-                                source $beeModules/beeParser
-                                echo 70
-                                if [ "$ufw" = "true" ]; then
-                                    sudo ufw allow $beeGossipPort/tcp > /dev/null 2>&1
+                                if [ -f "/usr/bin/bee" ] && [ -f "$beeHome/config.toml" ]; then
+                                    source $swarmConfigs/bee.cfg
+                                    echo 60
+                                    # CALL MODULE CONFIGPARSER
+                                    source $beeModules/beeParser
+                                    echo 70
+                                    if [ "$ufw" = "true" ]; then
+                                        sudo ufw allow $beeGossipPort/tcp > /dev/null 2>&1
+                                    fi
+                                    sudo systemctl start bee > /dev/null 2>&1
+                                    echo 80
+                                    sleep 2
+                                    beeStatus="$(systemctl show -p ActiveState --value bee)"
+                                    if [ "$beeStatus" != "active" ]; then
+                                        sudo systemctl restart bee > /dev/null 2>&1
+                                    fi
+                                    echo 100
                                 fi
-                                sudo systemctl start bee > /dev/null 2>&1
-                                echo 80
-                                sleep 2
-                                beeStatus="$(systemctl show -p ActiveState --value bee)"
-                                if [ "$beeStatus" != "active" ]; then
-                                    sudo systemctl restart bee > /dev/null 2>&1
-                                fi
-                                echo 100
                             } | whiptail --gauge "Please wait while installing Bee..." 8 65 0
                             if [ -f "/usr/bin/bee" ] && [ -f "$beeHome/config.toml" ]; then
                                 whiptail --title "Bee - Installer" --msgbox "Bee installation finished!\n\nYou need to open the following ports in your home router for peering\n\nGossip: $beeGossipPort/tcp" 15 65
@@ -246,6 +248,7 @@ if [ ! -f "/usr/bin/hornet" ]; then
                                 {
                                     echo 0
                                     echo 25
+                                    source $swarmConfigs/bee.cfg
                                     echo 50
                                     source $beeModules/beeRemoval
                                     echo 75
@@ -262,6 +265,7 @@ if [ ! -f "/usr/bin/hornet" ]; then
                             {
                                 echo 0
                                 echo 25
+                                source $swarmConfigs/bee.cfg
                                 echo 50
                                 source $beeModules/beeRemoval
                                 echo 75
