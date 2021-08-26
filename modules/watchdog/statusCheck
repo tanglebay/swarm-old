@@ -11,6 +11,16 @@ else
     sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $watchdogLog
 fi
 
+if [ -n "$beeStatusCounter" ]; then
+    if ! [ "$beeStatusCounter" -eq "$beeStatusCounter" ] 2>/dev/null; then
+        beeStatusCounter=0
+        sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $watchdogLog
+    fi
+else
+    hornetStatusCounter=0
+    sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $watchdogLog
+fi
+
 if [ -n "$goshimmerStatusCounter" ]; then
     if ! [ "$goshimmerStatusCounter" -eq "$goshimmerStatusCounter" ] 2>/dev/null; then
         goshimmerStatusCounter=0
@@ -73,8 +83,8 @@ if [ "$goshimmerStatus" != "active" ] && [ -f "/usr/bin/goshimmer" ]; then
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
     if [ "$goshimmerStatusCounter" -ge "2" ]; then
         if [ "$goshimmerAllowDbReset" = "true" ]; then
-            sudo rm -rf $goshimmerDir/mainnetdb
-            sudo -u goshimmer wget -q -O $goshimmerDir/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
+            sudo rm -rf $goshimmerHome/mainnetdb
+            sudo -u goshimmer wget -q -O $goshimmerHome/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
             echo "$restartDate [WACHTDOG] - GOSHIMMER - Database deleted because max. inactive counter reached" >> $swarmLog
         fi
         goshimmerStatusCounter=0
