@@ -14,19 +14,28 @@ fi
 if [ "$hornetRelease" != "$currentHornetRelease" ]; then
     {
         echo 0
-        echo 10
-        sudo systemctl stop hornet
         echo 20
-        sudo apt -qq purge hornet -y > /dev/null 2>&1
-        echo 35
-        sudo apt -qq autoremove -y > /dev/null 2>&1
-        echo 50
-        sudo apt -qq update -y > /dev/null 2>&1
-        echo 70
-        sudo apt -qq install hornet -y > /dev/null 2>&1
-        echo 90
-        sudo systemctl restart hornet
+        sudo apt-get -qq update -y > /dev/null 2>&1
+        echo 40
+        sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
+        IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+        for hornetConfig in "${ARRAYhornetConfigs[@]}"
+        do
+            if [ -f "$hornetHome/$hornetConfig.json.dpkg-dist" ]; then
+            sudo cp -r $hornetHome/$hornetConfig.json.dpkg-dist $hornetHome/$hornetConfig.json
+            sudo rm -rf $hornetHome/$hornetConfig.json.dpkg*
+            fi
+        done
+        unset ARRAYhornetConfigs
+        unset hornetConfig
+        echo 60
+        source $hornetModules/hornetParser
+        echo 80
+        source $hornetModules/hornetVersion
+        if [ "$hornetVersion" != "$latestHornetVersion" ]; then
+            sudo systemctl restart hornet
+        fi
         echo 100
-    } | whiptail --gauge "Please wait while Hornet is reinstalled......." 8 65 0
+    } | whiptail --gauge "Please wait while Hornet is prepared..." 8 65 0
     whiptail --title "Hornet Configuration" --msgbox "New release channel ($hornetRelease) applied and Hornet was reinstalled!" 8 65
 fi
