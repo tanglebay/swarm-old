@@ -1,3 +1,7 @@
+## Version 0.7.4
+## Changed
+- Major bug fixes
+
 ## Version 0.7.3
 ### Added
 - Added Bee module to update coo public keys
