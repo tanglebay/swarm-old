@@ -38,11 +38,14 @@ fi
 if [ ! -d "/etc/letsencrypt/live/$domain" ]; then
     {
         echo 0
+        echo 10
         if [ ! -f "/etc/nginx/nginx.conf" ]; then
             sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
         fi
-        nginxStatus="$(systemctl show -p ActiveState --value nginx)"
-        if [ "$nginxStatus" != "active" ]; then
+        echo 25
+        proxyStatus="$(systemctl show -p ActiveState --value nginx)"
+        if [ "$proxyStatus" != "active" ]; then
+            sudo cat $swarmTemplates/nginx_http.template > /etc/nginx/sites-enabled/default
             sudo systemctl restart nginx
         fi
         echo 50
@@ -53,7 +56,7 @@ if [ ! -d "/etc/letsencrypt/live/$domain" ]; then
     # echo ""
     # read -p "Press any key to continue..."
     if [ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
-        whiptail --title "Proxy Menu" --msgbox "No SSL Certificate not found!" 8 65
+        whiptail --title "Proxy Menu" --msgbox "Aborted - SSL Certificate not found!" 8 65
     else
         whiptail --title "Proxy Menu" --msgbox "SSL certificate successfully issued!" 8 65
     fi
@@ -61,8 +64,41 @@ fi
 
 # Check if the certificate for the domain already exist
 if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
-    if [ $hornetApiPort -eq $goshimmerApiPort ] || [ $beeApiPort -eq $goshimmerApiPort ] || [ $hornetApiPort -eq $beeApiPort ] > /dev/null 2>&1; then
-        whiptail --title "Proxy Menu" --msgbox "The API ports (HTTPS) of Hornet, Bee or GoShimmer must be different!" 8 65
+    if [ -f "/usr/bin/hornet" ]; then
+        if [ -z "$hornetApiPort" ]; then
+            missingApiPort=true
+        fi
+    fi
+    if [ -f "/usr/bin/bee" ]; then
+        if [ -z "$beeApiPort" ]; then
+            missingApiPort=true
+        fi
+    fi
+    if [ -f "/usr/bin/goshimmer" ]; then
+        if [ -z "$goshimmerApiPort" ]; then
+            missingApiPort=true
+        fi
+    fi
+    if [ "$missingApiPort" = "true" ]; then
+        whiptail --title "Proxy Menu" --msgbox "Please specify the API ports below. If you use multiple nodes, they must have different ports." 8 65
+        if [ -f "/usr/bin/hornet" ]; then
+            if [ -z "$hornetApiPort" ]; then
+                hornetApiPort=$(whiptail --inputbox "\nSet your API port for Hornet" 10 65 --title "Proxy - Hornet API" 3>&1 1>&2 2>&3)
+            fi
+        fi
+        if [ -f "/usr/bin/bee" ]; then
+            if [ -z "$beeApiPort" ]; then
+                beeApiPort=$(whiptail --inputbox "\nSet your API port for Bee" 10 65 --title "Proxy - Bee API" 3>&1 1>&2 2>&3)
+            fi
+        fi
+        if [ -f "/usr/bin/goshimmer" ]; then
+            if [ -z "$goshimmerApiPort" ]; then
+                goshimmerApiPort=$(whiptail --inputbox "\nSet your API port for GoShimmer" 10 65 --title "Proxy - GoShimmer API" 3>&1 1>&2 2>&3)
+            fi
+        fi
+    fi
+    if [ "$hornetApiPort" = "$goshimmerApiPort" ] || [ "$beeApiPort" = "$goshimmerApiPort" ] || [ "$hornetApiPort" = "$beeApiPort" ] > /dev/null 2>&1; then
+        whiptail --title "Proxy Menu" --msgbox "The API ports (HTTPS) of Hornet ($hornetApiPort), Bee ($beeApiPort) or GoShimmer ($goshimmerApiPort) must be different!" 8 65
     else
         {
         echo 0
