@@ -13,6 +13,11 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
         exit 0
     else
         if (whiptail --title "SWARM" --yesno "Do you want to install SWARM now?" 10 65); then
+            whiptail --title "SWARM" --msgbox "SWARM will first make sure that your server is up to date..." 8 65
+            sudo apt update
+            sudo apt dist-upgrade -y
+            sudo apt upgrade -y
+            sudo apt autoremove -y
             {
                 echo 0
                 echo 10
