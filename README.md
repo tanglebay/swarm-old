@@ -67,5 +67,5 @@ After the reinstallation, simply replace the configurations with your backup, ru
 
 **IOTA Address:**
 ```
-iota1qq2zpclw655gaxun5ruzlnpmpqccem5v47xvc8ptkms260csz2m5ymuesea
+iota1qpdxuqhpg2eudx4t6x5vkmk6f0jttxq3537ux4tv30v59nhksgsxjd3htu6
 ```
