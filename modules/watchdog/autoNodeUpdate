@@ -3,54 +3,27 @@
 if [ "$timeframe" = "00" ] || [ "$timeframe" = "15" ] || [ "$timeframe" = "30" ] || [ "$timeframe" = "45" ]; then
     if [ "$hornetAutoUpdate" = "true" ] && [ -f "/usr/bin/hornet" ]; then
         source $hornetModules/hornetVersion
-        if [ "$hornetRelease" = "stable" ]; then
-            if [ "$hornetVersion" != "$latestHornetVersion" ]; then
-                sudo apt-get update
-                sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
-                IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                do
-                    if [ -f "$hornetHome/$hornetConfig.json.dpkg-dist" ]; then
-                    sudo cp -r $hornetHome/$hornetConfig.json.dpkg-dist $hornetHome/$hornetConfig.json
-                    sudo rm -rf $hornetHome/$hornetConfig.json.dpkg*
-                    fi
-                done
-                unset ARRAYhornetConfigs
-                unset hornetConfig
-
-                newHornetVersion=$(hornet -v | awk '{ print $2 }')
-                if [ "$hornetVersion" != "$newHornetVersion" ]; then
-                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                    # CALL MODULE CONFIGPARSER
-                    source $hornetModules/hornetParser
-                    sudo systemctl restart hornet
-                    echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Hornet version installed and Hornet restarted!" >> $swarmLog
+        if [ "$hornetVersion" != "$latestHornetVersion" ]; then
+            sudo apt-get update
+            sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
+            IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+            for hornetConfig in "${ARRAYhornetConfigs[@]}"
+            do
+                if [ -f "$hornetHome/$hornetConfig.json.dpkg-dist" ]; then
+                sudo cp -r $hornetHome/$hornetConfig.json.dpkg-dist $hornetHome/$hornetConfig.json
+                sudo rm -rf $hornetHome/$hornetConfig.json.dpkg*
                 fi
-            fi
-        fi
-        if [ "$release" = "testing" ]; then
-            if [ "$hornetVersion" != "$latestHornetVersion" ]; then
-                sudo apt-get update
-                sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
-                IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                do
-                    if [ -f "$hornetHome/$hornetConfig.json.dpkg-dist" ]; then
-                    sudo cp -r $hornetHome/$hornetConfig.json.dpkg-dist $hornetHome/$hornetConfig.json
-                    sudo rm -rf $hornetHome/$hornetConfig.json.dpkg*
-                    fi
-                done
-                unset ARRAYhornetConfigs
-                unset hornetConfig
+            done
+            unset ARRAYhornetConfigs
+            unset hornetConfig
 
-                newHornetVersion=$(hornet -v | awk '{ print $2 }')
-                if [ "$hornetVersion" != "$newHornetVersion" ]; then
-                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                    # CALL MODULE CONFIGPARSER
-                    source $hornetModules/hornetParser
-                    sudo systemctl restart hornet
-                    echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Hornet version installed and Hornet restarted!" >> $swarmLog
-                fi
+            newHornetVersion=$(hornet -v | awk '{ print $2 }')
+            if [ "$hornetVersion" != "$newHornetVersion" ]; then
+                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                # CALL MODULE CONFIGPARSER
+                source $hornetModules/hornetParser
+                sudo systemctl restart hornet
+                echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Hornet version installed and Hornet restarted!" >> $swarmLog
             fi
         fi
     fi

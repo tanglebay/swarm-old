@@ -1,5 +1,9 @@
+## Version 0.7.5
+### Changed
+- General bug fixes
+
 ## Version 0.7.4
-## Changed
+### Changed
 - Major bug fixes
 
 ## Version 0.7.3
