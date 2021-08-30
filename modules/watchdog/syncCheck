@@ -39,7 +39,7 @@ if [ -f "/usr/bin/hornet" ]; then
         latestHornetLatestMilestoneIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
         latestHornetConfirmedMilestoneIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.confirmedMilestoneIndex')"
         let hornetMilestoneDifferenceIndex=$latestHornetLatestMilestoneIndex-$latestHornetConfirmedMilestoneIndex
-        if [ $hornetMilestoneDifferenceIndex -gt $hornetMaxMilestones ] && [ "$latestHornetConfirmedMilestoneIndex" = "$hornetConfirmendMilestoneIndex" ]; then
+        if [ $hornetMilestoneDifferenceIndex -gt $hornetMaxMilestones ] && [ $latestHornetConfirmedMilestoneIndex -eq $hornetConfirmedMilestoneIndex ] 2>/dev/null; then
             restartDate=`date '+%d-%m-%Y %H-%M-%S'`
             sudo systemctl stop hornet
             if [ $hornetSyncCounter -gt 5 ]; then
@@ -55,7 +55,7 @@ if [ -f "/usr/bin/hornet" ]; then
             echo "$restartDate [WACHTDOG] - HORNET - Node restarted because max milestones difference reached!" >> $swarmLog
             sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $watchdogLog
         else
-            sudo sed -i 's/^hornetConfirmendMilestoneIndex=.*/hornetConfirmendMilestoneIndex='$latestHornetConfirmendMilestoneIndex'/' $watchdogLog
+            sudo sed -i 's/^hornetConfirmedMilestoneIndex=.*/hornetConfirmedMilestoneIndex='$latestHornetConfirmedMilestoneIndex'/' $watchdogLog
         fi
     else
         if [ "$hornetSyncCounter" -gt "0" ]; then
@@ -72,10 +72,10 @@ if [ -f "/usr/bin/bee" ]; then
         latestBeeLatestMilestoneIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
         latestBeeConfirmedMilestoneIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.confirmedMilestoneIndex')"
         let beeMilestoneDifferenceIndex=$latestBeeLatestMilestoneIndex-$latestBeeConfirmedMilestoneIndex
-        if [ $beeMilestoneDifferenceIndex -gt $beeMaxMilestones ] && [ "$latestBeeConfirmedMilestoneIndex" = "$beeConfirmendMilestoneIndex" ]; then
+        if [ $beeMilestoneDifferenceIndex -gt $beeMaxMilestones ] && [ $latestBeeConfirmedMilestoneIndex -eq $beeConfirmedMilestoneIndex ] 2>/dev/null; then
             restartDate=`date '+%d-%m-%Y %H-%M-%S'`
             sudo systemctl stop bee
-            if [ $beeSyncCounter -gt 5 ]; then
+            if [ $beeSyncCounter -gt 5 ] 2>/dev/null; then
                 if [ "$beeAllowDbReset" = "true" ]; then
                     sudo rm -rf $beeHome/storage $beeHome/snapshots
                     echo "$restartDate [WACHTDOG] - BEE - Database deleted because too many milestones behind!" >> $swarmLog
@@ -88,10 +88,10 @@ if [ -f "/usr/bin/bee" ]; then
             echo "$restartDate [WACHTDOG] - BEE - Node restarted because max milestones difference reached!" >> $swarmLog
             sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $watchdogLog
         else
-            sudo sed -i 's/^beeConfirmendMilestoneIndex=.*/beeConfirmendMilestoneIndex='$latestBeeConfirmendMilestoneIndex'/' $watchdogLog
+            sudo sed -i 's/^beeConfirmedMilestoneIndex=.*/beeConfirmedMilestoneIndex='$latestBeeConfirmedMilestoneIndex'/' $watchdogLog
         fi
     else
-        if [ "$beeSyncCounter" -gt "0" ]; then
+        if [ $beeSyncCounter -gt 0 ] 2>/dev/null; then
             let beeSyncCounter=$beeSyncCounter-1
             sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $watchdogLog
         fi
@@ -106,7 +106,7 @@ if [ -f "/usr/bin/goshimmer" ]; then
                 getGoshimmerTangleTime=$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.time')
                 if [ "$getGoshimmerTangleTime" = "$goshimmerTangleTime" ]; then
                     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                    if [ $goshimmerSyncCounter -gt 4 ]; then
+                    if [ $goshimmerSyncCounter -gt 4 ] 2>/dev/null; then
                         sudo systemctl stop goshimmer
                         if [ "$goshimmerAllowDbReset" = "true" ]; then
                             sudo rm -rf $goshimmerHome/mainnetdb
