@@ -19,8 +19,7 @@ while [ $exitCode -lt 1 ]; do
         "4)" "Hornet [Watchdog]" \
         "5)" "Bee [Watchdog]" \
         "6)" "GoShimmer [Watchdog]" \
-        "7)" "$proxyCheckMenu Proxy Check" \
-        "8)" "Log Rotation [SWARM]" 3>&2 2>&1 1>&3
+        "7)" "Log Rotation [SWARM]" 3>&2 2>&1 1>&3
     )
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
@@ -388,27 +387,16 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "7)")
-            if [ "$proxyCheck" = "true" ]; then
-                proxyCheck=false
-                proxyCheckMenu="disabled"
-            else
-                proxyCheck=true
-                proxyCheckMenu="enabled"
-            fi
-            sudo sed -i 's/^proxyCheck=.*/proxyCheck='$proxyCheck'/' $swarmConfigs/swarm.cfg
-            whiptail --title "Watchdog - Proxy" --msgbox "Proxy check $proxyCheckMenu!" 8 65
-        ;;
-        "8)")
             while [ $exitCode -lt 1 ]; do
                 source $swarmConfigs/swarm.cfg
-                if [ "$logRotation" = "true" ]; then
-                    logRotationMenu="Disable"
+                if [ "$swarmLogRotation" = "true" ]; then
+                    swarmLogRotationMenu="Disable"
                 else
-                    logRotationMenu="Enable"
+                    swarmLogRotationMenu="Enable"
                 fi
                 CHOICE=$(
                     whiptail --title "Watchdog - SWARM Log" --menu "\nChoose an option" 14 65 0 \
-                    "1)" "$logRotationMenu log rotation" \
+                    "1)" "$swarmLogRotationMenu log rotation" \
                     "2)" "Set log size" 3>&2 2>&1 1>&3
                 )
                 exitStatus=$?
@@ -417,22 +405,22 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ "$logRotation" = "true" ]; then
-                            logRotation=false
-                            logRotationMenu="disabled"
+                        if [ "$swarmLogRotation" = "true" ]; then
+                            swarmLogRotation=false
+                            swarmLogRotationMenu="disabled"
                         else
-                            logRotation=true
-                            logRotationMenu="enabled"
+                            swarmLogRotation=true
+                            swarmLogRotationMenu="enabled"
                         fi
-                        sudo sed -i 's/^logPruning=.*/logPruning='$logRotation'/' $swarmConfigs/swarm.cfg
-                        whiptail --title "Watchdog - SWARM Log" --msgbox "Log rotation $logRotationMenu!" 8 65
+                        sudo sed -i 's/^swarmLogRotation=.*/swarmLogRotation='$swarmLogRotation'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "Watchdog - SWARM Log" --msgbox "Log rotation $swarmLogRotationMenu!" 8 65
                     ;;
                     "2)")
                         source $swarmConfigs/swarm.cfg
-                        logSize=$(whiptail --inputbox "\nSet max log file size in Megabyte (MB)" 10 65 $logSize --title "Watchdog - SWARM Log" 3>&1 1>&2 2>&3)
-                        if [ ! -z "$logSize" ] && [ $logSize -gt 0 ] 2>/dev/null; then
-                            sudo sed -i 's/^logSize=.*/logSize='$logSize'/' $swarmConfigs/swarm.cfg
-                            whiptail --title "Watchdog - SWARM Log" --msgbox "Log size set to ${logSize}MB!" 8 65
+                        logSize=$(whiptail --inputbox "\nSet max log file size in Megabyte (MB)" 10 65 $swarmLogSize --title "Watchdog - SWARM Log" 3>&1 1>&2 2>&3)
+                        if [ ! -z "$swarmLogSize" ] && [ $swarmLogSize -gt 0 ] 2>/dev/null; then
+                            sudo sed -i 's/^swarmLogSize=.*/swarmLogSize='$swarmLogSize'/' $swarmConfigs/swarm.cfg
+                            whiptail --title "Watchdog - SWARM Log" --msgbox "Log size set to ${swarmLogSize}MB!" 8 65
                         fi
                     ;;
                 esac
