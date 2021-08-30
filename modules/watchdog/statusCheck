@@ -2,7 +2,7 @@
 source $watchdogLog
 
 if [ -n "$hornetStatusCounter" ]; then
-    if ! [ "$hornetStatusCounter" -eq "$hornetStatusCounter" ] 2>/dev/null; then
+    if [ $hornetStatusCounter -ne $hornetStatusCounter ] 2>/dev/null; then
         hornetStatusCounter=0
         sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $watchdogLog
     fi
@@ -12,17 +12,17 @@ else
 fi
 
 if [ -n "$beeStatusCounter" ]; then
-    if ! [ "$beeStatusCounter" -eq "$beeStatusCounter" ] 2>/dev/null; then
+    if [ $beeStatusCounter -ne $beeStatusCounter ] 2>/dev/null; then
         beeStatusCounter=0
         sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $watchdogLog
     fi
 else
-    hornetStatusCounter=0
-    sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $watchdogLog
+    beeStatusCounter=0
+    sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $watchdogLog
 fi
 
 if [ -n "$goshimmerStatusCounter" ]; then
-    if ! [ "$goshimmerStatusCounter" -eq "$goshimmerStatusCounter" ] 2>/dev/null; then
+    if [ $goshimmerStatusCounter -ne $goshimmerStatusCounter ] 2>/dev/null; then
         goshimmerStatusCounter=0
         sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter='$goshimmerStatusCounter'/' $watchdogLog
     fi
@@ -35,7 +35,7 @@ fi
 if [ "$hornetStatus" != "active" ] && [ -f "/usr/bin/hornet" ]; then
     sudo systemctl stop hornet
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-    if [ "$hornetStatusCounter" -ge "2" ]; then
+    if [ $hornetStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$hornetAllowDbReset" = "true" ]; then
             sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots/${hornetNetwork}/*.bin
             echo "$restartDate [WACHTDOG] - HORNET - ${hornetNetwork}DB deleted because max. inactive counter reached" >> $swarmLog
@@ -48,7 +48,7 @@ if [ "$hornetStatus" != "active" ] && [ -f "/usr/bin/hornet" ]; then
     sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $watchdogLog
     echo "$restartDate [WACHTDOG] - HORNET - Node restarted because service was not active" >> $swarmLog
 else
-    if [ "$hornetStatusCounter" -gt "0" ]; then
+    if [ $hornetStatusCounter -gt 0 ] 2>/dev/null; then
         let hornetStatusCounter=$hornetStatusCounter-1
         sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $watchdogLog
     fi
@@ -58,7 +58,7 @@ fi
 if [ "$beeStatus" != "active" ] && [ -f "/usr/bin/bee" ]; then
     sudo systemctl stop bee
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-    if [ "$beeStatusCounter" -ge "2" ]; then
+    if [ $beeStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$beeAllowDbReset" = "true" ]; then
             sudo rm -rf $beeHome/storage $beeHome/snapshots
             echo "$restartDate [WACHTDOG] - BEE - Database deleted because max. inactive counter reached" >> $swarmLog
@@ -71,7 +71,7 @@ if [ "$beeStatus" != "active" ] && [ -f "/usr/bin/bee" ]; then
     sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $watchdogLog
     echo "$restartDate [WACHTDOG] - BEE - Node restarted because service was not active" >> $swarmLog
 else
-    if [ "$beeStatusCounter" -gt "0" ]; then
+    if [ $beeStatusCounter -gt 0 ] 2>/dev/null; then
         let beeStatusCounter=$beeStatusCounter-1
         sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $watchdogLog
     fi
@@ -81,7 +81,7 @@ fi
 if [ "$goshimmerStatus" != "active" ] && [ -f "/usr/bin/goshimmer" ]; then
     sudo systemctl stop goshimmer
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-    if [ "$goshimmerStatusCounter" -ge "2" ]; then
+    if [ $goshimmerStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$goshimmerAllowDbReset" = "true" ]; then
             sudo rm -rf $goshimmerHome/mainnetdb
             sudo -u goshimmer wget -q -O $goshimmerHome/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
@@ -95,7 +95,7 @@ if [ "$goshimmerStatus" != "active" ] && [ -f "/usr/bin/goshimmer" ]; then
     sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter='$goshimmerStatusCounter'/' $watchdogLog
     echo "$restartDate [WACHTDOG] - GOSHIMMER - Node restarted because service was not active" >> $swarmLog
 else
-    if [ "$goshimmerStatusCounter" -gt "0" ]; then
+    if [ $goshimmerStatusCounter -gt 0 ] 2>/dev/null; then
         let goshimmerStatusCounter=$goshimmerStatusCounter-1
         sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter='$goshimmerStatusCounter'/' $watchdogLog
     fi

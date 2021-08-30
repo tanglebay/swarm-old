@@ -36,10 +36,10 @@ if [ -f "/usr/bin/hornet" ]; then
     # Hornet Sync Check
     hornetSyncStatus="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
     if [ "$hornetCheckSync" = "true" ] && [ "$hornetStatus" = "active" ] && [ "$hornetSyncStatus" = "false" ]; then
-        lmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
-        cmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.confirmedMilestoneIndex')"
-        let dlmi="$lmi-$cmi"
-        if [ "$dlmi" -gt "$hornetMaxMilestones" ]; then
+        latestHornetLatestMilestoneIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
+        latestHornetConfirmedMilestoneIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.confirmedMilestoneIndex')"
+        let hornetMilestoneDifferenceIndex=$latestHornetLatestMilestoneIndex-$latestHornetConfirmedMilestoneIndex
+        if [ $hornetMilestoneDifferenceIndex -gt $hornetMaxMilestones ] && [ "$latestHornetConfirmedMilestoneIndex" = "$hornetConfirmendMilestoneIndex" ]; then
             restartDate=`date '+%d-%m-%Y %H-%M-%S'`
             sudo systemctl stop hornet
             if [ $hornetSyncCounter -gt 5 ]; then
@@ -54,6 +54,8 @@ if [ -f "/usr/bin/hornet" ]; then
             sudo systemctl start hornet
             echo "$restartDate [WACHTDOG] - HORNET - Node restarted because max milestones difference reached!" >> $swarmLog
             sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $watchdogLog
+        else
+            sudo sed -i 's/^hornetConfirmendMilestoneIndex=.*/hornetConfirmendMilestoneIndex='$hornetConfirmendMilestoneIndex'/' $watchdogLog
         fi
     else
         if [ "$hornetSyncCounter" -gt "0" ]; then
@@ -67,10 +69,10 @@ if [ -f "/usr/bin/bee" ]; then
     # Bee Sync Check
     beeSyncStatus="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
     if [ "$beeCheckSync" = "true" ] && [ "$beeStatus" = "active" ] && [ "$beeSyncStatus" = "false" ]; then
-        lmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
-        cmi="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.confirmedMilestoneIndex')"
-        let dlmi="$lmi-$cmi"
-        if [ "$dlmi" -gt "$beeMaxMilestones" ]; then
+        latestBeeLatestMilestoneIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
+        latestBeeConfirmedMilestoneIndex="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.confirmedMilestoneIndex')"
+        let beeMilestoneDifferenceIndex=$latestBeeLatestMilestoneIndex-$latestBeeConfirmedMilestoneIndex
+        if [ $beeMilestoneDifferenceIndex -gt $beeMaxMilestones ] && [ "$latestBeeConfirmedMilestoneIndex" = "$beeConfirmendMilestoneIndex" ]; then
             restartDate=`date '+%d-%m-%Y %H-%M-%S'`
             sudo systemctl stop bee
             if [ $beeSyncCounter -gt 5 ]; then
@@ -85,6 +87,8 @@ if [ -f "/usr/bin/bee" ]; then
             sudo systemctl start bee
             echo "$restartDate [WACHTDOG] - BEE - Node restarted because max milestones difference reached!" >> $swarmLog
             sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $watchdogLog
+        else
+            sudo sed -i 's/^beeConfirmendMilestoneIndex=.*/beeConfirmendMilestoneIndex='$beeConfirmendMilestoneIndex'/' $watchdogLog
         fi
     else
         if [ "$beeSyncCounter" -gt "0" ]; then
