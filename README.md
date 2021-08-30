@@ -16,7 +16,7 @@ SWARM is a script that allows you to easily install and manage an IOTA node. The
 ## Installation
 
 ### Requirements
-- VPS (2Core/4GB/40GB) **(RPi 4 is not supported for GoShimmer)**
+- VPS (2Core/4GB/40GB) **(GoShimmer/Bee cannot be used on ARM)**
 - Ubuntu 20.04 LTS (64Bit)
 - An existing (own) domain
 
