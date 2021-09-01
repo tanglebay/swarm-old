@@ -129,81 +129,89 @@ if [ ! -f "/usr/bin/bee" ]; then
                 exitCode=0
             ;;
             "3)")
-                CHOICE=$(
-                    whiptail --title "Hornet Debugging" --menu "\nChoose your option" 16 65 0 \
-                    "1)" "Show Hornet log" \
-                    "2)" "Start/Stop Hornet" \
-                    "3)" "Reset Hornet Database" 3>&2 2>&1 1>&3
-                )
-                case $CHOICE in
-                    "1)")
-                        # Display last 65 lines of log
-                        sudo journalctl -fu hornet | less -FRSXM
-                        clear
-                    ;;
-                    "2)")
-                        CHOICE=$(
-                            whiptail --title "Hornet Menu" --menu "\nChoose your option" 16 65 0 \
-                            "1)" "Restart Hornet" \
-                            "2)" "Start Hornet" \
-                            "3)" "Stop Hornet" \
-                            "4)" "Status Hornet" 3>&2 2>&1 1>&3
-                        )
-                        case $CHOICE in
-                            "1)")
-                                {
-                                    echo 0
-                                    echo 50
-                                    sudo systemctl restart hornet
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
-                                whiptail --title "Hornet Menu" --msgbox "Hornet successfully restarted" 8 65
-                            ;;
-                            "2)")
-                                {
-                                    echo 0
-                                    echo 50
-                                    sudo systemctl start hornet
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while Hornet is starting..." 8 65 0
-                                whiptail --title "Hornet Menu" --msgbox "Hornet successfully started" 8 65
-                            ;;
-                            "3)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    CHOICE=$(
+                        whiptail --title "Hornet Debugging" --menu "\nChoose your option" 16 65 0 \
+                        "1)" "Show Hornet log" \
+                        "2)" "Start/Stop Hornet" \
+                        "3)" "Reset Hornet Database" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            # Display last 65 lines of log
+                            sudo journalctl -fu hornet | less -FRSXM
+                            clear
+                        ;;
+                        "2)")
+                            CHOICE=$(
+                                whiptail --title "Hornet Menu" --menu "\nChoose your option" 16 65 0 \
+                                "1)" "Restart Hornet" \
+                                "2)" "Start Hornet" \
+                                "3)" "Stop Hornet" \
+                                "4)" "Status Hornet" 3>&2 2>&1 1>&3
+                            )
+                            case $CHOICE in
+                                "1)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl restart hornet
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
+                                    whiptail --title "Hornet Menu" --msgbox "Hornet successfully restarted" 8 65
+                                ;;
+                                "2)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl start hornet
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while Hornet is starting..." 8 65 0
+                                    whiptail --title "Hornet Menu" --msgbox "Hornet successfully started" 8 65
+                                ;;
+                                "3)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl stop hornet
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while Hornet is stopping..." 8 65 0
+                                    whiptail --title "Hornet Menu" --msgbox "Hornet successfully stopped" 8 65
+                                ;;
+                                "4)")
+                                    hornetStatus="$(sudo systemctl status hornet)"
+                                    whiptail --title "Hornet Menu" --msgbox "$hornetStatus" 15 65
+                                ;;
+                            esac
+                        ;;
+                        "3)")
+                            if (whiptail --title "Hornet Menu" --yesno --defaultno "Are you sure you want to delete the hornet database?" 8 65); then
+                                source $swarmConfigs/hornet.cfg
                                 {
                                     echo 0
                                     echo 50
                                     sudo systemctl stop hornet
+                                    sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots/${hornetNetwork}/*.bin
+                                    sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter=0/' $watchdogLog
+                                    sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter=0/' $watchdogLog
+                                    sudo systemctl start hornet
                                     echo 100
                                     sleep 0.25
-                                } | whiptail --gauge "Please wait while Hornet is stopping..." 8 65 0
-                                whiptail --title "Hornet Menu" --msgbox "Hornet successfully stopped" 8 65
-                            ;;
-                            "4)")
-                                hornetStatus="$(sudo systemctl status hornet)"
-                                whiptail --title "Hornet Menu" --msgbox "$hornetStatus" 15 65
-                            ;;
-                        esac
-                    ;;
-                    "3)")
-                        if (whiptail --title "Hornet Menu" --yesno --defaultno "Are you sure you want to delete the hornet database?" 8 65); then
-                            source $swarmConfigs/hornet.cfg
-                            {
-                                echo 0
-                                echo 50
-                                sudo systemctl stop hornet
-                                sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots/${hornetNetwork}/*.bin $hornetHome/p2pstore
-                                sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter=0/' $logs/watchdog
-                                sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter=0/' $logs/watchdog
-                                sudo systemctl start hornet
-                                echo 100
-                                sleep 0.25
-                            } | whiptail --gauge "Please wait while the cleanup is running..." 8 65 0
-                            whiptail --title "Hornet Menu" --msgbox "${hornetNetwork}DB successfully reset" 8 65
-                        fi
-                    ;;
-                esac
+                                } | whiptail --gauge "Please wait while the cleanup is running..." 8 65 0
+                                whiptail --title "Hornet Menu" --msgbox "${hornetNetwork}DB successfully reset" 8 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
             ;;
             "4)")
                 CHOICE=$(
