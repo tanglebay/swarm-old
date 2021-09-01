@@ -153,29 +153,21 @@ while [ $exitCode -lt 1 ]; do
             )
             case $CHOICE in
                 "1)")
-                    if [ "$domain" = "myhornetnode.domain.tld" ]; then
+                    if [ -z "$domain" ]; then
                         whiptail --title "Proxy Menu" --msgbox "Please set your domain first before continuing!" 8 65
                     else
                         if [ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
-                            if [ $hornetApiPort -eq $goshimmerApiPort ] || [ $beeApiPort -eq $goshimmerApiPort ] || [ $hornetApiPort -eq $beeApiPort ] > /dev/null 2>&1; then
-                                whiptail --title "Proxy - Deployment" --msgbox "The same ports are used for Hornet, Bee or GoShimmer!\n\nPlease set different ports in the proxy configuration." 10 65
-                            else
-                                # Run the nginx module for the proxy
-                                email=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-                                if [ ! -z "$email" ]; then
-                                    source $proxyModules/proxyDeployment
-                                    clear
-                                else
-                                    whiptail --title "Proxy - Deployment" --msgbox "No valid email address entered!" 8 65
-                                fi
-                            fi
-                        else
-                            if [ $hornetApiPort -eq $goshimmerApiPort ] || [ $beeApiPort -eq $goshimmerApiPort ] || [ $hornetApiPort -eq $beeApiPort ] > /dev/null 2>&1; then
-                                whiptail --title "Proxy - Deployment" --msgbox "The same ports are used for Hornet, Bee or GoShimmer!\n\nPlease set different ports in the proxy configuration." 10 65
-                            else
+                            # Run the nginx module for the proxy
+                            email=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+                            if [ ! -z "$email" ]; then
                                 source $proxyModules/proxyDeployment
                                 clear
+                            else
+                                whiptail --title "Proxy - Deployment" --msgbox "No valid email address entered!" 8 65
                             fi
+                        else
+                            source $proxyModules/proxyDeployment
+                            clear
                         fi
                     fi
                 ;;
@@ -199,6 +191,9 @@ while [ $exitCode -lt 1 ]; do
                         if [ -d "/etc/letsencrypt" ]; then
                             sudo rm -rf /etc/letsencrypt > /dev/null 2>&1
                         fi
+                        sudo sed -i 's/^hornetApiPort=.*/hornetApiPort=/' $swarmConfigs/proxy.cfg
+                        sudo sed -i 's/^beeApiPort=.*/beeApiPort=/' $swarmConfigs/proxy.cfg
+                        sudo sed -i 's/^goshimmerApiPort=.*/goshimmerApiPort=/' $swarmConfigs/proxy.cfg
                         echo 100
                         sleep 0.25
                     } | whiptail --gauge "Please wait while removing the proxy..." 6 65 0
