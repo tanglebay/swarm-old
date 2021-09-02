@@ -1,3 +1,8 @@
+## Version 0.7.8
+### Changed
+- Moved alias to SWARM modules
+
+
 ## Version 0.7.7
 ### Added
 - Added new check before deploying proxy
