@@ -1,10 +1,24 @@
+## Version 0.7.7
+### Added
+- Added new check before deploying proxy
+### Changed
+- Fixed Hornet alias
+- Fixed proxy port check
+- Fixed missing check for proxy removal
+- Fixed VARS in SWARM
+- Fixed swarm info module
+- Inlcuded changes from 0.7.6
+
+
 ## Version 0.7.5
 ### Changed
 - General bug fixes
 
+
 ## Version 0.7.4
 ### Changed
 - Major bug fixes
+
 
 ## Version 0.7.3
 ### Added
