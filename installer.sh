@@ -36,7 +36,7 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
                 fi
             } | whiptail --gauge "Please wait while SWARM is installed..." 8 65 0
             if [ -f "/var/lib/swarm/swarm" ]; then
-                source $swarmHome/alias
+                source $swarmModules/swarmAlias
             else
                 whiptail --title "SWARM" --msgbox "SWARM could not be successfully cloned from GitHub!" 8 65
             fi
