@@ -7,7 +7,7 @@ border=black
 textbox=white
 button=black,red
 "
-if [ "$1" = "--reinstall" ]; then
+if [ "$1" = "-reinstall" ]; then
     if [ -d "/var/lib/swarm" ]; then
         sudo rm -rf /var/lib/swarm > /dev/null 2>&1
     fi
