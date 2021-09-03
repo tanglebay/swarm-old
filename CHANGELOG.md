@@ -1,6 +1,9 @@
 ## Version 0.7.8
+### Added
+- Added comnet config to Bee
 ### Changed
 - Moved alias to SWARM modules
+- Fixed Hornet alias parsing
 
 
 ## Version 0.7.7
