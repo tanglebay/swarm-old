@@ -4,6 +4,8 @@
 ### Changed
 - Moved alias to SWARM modules
 - Fixed Hornet alias parsing
+- Fixed Bee alias parsing
+- Fixed Bee menu
 
 
 ## Version 0.7.7
