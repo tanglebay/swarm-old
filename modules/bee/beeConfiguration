@@ -12,7 +12,8 @@ while [ $exitCode -lt 1 ]; do
         "6)" "Local Snapshots" \
         "7)" "Identity" \
         "8)" "Gossip Port" \
-        "9)" "Unknown Peers Limit" 3>&2 2>&1 1>&3
+        "9)" "Unknown Peers Limit" \
+        "10)" "IOTA Network" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -81,7 +82,7 @@ while [ $exitCode -lt 1 ]; do
             if [ ! -z "$beeAlias" ]; then
                 source $beeConfigParsers/beeAlias
                 if [ "$newBeeAlias" = "true" ]; then
-                    sudo sed -i 's/beeAlias=.*/beeAlias="'$beeAlias'"/' $swarmConfigs/bee.cfg
+                    sudo sed -i "s~^beeAlias=.*~beeAlias=\"$beeAlias\"~g" $swarmConfigs/bee.cfg
                     whiptail --title "Bee Configuration" --msgbox "New alias \"$beeAlias\" applied!" 8 65
                     unset newBeeAlias
                 else
@@ -245,7 +246,34 @@ while [ $exitCode -lt 1 ]; do
                 whiptail --title "Bee - Gossip" --msgbox "Maximum of unknown neighbors set to \"$beeMaxUnknownPeers\"!" 8 65
             fi
         ;;
+        "10)")
+            source $swarmConfigs/bee.cfg
+            # Bee Networks
+            CHOICE=$(
+                whiptail --title "Bee - Network" --menu "\nCurrent network: $beeNetwork\n\nChoose an option" 16 65 0 \
+                "1)" "Mainnet (default)" \
+                "2)" "Comnet (dev)" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    if (whiptail --title "Bee - Network" --yesno --defaultno "Are you sure you want to change the network to mainnet (the old database will be deleted)?" 8 65); then
+                        currentBeeNetwork=$beeNetwork
+                        beeNetwork=mainnet
+                        sudo sed -i 's/^beeNetwork=.*/beeNetwork='$beeNetwork'/' $swarmConfigs/bee.cfg
+                        source $beeModules/beeNetwork
+                    fi
+                ;;
+                "2)")
+                    if (whiptail --title "Bee - Network" --yesno --defaultno "Are you sure you want to change the network to comnet (the old database will be deleted)?" 8 65); then
+                        currentBeeNetwork=$beeNetwork
+                        beeNetwork=comnet
+                        sudo sed -i 's/^beeNetwork=.*/beeNetwork='$beeNetwork'/' $swarmConfigs/bee.cfg
+                        source $beeModules/beeNetwork
+                    fi
+                ;;
+            esac
+        ;;
     esac
 done
-sudo chown -R bee:bee $beeDir/config.toml
+sudo chown -R bee:bee $beeDir/config*.toml
 exitCode=0
