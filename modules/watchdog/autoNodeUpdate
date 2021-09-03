@@ -1,65 +1,59 @@
 #!/bin/bash
 
-if [ "$timeframe" = "00" ] || [ "$timeframe" = "15" ] || [ "$timeframe" = "30" ] || [ "$timeframe" = "45" ]; then
-    if [ "$hornetAutoUpdate" = "true" ] && [ -f "/usr/bin/hornet" ]; then
-        source $hornetModules/hornetVersion
-        if [ "$hornetVersion" != "$latestHornetVersion" ]; then
-            sudo apt-get update
-            sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
-            IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-            for hornetConfig in "${ARRAYhornetConfigs[@]}"
-            do
-                if [ -f "$hornetHome/$hornetConfig.json.dpkg-dist" ]; then
-                sudo cp -r $hornetHome/$hornetConfig.json.dpkg-dist $hornetHome/$hornetConfig.json
-                sudo rm -rf $hornetHome/$hornetConfig.json.dpkg*
-                fi
-            done
-            unset ARRAYhornetConfigs
-            unset hornetConfig
-
-            newHornetVersion=$(hornet -v | awk '{ print $2 }')
-            if [ "$hornetVersion" != "$newHornetVersion" ]; then
-                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                # CALL MODULE CONFIGPARSER
-                source $hornetModules/hornetParser
-                sudo systemctl restart hornet
-                echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Hornet version installed and Hornet restarted!" >> $swarmLogs/swarm.log
+if [ "$hornetAutoUpdate" = "true" ] && [ -f "/usr/bin/hornet" ]; then
+    source $hornetModules/hornetVersion
+    if [ "$hornetVersion" != "$latestHornetVersion" ]; then
+        sudo apt-get update
+        sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
+        IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+        for hornetConfig in "${ARRAYhornetConfigs[@]}"
+        do
+            if [ -f "$hornetHome/$hornetConfig.json.dpkg-dist" ]; then
+            sudo cp -r $hornetHome/$hornetConfig.json.dpkg-dist $hornetHome/$hornetConfig.json
+            sudo rm -rf $hornetHome/$hornetConfig.json.dpkg*
             fi
+        done
+        unset ARRAYhornetConfigs
+        unset hornetConfig
+
+        newHornetVersion=$(hornet -v | awk '{ print $2 }')
+        if [ "$hornetVersion" != "$newHornetVersion" ]; then
+            restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+            # CALL MODULE CONFIGPARSER
+            source $hornetModules/hornetParser
+            sudo systemctl restart hornet
+            echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Hornet version installed and Hornet restarted!" >> $swarmLogs/swarm.log
         fi
     fi
 fi
 
-if [ "$timeframe" = "00" ] || [ "$timeframe" = "20" ] || [ "$timeframe" = "40" ]; then
-    # Bee AutoUpdater
-    if [ "$beeAutoUpdate" = "true" ] && [ -f "/usr/bin/bee" ]; then
-        source $beeModules/beeVersion
-        beeStatus="$(systemctl show -p ActiveState --value bee)"
-        if [ "$beeStatus" = "active" ] && [ "$beeVersion" != "$latestBeeVersion" ]; then
-            source $beeModules/beeInstaller
-            source $beeModules/beeParser
-            if [ "$restartBee" = "true" ]; then
-                sudo systemctl restart bee
-                unset restartBee
-            fi
-            echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Bee version installed and Bee restarted!" >> $swarmLogs/swarm.log
+# Bee AutoUpdater
+if [ "$beeAutoUpdate" = "true" ] && [ -f "/usr/bin/bee" ]; then
+    source $beeModules/beeVersion
+    beeStatus="$(systemctl show -p ActiveState --value bee)"
+    if [ "$beeStatus" = "active" ] && [ "$beeVersion" != "$latestBeeVersion" ]; then
+        source $beeModules/beeInstaller
+        source $beeModules/beeParser
+        if [ "$restartBee" = "true" ]; then
+            sudo systemctl restart bee
+            unset restartBee
         fi
+        echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Bee version installed and Bee restarted!" >> $swarmLogs/swarm.log
     fi
 fi
 
-if [ "$timeframe" = "00" ] || [ "$timeframe" = "30" ]; then
-    # GoShimmer AutoUpdater
-    if [ "$goshimmerAutoUpdate" = "true" ] && [ -f "/usr/bin/goshimmer" ]; then
-        source $goshimmerModules/goshimmerVersion
-        goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
-        if [ "$goshimmerStatus" = "active" ] && [ "$goshimmerVersion" != "$latestGoshimmerVersion" ]; then
-            source $goshimmerModules/goshimmerInstaller
-            source $goshimmerModules/goshimmerParser
-            sudo rm -rf $goshimmerHome/mainnetdb
-            if [ "$restartGoshimmer" = "true" ]; then
-                sudo systemctl restart goshimmer
-                unset restartGoshimmer
-            fi
-            echo "$restartDate [WACHTDOG] - AUTOUPDATE - New GoShimmer version installed and GoShimmer restarted!" >> $swarmLogs/swarm.log
+# GoShimmer AutoUpdater
+if [ "$goshimmerAutoUpdate" = "true" ] && [ -f "/usr/bin/goshimmer" ]; then
+    source $goshimmerModules/goshimmerVersion
+    goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+    if [ "$goshimmerStatus" = "active" ] && [ "$goshimmerVersion" != "$latestGoshimmerVersion" ]; then
+        source $goshimmerModules/goshimmerInstaller
+        source $goshimmerModules/goshimmerParser
+        sudo rm -rf $goshimmerHome/mainnetdb
+        if [ "$restartGoshimmer" = "true" ]; then
+            sudo systemctl restart goshimmer
+            unset restartGoshimmer
         fi
+        echo "$restartDate [WACHTDOG] - AUTOUPDATE - New GoShimmer version installed and GoShimmer restarted!" >> $swarmLogs/swarm.log
     fi
 fi
