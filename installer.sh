@@ -7,6 +7,12 @@ border=black
 textbox=white
 button=black,red
 "
+if [ "$1" = "--reinstall" ]; then
+    if [ -d "/var/lib/swarm" ]; then
+        sudo rm -rf /var/lib/swarm > /dev/null 2>&1
+    fi
+fi
+
 if [ ! -f "/var/lib/swarm/swarm" ]; then
     if [ $(id -u) -ne 0 ]; then
         whiptail --title "SWARM" --msgbox "Please run SWARM installer with sudo or as root!" 8 65
@@ -36,6 +42,7 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
                 fi
             } | whiptail --gauge "Please wait while SWARM is installed..." 8 65 0
             if [ -f "/var/lib/swarm/swarm" ]; then
+                source /var/lib/swarm/environment
                 source $swarmModules/swarmAlias
             else
                 whiptail --title "SWARM" --msgbox "SWARM could not be successfully cloned from GitHub!" 8 65
