@@ -153,46 +153,50 @@ while [ $exitCode -lt 1 ]; do
             )
             case $CHOICE in
                 "1)")
-                    source $swarmConfigs/proxy.cfg
-                    if [ -z "$domain" ]; then
-                        whiptail --title "Proxy Menu" --msgbox "Please set your domain first before continuing!" 8 65
-                    else
-                        if [ -f "/usr/bin/hornet" ]; then
-                            if [ -z "$hornetApiPort" ]; then
-                                hornetApiPortInfo="\nHornet: \"Not defined\""
-                            else
-                                hornetApiPortInfo="\nHornet: $hornetApiPort"
+                    if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/goshimmer" ]; then
+                        source $swarmConfigs/proxy.cfg
+                        if [ -z "$domain" ]; then
+                            whiptail --title "Proxy Menu" --msgbox "Please set your domain first before continuing!" 8 65
+                        else
+                            if [ -f "/usr/bin/hornet" ]; then
+                                if [ -z "$hornetApiPort" ]; then
+                                    hornetApiPortInfo="\nHornet: \"Not defined\""
+                                else
+                                    hornetApiPortInfo="\nHornet: $hornetApiPort"
+                                fi
                             fi
-                        fi
-                        if [ -f "/usr/bin/bee" ]; then
-                            if [ -z "$beeApiPort" ]; then
-                                beeApiPortInfo="\nBee: \"Not defined\""
-                            else
-                                beeApiPortInfo="\nBee: $beeApiPort"
+                            if [ -f "/usr/bin/bee" ]; then
+                                if [ -z "$beeApiPort" ]; then
+                                    beeApiPortInfo="\nBee: \"Not defined\""
+                                else
+                                    beeApiPortInfo="\nBee: $beeApiPort"
+                                fi
                             fi
-                        fi
-                        if [ -f "/usr/bin/goshimmer" ]; then
-                            if [ -z "$goshimmerApiPort" ]; then
-                                goshimmerApiPortInfo="\nGoShimmer: \"Not defined\""
-                            else
-                                goshimmerApiPortInfo="\nGoShimmer: $goshimmerApiPort"
+                            if [ -f "/usr/bin/goshimmer" ]; then
+                                if [ -z "$goshimmerApiPort" ]; then
+                                    goshimmerApiPortInfo="\nGoShimmer: \"Not defined\""
+                                else
+                                    goshimmerApiPortInfo="\nGoShimmer: $goshimmerApiPort"
+                                fi
                             fi
-                        fi
-                        if (whiptail --title "Proxy - Deployment" --yesno --defaultno "Before you install/deploy the proxy, please make sure that none of the following ports are used twice or change them before you deploy.\n$hornetApiPortInfo$beeApiPortInfo$goshimmerApiPortInfo\n\n\nAre all ports set and different?" 16 65); then
-                            if [ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
-                                # Run the nginx module for the proxy
-                                email=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-                                if [ ! -z "$email" ]; then
+                            if (whiptail --title "Proxy - Deployment" --yesno --defaultno "Before you install/deploy the proxy, please make sure that none of the following ports are used twice or change them before you deploy.\n$hornetApiPortInfo$beeApiPortInfo$goshimmerApiPortInfo\n\n\nAre all ports set and different?" 16 65); then
+                                if [ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
+                                    # Run the nginx module for the proxy
+                                    email=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+                                    if [ ! -z "$email" ]; then
+                                        source $proxyModules/proxyDeployment
+                                        clear
+                                    else
+                                        whiptail --title "Proxy - Deployment" --msgbox "No valid email address entered!" 8 65
+                                    fi
+                                else
                                     source $proxyModules/proxyDeployment
                                     clear
-                                else
-                                    whiptail --title "Proxy - Deployment" --msgbox "No valid email address entered!" 8 65
                                 fi
-                            else
-                                source $proxyModules/proxyDeployment
-                                clear
                             fi
                         fi
+                    else
+                        whiptail --title "Proxy - Deployment" --msgbox "No node software found on the system, please install a node first before you can install the proxy." 8 65
                     fi
                 ;;
                 "2)")
