@@ -39,11 +39,13 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
                     echo 70
                     ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
                     echo 100
+                    clean
                 fi
             } | whiptail --gauge "Please wait while SWARM is installed..." 8 65 0
             if [ -f "/var/lib/swarm/swarm" ]; then
                 source /var/lib/swarm/environment
                 source $swarmModules/swarmAlias
+                clean
             else
                 whiptail --title "SWARM" --msgbox "SWARM could not be successfully cloned from GitHub!" 8 65
             fi
