@@ -18,7 +18,12 @@ fi
 if [ ! -f "/lib/systemd/system/bee.service" ]; then
     sudo cp -rf $swarmHome/templates/bee/bee.service /lib/systemd/system/bee.service
     if [ ! -f "/etc/default/bee" ]; then
-        echo "OPTIONS=\"--config config.toml\"" > /etc/default/bee
+        if [ "$beeNetwork" = "mainnet" ]; then 
+            echo "OPTIONS=\"--config config.chrysalis-mainnet.toml\"" > /etc/default/bee
+        fi
+        if [ "$beeNetwork" = "comnet" ]; then 
+            echo "OPTIONS=\"--config config.chrysalis-comnet.toml\"" > /etc/default/bee
+        fi
     fi
     if [ ! -f "/etc/systemd/system/multi-user.target.wants/bee.service" ]; then
         sudo systemctl enable bee > /dev/null 2>&1
@@ -33,8 +38,14 @@ sudo mkdir -p /tmp/bee > /dev/null 2>&1
 sudo wget -q -O /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/bee-node-${latestBeeVersion}-linux-x86-64.zip
 
 # Download config
-sudo wget -q -O /tmp/bee/config.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-mainnet.toml
-sudo wget -q -O /tmp/bee/config.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-comnet.toml
+sudo wget -q -O /tmp/bee/config.chrysalis-mainnet.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-mainnet.toml
+sudo wget -q -O /tmp/bee/config.chrysalis-comnet.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-comnet.toml
+if [ ! -s "/tmp/bee/config.chrysalis-mainnet.toml" ]; then
+    sudo wget -q -O /tmp/bee/config.chrysalis-mainnet.toml https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-mainnet.toml
+fi
+if [ ! -s "/tmp/bee/config.chrysalis-comnet.toml" ]; then
+    sudo wget -q -O /tmp/bee/config.chrysalis-comnet.toml https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-comnet.toml
+fi
 
 # Unzip archive
 if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip" ]; then
