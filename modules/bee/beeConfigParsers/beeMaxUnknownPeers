@@ -1,7 +1,14 @@
 #!/bin/bash
 
-parser=$(sed -n '/max_unknown_peers/p' $beeHome/config.toml | awk '{ print $3 }')
-if [ "$parser" != "$beeMaxUnknownPeers" ]; then
-    sudo sed -i 's~^max_unknown_peers.*~max_unknown_peers       = '$beeMaxUnknownPeers'~g' $beeHome/config.toml
-    restartBee=true
-fi
+IFS=', ' read -r -a ARRAYbeeConfigs <<< "$beeConfigs"
+
+for beeConfig in "${ARRAYbeeConfigs[@]}"
+do
+    parser=$(sed -n '/max_unknown_peers/p' $beeHome/config.chrysalis-$beeConfig.toml | awk '{ print $3 }')
+    if [ "$parser" != "$beeMaxUnknownPeers" ]; then
+        sudo sed -i 's~^max_unknown_peers.*~max_unknown_peers       = '$beeMaxUnknownPeers'~g' $beeHome/config.chrysalis-$beeConfig.toml
+        restartBee=true
+    fi
+done
+unset ARRAYbeeConfigs
+unset beeConfig
