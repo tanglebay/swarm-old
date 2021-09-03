@@ -1,3 +1,7 @@
+## Version 0.7.9
+- Hotfix for Bee
+
+
 ## Version 0.7.8
 ### Added
 - Added comnet config to Bee
