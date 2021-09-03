@@ -1,11 +1,14 @@
 ## Version 0.7.8
 ### Added
 - Added comnet config to Bee
+- Added new API to get versions
 ### Changed
 - Moved alias to SWARM modules
 - Fixed Hornet alias parsing
 - Fixed Bee alias parsing
 - Fixed Bee menu
+### Removed
+- Removed time checks for watchdog
 
 
 ## Version 0.7.7
