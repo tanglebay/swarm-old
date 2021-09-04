@@ -48,8 +48,7 @@ fi
 # GoShimmer AutoUpdater
 if [ "$goshimmerAutoUpdate" = "true" ] && [ -f "/usr/bin/goshimmer" ]; then
     source $goshimmerModules/goshimmerVersion
-    goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
-    if [ "$goshimmerStatus" = "active" ] && [ "$goshimmerVersion" != "$latestGoshimmerVersion" ]; then
+    if [ "$goshimmerVersion" != "$latestGoshimmerVersion" ]; then
         source $goshimmerModules/goshimmerInstaller
         source $goshimmerModules/goshimmerParser
         sudo rm -rf $goshimmerHome/mainnetdb
@@ -57,6 +56,9 @@ if [ "$goshimmerAutoUpdate" = "true" ] && [ -f "/usr/bin/goshimmer" ]; then
             sudo systemctl restart goshimmer
             unset restartGoshimmer
         fi
-        echo "$restartDate [WACHTDOG] - AUTOUPDATE - New GoShimmer version installed and GoShimmer restarted!" >> $swarmLogs/swarm.log
+        if [ "$goshimmerUpdated" = "true" ]; then
+            echo "$restartDate [WACHTDOG] - AUTOUPDATE - New version $latestGoshimmerVersion of GoShimmer installed and GoShimmer restarted!" >> $swarmLogs/swarm.log
+            unset goshimmerUpdated
+        fi
     fi
 fi
