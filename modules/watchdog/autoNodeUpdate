@@ -30,16 +30,18 @@ fi
 # Bee AutoUpdater
 if [ "$beeAutoUpdate" = "true" ] && [ -f "/usr/bin/bee" ]; then
     source $beeModules/beeVersion
-    beeStatus="$(systemctl show -p ActiveState --value bee)"
-    if [ "$beeStatus" = "active" ] && [ "$beeVersion" != "$latestBeeVersion" ]; then
+    if [ "$beeVersion" != "$latestBeeVersion" ]; then
         source $beeModules/beeInstaller
         source $beeModules/beeParser
         if [ "$restartBee" = "true" ]; then
             sudo systemctl restart bee
             unset restartBee
         fi
-        restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-        echo "$restartDate [WACHTDOG] - AUTOUPDATE - New Bee version installed and Bee restarted!" >> $swarmLogs/swarm.log
+        if [ "$beeUpdated" = "true" ]; then
+            restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+            echo "$restartDate [WACHTDOG] - AUTOUPDATE - New version $latestBeeVersion of Bee installed and Bee restarted!" >> $swarmLogs/swarm.log
+            unset beeUpdated
+        fi
     fi
 fi
 
