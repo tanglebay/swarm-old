@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# General
 if ! id bee >/dev/null 2>&1; then
     useradd --no-create-home --system bee >/dev/null
 fi
@@ -31,21 +32,13 @@ if [ ! -f "/lib/systemd/system/bee.service" ]; then
     sudo systemctl daemon-reload
 fi
 
+##############################################################################################################################################
+
 # Create dir if not exist
 sudo mkdir -p /tmp/bee > /dev/null 2>&1
 
 # Download latest bee
 sudo wget -q -O /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/bee-node-${latestBeeVersion}-linux-x86-64.zip
-
-# Download config
-sudo wget -q -O /tmp/bee/config.chrysalis-mainnet.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-mainnet.toml
-sudo wget -q -O /tmp/bee/config.chrysalis-comnet.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-comnet.toml
-if [ ! -s "/tmp/bee/config.chrysalis-mainnet.toml" ]; then
-    sudo wget -q -O /tmp/bee/config.chrysalis-mainnet.toml https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-mainnet.toml
-fi
-if [ ! -s "/tmp/bee/config.chrysalis-comnet.toml" ]; then
-    sudo wget -q -O /tmp/bee/config.chrysalis-comnet.toml https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-comnet.toml
-fi
 
 # Unzip archive
 if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip" ]; then
@@ -53,7 +46,7 @@ if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip" ]; then
 fi
 
 # Copy binary
-if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee" ] && [ -f "/tmp/bee/config.chrysalis-mainnet.toml" ] && [ -f "/tmp/bee/config.chrysalis-comnet.toml" ]; then
+if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee" ]; then
     beeStatus="$(systemctl show -p ActiveState --value bee)"
     if [ "$beeStatus" = "active" ]; then
         sudo systemctl stop bee
@@ -61,13 +54,42 @@ if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee" ] && [ -f "/tmp
 
     sudo cp -rf /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee /usr/bin/bee > /dev/null 2>&1
     sudo chmod +x /usr/bin/bee
+    newBeeBinary=true
+fi
 
-    sudo cp -rf /tmp/bee/config.chrysalis-mainnet.toml $beeHome/config.chrysalis-mainnet.toml > /dev/null 2>&1
-    sudo cp -rf /tmp/bee/config.chrysalis-comnet.toml $beeHome/config.chrysalis-comnet.toml > /dev/null 2>&1
+##############################################################################################################################################
 
+if [ "$newBeeBinary" = "true" ]; then
+    ## Download config
+    ### Mainnet Config
+    sudo wget -q -O /tmp/bee/config.chrysalis-mainnet.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-mainnet.toml
+    if [ ! -s "/tmp/bee/config.chrysalis-mainnet.toml" ]; then
+        sudo wget -q -O /tmp/bee/config.chrysalis-mainnet.toml https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-mainnet.toml
+    fi
+    if [ -f "/tmp/bee/config.chrysalis-mainnet.toml" ]; then
+        sudo cp -rf /tmp/bee/config.chrysalis-mainnet.toml $beeHome/config.chrysalis-mainnet.toml > /dev/null 2>&1
+        newBeeConfig=true
+    fi
+
+    ### Comnet Config
+    sudo wget -q -O /tmp/bee/config.chrysalis-comnet.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-comnet.toml
+    if [ ! -s "/tmp/bee/config.chrysalis-comnet.toml" ]; then
+        sudo wget -q -O /tmp/bee/config.chrysalis-comnet.toml https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-comnet.toml
+    fi
+    if [ -f "/tmp/bee/config.chrysalis-comnet.toml" ]; then
+        sudo cp -rf /tmp/bee/config.chrysalis-comnet.toml $beeHome/config.chrysalis-comnet.toml > /dev/null 2>&1
+        newBeeConfig=true
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newBeeConfig" = "true" ]; then
     # Run installer modules
     source $beeConfigParsers/beeCoordinatorPublicKeys
     source $beeConfigParsers/beeSnapshotDownloadUrl
+
+    sudo chown -R bee:bee $beeHome > /dev/null 2>&1
 
     restartBee=true
     beeUpdated=true
@@ -76,8 +98,9 @@ fi
 # Remove temporary files
 sudo rm -rf /tmp/bee > /dev/null 2>&1
 
-# Set owner
-sudo chown -R bee:bee $beeHome > /dev/null 2>&1
+
+unset newBeeBinary
+unset newBeeConfig
 
 # Port Check
 # if [ $beeAutopeeringPort -eq $goshimmerAutopeeringPort ] && [ -f "/usr/bin/goshimmer" ]; then
