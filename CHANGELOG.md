@@ -1,3 +1,15 @@
+## Version 0.8.1
+### Added
+- Option to install Hornet and Bee
+### Changed
+- Fixed Hornet pruning database size
+- Fixed Installer
+- Fixed SWARM alias
+- Fixed general bugs (includes bug fixes from 0.8.0)
+### Removed
+- Removed old code/files
+
+
 ## Version 0.7.9
 - Hotfix for Bee
 
