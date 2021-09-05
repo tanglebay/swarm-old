@@ -1,85 +1,95 @@
 #!/bin/bash
 
 # INSTALL HORNET
-if [ ! -f "/usr/bin/hornet" ]; then
+{
+    echo 0
+    echo 10
+    source $swarmConfigs/hornet.cfg
+    echo 20
+    sudo snap install go --classic > /dev/null 2>&1
+    echo 30
+    wget -qO - https://ppa.hornet.zone/pubkey.txt | sudo apt-key add - > /dev/null 2>&1
+    if [ "$hornetRelease" = "stable" ]; then
+    sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+    fi
+    if [ "$hornetRelease" = "testing" ]; then
+        sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+        sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
+        sudo sh -c 'echo "deb http://ppa.hornet.zone alpha main" >> /etc/apt/sources.list.d/hornet.list'
+    fi
+    echo 40
+    sudo apt-get -qq update > /dev/null 2>&1
+    echo 50
+    sudo apt-get -qq install hornet -y > /dev/null 2>&1
+    echo 60
+    # Check which network
+    if [ "$hornetNetwork" = "mainnet" ]; then
+        echo "" > /etc/default/hornet
+    fi
+    if [ "$hornetNetwork" = "testnet" ]; then
+        echo "OPTIONS=\"--config config_chrysalis_testnet.json\"" > /etc/default/hornet
+    fi
+    if [ "$hornetNetwork" = "comnet" ]; then
+        echo "OPTIONS=\"--config config_comnet.json\"" > /etc/default/hornet
+    fi
+    echo 70
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/hornet.service" ]; then
+        sudo systemctl enable hornet > /dev/null 2>&1
+    fi
+    echo 80
+    if [ ! -d "$hornetHome" ]; then
+        sudo mkdir -p $hornetHome
+        if [ ! -s "$hornetHome/peering.json" ]; then
+            sudo wget -q -O $hornetHome/peering.json https://raw.githubusercontent.com/gohornet/hornet/main/peering.json
+        fi
+        chown -R hornet:hornet $hornetHome
+    fi
+    echo 100
+    sleep 0.5
+} | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
+if [ -f "/usr/bin/hornet" ]; then
+    source $swarmConfigs/hornet.cfg
     {
         echo 0
         echo 10
-        source $swarmConfigs/hornet.cfg
+        # Port Check
+        if [ $goshimmerAutopeeringPort -eq $hornetAutopeeringPort ] && [ -f "/usr/bin/goshimmer" ]; then
+            let hornetAutopeeringPort=$hornetAutopeeringPort+1
+            sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort='$hornetAutopeeringPort'/' $swarmConfigs/hornet.cfg
+        fi
+        if [ -f "/usr/bin/bee" ]; then
+            if [ "$hornetGossipPort" = "$beeGossipPort" ]; then
+                let hornetGossipPort=$hornetGossipPort+1
+                sudo sed -i 's/^hornetGossipPort=.*/hornetGossipPort='$hornetGossipPort'/' $swarmConfigs/hornet.cfg
+            fi
+            if [ "$hornetDashboardPort" = "$beeDashboardPort" ]; then
+                let hornetDashboardPort=$hornetDashboardPort+1
+                sudo sed -i 's/^hornetDashboardPort=.*/hornetDashboardPort='$hornetDashboardPort'/' $swarmConfigs/hornet.cfg
+            fi
+            if [ "$hornetRestApiPort" = "$beeRestApiPort" ]; then
+                let hornetRestApiPort=$hornetRestApiPort+1
+                sudo sed -i 's/^hornetRestApiPort=.*/hornetRestApiPort='$hornetRestApiPort'/' $swarmConfigs/hornet.cfg
+            fi
+        fi
         echo 20
-        sudo snap install go --classic > /dev/null 2>&1
-        echo 30
-        wget -qO - https://ppa.hornet.zone/pubkey.txt | sudo apt-key add - > /dev/null 2>&1
-        if [ "$hornetRelease" = "stable" ]; then
-        sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
-        fi
-        if [ "$hornetRelease" = "testing" ]; then
-            sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
-            sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
-            sudo sh -c 'echo "deb http://ppa.hornet.zone alpha main" >> /etc/apt/sources.list.d/hornet.list'
-        fi
+        # CALL MODULE CONFIGPARSER
         echo 40
-        sudo apt-get -qq update > /dev/null 2>&1
-        echo 50
-        sudo apt-get -qq install hornet -y > /dev/null 2>&1
+        source $hornetModules/hornetParser
         echo 60
-        # Check which network
-        if [ "$hornetNetwork" = "mainnet" ]; then
-            echo "" > /etc/default/hornet
-        fi
-        if [ "$hornetNetwork" = "testnet" ]; then
-            echo "OPTIONS=\"--config config_chrysalis_testnet.json\"" > /etc/default/hornet
-        fi
-        if [ "$hornetNetwork" = "comnet" ]; then
-            echo "OPTIONS=\"--config config_comnet.json\"" > /etc/default/hornet
-        fi
-        echo 70
-        if [ ! -f "/etc/systemd/system/multi-user.target.wants/hornet.service" ]; then
-            sudo systemctl enable hornet > /dev/null 2>&1
+        if [ "$ufw" = "true" ]; then
+            sudo ufw allow $hornetGossipPort/tcp > /dev/null 2>&1
+            sudo ufw allow $hornetAutopeeringPort/udp > /dev/null 2>&1
         fi
         echo 80
-        if [ ! -d "$hornetHome" ]; then
-            sudo mkdir -p $hornetHome
-            if [ ! -s "$hornetHome/peering.json" ]; then
-                sudo wget -q -O $hornetHome/peering.json https://raw.githubusercontent.com/gohornet/hornet/main/peering.json
-            fi
-            chown -R hornet:hornet $hornetHome
+        sudo systemctl start hornet > /dev/null 2>&1
+        sleep 2
+        hornetStatus="$(systemctl show -p ActiveState --value hornet)"
+        if [ "$hornetStatus" != "active" ]; then
+            sudo systemctl restart hornet > /dev/null 2>&1
         fi
         echo 100
-        sleep 0.5
-    } | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
-    if [ -f "/usr/bin/hornet" ]; then
-        source $swarmConfigs/hornet.cfg
-        {
-            echo 0
-            echo 10
-            # Port Check
-            if [ $goshimmerAutopeeringPort -eq $hornetAutopeeringPort ] && [ -f "/usr/bin/goshimmer" ]; then
-                let hornetAutopeeringPort=$hornetAutopeeringPort+1
-                sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort='$hornetAutopeeringPort'/' $swarmConfigs/hornet.cfg
-            fi
-            echo 20
-            # CALL MODULE CONFIGPARSER
-            echo 40
-            source $hornetModules/hornetParser
-            echo 60
-            if [ "$ufw" = "true" ]; then
-                sudo ufw allow $hornetGossipPort/tcp > /dev/null 2>&1
-                sudo ufw allow $hornetAutopeeringPort/udp > /dev/null 2>&1
-            fi
-            echo 80
-            sudo systemctl start hornet > /dev/null 2>&1
-            sleep 2
-            hornetStatus="$(systemctl show -p ActiveState --value hornet)"
-            if [ "$hornetStatus" != "active" ]; then
-                sudo systemctl restart hornet > /dev/null 2>&1
-            fi
-            echo 100
-        } | whiptail --gauge "Please wait while Hornet will be prepared..." 6 65 0
-        whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $hornetGossipPort/tcp\nAutopeering: $hornetAutopeeringPort/udp" 15 65
-    else
-        whiptail --title "Hornet Installer" --msgbox "Error while installing Hornet. Please check hornet.cfg and try again!" 8 65
-    fi
+    } | whiptail --gauge "Please wait while Hornet will be prepared..." 6 65 0
+    whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $hornetGossipPort/tcp\nAutopeering: $hornetAutopeeringPort/udp" 15 65
 else
-    whiptail --title "Hornet Installer" --msgbox "Hornet already installed or not set in the SWARM.cfg!" 8 65
+    whiptail --title "Hornet Installer" --msgbox "Error while installing Hornet. Please check hornet.cfg and try again!" 8 65
 fi
