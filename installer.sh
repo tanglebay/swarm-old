@@ -46,6 +46,9 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
                 source /var/lib/swarm/environment
                 source $swarmModules/swarmAlias
                 clear
+                if [ "$swarmAliasExists" = "true" ]; then
+                    source $swarmHome/swarm
+                fi
             else
                 whiptail --title "SWARM" --msgbox "SWARM could not be successfully cloned from GitHub!" 8 65
             fi
