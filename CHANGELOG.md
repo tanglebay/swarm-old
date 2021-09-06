@@ -1,3 +1,12 @@
+## Version 0.8.2
+### Added
+- Added converter for Hornet identityPrivateKey
+### Changed
+- Fixed missing port vars for Hornet and Bee
+- Fixed beeVersion
+- Set temporary Bee v0.2.0-rc1 as stable version
+
+
 ## Version 0.8.1
 ### Added
 - Option to install Hornet and Bee

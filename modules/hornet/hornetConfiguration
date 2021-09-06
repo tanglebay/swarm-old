@@ -336,8 +336,9 @@ while [ $exitCode -lt 1 ]; do
                 # Hornet Dashboard
                 CHOICE=$(
                     whiptail --title "Hornet - Identity" --menu "\nChoose an option" 14 65 0 \
-                    "1)" "Set Identity" \
-                    "2)" "Generate Identity" 3>&2 2>&1 1>&3
+                    "1)" "Set identity" \
+                    "2)" "Generate new Identity" \
+                    "3)" "Convert identityPrivateKey" 3>&2 2>&1 1>&3
                 )
                 exitstatus=$?
                 if [ "$exitstatus" = "1" ]; then
@@ -360,6 +361,18 @@ while [ $exitCode -lt 1 ]; do
                             source $hornetConfigParsers/hornetIdentity
                             whiptail --title "Hornet - Identity" --msgbox "The following p2pIdentity key was set: \n$hornetIdentity" 12 65
                             source $swarmConfigs/hornet.cfg
+                        fi
+                    ;;
+                    "3)")
+                        if (whiptail --title "Hornet - Identity" --yesno --defaultno "Are you sure you want to convert your previous identityPrivateKey?" 8 65); then
+                            hornetP2pIdentity=$(whiptail --inputbox "\nEnter your identityPrivateKey" 10 65 --title "Hornet - Identity" 3>&1 1>&2 2>&3)
+                            if [ ! -z "$identityPrivateKey" ]; then
+                                source $hornetConfigParsers/hornetIdentity
+                                if [ "$hornetIdentityUpdated" = "true" ]; then
+                                    whiptail --title "Hornet - Identity" --msgbox "Your converted private key is: \n$hornetIdentity!" 10 65
+                                    unset hornetIdentityUpdated
+                                fi
+                            fi
                         fi
                     ;;
                 esac
