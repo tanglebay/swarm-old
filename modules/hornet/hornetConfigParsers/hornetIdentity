@@ -1,5 +1,23 @@
 #!/bin/bash
 
+if [ -z "$hornetP2pIdentity" ]; then
+    hornetP2pIdentity="$(jq '.p2p.identityPrivateKey' $hornetHome/config.json)"
+fi
+if [ "$hornetP2pIdentity" != "null" ] && [ ! -z "$hornetP2pIdentity" ]; then
+    if [ -f "$hornetHome/p2pstore/identity.key" ]; then
+        sudo rm -rf $hornetHome/p2pstore/identity.key
+    fi
+    (cd $hornetHome ; sudo -u hornet /usr/bin/hornet tools p2pidentity-gen p2pstore $hornetP2pIdentity)
+    if [ -f "$hornetHome/p2pstore/identity.key" ]; then
+        hornetIdentity=$(cat $hornetHome/p2pstore/identity.key | sed -n '2 p')
+        sed -i '2 s~.*~'$hornetIdentity'~' $hornetHome/p2pstore/identity.key
+        sudo jq 'del(.p2p.identityPrivateKey)' $hornetHome/config.json|sponge $hornetHome/config.json
+        restartHornet=true
+        hornetIdentityUpdated=true
+        unset hornetP2pIdentity
+    fi
+fi
+
 if [ -z "$hornetIdentity" ] || [ ! -f "$hornetHome/p2pstore/identity.key" ]; then
     if [ ! -f "$hornetHome/p2pstore/identity.key" ]; then
         ( cd $hornetHome ; sudo -u hornet /usr/bin/hornet tools p2pidentity-gen )
