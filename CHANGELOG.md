@@ -1,4 +1,8 @@
 ## Version 0.8.2
+- Hotfix for Bee installation
+
+
+## Version 0.8.2
 ### Added
 - Added converter for Hornet identityPrivateKey
 ### Changed
