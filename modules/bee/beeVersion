@@ -2,17 +2,19 @@
 
 # Bee version
 if [ -f "/usr/bin/bee" ]; then
-    beeVersion=$(curl -s -X GET "http://localhost:$beeRestApiPort/api/v1/info" -H  "accept: application/json"|jq '.data.version' | cut -f1 -d"-")
+    beeVersion=$(curl -s -X GET "http://localhost:$beeRestApiPort/api/v1/info" -H  "accept: application/json"|jq '.data.version')
     beeVersion=$(echo "$beeVersion" | tr -d '"')
+
+    if [[ $beeVersion = *0.2.0-rc1* ]]; then
+        beeVersion="0.2.0-rc1"
+    else
+        beeVersion=$(echo $beeVersion | cut -f1 -d"-")
+    fi
 fi
 
 # Latest Bee version
 latestBeeVersion=$(curl -s -X GET "https://cdn.tanglebay.com/github/version" -H  "accept: application/json"|jq '.data.node.bee.stable')
 latestBeeVersion=$(echo "$latestBeeVersion" | tr -d '"')
-
-if [ "$latestBeeVersion" = "0.1.2" ]; then
-    latestBeeVersion="0.2.0-rc1"
-fi
 
 # Replace var if empty
 if [ -z "$latestBeeVersion" ]; then
