@@ -5,8 +5,12 @@ IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
 for hornetConfig in "${ARRAYhornetConfigs[@]}"
 do
     parser=$(jq '.dashboard.bindAddress' $hornetHome/$hornetConfig.json)
-    if [ "$parser" != "\"localhost:$hornetDashboardPort\"" ]; then
-        sudo jq '.dashboard.bindAddress = "localhost:'$hornetDashboardPort'"' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+    if [ "$parser" != "\"localhost:8081\"" ]; then
+        sudo jq '.dashboard.bindAddress = "localhost:8081"' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+        if [ -f "/etc/nginx/sites-enabled/hornet" ]; then
+            sudo find /etc/nginx/sites-enabled/hornet -type f -exec sed -i 's/8082/8081/g' {} \;
+            sudo systemctl reload nginx
+        fi
         restartHornet=true
     fi
 done

@@ -1,14 +1,14 @@
 #!/bin/bash
 
 parser="$(jq '.autopeering.seed' $goshimmerHome/config.json)"
-if [ -z "$goshimmerSeed" ]; then
-    if [ -z "$parser" ]; then
+if [ -z "$goshimmerSeed" ] || [ "$goshimmerSeed" = "\"null\"" ] || [ "$goshimmerSeed" = "null" ]; then
+    if [ -z "$parser" ] || [ "$parser" = "\"null\"" ] || [ "$parser" = "null" ] || [ "$parser" = "\"\"" ]; then
         goshimmerSeed=$(openssl rand -base64 32)
         goshimmerSeed="base64:$goshimmerSeed"
         sudo sed -i 's~^goshimmerSeed=.*~goshimmerSeed="'$goshimmerSeed'"~g' $swarmConfigs/goshimmer.cfg
     else
         goshimmerSeed=$parser
-        sudo sed -i 's~^goshimmerSeed=.*~goshimmerSeed="'$goshimmerSeed'"~g' $swarmConfigs/goshimmer.cfg
+        sudo sed -i 's~^goshimmerSeed=.*~goshimmerSeed='$goshimmerSeed'~g' $swarmConfigs/goshimmer.cfg
     fi
 else
     if [ "$parser" != "\"$goshimmerSeed\"" ]; then
