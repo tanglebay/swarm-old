@@ -7,6 +7,10 @@ do
     parser=$(jq '.restAPI.bindAddress' $hornetHome/$hornetConfig.json)
     if [ "$parser" != "\"0.0.0.0:14265\"" ]; then
         sudo jq '.restAPI.bindAddress = "0.0.0.0:14265"' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+        if [ -f "/etc/nginx/sites-enabled/hornet" ]; then
+            sudo find /etc/nginx/sites-enabled/hornet -type f -exec sed -i 's/14266/14265/g' {} \;
+            sudo systemctl reload nginx
+        fi
         restartHornet=true
     fi
 done

@@ -7,6 +7,10 @@ do
     parser=$(sed -n '/^bind_address/p' $beeHome/config.chrysalis-$beeConfig.toml | sed -n 2p | awk '{ print $3 }')
     if [ "$parser" != "\"/ip4/0.0.0.0/tcp/14266\"" ]; then
         sudo sed -i 's~^bind_address          = '$parser'~bind_address          = "/ip4/0.0.0.0/tcp/14266"~g' $beeHome/config.chrysalis-$beeConfig.toml
+        if [ -f "/etc/nginx/sites-enabled/bee" ]; then
+            sudo find /etc/nginx/sites-enabled/bee -type f -exec sed -i 's/14265/14266/g' {} \;
+            sudo systemctl reload nginx
+        fi
         restartBee=true
     fi
 done
