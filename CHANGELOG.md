@@ -1,4 +1,4 @@
-## Version 0.8.3
+## Version 0.8.4
 ### Changed
 - Fixed Goshimmer Seed
 - Fixed issue with interal dashboard ports
@@ -6,7 +6,7 @@
 - Fixed Bee pwd gen
 
 
-## Version 0.8.2
+## Version 0.8.3
 - Hotfix for Bee installation
 
 
