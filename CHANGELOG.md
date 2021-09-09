@@ -1,4 +1,5 @@
 ## Version 0.8.3
+### Changed
 - Fixed Goshimmer Seed
 - Fixed issue with interal dashboard ports
 - Fixed issue with internal api ports
