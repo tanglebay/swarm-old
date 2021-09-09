@@ -1,3 +1,11 @@
+## Version 0.8.5
+## Added
+- Added support for multiple domains
+## Changed
+- Changed proxy variables
+- Changed proxy configuration menu
+
+
 ## Version 0.8.4
 ### Changed
 - Fixed Goshimmer Seed
