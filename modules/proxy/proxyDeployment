@@ -29,87 +29,102 @@ fi
 
 if [ -f "/usr/bin/hornet" ] && [ ! -z "$proxyHornetDomain" ]; then
     if [ ! -d "/etc/letsencrypt/live/$proxyHornetDomain" ]; then
-        {
-            echo 0
-            echo 10
-            if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+        if [ -z "$emailAddress" ]; then
+            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+        fi
+        if [ ! -z "$emailAddress" ]; then
+            {
+                echo 0
+                echo 10
+                if [ ! -f "/etc/nginx/nginx.conf" ]; then
+                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+                fi
+                echo 25
+                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
+                if [ "$proxyStatus" != "active" ]; then
+                    sudo cat $swarmTemplates/proxy/nginx_http.template > /etc/nginx/sites-enabled/default
+                    sudo systemctl restart nginx
+                fi
+                echo 50
+                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyHornetDomain -m $emailAddress > /dev/null 2>&1
+                unset emailaddress
+                echo 100
+            } | whiptail --gauge "Requesting SSL certificate for Hornet..." 6 65 0  
+            # echo ""
+            # read -p "Press any key to continue..."
+            if [ ! -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ]; then
+                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Hornet not found!" 8 65
+            else
+                whiptail --title "Proxy - Deployment" --msgbox "SSL certificate for Hornet successfully issued!" 8 65
             fi
-            echo 25
-            proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-            if [ "$proxyStatus" != "active" ]; then
-                sudo cat $swarmTemplates/proxy/nginx_http.template > /etc/nginx/sites-enabled/default
-                sudo systemctl restart nginx
-            fi
-            echo 50
-            sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyHornetDomain -m $email > /dev/null 2>&1
-            unset emailaddress
-            echo 100
-        } | whiptail --gauge "Requesting SSL certificate for Hornet..." 6 65 0  
-        # echo ""
-        # read -p "Press any key to continue..."
-        if [ ! -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ]; then
-            whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Hornet not found!" 8 65
-        else
-            whiptail --title "Proxy - Deployment" --msgbox "SSL certificate for Hornet successfully issued!" 8 65
         fi
     fi
 fi
 
 if [ -f "/usr/bin/bee" ] && [ ! -z "$proxyBeeDomain" ]; then
     if [ ! -d "/etc/letsencrypt/live/$proxyBeeDomain" ]; then
-        {
-            echo 0
-            echo 10
-            if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+        if [ -z "$emailAddress" ]; then
+            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+        fi
+        if [ ! -z "$emailAddress" ]; then
+            {
+                echo 0
+                echo 10
+                if [ ! -f "/etc/nginx/nginx.conf" ]; then
+                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+                fi
+                echo 25
+                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
+                if [ "$proxyStatus" != "active" ]; then
+                    sudo cat $swarmTemplates/proxy/nginx_http.template > /etc/nginx/sites-enabled/default
+                    sudo systemctl restart nginx
+                fi
+                echo 50
+                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyBeeDomain -m $emailAddress > /dev/null 2>&1
+                unset emailaddress
+                echo 100
+            } | whiptail --gauge "Requesting SSL certificate for Bee..." 6 65 0  
+            # echo ""
+            # read -p "Press any key to continue..."
+            if [ ! -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ]; then
+                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Bee not found!" 8 65
+            else
+                whiptail --title "Proxy - Deployment" --msgbox "SSL certificate for Bee successfully issued!" 8 65
             fi
-            echo 25
-            proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-            if [ "$proxyStatus" != "active" ]; then
-                sudo cat $swarmTemplates/proxy/nginx_http.template > /etc/nginx/sites-enabled/default
-                sudo systemctl restart nginx
-            fi
-            echo 50
-            sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyBeeDomain -m $email > /dev/null 2>&1
-            unset emailaddress
-            echo 100
-        } | whiptail --gauge "Requesting SSL certificate for Bee..." 6 65 0  
-        # echo ""
-        # read -p "Press any key to continue..."
-        if [ ! -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ]; then
-            whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Bee not found!" 8 65
-        else
-            whiptail --title "Proxy - Deployment" --msgbox "SSL certificate for Bee successfully issued!" 8 65
         fi
     fi
 fi
 
 if [ -f "/usr/bin/goshimmer" ] && [ ! -z "$proxyGoshimmerDomain" ]; then
     if [ ! -d "/etc/letsencrypt/live/$proxyGoshimmerDomain" ]; then
-        {
-            echo 0
-            echo 10
-            if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+        if [ -z "$emailAddress" ]; then
+            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+        fi
+        if [ ! -z "$emailAddress" ]; then
+            {
+                echo 0
+                echo 10
+                if [ ! -f "/etc/nginx/nginx.conf" ]; then
+                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+                fi
+                echo 25
+                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
+                if [ "$proxyStatus" != "active" ]; then
+                    sudo cat $swarmTemplates/proxy/nginx_http.template > /etc/nginx/sites-enabled/default
+                    sudo systemctl restart nginx
+                fi
+                echo 50
+                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyGoshimmerDomain -m $email > /dev/null 2>&1
+                unset emailaddress
+                echo 100
+            } | whiptail --gauge "Requesting SSL certificate for GoShimmer..." 6 65 0  
+            # echo ""
+            # read -p "Press any key to continue..."
+            if [ ! -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
+                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for GoShimmer not found!" 8 65
+            else
+                whiptail --title "Proxy - Deployment" --msgbox "SSL certificate for GoShimmer successfully issued!" 8 65
             fi
-            echo 25
-            proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-            if [ "$proxyStatus" != "active" ]; then
-                sudo cat $swarmTemplates/proxy/nginx_http.template > /etc/nginx/sites-enabled/default
-                sudo systemctl restart nginx
-            fi
-            echo 50
-            sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyGoshimmerDomain -m $email > /dev/null 2>&1
-            unset emailaddress
-            echo 100
-        } | whiptail --gauge "Requesting SSL certificate for GoShimmer..." 6 65 0  
-        # echo ""
-        # read -p "Press any key to continue..."
-        if [ ! -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
-            whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for GoShimmer not found!" 8 65
-        else
-            whiptail --title "Proxy - Deployment" --msgbox "SSL certificate for GoShimmer successfully issued!" 8 65
         fi
     fi
 fi
@@ -165,9 +180,6 @@ if [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
         fi
     fi
 fi
-
-
-
 
 # Check if the certificate for the domain already exist
 if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
