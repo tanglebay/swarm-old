@@ -58,9 +58,9 @@ You can find the configuration files under the following path:
 cd /var/lib/swarm/configs
 ```
 
----
-
 After the reinstallation, simply replace the configurations with your backup, run a SWARM update to update the configuration files (if necessary) and then you can reinstall Hornet and the proxy and have all settings imported directly.
+
+---
 
 ## Disclaimer
 
