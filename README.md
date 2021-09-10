@@ -41,10 +41,8 @@ curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh |
 ### GoShimmer
 - Gossip port (peering): 14666/tcp (customizable)
 - Autopeering port (peering): 14646/udp
-
-## Proxy
+### Proxy
 In the proxy menu you can define a separate domain for each node or one domain for all. Please note that when using a shared domain, a separate port must be defined for each node.
-### Ports
 - HTTP: 80/tcp
 **Please note that the following ports should not be used for the proxy 8080/tcp-8084/tcp**
 
