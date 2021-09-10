@@ -23,10 +23,9 @@ while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
                     whiptail --title "Proxy Menu" --menu "\nChoose an option" 14 65 0 \
-                    "1)" "Set Domain" \
-                    "2)" "Set Hornet (HTTPS) Port" \
-                    "3)" "Set Bee (HTTPS) Port" \
-                    "4)" "Set GoShimmer (HTTPS) Port" 3>&2 2>&1 1>&3
+                    "1)" "Hornet proxy settings" \
+                    "2)" "Bee proxy settings" \
+                    "3)" "GoShimmer proxy settings" 3>&2 2>&1 1>&3
                 )
 
                 exitStatus=$?
@@ -36,53 +35,127 @@ while [ $exitCode -lt 1 ]; do
 
                 case $CHOICE in
                     "1)")
-                        source $swarmConfigs/proxy.cfg
-                        currentDomain=$domain
-                        domain=$(whiptail --inputbox "\nSet your domain or your ddns name for you node" 10 65 --title "Proxy - Domain" 3>&1 1>&2 2>&3)
-                        if [ ! -z "$domain" ]; then
-                            if [ "$currentDomain" != "$domain" ]; then
-                                sudo sed -i 's/^domain=.*/domain="'$domain'"/' $swarmConfigs/proxy.cfg
-                                whiptail --title "Proxy - Domain" --msgbox "Domain for proxy set to \"$domain\"" 8 65
-                            else
-                                whiptail --title "Proxy - Domain" --msgbox "No domain change detected" 8 65
+                        while [ $exitCode -lt 1 ]; do
+                            source $swarmConfigs/proxy.cfg
+                            clear
+                            CHOICE=$(
+                                whiptail --title "Proxy - Hornet Settings" --menu "\nHornet Domain: $proxyHornetDomain\nHornet Port: $proxyHornetPort\n\nChoose an option" 15 65 0 \
+                                "1)" "Hornet domain" \
+                                "2)" "Hornet port" 3>&2 2>&1 1>&3
+                            )
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
                             fi
-                        fi 
+                            case $CHOICE in
+                                "1)")
+                                    source $swarmConfigs/proxy.cfg
+                                    currentProxyHornetDomain=$proxyHornetDomain
+                                    proxyHornetDomain=$(whiptail --inputbox "\nSet your domain or your ddns name for Hornet" 10 65 --title "Proxy - Hornet Domain" 3>&1 1>&2 2>&3)
+                                    if [ "$currentProxyHornetDomain" != "$proxyHornetDomain" ]; then
+                                        sudo sed -i 's/^proxyHornetDomain=.*/proxyHornetDomain="'$proxyHornetDomain'"/' $swarmConfigs/proxy.cfg
+                                        whiptail --title "Proxy - Hornet Domain" --msgbox "Domain for proxy set to \"$proxyHornetDomain\"" 8 65
+                                    else
+                                        whiptail --title "Proxy - Hornet Domain" --msgbox "No Hornet domain change detected" 8 65
+                                    fi
+                                ;;
+                                "2)")
+                                    source $swarmConfigs/proxy.cfg
+                                    currentProxyHornetPort=$proxyHornetPort
+                                    proxyHornetPort=$(whiptail --inputbox "\nSet a port for Hornet" 10 65 $proxyHornetPort --title "Proxy - Hornet Port" 3>&1 1>&2 2>&3)
+                                    if [ ! -z "$proxyHornetPort" ] && [ $proxyHornetPort -eq $proxyHornetPort ] 2>/dev/null; then
+                                        if [ "$currentProxyHornetPort" != "$proxyHornetPort" ]; then
+                                            ufw delete allow $currentProxyHornetPort/tcp > /dev/null 2>&1
+                                            sudo sed -i 's/^proxyHornetPort=.*/proxyHornetPort='$proxyHornetPort'/' $swarmConfigs/proxy.cfg
+                                            whiptail --title "Proxy - Hornet Port" --msgbox "The Hornet port was set to \"$proxyHornetPort\"" 8 65
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
                     ;;
                     "2)")
-                        source $swarmConfigs/proxy.cfg
-                        currentHornetApiPort=$hornetApiPort
-                        hornetApiPort=$(whiptail --inputbox "\nSet your API port for Hornet" 10 65 $hornetApiPort --title "Proxy - Hornet API" 3>&1 1>&2 2>&3)
-                        if [ ! -z "$hornetApiPort" ] && [ $hornetApiPort -eq $hornetApiPort ] 2>/dev/null; then
-                            if [ "$currentHornetApiPort" != "$hornetApiPort" ]; then
-                                ufw delete allow $currentHornetApiPort/tcp > /dev/null 2>&1
-                                sudo sed -i 's/^hornetApiPort=.*/hornetApiPort='$hornetApiPort'/' $swarmConfigs/proxy.cfg
-                                whiptail --title "Proxy - Hornet API" --msgbox "Your Hornet API port was set to \"$hornetApiPort\"" 8 65
+                        while [ $exitCode -lt 1 ]; do
+                            source $swarmConfigs/proxy.cfg
+                            clear
+                            CHOICE=$(
+                                whiptail --title "Proxy - Bee Settings" --menu "\nBee Domain: $proxyBeeDomain\nBee Port: $proxyBeePort\n\nChoose an option" 15 65 0 \
+                                "1)" "Bee domain" \
+                                "2)" "Bee port" 3>&2 2>&1 1>&3
+                            )
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
                             fi
-                        fi
+                            case $CHOICE in
+                                "1)")
+                                    source $swarmConfigs/proxy.cfg
+                                    currentProxyBeeDomain=$proxyBeeDomain
+                                    proxyBeeDomain=$(whiptail --inputbox "\nSet your domain or your ddns name for Bee" 10 65 --title "Proxy - Bee Domain" 3>&1 1>&2 2>&3)
+                                    if [ "$currentProxyBeeDomain" != "$proxyBeeDomain" ]; then
+                                        sudo sed -i 's/^proxyBeeDomain=.*/proxyBeeDomain="'$proxyBeeDomain'"/' $swarmConfigs/proxy.cfg
+                                        whiptail --title "Proxy - Bee Domain" --msgbox "Domain for proxy set to \"$proxyBeeDomain\"" 8 65
+                                    else
+                                        whiptail --title "Proxy - Bee Domain" --msgbox "No Bee domain change detected" 8 65
+                                    fi
+                                ;;
+                                "2)")
+                                    source $swarmConfigs/proxy.cfg
+                                    currentProxyBeePort=$proxyBeePort
+                                    proxyBeePort=$(whiptail --inputbox "\nSet a port for Bee" 10 65 $proxyBeePort --title "Proxy - Bee Port" 3>&1 1>&2 2>&3)
+                                    if [ ! -z "$proxyBeePort" ] && [ $proxyBeePort -eq $proxyBeePort ] 2>/dev/null; then
+                                        if [ "$currentProxyBeePort" != "$proxyBeePort" ]; then
+                                            ufw delete allow $currentProxyBeePort/tcp > /dev/null 2>&1
+                                            sudo sed -i 's/^proxyBeePort=.*/proxyBeePort='$proxyBeePort'/' $swarmConfigs/proxy.cfg
+                                            whiptail --title "Proxy - Bee Port" --msgbox "The Bee port was set to \"$proxyBeePort\"" 8 65
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
                     ;;
                     "3)")
-                        source $swarmConfigs/proxy.cfg
-                        currentBeeApiPort=$beeApiPort
-                        beeApiPort=$(whiptail --inputbox "\nSet your API port for Bee" 10 65 $beeApiPort --title "Proxy - Bee API" 3>&1 1>&2 2>&3)
-                        if [ ! -z "$beeApiPort" ] && [ $beeApiPort -eq $beeApiPort ] 2>/dev/null; then
-                            if [ "$currentBeeApiPort" != "$beeApiPort" ]; then
-                                ufw delete allow $currentBeeApiPort/tcp > /dev/null 2>&1
-                                sudo sed -i 's/^beeApiPort=.*/beeApiPort='$beeApiPort'/' $swarmConfigs/proxy.cfg
-                                whiptail --title "Proxy - Bee API" --msgbox "Your Bee API port was set to \"$beeApiPort\"" 8 65
+                        while [ $exitCode -lt 1 ]; do
+                            source $swarmConfigs/proxy.cfg
+                            clear
+                            CHOICE=$(
+                                whiptail --title "Proxy - GoShimmer Settings" --menu "\nGoShimmer Domain: $proxyGoshimmerDomain\nGoShimmer Port: $proxyGoshimmerPort\n\nChoose an option" 15 65 0 \
+                                "1)" "GoShimmer domain" \
+                                "2)" "GoShimmer port" 3>&2 2>&1 1>&3
+                            )
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
                             fi
-                        fi
-                    ;;
-                    "4)")
-                        source $swarmConfigs/proxy.cfg
-                        currentGoshimmerApiPort=$goshimmerApiPort
-                        goshimmerApiPort=$(whiptail --inputbox "\nSet your API port for GoShimmer" 10 65 $goshimmerApiPort --title "Proxy - GoShimmer API" 3>&1 1>&2 2>&3)
-                        if [ ! -z "$goshimmerApiPort" ] && [ $goshimmerApiPort -eq $goshimmerApiPort ] 2>/dev/null; then
-                            if [ "$currentGoshimmerApiPort" != "$goshimmerApiPort" ]; then
-                                ufw delete allow $currentGoshimmerApiPort/tcp > /dev/null 2>&1
-                                sudo sed -i 's/^goshimmerApiPort=.*/goshimmerApiPort='$goshimmerApiPort'/' $swarmConfigs/proxy.cfg
-                                whiptail --title "Proxy - GoShimmer API" --msgbox "Your GoShimmmer API port was set to \"$goshimmerApiPort\"" 8 65
-                            fi
-                        fi
+                            case $CHOICE in
+                                "1)")
+                                    source $swarmConfigs/proxy.cfg
+                                    currentProxyGoshimmerDomain=$proxyGoshimmerDomain
+                                    proxyGoshimmerDomain=$(whiptail --inputbox "\nSet your domain or your ddns name for GoShimmer" 10 65 --title "Proxy - GoShimmer Domain" 3>&1 1>&2 2>&3)
+                                    if [ "$currentProxyGoshimmerDomain" != "$proxyGoshimmerDomain" ]; then
+                                        sudo sed -i 's/^proxyGoshimmerDomain=.*/proxyGoshimmerDomain="'$proxyGoshimmerDomain'"/' $swarmConfigs/proxy.cfg
+                                        whiptail --title "Proxy - GoShimmer Domain" --msgbox "Domain for proxy set to \"$proxyGoshimmerDomain\"" 8 65
+                                    else
+                                        whiptail --title "Proxy - GoShimmer Domain" --msgbox "No GoShimmer domain change detected" 8 65
+                                    fi
+                                ;;
+                                "2)")
+                                    source $swarmConfigs/proxy.cfg
+                                    currentProxyGoshimmerPort=$proxyGoshimmerPort
+                                    proxyGoshimmerPort=$(whiptail --inputbox "\nSet a port for GoShimmer" 10 65 $proxyGoshimmerPort --title "Proxy - GoShimmer Port" 3>&1 1>&2 2>&3)
+                                    if [ ! -z "$proxyGoshimmerPort" ] && [ $proxyGoshimmerPort -eq $proxyGoshimmerPort ] 2>/dev/null; then
+                                        if [ "$currentProxyGoshimmerPort" != "$proxyGoshimmerPort" ]; then
+                                            ufw delete allow $currentProxyGoshimmerPort/tcp > /dev/null 2>&1
+                                            sudo sed -i 's/^proxyGoshimmerPort=.*/proxyGoshimmerPort='$proxyGoshimmerPort'/' $swarmConfigs/proxy.cfg
+                                            whiptail --title "Proxy - GoShimmer Port" --msgbox "The GoShimmer port was set to \"$proxyGoshimmerPort\"" 8 65
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
                     ;;
                 esac
             done
@@ -155,45 +228,9 @@ while [ $exitCode -lt 1 ]; do
                 "1)")
                     if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/goshimmer" ]; then
                         source $swarmConfigs/proxy.cfg
-                        if [ -z "$domain" ]; then
-                            whiptail --title "Proxy Menu" --msgbox "Please set your domain first before continuing!" 8 65
-                        else
-                            if [ -f "/usr/bin/hornet" ]; then
-                                if [ -z "$hornetApiPort" ]; then
-                                    hornetApiPortInfo="\nHornet: \"Not defined\""
-                                else
-                                    hornetApiPortInfo="\nHornet: $hornetApiPort"
-                                fi
-                            fi
-                            if [ -f "/usr/bin/bee" ]; then
-                                if [ -z "$beeApiPort" ]; then
-                                    beeApiPortInfo="\nBee: \"Not defined\""
-                                else
-                                    beeApiPortInfo="\nBee: $beeApiPort"
-                                fi
-                            fi
-                            if [ -f "/usr/bin/goshimmer" ]; then
-                                if [ -z "$goshimmerApiPort" ]; then
-                                    goshimmerApiPortInfo="\nGoShimmer: \"Not defined\""
-                                else
-                                    goshimmerApiPortInfo="\nGoShimmer: $goshimmerApiPort"
-                                fi
-                            fi
-                            if (whiptail --title "Proxy - Deployment" --yesno --defaultno "Before you install/deploy the proxy, please make sure that none of the following ports are used twice or change them before you deploy.\n$hornetApiPortInfo$beeApiPortInfo$goshimmerApiPortInfo\n\n\nAre all ports set and different?" 16 65); then
-                                if [ ! -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
-                                    # Run the nginx module for the proxy
-                                    email=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-                                    if [ ! -z "$email" ]; then
-                                        source $proxyModules/proxyDeployment
-                                        clear
-                                    else
-                                        whiptail --title "Proxy - Deployment" --msgbox "No valid email address entered!" 8 65
-                                    fi
-                                else
-                                    source $proxyModules/proxyDeployment
-                                    clear
-                                fi
-                            fi
+                        if (whiptail --title "Proxy - Deployment" --yesno --defaultno "Before deploying the proxy, please make sure that the domain and port are set for all nodes to be installed. If you use one domain for multiple nodes, please use different ports.\n\n\nAre you sure you want to continue?" 16 65); then
+                            source $proxyModules/proxyDeployment
+                            clear
                         fi
                     else
                         whiptail --title "Proxy - Deployment" --msgbox "No node software found on the system, please install a node first before you can install the proxy." 8 65
@@ -205,9 +242,9 @@ while [ $exitCode -lt 1 ]; do
                             echo 0
                             if [ "$ufw" = "true" ]; then
                                 sudo ufw delete allow 80/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $hornetApiPort/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $beeApiPort/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $goshimmerApiPort/tcp > /dev/null 2>&1
+                                sudo ufw delete allow $proxyHornetPort/tcp > /dev/null 2>&1
+                                sudo ufw delete allow $proxyBeePort/tcp > /dev/null 2>&1
+                                sudo ufw delete allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
                             fi
                             echo 20
                             sudo apt -qq purge software-properties-common certbot python3-certbot-nginx nginx* -y > /dev/null 2>&1
@@ -220,9 +257,12 @@ while [ $exitCode -lt 1 ]; do
                             if [ -d "/etc/letsencrypt" ]; then
                                 sudo rm -rf /etc/letsencrypt > /dev/null 2>&1
                             fi
-                            sudo sed -i 's/^hornetApiPort=.*/hornetApiPort=/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^beeApiPort=.*/beeApiPort=/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^goshimmerApiPort=.*/goshimmerApiPort=/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyHornetDomain=.*/proxyHornetDomain=""/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyBeeDomain=.*/proxyBeeDomain=""/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyGoshimmerDomain=.*/proxyGoshimmerDomain=""/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyHornetPort=.*/proxyHornetPort=/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyBeePort=.*/proxyBeePort=/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyGoshimmerPort=.*/proxyGoshimmerPort=/' $swarmConfigs/proxy.cfg
                             echo 100
                             sleep 0.25
                         } | whiptail --gauge "Please wait while removing the proxy..." 6 65 0
@@ -231,7 +271,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
                 "3)")
                     # Manual renew certificate if installed
-                    if [ -f "/etc/letsencrypt/live/$domain/fullchain.pem" ]; then
+                    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
                         sudo certbot renew
                     else
                         whiptail --title "Proxy Menu" --msgbox "Error! No SSL Certificate installed!" 8 65

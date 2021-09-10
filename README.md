@@ -30,22 +30,24 @@ curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh |
 
 **Notice**: Please make sure that your node is properly secured (e.g. firewall, SSH KeyAuth, regular system updates).
 
+---
+
 ## Ports
 ### Hornet
-- Gossip: `15600/tcp`
-- Autopeering: `14626/udp`
-- API (HTTPS): `443/tcp`
-- HTTP (letsencrypt): `80/tcp`
+- Gossip port (peering): 15600/tcp (customizable)
+- Autopeering port (peering): 14626/udp (customizable)
 ### Bee
-- Gossip: `15600/tcp`
-- API (HTTPS): `443/tcp`
-- HTTP (letsencrypt): `80/tcp`
+- Gossip port (peering): 15601/tcp (customizable)
 ### GoShimmer
-- Gossip: `14666/tcp`
-- Autopeering: `14626/udp`
-- API (HTTPS): `443/tcp`
-- HTTP (letsencrypt): `80/tcp`
+- Gossip port (peering): 14666/tcp (customizable)
+- Autopeering port (peering): 14646/udp
+### Proxy
+In the proxy menu you can define a separate domain for each node or one domain for all. Please note that when using a shared domain, a separate port must be defined for each node.
+- HTTP: 80/tcp
 
+**Please note that the following ports should not be used for the proxy 8080/tcp-8084/tcp**
+
+---
 
 ## Backup SWARM
 If you ever want to reinstall your server or SWARM, you can backup your SWARM configuration first.
@@ -56,6 +58,8 @@ cd /var/lib/swarm/configs
 ```
 
 After the reinstallation, simply replace the configurations with your backup, run a SWARM update to update the configuration files (if necessary) and then you can reinstall Hornet and the proxy and have all settings imported directly.
+
+---
 
 ## Disclaimer
 
