@@ -1,6 +1,7 @@
 ## Version 0.8.5
 ## Added
 - Added support for multiple domains
+- Added automatic HTTP to HTTPS redirect
 ## Changed
 - Changed proxy variables
 - Changed proxy configuration menu
