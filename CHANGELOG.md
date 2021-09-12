@@ -1,10 +1,13 @@
 ## Version 0.8.5
-## Added
+### Added
 - Added support for multiple domains
-## Changed
+- Added SSH hardening setup
+### Changed
 - Changed proxy variables
 - Changed proxy configuration menu
+- Fixed general bugs
 
+---
 
 ## Version 0.8.4
 ### Changed
@@ -13,10 +16,12 @@
 - Fixed issue with internal api ports
 - Fixed Bee pwd gen
 
+---
 
 ## Version 0.8.3
 - Hotfix for Bee installation
 
+---
 
 ## Version 0.8.2
 ### Added
@@ -26,6 +31,7 @@
 - Fixed beeVersion
 - Set temporary Bee v0.2.0-rc1 as stable version
 
+---
 
 ## Version 0.8.1
 ### Added
@@ -38,10 +44,12 @@
 ### Removed
 - Removed old code/files
 
+---
 
 ## Version 0.7.9
 - Hotfix for Bee
 
+---
 
 ## Version 0.7.8
 ### Added
@@ -55,6 +63,7 @@
 ### Removed
 - Removed time checks for watchdog
 
+---
 
 ## Version 0.7.7
 ### Added
@@ -67,16 +76,19 @@
 - Fixed swarm info module
 - Inlcuded changes from 0.7.6
 
+---
 
 ## Version 0.7.5
 ### Changed
 - General bug fixes
 
+---
 
 ## Version 0.7.4
 ### Changed
 - Major bug fixes
 
+---
 
 ## Version 0.7.3
 ### Added
@@ -93,6 +105,7 @@
 - Fixed proxy where possible unused ports are opened
 - Fixed general bugs
 
+---
 
 ## Version 0.7.2
 ### Added
@@ -102,10 +115,12 @@
 - Fixed missing check before remove Hornet
 - Fixed general bugs
 
+---
 
 ## Version 0.7.1
 - Hotfix for hornet plugin parsing
 
+---
 
 ## Version 0.7.0
 ### Added
@@ -117,6 +132,7 @@
 - Fixed all old Hornet variables
 - Fixed general bugs
 
+---
 
 ## Version 0.6.9
 ### Changed
@@ -124,6 +140,7 @@
 - Fixed Hornet pruningPercentage
 - Fixed general bugs
 
+---
 
 ## Version 0.6.8
 ### Added
@@ -136,10 +153,12 @@
 - Fixed packages installation
 - Fixed general bugs
 
+---
 
 ## Version 0.6.7
 - Hotfix for v0.6.5 & v0.6.6
 
+---
 
 ## Version 0.6.6
 ### Added
@@ -148,6 +167,7 @@
 - Hotfix swarmAutoUpdater
 - Fixed goshimmerInfo box size
 
+---
 
 ## Version 0.6.5
 ### Added
@@ -169,6 +189,7 @@
 - Removed SWARM dbPruner
 - Removed Tangle Bay Delta Snapshot URL for Hornet
 
+---
 
 ## Version 0.6.4
 - Added config status to swarm configuration
@@ -178,6 +199,7 @@
 - Changed parser for unknownPeers
 - Fixed missing comnet option
 
+---
 
 ## Version 0.6.3
 - Added hornet installation checks
@@ -185,10 +207,12 @@
 - Fixed output error (hornet configuration)
 - Fixed wrong Hornet config
 
+---
 
 ## Version 0.6.2
 - Incrased unknown peers to 4 to allow autopeering
 
+---
 
 ## Version 0.6.1
 - Added tmp autopeering binary
@@ -196,6 +220,7 @@
 - Added Tangle Bay entry node check
 - Added force of SWARM of allowDbReset
 
+---
 
 ## Version 0.6.0
 - Added gossipUnknownPeersLimit configuration
@@ -213,29 +238,34 @@
 - Updated comnet config to offical
 - Bug fixes from 0.5.9
 
+---
 
 ## Version 0.5.8
 - Fixed autoRevalidation
 - Fixed progress bar
 - Changed keepDB to allowDbReset
 
+---
 
 ## Version 0.5.7
 - Added comnet
 - Fixed snapshot urls
 - Removed old snapshot interval
 
+---
 
 ## Version 0.5.6
 - Added Tangle Bay as snapshot source
 - Fixed progress bar
 
+---
 
 ## Version 0.5.5
 - Fixed p2pIdentity
 - Fixed Hornet installation
 - Fixed proxy installation
 
+---
 
 ## Version 0.5.4
 - Added gossip menu to hornet configuration
