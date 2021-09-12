@@ -123,14 +123,18 @@ while [ $exitCode -lt 1 ]; do
                     if [ -f "$sshUserPath/authorized_keys" ]; then
                         if (whiptail --title "SWARM - SSH" --yesno --defaultno "Do you want to update the auth key?" 8 65); then
                             sshPubKey=$(whiptail --inputbox "\nPlease enter your ed25519 public key" 10 65 --title "SWARM - SSH" 3>&1 1>&2 2>&3)
-                            if [ ! -z "$sshPubKey" ]; then
+                            if [[ $sshPubKey = *ssh-ed25519* ]]; then
                                 sudo echo $sshPubKey > $sshUserPath/authorized_keys
                                 sshPubKeyInfo="\nSSH public key: \"$sshPubKey\""
+                            else
+                                sshPubKeyInfo="\nSSH public key: *no valid public key*"
                             fi
+                        else
+                            sshPubKeyInfo="\nSSH public key: *not changed*"
                         fi
                     else
                         sshPubKey=$(whiptail --inputbox "\nPlease enter your ed25519 public key" 10 65 --title "SWARM - SSH" 3>&1 1>&2 2>&3)
-                        if [ ! -z "$sshPubKey" ]; then
+                        if [[ $sshPubKey = *ssh-ed25519* ]]; then
                             if [ ! -d "$sshUserPath" ]; then
                                 sudo mkdir -p $sshUserPath
                                 sudo chmod 700 $sshUserPath
