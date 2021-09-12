@@ -95,20 +95,23 @@ while [ $exitCode -lt 1 ]; do
                 sudo cat $swarmTemplates/swarm/sshd.config > /etc/ssh/sshd_config
                 # SSH port
                 sshPort=$(whiptail --inputbox "\nPlease enter the new SSH port" 10 65 $currentSshPort --title "SWARM - SSH" 3>&1 1>&2 2>&3)
-                if [ $sshPort -eq $sshPort ] && [ $currentSshPort -ne $sshPort ] 2>/dev/null; then
-                    sudo sed 's/^Port.*/Port '$sshPort'/' /etc/ssh/sshd_config
+                if [ $sshPort -eq $sshPort ] 2>/dev/null && [ $currentSshPort -ne $sshPort ] 2>/dev/null; then
+                    sudo sed -i 's/^Port.*/Port '$sshPort'/' /etc/ssh/sshd_config
                     if [ "$ufw" = "true" ]; then
                         sudo ufw delete limit $currentSshPort/tcp > /dev/null 2>&1
                         sudo ufw limit $sshPort/tcp > /dev/null 2>&1
                     fi
                 else
-                    sudo ufw limit $currentSshPort/tcp > /dev/null 2>&1
+                    sshPort=$currentSshPort
+                    sudo ufw limit $sshPort/tcp > /dev/null 2>&1
                 fi
                 # root login
                 if [ "$sshUsername" = "root" ]; then
-                    sudo sed 's/^PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+                    sshRootLogin="permitted"
+                    sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
                 else
-                    sudo sed 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+                    sshRootLogin="prohibited"
+                    sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
                 fi
                 # SSH key user
                 if [ "$sshUsername" = "root" ]; then
@@ -137,6 +140,7 @@ while [ $exitCode -lt 1 ]; do
                     fi
                 fi
                 sudo systemctl restart sshd
+                whiptail --title "SWARM - SSH" --msgbox "\nThe following SSH settings were applied:\n\nSSH Port: $sshPort\nSSH User: $sshUsername\nRoot login: $sshRootLogin\nSSH public key: \"$sshPubKey\"" 16 65
             else
                 whiptail --title "SWARM - SSH" --msgbox "\nError - The user \"$sshUsername\" does not exist" 10 65
             fi
