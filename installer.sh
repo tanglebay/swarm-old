@@ -32,8 +32,8 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
                 fi
                 echo 30
                 sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm > /dev/null 2>&1
-                if [ "$1" = "$develop" ]; then
-                    ( cd /var/lib/swarm ; sudo git checkout develop > /dev/null 2>&1 )
+                if [ "$1" = "develop" ]; then
+                    ( cd /var/lib/swarm ; sudo git checkout $1 > /dev/null 2>&1 )
                 fi
                 echo 50
                 if [ -f "/var/lib/swarm/swarm" ]; then
