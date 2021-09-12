@@ -1,9 +1,11 @@
 ## Version 0.8.5
 ## Added
 - Added support for multiple domains
+- Added SSH hardening setup
 ## Changed
 - Changed proxy variables
 - Changed proxy configuration menu
+- Fixed general bugs
 
 
 ## Version 0.8.4
