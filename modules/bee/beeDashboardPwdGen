@@ -1,51 +1,67 @@
 #!/bin/bash
-clear
-echo ""
-echo "Please set a secure password for your dashboard login:"
-echo ""
-( cd $beeHome ; /usr/bin/bee --config config.chrysalis-$beeNetwork.toml password )
-echo ""
-echo "####################################################################################################"
-echo ""
-read -p "Please enter the password salt you received: " beePasswordSalt
-echo ""
-read -p "Please enter the password hash you received: " beePasswordHash
 
-if [ ! -z "$beePasswordSalt" ] && [ ! -z "$beePasswordHash" ]; then
-    sudo sed -i 's/^beePasswordHash=.*/beePasswordHash="'$beePasswordHash'"/' $swarmConfigs/bee.cfg
-    sudo sed -i 's/^beePasswordSalt=.*/beePasswordSalt="'$beePasswordSalt'"/' $swarmConfigs/bee.cfg
-    source $beeConfigParsers/beePasswordHash
-    source $beeConfigParsers/beePasswordSalt
+source $beeModules/beeVersion
+
+if [ "$beeVersion" = "0.1.2" ] || [ "$beeVersion" = "0.2.0" ]; then
     clear
-    whiptail --title "Bee - Dashboard" --msgbox "New password created successfully!" 8 65
+    echo ""
+    echo "Please set a secure password for your dashboard login:"
+    echo ""
+    ( cd $beeHome ; /usr/bin/bee --config config.chrysalis-$beeNetwork.toml password )
+    echo ""
+    echo "####################################################################################################"
+    echo ""
+    read -p "Please enter the password salt you received: " beePasswordSalt
+    echo ""
+    read -p "Please enter the password hash you received: " beePasswordHash
+
+    if [ ! -z "$beePasswordSalt" ] && [ ! -z "$beePasswordHash" ]; then
+        sudo sed -i 's/^beePasswordHash=.*/beePasswordHash="'$beePasswordHash'"/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^beePasswordSalt=.*/beePasswordSalt="'$beePasswordSalt'"/' $swarmConfigs/bee.cfg
+        source $beeConfigParsers/beePasswordHash
+        source $beeConfigParsers/beePasswordSalt
+        clear
+        whiptail --title "Bee - Dashboard" --msgbox "New password created successfully!" 8 65
+    fi
+else
+    beeDashboardPassword=$(whiptail --passwordbox "\nPlease enter a secure password for your dashboard login:" 8 65 --title "Bee - Dashboard" 3>&1 1>&2 2>&3)
+    exitstatus=$?
+    if [ "$exitstatus" != "1" ]; then
+        beeDashboardPassword2=$(whiptail --passwordbox "\nPlease re-enter the password for your dashboard login:" 8 65 --title "Bee - Dashboard" 3>&1 1>&2 2>&3)
+        exitstatus=$?
+        if [ "$exitstatus" != "1" ]; then
+            if [ ! -z "$beeDashboardPassword" ] && [ ! -z "$beeDashboardPassword2" ] && [ "$beeDashboardPassword" = "$beeDashboardPassword2" ] && [ -f "/usr/bin/bee" ]; then
+                {
+                    echo 0
+                    export BEE_TOOL_PASSWORD="$beeDashboardPassword"
+                    echo 10
+                    beePwdHash=$( cd $beeHome ; /usr/bin/bee --config config.chrysalis-$beeNetwork.toml password )
+                    echo 20
+                    beePasswordHash=$(echo $beePwdHash | grep -o "Password hash:.*" | awk '{print $3}')
+                    echo 30
+                    beePasswordSalt=$(echo $beePwdHash | grep -o "Password salt:.*" | awk '{print $3}')
+                    echo 40
+                    sudo sed -i 's/^beePasswordHash=.*/beePasswordHash="'$beePasswordHash'"/' $swarmConfigs/bee.cfg
+                    echo 50
+                    sudo sed -i 's/^beePasswordSalt=.*/beePasswordSalt="'$beePasswordSalt'"/' $swarmConfigs/bee.cfg
+                    echo 60
+                    source $beeModules/beeConfigParsers/beePasswordHash
+                    echo 70
+                    source $beeModules/beeConfigParsers/beePasswordSalt
+                    echo 80
+                    export BEE_TOOL_PASSWORD=""
+                    unset beeDashboardPassword
+                    unset beeDashboardPassword2
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while generating Dashboard login..." 6 65 0
+                whiptail --title "Bee - Dashboard" --msgbox "New password created successfully!" 8 65
+                restartBee=true
+            else
+                whiptail --title "Bee - Dashboard" --msgbox "Aborted - Passwords do not match!" 8 65
+            fi
+        fi
+    fi
 fi
 
-
-# inputPassword=$(whiptail --passwordbox "\nPlease set a secure password for your dashboard login:" 8 65 --title "Bee - Dashboard" 3>&1 1>&2 2>&3)
-# if [ ! -z "$inputPassword" ] && [ -f "/usr/bin/bee" ]; then
-#     {
-#         echo 0
-#         export BEE_TOOL_PASSWORD="$inputPassword"
-#         echo 10
-#         beePwdHash=$(( cd $beeDir ; /usr/bin/bee password ))
-#         echo 20
-#         beePasswordHash=$(echo $hornetPwdHash | grep -o "Your hash:.*" | awk '{print $3}')
-#         echo 30
-#         beePasswordSalt=$(echo $hornetPwdHash | grep -o "Your salt:.*" | awk '{print $3}')
-#         echo 40
-#         sudo sed -i 's/^beePasswordHash=.*/beePasswordHash="'$beePasswordHash'"/' $swarmConfigs/bee.cfg
-#         echo 50
-#         sudo sed -i 's/^beePasswordSalt=.*/beePasswordSalt="'$beePasswordSalt'"/' $swarmConfigs/bee.cfg
-#         echo 60
-#         source $modules/bee/configParsers/PasswordHash
-#         echo 70
-#         source $modules/bee/configParsers/PasswordSalt
-#         echo 80
-#         export BEE_TOOL_PASSWORD=""
-#         unset inputPassword
-#         echo 100
-#         sleep 0.25
-#     } | whiptail --gauge "Please wait while generating Dashboard login..." 6 65 0
-#     whiptail --title "Bee - Dashboard" --msgbox "New password created successfully!" 8 65
-#     restartBee=true
-# fi
+unset exitstatus
