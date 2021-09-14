@@ -1,3 +1,9 @@
+## Version 0.8.6
+## Changed
+- Changed password setup for Bee dashboard
+- Added pwd check for Hornet dashboard
+
+
 ## Version 0.8.5
 ### Added
 - Added support for multiple domains
