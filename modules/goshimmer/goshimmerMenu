@@ -3,7 +3,7 @@
 while [ $exitCode -lt 1 ]; do
     clear
     CHOICE=$(
-        whiptail --title "GoShimmer Menu" --menu "\nChoose an option" 16 65 0 \
+        whiptail --title "GoShimmer - Menu" --menu "\nChoose an option" 16 65 0 \
         "1)" "GoShimmer Info" \
         "2)" "GoShimmer Configurations" \
         "3)" "GoShimmer Debugging" \
@@ -19,239 +19,261 @@ while [ $exitCode -lt 1 ]; do
             source $goshimmerModules/goshimmerInfo
         ;;
         "2)")
-            while [ $exitCode -lt 1 ]; do
-                clear
-                CHOICE=$(
-                    whiptail --title "GoShimmer Configurations" --menu "\nChoose an option" 16 65 0 \
-                    "1)" "GoShimmer configuration" \
-                    "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
-                )
+            if [ -f "/usr/bin/goshimmer" ]; then
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    CHOICE=$(
+                        whiptail --title "GoShimmer - Configuration" --menu "\nChoose an option" 16 65 0 \
+                        "1)" "GoShimmer configuration" \
+                        "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
+                    )
 
-                exitstatus=$?
-                if [ "$exitstatus" = "1" ]; then
-                    exitCode=1
-                fi
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
 
-                case $CHOICE in
-                    "1)")
-                        if [ -f "/usr/bin/goshimmer" ]; then
+                    case $CHOICE in
+                        "1)")
                             source $goshimmerModules/goshimmerConfiguration
-                        else
-                            whiptail --title "GoShimmer Configuration" --msgbox "GoShimmer installation not found, please install GoShimmer first!" 8 65
-                        fi
-                    ;;
-                    "2)")
-                        while [ $exitCode -lt 1 ]; do
-                            clear
-                            CHOICE=$(
-                                whiptail --title "GoShimmer Configurations" --menu "\nChoose an option" 16 65 0 \
-                                "1)" "Config.json" \
-                                "2)" "GoShimmer.cfg (SWARM)" 3>&2 2>&1 1>&3
-                            )
+                        ;;
+                        "2)")
+                            while [ $exitCode -lt 1 ]; do
+                                clear
+                                CHOICE=$(
+                                    whiptail --title "GoShimmer - Configuration" --menu "\nChoose an option" 16 65 0 \
+                                    "1)" "Config.json" \
+                                    "2)" "GoShimmer.cfg (SWARM)" 3>&2 2>&1 1>&3
+                                )
 
-                            exitstatus=$?
-                            if [ "$exitstatus" = "1" ]; then
-                                exitCode=1
-                            fi
+                                exitstatus=$?
+                                if [ "$exitstatus" = "1" ]; then
+                                    exitCode=1
+                                fi
 
-                            case $CHOICE in
-                                "1)")
-                                    sudo nano $goshimmerHome/config.json
-                                    if (whiptail --title "GoShimmer Menu" --yesno --defaultno "Would you like to restart GoShimmer now?" 8 65); then
-                                        {
-                                            echo 0
-                                            echo 50
-                                            sudo systemctl restart goshimmer
-                                            echo 100
-                                            sleep 0.25
-                                        } | whiptail --gauge "Please wait while GoShimmer is restarting..." 8 65 0
-                                    fi
-                                ;;
-                                "2)")
-                                    sudo nano $swarmConfigs/goshimmer.cfg
-                                    if (whiptail --title "GoShimmer Menu" --yesno --defaultno "Would you like to restart GoShimmer now?" 8 65); then
-                                        {
-                                            echo 0
-                                            source $goshimmerModules/goshimmerParser
-                                            echo 50
-                                            sudo systemctl restart goshimmer
-                                            echo 100
-                                            sleep 0.25
-                                        } | whiptail --gauge "Please wait while GoShimmer is restarting..." 8 65 0
-                                    fi
-                                ;;
-                            esac
-                        done
-                        exitCode=0
-                    ;;
-                esac
-            done
-            exitCode=0
+                                case $CHOICE in
+                                    "1)")
+                                        sudo nano $goshimmerHome/config.json
+                                        if (whiptail --title "GoShimmer - Configuration" --yesno --defaultno "Would you like to restart GoShimmer now?" 8 65); then
+                                            {
+                                                echo 0
+                                                echo 50
+                                                sudo systemctl restart goshimmer
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while GoShimmer is restarting..." 8 65 0
+                                        fi
+                                    ;;
+                                    "2)")
+                                        sudo nano $swarmConfigs/goshimmer.cfg
+                                        if (whiptail --title "GoShimmer - Configuration" --yesno --defaultno "Would you like to restart GoShimmer now?" 8 65); then
+                                            {
+                                                echo 0
+                                                source $goshimmerModules/goshimmerParser
+                                                echo 50
+                                                sudo systemctl restart goshimmer
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while GoShimmer is restarting..." 8 65 0
+                                        fi
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
+                        ;;
+                    esac
+                done
+                exitCode=0
+            else
+                whiptail --title "GoShimmer - Configuration" --msgbox "GoShimmer installation not found, please install GoShimmer first!" 8 65
+            fi
         ;;
         "3)")
-            while [ $exitCode -lt 1 ]; do
-                CHOICE=$(
-                    whiptail --title "GoShimmer Debugging" --menu "\nChoose your option" 16 65 0 \
-                    "1)" "Show GoShimmer log" \
-                    "2)" "Start/Stop GoShimmer" \
-                    "3)" "Reset GoShimmer Database" 3>&2 2>&1 1>&3
-                )
-                exitstatus=$?
-                if [ "$exitstatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        # Display last 65 lines of log
-                        sudo journalctl -fu goshimmer | less -FRSXM
-                        clear
-                    ;;
-                    "2)")
-                        CHOICE=$(
-                            whiptail --title "GoShimmer Menu" --menu "\nChoose your option" 16 65 0 \
-                            "1)" "Restart GoShimmer" \
-                            "2)" "Start GoShimmer" \
-                            "3)" "Stop GoShimmer" \
-                            "4)" "Status GoShimmer" 3>&2 2>&1 1>&3
-                        )
-                        case $CHOICE in
-                            "1)")
-                                {
-                                    echo 0
-                                    echo 50
-                                    sudo systemctl restart goshimmer
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while GoShimmer is restarting..." 8 65 0
-                                whiptail --title "GoShimmer Menu" --msgbox "GoShimmer successfully restarted" 8 65
-                            ;;
-                            "2)")
-                                {
-                                    echo 0
-                                    echo 50
-                                    sudo systemctl start goshimmer
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while GoShimmer is starting..." 8 65 0
-                                whiptail --title "GoShimmer Menu" --msgbox "GoShimmer successfully started" 8 65
-                            ;;
-                            "3)")
+            if [ -f "/usr/bin/goshimmer" ]; then
+                while [ $exitCode -lt 1 ]; do
+                    CHOICE=$(
+                        whiptail --title "GoShimmer Debugging" --menu "\nChoose your option" 16 65 0 \
+                        "1)" "Show GoShimmer log" \
+                        "2)" "Start/Stop GoShimmer" \
+                        "3)" "Reset GoShimmer Database" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            # Display last 65 lines of log
+                            sudo journalctl -fu goshimmer | less -FRSXM
+                            clear
+                        ;;
+                        "2)")
+                            CHOICE=$(
+                                whiptail --title "GoShimmer - Debugging" --menu "\nChoose your option" 16 65 0 \
+                                "1)" "Restart GoShimmer" \
+                                "2)" "Start GoShimmer" \
+                                "3)" "Stop GoShimmer" \
+                                "4)" "Status GoShimmer" 3>&2 2>&1 1>&3
+                            )
+                            case $CHOICE in
+                                "1)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl restart goshimmer
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while GoShimmer is restarting..." 8 65 0
+                                    whiptail --title "GoShimmer - Debugging" --msgbox "GoShimmer successfully restarted" 8 65
+                                ;;
+                                "2)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl start goshimmer
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while GoShimmer is starting..." 8 65 0
+                                    whiptail --title "GoShimmer - Debugging" --msgbox "GoShimmer successfully started" 8 65
+                                ;;
+                                "3)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl stop goshimmer
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while GoShimmer is stopping..." 8 65 0
+                                    whiptail --title "GoShimmer - Debugging" --msgbox "GoShimmer successfully stopped" 8 65
+                                ;;
+                                "4)")
+                                    goshimmerStatus="$(sudo systemctl status goshimmer)"
+                                    whiptail --title "GoShimmer - Debugging" --msgbox "$goshimmerStatus" 15 65
+                                ;;
+                            esac
+                        ;;
+                        "3)")
+                            if (whiptail --title "GoShimmer - Debugging" --yesno --defaultno "Do you really want to remove the goshimmer database?" 8 65); then
+                                source $swarmConfigs/goshimmer.cfg
                                 {
                                     echo 0
                                     echo 50
                                     sudo systemctl stop goshimmer
+                                    sudo rm -rf $goshimmerHome/mainnetdb
+                                    sudo wget -q -O $goshimmerHome/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
+                                    sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter=0/' $swarmLogs/watchdog
+                                    sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter=0/' $swarmLogs/watchdog
+                                    sudo systemctl start goshimmer
                                     echo 100
                                     sleep 0.25
-                                } | whiptail --gauge "Please wait while GoShimmer is stopping..." 8 65 0
-                                whiptail --title "GoShimmer Menu" --msgbox "GoShimmer successfully stopped" 8 65
-                            ;;
-                            "4)")
-                                goshimmerStatus="$(sudo systemctl status goshimmer)"
-                                whiptail --title "GoShimmer Menu" --msgbox "$goshimmerStatus" 15 65
-                            ;;
-                        esac
-                    ;;
-                    "3)")
-                        if (whiptail --title "GoShimmer Menu" --yesno --defaultno "Do you really want to remove the goshimmer database?" 8 65); then
-                            source $swarmConfigs/goshimmer.cfg
-                            {
-                                echo 0
-                                echo 50
-                                sudo systemctl stop goshimmer
-                                sudo rm -rf $goshimmerHome/mainnetdb
-                                sudo wget -q -O $goshimmerHome/snapshot.bin https://dbfiles-goshimmer.s3.eu-central-1.amazonaws.com/snapshots/nectar/snapshot-latest.bin
-                                sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter=0/' $swarmLogs/watchdog
-                                sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter=0/' $swarmLogs/watchdog
-                                sudo systemctl start goshimmer
-                                echo 100
-                                sleep 0.25
-                            } | whiptail --gauge "Please wait while the cleanup is running..." 8 65 0
-                            whiptail --title "GoShimmer Menu" --msgbox "GoShimmer database successfully reset" 8 65
-                        fi
-                    ;;
-                esac
-            done
-            exitCode=0
+                                } | whiptail --gauge "Please wait while the cleanup is running..." 8 65 0
+                                whiptail --title "GoShimmer - Debugging" --msgbox "GoShimmer database successfully reset" 8 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            else
+                whiptail --title "GoShimmer - Debugging" --msgbox "GoShimmer installation not found, please install GoShimmer first!" 8 65
+            fi
         ;;
         "4)")
-            CHOICE=$(
-                whiptail --title "GoShimmer - Installer" --menu "\nChoose your option" 16 65 0 \
-                "1)" "Update GoShimmer" \
-                "2)" "Install GoShimmer" \
-                "3)" "Remove GoShimmer" 3>&2 2>&1 1>&3
-            )
-            case $CHOICE in
-                "1)")
-                    if [ -f "/usr/bin/goshimmer" ]; then
-                        if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Do you really want to update GoShimmer?" 8 65); then
-                            # Update GoShimmer
-                            source $goshimmerModules/goshimmerVersion
-                            if [ -z "$goshimmerVersion" ]; then
-                                goshimmerVersion="NA"
+            if [ "$osArchitecture" = "amd64" ]; then
+                CHOICE=$(
+                    whiptail --title "GoShimmer - Installer" --menu "\nChoose your option" 16 65 0 \
+                    "1)" "Update GoShimmer" \
+                    "2)" "Install GoShimmer" \
+                    "3)" "Remove GoShimmer" 3>&2 2>&1 1>&3
+                )
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/goshimmer" ]; then
+                            if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Do you really want to update GoShimmer?" 8 65); then
+                                # Update GoShimmer
+                                source $goshimmerModules/goshimmerVersion
+                                if [ -z "$goshimmerVersion" ]; then
+                                    goshimmerVersion="NA"
+                                fi
+                                goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+                                if [ "$goshimmerStatus" = "active" ] && [ "$goshimmerVersion" != "\"$latestGoshimmerVersion\"" ]; then
+                                    {
+                                        echo 0
+                                        echo 20
+                                        source $goshimmerModules/goshimmerInstaller
+                                        echo 50
+                                        source $goshimmerModules/goshimmerParser
+                                        echo 70
+                                        sudo rm -rf $goshimmerHome/mainnetdb
+                                        echo 90
+                                        sudo systemctl restart goshimmer
+                                        echo 100
+                                        sleep 0.5
+                                    } | whiptail --gauge "Please wait while GoShimmer is updated..." 8 65 0
+                                    whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer successfully updated" 8 65
+                                else
+                                    whiptail --title "GoShimmer - Installer" --msgbox "Congratulations, you have already installed the latest version of GoShimmer!" 8 65
+                                fi
                             fi
-                            goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
-                            if [ "$goshimmerStatus" = "active" ] && [ "$goshimmerVersion" != "\"$latestGoshimmerVersion\"" ]; then
-                                {
-                                    echo 0
-                                    echo 20
-                                    source $goshimmerModules/goshimmerInstaller
-                                    echo 50
+                        else
+                            whiptail --title "GoShimmer - Installer" --msgbox "Sorry, but GoShimmer is not installed!" 8 65
+                        fi
+                    ;;
+                    "2)")
+                        # INSTALL GoShimmer
+                        if [ ! -f "/usr/bin/goshimmer" ]; then
+                            {
+                                echo 0
+                                echo 10
+                                source $swarmConfigs/goshimmer.cfg
+                                echo 30
+                                source $goshimmerModules/goshimmerVersion
+                                echo 40
+                                source $goshimmerModules/goshimmerInstaller
+                                echo 50
+                                # CALL MODULE CONFIGPARSER
+                                if [ -f "/usr/bin/goshimmer" ] && [ -f "$goshimmerHome/config.json" ]; then
+                                    if ! [ -x "$(command -v apache2-utils)" ]; then
+                                        sudo apt -qq install apache2-utils -y > /dev/null 2>&1
+                                    fi
+                                    source $swarmConfigs/goshimmer.cfg
+                                    echo 60
                                     source $goshimmerModules/goshimmerParser
                                     echo 70
-                                    sudo rm -rf $goshimmerHome/mainnetdb
-                                    echo 90
-                                    sudo systemctl restart goshimmer
+                                    if [ "$ufw" = "true" ]; then
+                                        sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
+                                        sudo ufw allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
+                                    fi
+                                    sudo systemctl start goshimmer > /dev/null 2>&1
+                                    echo 80
+                                    sleep 2
+                                    goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+                                    if [ "$goshimmerStatus" != "active" ]; then
+                                        sudo systemctl restart goshimmer > /dev/null 2>&1
+                                    fi
                                     echo 100
-                                    sleep 0.5
-                                } | whiptail --gauge "Please wait while GoShimmer is updated..." 8 65 0
-                                whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer successfully updated" 8 65
-                            else
-                                whiptail --title "GoShimmer - Installer" --msgbox "Congratulations, you have already installed the latest version of GoShimmer!" 8 65
-                            fi
-                        fi
-                    else
-                        whiptail --title "GoShimmer - Installer" --msgbox "Sorry, but GoShimmer is not installed!" 8 65
-                    fi
-                ;;
-                "2)")
-                    # INSTALL GoShimmer
-                    if [ ! -f "/usr/bin/goshimmer" ]; then
-                        {
-                            echo 0
-                            echo 10
-                            source $swarmConfigs/goshimmer.cfg
-                            echo 30
-                            source $goshimmerModules/goshimmerVersion
-                            echo 40
-                            source $goshimmerModules/goshimmerInstaller
-                            echo 50
-                            # CALL MODULE CONFIGPARSER
+                                    sleep 0.2
+                                fi
+                            } | whiptail --gauge "Please wait while installing GoShimmer..." 8 65 0
                             if [ -f "/usr/bin/goshimmer" ] && [ -f "$goshimmerHome/config.json" ]; then
-                                if ! [ -x "$(command -v apache2-utils)" ]; then
-                                    sudo apt -qq install apache2-utils -y > /dev/null 2>&1
-                                fi
-                                source $swarmConfigs/goshimmer.cfg
-                                echo 60
-                                source $goshimmerModules/goshimmerParser
-                                echo 70
-                                if [ "$ufw" = "true" ]; then
-                                    sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
-                                    sudo ufw allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
-                                fi
-                                sudo systemctl start goshimmer > /dev/null 2>&1
-                                echo 80
-                                sleep 2
-                                goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
-                                if [ "$goshimmerStatus" != "active" ]; then
-                                    sudo systemctl restart goshimmer > /dev/null 2>&1
-                                fi
-                                echo 100
-                                sleep 0.2
+                                whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $goshimmerGossipPort/tcp\nAutopeering: $goshimmerAutopeeringPort/udp" 15 65
+                            else
+                                {
+                                    echo 0
+                                    echo 25
+                                    source $swarmConfigs/goshimmer.cfg
+                                    echo 50
+                                    source $goshimmerModules/goshimmerRemoval
+                                    echo 75
+                                    echo 100
+                                } | whiptail --gauge "Please wait while the GoShimmer files are removed...." 8 65 0
+                                whiptail --title "GoShimmer - Installer" --msgbox "Error while installing GoShimmer. Please check GoShimmer.cfg and try again!" 8 65
                             fi
-                        } | whiptail --gauge "Please wait while installing GoShimmer..." 8 65 0
-                        if [ -f "/usr/bin/goshimmer" ] && [ -f "$goshimmerHome/config.json" ]; then
-                            whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $goshimmerGossipPort/tcp\nAutopeering: $goshimmerAutopeeringPort/udp" 15 65
                         else
+                            whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer already installed or not set in the SWARM.cfg!" 8 65
+                        fi
+                    ;;
+                    "3)")
+                        if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Do you really want to remove GoShimmer?" 8 65); then
                             {
                                 echo 0
                                 echo 25
@@ -260,28 +282,14 @@ while [ $exitCode -lt 1 ]; do
                                 source $goshimmerModules/goshimmerRemoval
                                 echo 75
                                 echo 100
-                            } | whiptail --gauge "Please wait while the GoShimmer files are removed...." 8 65 0
-                            whiptail --title "GoShimmer - Installer" --msgbox "Error while installing GoShimmer. Please check GoShimmer.cfg and try again!" 8 65
+                            } | whiptail --gauge "Please wait while GoShimmer will be removed..." 8 65 0
+                            whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer successfully removed" 8 65
                         fi
-                    else
-                        whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer already installed or not set in the SWARM.cfg!" 8 65
-                    fi
-                ;;
-                "3)")
-                    if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Do you really want to remove GoShimmer?" 8 65); then
-                        {
-                            echo 0
-                            echo 25
-                            source $swarmConfigs/goshimmer.cfg
-                            echo 50
-                            source $goshimmerModules/goshimmerRemoval
-                            echo 75
-                            echo 100
-                        } | whiptail --gauge "Please wait while GoShimmer will be removed..." 8 65 0
-                        whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer successfully removed" 8 65
-                    fi
-                ;;
-            esac
+                    ;;
+                esac
+            else
+                whiptail --title "GoShimmer - Installer" --msgbox "Error - Unsupported OS architecture for Goshimmer detected!" 8 65
+            fi
         ;;
     esac
 done
