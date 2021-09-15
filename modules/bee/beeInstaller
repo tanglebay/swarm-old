@@ -32,29 +32,34 @@ if [ ! -f "/lib/systemd/system/bee.service" ]; then
     sudo systemctl daemon-reload
 fi
 
+# Detect architecture
+osArchitecture=$(dpkg --print-architecture)
+
 ##############################################################################################################################################
 
 # Create dir if not exist
 sudo mkdir -p /tmp/bee > /dev/null 2>&1
 
-# Download latest bee
-sudo wget -q -O /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/bee-node-${latestBeeVersion}-linux-x86-64.zip
+if [ "$osArchitecture" = "amd64" ]; then
+    # Download latest bee
+    sudo wget -q -O /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/bee-node-${latestBeeVersion}-linux-x86-64.zip
 
-# Unzip archive
-if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip" ]; then
-    sudo unzip /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip -d /tmp/bee > /dev/null 2>&1
-fi
-
-# Copy binary
-if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee" ]; then
-    beeStatus="$(systemctl show -p ActiveState --value bee)"
-    if [ "$beeStatus" = "active" ]; then
-        sudo systemctl stop bee
+    # Unzip archive
+    if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip" ]; then
+        sudo unzip /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip -d /tmp/bee > /dev/null 2>&1
     fi
 
-    sudo cp -rf /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee /usr/bin/bee > /dev/null 2>&1
-    sudo chmod +x /usr/bin/bee
-    newBeeBinary=true
+    # Copy binary
+    if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee" ]; then
+        beeStatus="$(systemctl show -p ActiveState --value bee)"
+        if [ "$beeStatus" = "active" ]; then
+            sudo systemctl stop bee
+        fi
+
+        sudo cp -rf /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee /usr/bin/bee > /dev/null 2>&1
+        sudo chmod +x /usr/bin/bee
+        newBeeBinary=true
+    fi
 fi
 
 ##############################################################################################################################################
@@ -86,7 +91,7 @@ fi
 
 if [ "$newBeeConfig" = "true" ]; then
     # Run installer modules
-    source $beeConfigParsers/beeCoordinatorPublicKeys
+    # source $beeConfigParsers/beeCoordinatorPublicKeys
     source $beeConfigParsers/beeSnapshotDownloadUrl
 
     sudo chown -R bee:bee $beeHome > /dev/null 2>&1
