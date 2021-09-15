@@ -192,77 +192,101 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "4)")
             if [ "$osArchitecture" = "amd64" ]; then
-                CHOICE=$(
-                    whiptail --title "Bee - Installer" --menu "\nChoose your option" 16 65 0 \
-                    "1)" "Update Bee" \
-                    "2)" "Install Bee" \
-                    "3)" "Remove Bee" 3>&2 2>&1 1>&3
-                )
-                case $CHOICE in
-                    "1)")
-                        if [ -f "/usr/bin/bee" ]; then
-                            if (whiptail --title "Bee - Installer" --yesno --defaultno "Do you really want to update Bee?" 8 65); then
-                                # Update Bee
-                                source $beeModules/beeVersion
-                                if [ -z "$beeVersion" ]; then
-                                    beeVersion="NA"
+                while [ $exitCode -lt 1 ]; do
+                    CHOICE=$(
+                        whiptail --title "Bee - Installer" --menu "\nChoose your option" 16 65 0 \
+                        "1)" "Update Bee" \
+                        "2)" "Install Bee" \
+                        "3)" "Remove Bee" 3>&2 2>&1 1>&3
+                    )
+
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+
+                    case $CHOICE in
+                        "1)")
+                            if [ -f "/usr/bin/bee" ]; then
+                                if (whiptail --title "Bee - Installer" --yesno --defaultno "Do you really want to update Bee?" 8 65); then
+                                    # Update Bee
+                                    source $beeModules/beeVersion
+                                    if [ -z "$beeVersion" ]; then
+                                        beeVersion="NA"
+                                    fi
+                                    beeStatus="$(systemctl show -p ActiveState --value bee)"
+                                    if [ "$beeStatus" = "active" ] && [ "$beeVersion" != "$latestBeeVersion" ] && [ "$beeVersion" != "NA" ]; then
+                                        {
+                                            echo 0
+                                            echo 10
+                                            source $beeModules/beeInstaller
+                                            echo 50
+                                            source $beeModules/beeConfigParser
+                                            echo 90
+                                            sudo systemctl restart bee
+                                            echo 100
+                                            sleep 0.5
+                                        } | whiptail --gauge "Please wait while Bee is updated..." 8 65 0
+                                        whiptail --title "Bee - Installer" --msgbox "Bee successfully updated" 8 65
+                                    else
+                                        whiptail --title "Bee - Installer" --msgbox "Congratulations, you have already installed the latest version of Bee!" 8 65
+                                    fi
                                 fi
-                                beeStatus="$(systemctl show -p ActiveState --value bee)"
-                                if [ "$beeStatus" = "active" ] && [ "$beeVersion" != "$latestBeeVersion" ] && [ "$beeVersion" != "NA" ]; then
+                            else
+                                whiptail --title "Bee - Installer" --msgbox "Sorry, but Bee is not installed!" 8 65
+                            fi
+                        ;;
+                        "2)")
+                            # INSTALL Bee
+                            if [ ! -f "/usr/bin/bee" ]; then
+                                {
+                                    echo 0
+                                    echo 10
+                                    source $swarmConfigs/bee.cfg
+                                    echo 30
+                                    source $beeModules/beeVersion
+                                    echo 40
+                                    source $beeModules/beeInstaller
+                                    echo 50
+                                    if [ -f "/usr/bin/bee" ] && [ -f "$beeHome/config.chrysalis-$beeNetwork.toml" ]; then
+                                        source $swarmConfigs/bee.cfg
+                                        echo 60
+                                        # CALL MODULE CONFIGPARSER
+                                        source $beeModules/beeParser
+                                        echo 70
+                                        if [ "$ufw" = "true" ]; then
+                                            sudo ufw allow $beeGossipPort/tcp > /dev/null 2>&1
+                                        fi
+                                        sudo systemctl start bee > /dev/null 2>&1
+                                        echo 80
+                                        sleep 2
+                                        beeStatus="$(systemctl show -p ActiveState --value bee)"
+                                        if [ "$beeStatus" != "active" ]; then
+                                            sudo systemctl restart bee > /dev/null 2>&1
+                                        fi
+                                        echo 100
+                                    fi
+                                } | whiptail --gauge "Please wait while installing Bee..." 8 65 0
+                                if [ -f "/usr/bin/bee" ] && [ -f "$beeHome/config.chrysalis-$beeNetwork.toml" ]; then
+                                    whiptail --title "Bee - Installer" --msgbox "Bee installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $beeGossipPort/tcp" 15 65
+                                else
                                     {
                                         echo 0
-                                        echo 10
-                                        source $beeModules/beeInstaller
+                                        echo 25
+                                        source $swarmConfigs/bee.cfg
                                         echo 50
-                                        source $beeModules/beeConfigParser
-                                        echo 90
-                                        sudo systemctl restart bee
+                                        source $beeModules/beeRemoval
+                                        echo 75
                                         echo 100
-                                        sleep 0.5
-                                    } | whiptail --gauge "Please wait while Bee is updated..." 8 65 0
-                                    whiptail --title "Bee - Installer" --msgbox "Bee successfully updated" 8 65
-                                else
-                                    whiptail --title "Bee - Installer" --msgbox "Congratulations, you have already installed the latest version of Bee!" 8 65
+                                    } | whiptail --gauge "Please wait while the Bee files are removed...." 8 65 0
+                                    whiptail --title "Bee - Installer" --msgbox "Error while installing Bee! Please try again" 8 65
                                 fi
-                            fi
-                        else
-                            whiptail --title "Bee - Installer" --msgbox "Sorry, but Bee is not installed!" 8 65
-                        fi
-                    ;;
-                    "2)")
-                        # INSTALL Bee
-                        if [ ! -f "/usr/bin/bee" ]; then
-                            {
-                                echo 0
-                                echo 10
-                                source $swarmConfigs/bee.cfg
-                                echo 30
-                                source $beeModules/beeVersion
-                                echo 40
-                                source $beeModules/beeInstaller
-                                echo 50
-                                if [ -f "/usr/bin/bee" ] && [ -f "$beeHome/config.chrysalis-$beeNetwork.toml" ]; then
-                                    source $swarmConfigs/bee.cfg
-                                    echo 60
-                                    # CALL MODULE CONFIGPARSER
-                                    source $beeModules/beeParser
-                                    echo 70
-                                    if [ "$ufw" = "true" ]; then
-                                        sudo ufw allow $beeGossipPort/tcp > /dev/null 2>&1
-                                    fi
-                                    sudo systemctl start bee > /dev/null 2>&1
-                                    echo 80
-                                    sleep 2
-                                    beeStatus="$(systemctl show -p ActiveState --value bee)"
-                                    if [ "$beeStatus" != "active" ]; then
-                                        sudo systemctl restart bee > /dev/null 2>&1
-                                    fi
-                                    echo 100
-                                fi
-                            } | whiptail --gauge "Please wait while installing Bee..." 8 65 0
-                            if [ -f "/usr/bin/bee" ] && [ -f "$beeHome/config.chrysalis-$beeNetwork.toml" ]; then
-                                whiptail --title "Bee - Installer" --msgbox "Bee installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $beeGossipPort/tcp" 15 65
                             else
+                                whiptail --title "Bee - Installer" --msgbox "Bee already installed!" 8 65
+                            fi
+                        ;;
+                        "3)")
+                            if (whiptail --title "Bee - Installer" --yesno --defaultno "Do you really want to remove Bee?" 8 65); then
                                 {
                                     echo 0
                                     echo 25
@@ -271,28 +295,13 @@ while [ $exitCode -lt 1 ]; do
                                     source $beeModules/beeRemoval
                                     echo 75
                                     echo 100
-                                } | whiptail --gauge "Please wait while the Bee files are removed...." 8 65 0
-                                whiptail --title "Bee - Installer" --msgbox "Error while installing Bee! Please try again" 8 65
+                                } | whiptail --gauge "Please wait while Bee will be removed..." 8 65 0
+                                whiptail --title "Bee - Installer" --msgbox "Bee successfully removed" 8 65
                             fi
-                        else
-                            whiptail --title "Bee - Installer" --msgbox "Bee already installed!" 8 65
-                        fi
-                    ;;
-                    "3)")
-                        if (whiptail --title "Bee - Installer" --yesno --defaultno "Do you really want to remove Bee?" 8 65); then
-                            {
-                                echo 0
-                                echo 25
-                                source $swarmConfigs/bee.cfg
-                                echo 50
-                                source $beeModules/beeRemoval
-                                echo 75
-                                echo 100
-                            } | whiptail --gauge "Please wait while Bee will be removed..." 8 65 0
-                            whiptail --title "Bee - Installer" --msgbox "Bee successfully removed" 8 65
-                        fi
-                    ;;
-                esac
+                        ;;
+                    esac
+                done
+                exitCode=0
             else
                 whiptail --title "Bee - Installer" --msgbox "Error - Unsupported OS architecture for Bee detected!" 8 65
             fi
