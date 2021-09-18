@@ -1,5 +1,12 @@
+## Version 0.8.7
+### Added
+- Added OS architecture detection
+### Changed
+- Updated menus of Hornet, Bee and GoShimmer
+
+
 ## Version 0.8.6
-## Changed
+### Changed
 - Changed password setup for Bee dashboard
 - Added pwd check for Hornet dashboard
 
