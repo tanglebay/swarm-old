@@ -1,8 +1,12 @@
 ## Version 0.8.7
 ### Added
 - Added OS architecture detection
+- Added random update time frame for auto node update
+- Added watchdog.cfg
 ### Changed
 - Updated menus of Hornet, Bee and GoShimmer
+### Removed
+- Removed watchdog log
 
 
 ## Version 0.8.6
