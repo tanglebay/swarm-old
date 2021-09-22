@@ -4,19 +4,14 @@ if [ ! -d "/tmp/swarm" ]; then
     sudo mkdir -p $tmpdir
 fi
 
-# RLY OLD SHIT
-if [ -f "$swarmConfigs/hornetCfgBak" ]; then
-    sudo mv -f $swarmConfigs/hornetCfgBak $swarmTmp/hornet.cfg
+
+
+# TEMPORARY - WILL BE REMOVE IN THE FUTURE
+crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled > /dev/null 2>&1
+if [ "$watchdogStatus" = "enabled" ]; then
+    ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
 fi
-if [ -f "$swarmConfigs/swarmCfgBak" ]; then
-    sudo mv -f $swarmConfigs/swarmCfgBak $swarmTmp/swarm.cfg
-fi
-if [ -f "$swarmConfigs/proxyCfgBak" ]; then
-    sudo mv -f $swarmConfigs/proxyCfgBak $swarmTmp/proxy.cfg
-fi
-if [ -f "$logs/watchdogBak" ]; then
-    sudo mv -f $logs/watchdogBak $swarmTmp/watchdog.cfg
-fi
+
 
 # BEFORE 0.6.5
 if [ -f "$swarmConfigs/hornet-backup.cfg" ]; then
