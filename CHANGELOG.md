@@ -5,6 +5,8 @@
 - Added watchdog.cfg
 ### Changed
 - Updated menus of Hornet, Bee and GoShimmer
+- Updated goshimmerSeed module to the latest change
+- Updated goshimmerGossipPort to the latest change
 ### Removed
 - Removed watchdog log
 

@@ -1,38 +1,46 @@
 #!/bin/bash
-source /var/lib/swarm/environment
-source $swarmConfigs/hornet.cfg
-source $swarmConfigs/bee.cfg
-source $swarmConfigs/goshimmer.cfg
-source $swarmConfigs/swarm.cfg
-source $swarmConfigs/proxy.cfg
-source $swarmConfigs/watchdog.cfg
 
-# Get Service Status
-hornetStatus="$(systemctl show -p ActiveState --value hornet)"
-beeStatus="$(systemctl show -p ActiveState --value bee)"
-goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+if [ ! -f "/tmp/watchdog.lock" ]; then
+    # Create LOCK file
+    sudo touch /tmp/watchdog.lock
 
-# Set time frame
-timeFrame=`date '+%M'`
+    source /var/lib/swarm/environment
+    source $swarmConfigs/hornet.cfg
+    source $swarmConfigs/bee.cfg
+    source $swarmConfigs/goshimmer.cfg
+    source $swarmConfigs/swarm.cfg
+    source $swarmConfigs/proxy.cfg
+    source $swarmConfigs/watchdog.cfg
 
-###########################
-source $watchdogModules/watchdogNumberGenerator
-###########################
+    # Get Service Status
+    hornetStatus="$(systemctl show -p ActiveState --value hornet)"
+    beeStatus="$(systemctl show -p ActiveState --value bee)"
+    goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
 
-# SWARM auto updater
-source $watchdogModules/swarmAutoUpdate
+    # Set time frame
+    timeFrame=`date '+%M'`
 
-# Update check
-source $watchdogModules/autoNodeUpdate
+    ###########################
+    source $watchdogModules/watchdogNumberGenerator
+    ###########################
 
-# Service check
-source $watchdogModules/statusCheck
+    # SWARM auto updater
+    source $watchdogModules/swarmAutoUpdate
 
-# Check sync
-source $watchdogModules/syncCheck
+    # Update check
+    source $watchdogModules/autoNodeUpdate
 
-# Log Pruning
-source $watchdogModules/logPruning
+    # Service check
+    source $watchdogModules/statusCheck
 
+    # Check sync
+    source $watchdogModules/syncCheck
+
+    # Log Pruning
+    source $watchdogModules/logPruning
+
+    # Remove LOCK file
+    sudo rm -rf /tmp/watchdog.lock
+fi
 
 exit 0
