@@ -1,3 +1,8 @@
+## Version 0.8.8
+### Changed
+- Updated goshimmerAutopeeringPort
+
+
 ## Version 0.8.7
 ### Added
 - Added OS architecture detection
