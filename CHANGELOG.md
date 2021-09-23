@@ -1,6 +1,8 @@
 ## Version 0.8.8
 ### Changed
 - Updated goshimmerAutopeeringPort
+- Updated goshimmerInstaller
+- Updated GoShimmer DB reset
 
 
 ## Version 0.8.7
