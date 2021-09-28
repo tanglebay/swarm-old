@@ -1,9 +1,20 @@
+## Version 0.8.9
+### Added
+- Added GoShimmer DB download
+- Added Devnet to Bee
+- Added Devnet to Hornet
+### Changed
+- Fixed parsing of Goshimmer autopeering port
+
+---
+
 ## Version 0.8.8
 ### Changed
 - Updated goshimmerAutopeeringPort
 - Updated goshimmerInstaller
 - Updated GoShimmer DB reset
 
+---
 
 ## Version 0.8.7
 ### Added
@@ -17,12 +28,14 @@
 ### Removed
 - Removed watchdog log
 
+---
 
 ## Version 0.8.6
 ### Changed
 - Changed password setup for Bee dashboard
 - Added pwd check for Hornet dashboard
 
+---
 
 ## Version 0.8.5
 ### Added
