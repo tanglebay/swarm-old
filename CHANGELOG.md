@@ -5,6 +5,8 @@
 - Added Devnet to Hornet
 ### Changed
 - Fixed parsing of Goshimmer autopeering port
+- Fixed Hornet configuration menu
+- Fixed general bugs
 
 ---
 
