@@ -1,10 +1,16 @@
 #!/bin/bash
 
 if [ "$beeNetwork" = "mainnet" ]; then
-    getSnapshotUrls="https://cdn.tanglebay.com/snapshots/mainnet/"
-
-    if ! grep -Ex "$getSnapshotUrls" $beeHome/config.chrysalis-mainnet.toml > /dev/null 2>&1
+    if grep -Ex "delta_path        = \"./snapshots/mainnet/latest-delta_snapshot.bin\"" $beeHome/config.chrysalis-$beeNetwork.toml > /dev/null 2>&1
     then
-        sed -i 's~    \"https:\/\/chrysalis-dbfiles\.iota\.org/snapshots\/hornet\/\"~    \"https:\/\/chrysalis-dbfiles\.iota\.org\/snapshots\/hornet\/\",\n    \"https:\/\/cdn\.tanglebay\.com\/snapshots\/mainnet\/\"~g' $beeHome/config.chrysalis-mainnet.toml
+        sed -i '/^delta_path/d' $beeHome/config.chrysalis-$beeNetwork.toml > /dev/null 2>&1
+        restartBee=true
+    fi
+
+    getSnapshotUrls="https:\/\/cdn\.tanglebay.com\/snapshots\/mainnet\/"
+    if ! grep -Ex "$getSnapshotUrls" $beeHome/config.chrysalis-$beeNetwork.toml > /dev/null 2>&1
+    then
+        sed -i 's~    \"https:\/\/chrysalis-dbfiles\.iota\.org/snapshots\/hornet\/\"~    \"https:\/\/cdn\.tanglebay\.com\/snapshots\/mainnet\/\"~g' $beeHome/config.chrysalis-$beeNetwork.toml
+        restartBee=true
     fi
 fi
