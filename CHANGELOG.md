@@ -1,3 +1,14 @@
+## Version 0.9.0
+### Changed
+- Moved Bee Coo public key to parser
+- Moved Snapshot DL URL to Bee parser
+- Updated Bee identity generation
+- Updated Bee pwd generation
+- Updated Coo public keys for Bee
+- Fixed Bee proxy template
+
+---
+
 ## Version 0.8.9
 ### Added
 - Added GoShimmer DB download
