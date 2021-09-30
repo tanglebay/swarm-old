@@ -1,16 +1,17 @@
 #!/bin/bash
 
 if [ "$beeNetwork" = "mainnet" ]; then
-    if grep -Ex "delta_path        = \"./snapshots/mainnet/latest-delta_snapshot.bin\"" $beeHome/config.chrysalis-$beeNetwork.toml > /dev/null 2>&1
+    if grep -q "delta_path        = \"./snapshots/mainnet/latest-delta_snapshot.bin\"" $beeHome/config.chrysalis-$beeNetwork.toml > /dev/null 2>&1
     then
         sed -i '/^delta_path/d' $beeHome/config.chrysalis-$beeNetwork.toml > /dev/null 2>&1
         restartBee=true
     fi
 
-    getSnapshotUrls="https:\/\/cdn\.tanglebay.com\/snapshots\/mainnet\/"
-    if ! grep -Ex "$getSnapshotUrls" $beeHome/config.chrysalis-$beeNetwork.toml > /dev/null 2>&1
+    if ! grep -q "https://cdn.tanglebay.com/snapshots/mainnet/" $beeHome/config.chrysalis-$beeNetwork.toml > /dev/null 2>&1
     then
-        sed -i 's~    \"https:\/\/chrysalis-dbfiles\.iota\.org/snapshots\/hornet\/\"~    \"https:\/\/cdn\.tanglebay\.com\/snapshots\/mainnet\/\"~g' $beeHome/config.chrysalis-$beeNetwork.toml
+        sed -i '/download_urls     = \[/,/depth             = 50/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
+        sed -i 's~^download_urls     = \[~download_urls     = \[\n    \"https:\/\/cdn\.tanglebay\.com\/snapshots\/mainnet\/\"\n\]~g' $beeHome/config.chrysalis-$beeNetwork.toml
+
         restartBee=true
     fi
 fi
