@@ -5,7 +5,7 @@
 - Updated Bee identity generation
 - Updated Bee pwd generation
 - Updated Coo public keys for Bee
-
+- Fixed Bee proxy template
 
 ---
 
