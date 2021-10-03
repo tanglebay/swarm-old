@@ -1,3 +1,11 @@
+## Version 0.9.1
+### Changed
+- Fixed Bee config check
+### Removed
+- Removed IF snapshot source from Bee
+
+---
+
 ## Version 0.9.0
 ### Changed
 - Moved Bee Coo public key to parser
