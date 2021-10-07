@@ -13,6 +13,11 @@ SWARM is a script that allows you to easily install and manage an IOTA node. The
 
 ---
 
+## Tutorials
+- <a href="https://iota-industrie-4-0.blogspot.com/2021/10/tutorial-zur-installation-einer-iota.html">[DE] Tutorial zur Installation einer IOTA-Fullnode mit SWARM (Autor - PIOTA)</a>
+
+---
+
 ## Installation
 
 ### Requirements
