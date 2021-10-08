@@ -37,6 +37,13 @@ curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh |
 
 ---
 
+## Using SWARM
+In the menu of SWARM you navigate with the arrow keys. You confirm an action with the "OK" item or by pressing the Enter key. The "Cancel" item cancels an action or returns to the previous menu.
+
+The configuration of the node should always be done via the configuration point provided by SWARM. It is not advisable to use the advanced configuration, since direct parameters set via this menu item are not taken into account during an update and are therefore reset.
+
+---
+
 ## Ports
 ### Hornet
 - Gossip port (peering): 15600/tcp (customizable)
