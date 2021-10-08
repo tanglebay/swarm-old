@@ -1,3 +1,9 @@
+## Version 0.9.2
+### Changed
+- Fixed GoShimmer enable plugin module
+
+---
+
 ## Version 0.9.1
 ### Changed
 - Fixed Bee config check
