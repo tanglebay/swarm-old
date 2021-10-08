@@ -1,6 +1,7 @@
 ## Version 0.9.2
 ### Changed
 - Fixed GoShimmer enable plugin module
+- Fixed Goshimmer database reset
 
 ---
 
