@@ -1,0 +1,20 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    parser="$(jq '.prometheus.bindAddress' $hornetHome/$hornetConfig.json)"
+    if [ "$parser" != "\"localhost:9311\"" ]; then
+        sudo jq '.prometheus.bindAddress = "localhost:9311"' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+        restartHornet=true
+    fi
+    parser="$(jq '.prometheus.fileServiceDiscovery.target' $hornetHome/$hornetConfig.json)"
+    if [ "$parser" != "\"localhost:9311\"" ]; then
+        sudo jq '.prometheus.fileServiceDiscovery.target = "localhost:9311"' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+        restartHornet=true
+    fi
+done
+
+unset ARRAYhornetConfigs
+unset hornetConfig
