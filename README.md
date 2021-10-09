@@ -48,28 +48,18 @@ The configuration of the node should always be done via the configuration point 
 ### Hornet
 - Gossip port (peering): 15600/tcp (customizable)
 - Autopeering port (peering): 14626/udp (customizable)
+- Prometheus: 9311/tcp
 ### Bee
 - Gossip port (peering): 15601/tcp (customizable)
 ### GoShimmer
 - Gossip port (peering): 14666/tcp (customizable)
 - Autopeering port (peering): 14646/udp
+- Prometheus: 9313/tcp
 ### Proxy
 In the proxy menu you can define a separate domain for each node or one domain for all. Please note that when using a shared domain, a separate port must be defined for each node.
 - HTTP: 80/tcp
 
 **Please note that the following ports should not be used for the proxy 8080/tcp-8084/tcp**
-
----
-
-## Proxy
-### Hornet/Bee
-Dashboard: `https://YOURDOMAIN:PROXYPORT`<br>
-API: `https://YOURDOMAIN:PROXYPORT`<br>
-Prometheus: `https://YOURDOMAIN:PROXYPORT/prometheus` (if plugin enabled)<br>
-### GoShimmer
-Dashboard: `https://YOURDOMAIN:PROXYPORT`<br>
-API: `https://YOURDOMAIN:PROXYPORT/webapi`<br>
-Prometheus: `https://YOURDOMAIN:PROXYPORT/prometheus` (if plugin enabled)<br>
 
 ---
 
