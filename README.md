@@ -63,13 +63,13 @@ In the proxy menu you can define a separate domain for each node or one domain f
 
 ## Proxy
 ### Hornet/Bee
-<p>Dashboard: `https://YOURDOMAIN:PROXYPORT`</p>
-<p>API: `https://YOURDOMAIN:PROXYPORT`</p>
-<p>Prometheus: `https://YOURDOMAIN:PROXYPORT/prometheus` (if plugin enabled)</p>
+Dashboard: `https://YOURDOMAIN:PROXYPORT`<br>
+API: `https://YOURDOMAIN:PROXYPORT`<br>
+Prometheus: `https://YOURDOMAIN:PROXYPORT/prometheus` (if plugin enabled)<br>
 ### GoShimmer
-<p>Dashboard: `https://YOURDOMAIN:PROXYPORT`</p>
-<p>API: `https://YOURDOMAIN:PROXYPORT/webapi`</p>
-<p>Prometheus: `https://YOURDOMAIN:PROXYPORT/prometheus` (if plugin enabled)</p>
+Dashboard: `https://YOURDOMAIN:PROXYPORT`<br>
+API: `https://YOURDOMAIN:PROXYPORT/webapi`<br>
+Prometheus: `https://YOURDOMAIN:PROXYPORT/prometheus` (if plugin enabled)<br>
 
 ---
 
