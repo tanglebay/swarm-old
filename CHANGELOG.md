@@ -1,7 +1,6 @@
 ## Version 0.9.3
 ### Added
 - Added prometheus for Hornet and Goshimmer
-- Added /prometheus endpoint to the proxy template
 ### Changed
 - Fixed plugin management
 - Fixed Goshimmer version module
