@@ -1,6 +1,11 @@
 ## Version 0.9.2
+### Added
+- Added new plugin management for Hornet and GoShimmer
 ### Changed
+- Fixed missing theme colors
+- Fixed db download when performing auto update for GoShimmer
 - Fixed GoShimmer enable plugin module
+- Fixed Goshimmer database reset
 
 ---
 

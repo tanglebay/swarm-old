@@ -215,11 +215,17 @@ while [ $exitCode -lt 1 ]; do
             fi
         ;;
         "6)")
+            setHornetEnablePlugins=true
             source $swarmConfigs/hornet.cfg
             currentHornetEnablePlugins=$hornetEnablePlugins
-            hornetEnablePlugins=$(whiptail --inputbox "\nEnable plugins (seperated with a comma e.g: mqtt,spammer,etc.)" 10 65 $hornetEnablePlugins --title "Hornet - Plugins" 3>&1 1>&2 2>&3)
-            hornetEnablePlugins=$(echo $hornetEnablePlugins | tr -d ' ')
-            if [ "$hornetEnablePlugins" != "$currentHornetEnablePlugins" ]; then
+            source $hornetModules/hornetPlugins
+            hornetEnablePlugins=$(whiptail --title "Hornet - Plugins" --checklist "\nSelect the Hornet plugins to be activated:" 16 78 4 \
+                "autopeering" " - Autopeering for automatic peering" $hornetAutopeering \
+                "spammer" " - Spammer to send messages into the tangle" $hornetSpammer \
+                "mqtt" " - Message stream from Hornet" $hornetMqtt \
+                "faucet" " - Faucet to receive IOTA tokens e.g. on the devnet" $hornetFaucet 3>&1 1>&2 2>&3)
+            hornetEnablePlugins=$(echo $hornetEnablePlugins | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$hornetEnablePlugins" != "$currentHornetEnablePlugins" ] && [ ! -z "$hornetEnablePlugins" ]; then
                 source $hornetConfigParsers/hornetEnablePlugins
                 sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="'$hornetEnablePlugins'"/' $swarmConfigs/hornet.cfg
                 if [ ! -z "$hornetEnablePlugins" ]; then
@@ -229,13 +235,17 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 restartHornet=true
             fi
+            unset setHornetEnablePlugins
         ;;
         "7)")
+            setHornetDisablePlugins=true
             source $swarmConfigs/hornet.cfg
             currentHornetDisablePlugins=$hornetDisablePlugins
-            hornetDisablePlugins=$(whiptail --inputbox "\nDisable plugins (seperated with a comma e.g: mqtt,spammer,etc.)" 10 65 $hornetDisablePlugins --title "Hornet - Plugins" 3>&1 1>&2 2>&3)
-            hornetDisablePlugins=$(echo $hornetDisablePlugins | tr -d ' ')
-            if [ "$hornetDisablePlugins" != "$currentHornetDisablePlugins" ]; then
+            source $hornetModules/hornetPlugins
+            hornetDisablePlugins=$(whiptail --title "Hornet - Plugins" --checklist "\nSelect the Hornet plugins to be deactivated:" 10 78 1 \
+                "warpsync" " - Spammer to send messages into the tangle" $hornetWarpsync 3>&1 1>&2 2>&3)
+            hornetDisablePlugins=$(echo $hornetDisablePlugins | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$hornetDisablePlugins" != "$currentHornetDisablePlugins" ] && [ ! -z "$hornetDisablePlugins" ]; then
                 source $hornetConfigParsers/hornetDisablePlugins
                 sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins="'$hornetDisablePlugins'"/' $swarmConfigs/hornet.cfg
                 if [ ! -z "$hornetDisablePlugins" ]; then
@@ -245,6 +255,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 restartHornet=true
             fi
+            unset setHornetDisablePlugins
         ;;
         "8)")
             while [ $exitCode -lt 1 ]; do
