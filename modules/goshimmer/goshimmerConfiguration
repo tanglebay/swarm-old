@@ -147,45 +147,41 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "3)")
-            setGoshimmerEnablePlugins=true
+            useGoshimmerEnablePlugins=true
             source $swarmConfigs/goshimmer.cfg
             currentGoshimmerEnablePlugins=$goshimmerEnablePlugins
             source $goshimmerModules/goshimmerPlugins
-            goshimmerEnablePlugins=$(whiptail --title "GoShimmer - Plugins" --checklist "\nSelect the GoShimmer plugins to be activated:" 10 78 1 \
-                "txstream" " - Connector for a WASP node" $goshimmerTxstream 3>&1 1>&2 2>&3)
-            goshimmerEnablePlugins=$(echo $goshimmerEnablePlugins | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ "$goshimmerEnablePlugins" != "$currentGoshimmerEnablePlugins" ] && [ ! -z "$goshimmerEnablePlugins" ]; then
+            goshimmerEnablePlugins=$(whiptail --title "GoShimmer - Plugins" --checklist "\nSelect (with spacebar) the GoShimmer plugins to be activated:" 10 78 1 \
+                "Txstream" "plugin as connector for a WASP node" $goshimmerTxstream 3>&1 1>&2 2>&3)
+            goshimmerEnablePlugins=$(echo $goshimmerEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$goshimmerEnablePlugins" != "$currentGoshimmerEnablePlugins" ]; then
                 source $goshimmerConfigParsers/goshimmerEnablePlugins
                 sudo sed -i 's/^goshimmerEnablePlugins=.*/goshimmerEnablePlugins="'$goshimmerEnablePlugins'"/' $swarmConfigs/goshimmer.cfg
                 if [ ! -z "$goshimmerEnablePlugins" ]; then
                     whiptail --title "GoShimmer - Plugins" --msgbox "The following plugins are enabled: $goshimmerEnablePlugins!" 8 65
-                else
-                    whiptail --title "GoShimmer - Plugins" --msgbox "There are no plugins enabled for GoShimmer!" 8 65
                 fi
                 restartGoshimmer=true
             fi
-            unset setGoshimmerEnablePlugins
+            unset useGoshimmerEnablePlugins
         ;;
         "4)")
-            setGoshimmerDisablePlugins=true
+            useGoshimmerDisablePlugins=true
             source $swarmConfigs/goshimmer.cfg
             currentGoshimmerDisablePlugins=$goshimmerDisablePlugins
             source $goshimmerModules/goshimmerPlugins
-            goshimmerDisablePlugins=$(whiptail --title "GoShimmer - Plugins" --checklist "\nSelect the GoShimmer plugins to be deactivated:" 14 78 2 \
-                "autopeering" " - Automatic peers detection for gossip" $goshimmerAutopeering \
-                "portcheck" " - Portcheck for autopeering/entry nodes" $goshimmerPortcheck 3>&1 1>&2 2>&3)
-            goshimmerDisablePlugins=$(echo $goshimmerDisablePlugins | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ "$goshimmerDisablePlugins" != "$currentGoshimmerDisablePlugins" ] && [ ! -z "$goshimmerDisablePlugins" ]; then
+            goshimmerDisablePlugins=$(whiptail --title "GoShimmer - Plugins" --checklist "\nSelect (with spacebar) the GoShimmer plugins to be deactivated:" 14 78 2 \
+                "Autopeering" "plugin for automatic peering" $goshimmerAutopeering \
+                "Portcheck" "plugin for checking the autopeering port" $goshimmerPortcheck 3>&1 1>&2 2>&3)
+            goshimmerDisablePlugins=$(echo $goshimmerDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$goshimmerDisablePlugins" != "$currentGoshimmerDisablePlugins" ]; then
                 source $goshimmerConfigParsers/goshimmerDisablePlugins
                 sudo sed -i 's/^goshimmerDisablePlugins=.*/goshimmerDisablePlugins="'$goshimmerDisablePlugins'"/' $swarmConfigs/goshimmer.cfg
                 if [ ! -z "$goshimmerDisablePlugins" ]; then
                     whiptail --title "GoShimmer Plugins" --msgbox "The following plugins are disabled: $goshimmerDisablePlugins!" 8 65
-                else
-                    whiptail --title "GoShimmer - Plugins" --msgbox "There are no plugins disabled for GoShimmer!" 8 65
                 fi
                 restartGoshimmer=true
             fi
-            unset setGoshimmerDisablePlugins
+            unset useGoshimmerDisablePlugins
         ;;
         "5)")
             while [ $exitCode -lt 1 ]; do

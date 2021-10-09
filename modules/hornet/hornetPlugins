@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [ "$setHornetEnablePlugins" = "true" ]; then
+if [ "$useHornetEnablePlugins" = "true" ]; then
     hornetPlugins=$hornetEnablePlugins
 fi
-if [ "$setHornetDisablePlugins" = "true" ]; then
+if [ "$useHornetDisablePlugins" = "true" ]; then
     hornetPlugins=$hornetDisablePlugins
 fi
 
@@ -12,15 +12,27 @@ fi
 # Autopeering
 if [[ $hornetPlugins = *autopeering* ]]; then
     hornetAutopeering=ON
+    if [ "$ufw" = "true" ]; then
+        sudo ufw allow $hornetAutopeeringPort/udp > /dev/null 2>&1
+    fi
 else
     hornetAutopeering=OFF
+    if [ "$ufw" = "true" ]; then
+        sudo ufw delete allow $hornetAutopeeringPort/udp > /dev/null 2>&1
+    fi
 fi
 
 # MQTT
 if [[ $hornetPlugins = *mqtt* ]]; then
     hornetMqtt=ON
+    if [ "$ufw" = "true" ]; then
+        sudo ufw allow 1883/tcp > /dev/null 2>&1
+    fi
 else
     hornetMqtt=OFF
+    if [ "$ufw" = "true" ]; then
+        sudo ufw delete allow 1883/tcp > /dev/null 2>&1
+    fi
 fi
 
 # Spammer
@@ -42,6 +54,13 @@ if [[ $hornetPlugins = *warpsync* ]]; then
     hornetWarpsync=ON
 else
     hornetWarpsync=OFF
+fi
+
+# Prometheus
+if [[ $hornetPlugins = *prometheus* ]]; then
+    hornetPrometheus=ON
+else
+    hornetPrometheus=OFF
 fi
 
 unset hornetPlugins
