@@ -225,12 +225,15 @@ while [ $exitCode -lt 1 ]; do
                 "MQTT" "plugin to stream messages" $hornetMqtt \
                 "Prometheus" "plugin is used for metrics e.g. in Grafana" $hornetPrometheus \
                 "Faucet" "plugin to receive IOTA tokens e.g. on the devnet" $hornetFaucet 3>&1 1>&2 2>&3)
+            exitStatus=$?
             hornetEnablePlugins=$(echo $hornetEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ "$hornetEnablePlugins" != "$currentHornetEnablePlugins" ]; then
+            if [ "$hornetEnablePlugins" != "$currentHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
                 source $hornetConfigParsers/hornetEnablePlugins
                 sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="'$hornetEnablePlugins'"/' $swarmConfigs/hornet.cfg
                 if [ ! -z "$hornetEnablePlugins" ]; then
                     whiptail --title "Hornet - Plugins" --msgbox "The following plugins are enabled:\n$hornetEnablePlugins" 14 65
+                else
+                    whiptail --title "Hornet - Plugins" --msgbox "There are no plugins enabled for Hornet!" 8 65
                 fi
                 restartHornet=true
             fi
@@ -243,12 +246,15 @@ while [ $exitCode -lt 1 ]; do
             source $hornetModules/hornetPlugins
             hornetDisablePlugins=$(whiptail --title "Hornet - Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be deactivated:" 10 78 1 \
                 "Warpsync" "plugin to sync more faster" $hornetWarpsync 3>&1 1>&2 2>&3)
+            exitStatus=$?
             hornetDisablePlugins=$(echo $hornetDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ "$hornetDisablePlugins" != "$currentHornetDisablePlugins" ]; then
+            if [ "$hornetDisablePlugins" != "$currentHornetDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
                 source $hornetConfigParsers/hornetDisablePlugins
                 sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins="'$hornetDisablePlugins'"/' $swarmConfigs/hornet.cfg
                 if [ ! -z "$hornetDisablePlugins" ]; then
                     whiptail --title "Hornet Plugins" --msgbox "The following plugins are disabled:\n$hornetDisablePlugins" 14 65
+                else
+                    whiptail --title "Hornet - Plugins" --msgbox "There are no plugins disabled for Hornet!" 8 65
                 fi
                 restartHornet=true
             fi
