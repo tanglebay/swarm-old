@@ -61,6 +61,18 @@ In the proxy menu you can define a separate domain for each node or one domain f
 
 ---
 
+## Proxy
+### Hornet/Bee
+Dashboard: `https://YOURDOMAIN:PROXYPORT`
+API: `https://YOURDOMAIN:PROXYPORT`
+Prometheus: `https://YOURDOMAIN:PROXYPORT/prometheus` (if plugin enabled)
+### GoShimmer
+Dashboard: `https://YOURDOMAIN:PROXYPORT`
+API: `https://YOURDOMAIN:PROXYPORT/webapi`
+Prometheus: `https://YOURDOMAIN:PROXYPORT/prometheus` (if plugin enabled)
+
+---
+
 ## Backup SWARM
 If you ever want to reinstall your server or SWARM, you can backup your SWARM configuration first.
 
