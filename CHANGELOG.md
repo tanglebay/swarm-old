@@ -5,6 +5,7 @@
 ### Changed
 - Fixed plugin management
 - Fixed Goshimmer version module
+- Fixed general bugs
 
 ---
 
