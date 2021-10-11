@@ -5,19 +5,20 @@ while [ $exitCode -lt 1 ]; do
     CHOICE=$(
         whiptail --title "Hornet Configurations" --menu "\nChoose an option" 27 65 0 \
         "1)" "Dashboard" \
-        "2)" "Node Alias" \
-        "3)" "DB Pruning" \
-        "4)" "Proof of Work" \
-        "5)" "Local Snapshots" \
-        "6)" "Enable Plugins" \
-        "7)" "Disable Plugins" \
-        "8)" "P2P Identity" \
-        "9)" "Database Revalidation" \
-        "10)" "Gossip Port" \
-        "11)" "Autopeering Port" \
-        "12)" "Unknown Peers Limit" \
-        "13)" "IOTA Network" \
-        "14)" "Hornet release Channel" 3>&2 2>&1 1>&3
+        "2)" "API & JWT" \
+        "3)" "Node Alias" \
+        "4)" "DB Pruning" \
+        "5)" "Proof of Work" \
+        "6)" "Local Snapshots" \
+        "7)" "Enable Plugins" \
+        "8)" "Disable Plugins" \
+        "9)" "P2P Identity" \
+        "1ß)" "Database Revalidation" \
+        "11)" "Gossip Port" \
+        "12)" "Autopeering Port" \
+        "13)" "Unknown Peers Limit" \
+        "14)" "IOTA Network" \
+        "15)" "Hornet release Channel" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -79,6 +80,89 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "2)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $swarmConfigs/hornet.cfg
+                # Hornet JWT
+                CHOICE=$(
+                    whiptail --title "Hornet - API & JWT" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "API Routes" \
+                    "2)" "Generate new JWT token" \
+                    "3)" "Show all JWT token" \
+                    "4)" "Revoke all JWT token" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        source $swarmConfigs/hornet.cfg
+                        hornetApiRoutes="$hornetApiProtectedRoutes"
+                        source $hornetModules/hornetApiRoutes
+                        hornetApiRoutes=$(whiptail --title "Hornet - API routes" --checklist "\nSelect (using the spacebar) the Hornet API routes that you want to protect:" 16 78 5 \
+                            "/health" "" $hornetApiRoutesHealth \
+                            "/mqtt" "" $hornetApiRoutesMqtt \
+                            "/api/v1/info" "" $hornetApiRoutesInfo \
+                            "/api/v1/tips" "" $hornetApiRoutesTips \
+                            "/api/v1/messages*" "" $hornetApiRoutesMessages \
+                            "/api/v1/transactions*" "" $hornetApiRoutesTransactions \
+                            "/api/v1/milestones*" "" $hornetApiRoutesMilestones \
+                            "/api/v1/outputs*" "" $hornetApiRoutesOutputs \
+                            "/api/v1/addresses*" "" $hornetApiRoutesAddresses \
+                            "/api/v1/treasury" "" $hornetApiRoutesTreasury \
+                            "/api/v1/receipts*" "" $hornetApiRoutesReceipts 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        hornetApiRoutes=$(echo $hornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+                        if [ "$exitStatus" != "1" ]; then
+                            hornetUpdateApiRoutes=true
+                            source $hornetModules/hornetApiRoutes
+                            source $hornetConfigParsers/hornetApiProtectedRoutes
+                            source $hornetConfigParsers/hornetApiPublicRoutes
+                            unset hornetUpdateApiRoutes
+                        fi
+                        unset hornetApiRoutes
+                    ;;
+                    "2)")
+                        if (whiptail --title "Hornet - API & JWT" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
+                            sudo systemctl stop hornet
+                            hornetJwtToken=$( cd $hornetHome ; hornet tools jwt-api)
+                            echo $hornetJwtToken >> $swarmLogs/jwt.log
+                            clear
+                            echo ""
+                            echo $hornetJwtToken
+                            echo ""
+                            read -n 1 -s -r -p "Press any key to continue"
+                            sudo systemctl start hornet
+                        fi
+                    ;;
+                    "3)")
+                        if [ -f "$swarmLogs/hornetJwt.log" ]; then
+                            sudo nano $swarmLogs/hornetJwt.log
+                        else
+                            whiptail --title "Hornet - API & JWT" --msgbox "No JWT token log found, please generate one first!" 8 65
+                        fi
+                    ;;
+                    "4)")
+                        if (whiptail --title "Hornet - API & JWT" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
+                            hornetApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
+                            sudo sed -i 's~^hornetApiJwtSalt=.*~hornetApiJwtSalt="'$hornetApiJwtSalt'"~' $swarmConfigs/hornet.cfg
+                            source $hornetConfigParsers/hornetApiJwtSalt
+                            sudo rm -rf $swarmLogs/hornetJwt.log
+                            {
+                                echo 0
+                                echo 50
+                                sudo systemctl restart hornet
+                                echo 100
+                            } | whiptail --gauge "Please wait while all JWT tokens will be revoked..." 8 65 0
+                            source $hornetConfigParsers/hornetApiJwtToken
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
             hornetAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $hornetAlias --title "Hornet - Alias" 3>&1 1>&2 2>&3)
             if [ ! -z "$hornetAlias" ]; then
                 source $hornetConfigParsers/hornetAlias
@@ -91,7 +175,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
             fi
         ;;
-        "3)")
+        "4)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/hornet.cfg
@@ -170,7 +254,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "4)")
+        "5)")
             source $swarmConfigs/hornet.cfg
             if [ "$hornetPowEnabled" = "true" ]; then
                 hornetPowEnabledStatus=enabled
@@ -201,7 +285,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
-        "5)")
+        "6)")
             source $swarmConfigs/hornet.cfg
             hornetSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $hornetSnapshotInterval --title "Hornet - Snapshots" 3>&1 1>&2 2>&3)
             if [ ! -z "$hornetSnapshotInterval" ] && [ $hornetSnapshotInterval -eq $hornetSnapshotInterval ] 2>/dev/null; then
@@ -214,7 +298,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
             fi
         ;;
-        "6)")
+        "7)")
             useHornetEnablePlugins=true
             source $swarmConfigs/hornet.cfg
             currentHornetEnablePlugins=$hornetEnablePlugins
@@ -238,7 +322,7 @@ while [ $exitCode -lt 1 ]; do
             fi
             unset useHornetEnablePlugins
         ;;
-        "7)")
+        "8)")
             useHornetDisablePlugins=true
             source $swarmConfigs/hornet.cfg
             currentHornetDisablePlugins=$hornetDisablePlugins
@@ -259,7 +343,7 @@ while [ $exitCode -lt 1 ]; do
             fi
             unset useHornetDisablePlugins
         ;;
-        "8)")
+        "9)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/hornet.cfg
@@ -310,7 +394,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "9)")
+        "10)")
             source $swarmConfigs/hornet.cfg
             if [ "$hornetAutoRevalidation" = "true" ]; then
                 hornetAutoRevalidationStatus=enabled
@@ -337,7 +421,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
-        "10)")
+        "11)")
             source $swarmConfigs/hornet.cfg
             currentHornetGossipPort=$hornetGossipPort
             hornetGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $hornetGossipPort --title "Hornet - Gossip" 3>&1 1>&2 2>&3)
@@ -352,7 +436,7 @@ while [ $exitCode -lt 1 ]; do
                 restartHornet=true
             fi
         ;;
-        "11)")
+        "12)")
             source $swarmConfigs/hornet.cfg
             currentHornetAutopeeringPort=$hornetAutopeeringPort
             hornetAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port for the automatic neighbors detection." 10 65 $hornetAutopeeringPort --title "Hornet - Autopeering" 3>&1 1>&2 2>&3)
@@ -370,7 +454,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
             fi
         ;;
-        "12)")
+        "13)")
             source $swarmConfigs/hornet.cfg
             currentHornetUnknownPeersLimit=$hornetUnknownPeersLimit
             hornetUnknownPeersLimit=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentHornetUnknownPeersLimit --title "Hornet - Gossip" 3>&1 1>&2 2>&3)
@@ -380,7 +464,7 @@ while [ $exitCode -lt 1 ]; do
                 whiptail --title "Hornet - Gossip" --msgbox "Maximum of unknown neighbors set to \"$hornetUnknownPeersLimit\"!" 8 65
             fi
         ;;
-        "13)")
+        "14)")
             source $swarmConfigs/hornet.cfg
             # Hornet Networks
             CHOICE=$(
@@ -416,7 +500,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
-        "14)")
+        "15)")
             source $swarmConfigs/hornet.cfg
             # Hornet release channel
             CHOICE=$(

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+IFS=', ' read -r -a ARRAYhornetApiPublicRoutes <<< "$hornetApiPublicRoutes"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    parser="$(jq '.restAPI.publicRoutes' $hornetHome/$hornetConfig.json)"
+    parser="$(echo $parser | tr -d '"' | tr -d '[' | tr -d ']' | tr -d ' ')"
+    if [ "$parser" != "$hornetApiPublicRoutes" ]; then
+        sudo jq '.restAPI.publicRoutes |= []' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+        for hornetApiPublicRoute in "${ARRAYhornetApiPublicRoutes[@]}"
+        do
+            sudo jq '.restAPI.publicRoutes |= .+ ["'$hornetApiPublicRoute'"]' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+        done
+    fi
+done
+unset ARRAYhornetConfigs
+unset ARRAYhornetApiPublicRoutes
+unset hornetConfig
+unset hornetApiPublicRoute

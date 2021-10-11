@@ -1,0 +1,18 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+
+for hornetConfig in "${ARRAYhornetConfigs[@]}"
+do
+    parser="$(jq '.restAPI.jwtAuth.salt' $hornetHome/$hornetConfig.json | tr -d '"')"
+    if [ "$hornetApiJwtSalt" != "$parser" ]; then
+        if [ ! -z "$hornetApiJwtSalt" ] 2>/dev/null; then
+            sudo jq '.restAPI.jwtAuth.salt = "'$hornetApiJwtSalt'"' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+            restartHornet=true
+            newHornetApiJwtToken=true
+        fi
+    fi
+done
+
+unset ARRAYhornetConfigs
+unset hornetConfig
