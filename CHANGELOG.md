@@ -1,3 +1,18 @@
+## Version 0.9.4
+### Added
+- Added routes configuration in Hornet configuration
+- Added CORS to proxy templates
+### Changed
+- Updated proxy template for GoShimmer
+- Fixed sync check for GoShimmer
+- Fixed GoShimmer configuration for the dashboard
+### Removed
+- Removed faucet from Hornet plugin menu
+- Removed parser for snapshot DL in Bee
+- Removed port checks for Hornet, Bee and GoShimmer
+
+---
+
 ## Version 0.9.3
 ### Added
 - Added prometheus for Hornet and Goshimmer

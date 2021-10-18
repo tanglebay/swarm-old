@@ -6,13 +6,18 @@ server {
         add_header Strict-Transport-Security 'max-age=63072000; includeSubdomains' always;
         add_header X-Content-Type-Options "nosniff";
         add_header X-XSS-Protection "1; mode=block";
+        add_header Access-Control-Allow-Origin $http_origin;
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Credentials' 'true';
+        add_header 'Access-Control-Allow-Headers' 'Authorization,Accept,Origin,DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range';
+        add_header 'Access-Control-Allow-Methods' 'GET,HEAD,PUT,PATCH,POST,DELETE';
         proxy_headers_hash_max_size 512;
-        proxy_headers_hash_bucket_size 128; 
+        proxy_headers_hash_bucket_size 128;
 
-        location ^~ /webapi/ {
+        location ~ ^/(info|healthz|data|messages|data|ledgerstate|mana|drng|snapshot|faucet|spammer|tools) {
                 include /etc/nginx/goshimmer/webapiauth.conf;
                 default_type  application/json;
-                proxy_pass http://localhost:8080/;
+                proxy_pass http://localhost:8080;
                 proxy_pass_request_headers on;
                 proxy_set_header        Host $host;
                 proxy_set_header        X-Real-IP $remote_addr;
