@@ -97,31 +97,36 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        source $swarmConfigs/hornet.cfg
-                        hornetApiRoutes="$hornetApiProtectedRoutes"
-                        source $hornetModules/hornetApiRoutes
-                        hornetApiRoutes=$(whiptail --title "Hornet - API routes" --checklist "\nSelect (using the spacebar) the Hornet API routes that you want to protect. All routes not selected will be public:" 25 65 11 \
-                            "/health" "" $hornetApiRoutesHealth \
-                            "/mqtt" "" $hornetApiRoutesMqtt \
-                            "/api/v1/info" "" $hornetApiRoutesInfo \
-                            "/api/v1/tips" "" $hornetApiRoutesTips \
-                            "/api/v1/messages*" "" $hornetApiRoutesMessages \
-                            "/api/v1/transactions*" "" $hornetApiRoutesTransactions \
-                            "/api/v1/milestones*" "" $hornetApiRoutesMilestones \
-                            "/api/v1/outputs*" "" $hornetApiRoutesOutputs \
-                            "/api/v1/addresses*" "" $hornetApiRoutesAddresses \
-                            "/api/v1/treasury" "" $hornetApiRoutesTreasury \
-                            "/api/v1/receipts*" "" $hornetApiRoutesReceipts 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        hornetApiRoutes=$(echo $hornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-                        if [ "$exitStatus" != "1" ]; then
-                            hornetUpdateApiRoutes=true
-                            source $hornetModules/hornetApiRoutes
-                            source $hornetConfigParsers/hornetApiPublicRoutes
-                            source $hornetConfigParsers/hornetApiProtectedRoutes
-                            unset hornetUpdateApiRoutes
+                        if [ -z "$hornetVersion" ]; then
+                            source $hornetModules/hornetVersion
                         fi
-                        unset hornetApiRoutes
+                        if [[ ! $hornetVersion =~ 1\.0\.[0-5] ]]; then
+                            source $swarmConfigs/hornet.cfg
+                            hornetApiRoutes="$hornetApiProtectedRoutes"
+                            source $hornetModules/hornetApiRoutes
+                            hornetApiRoutes=$(whiptail --title "Hornet - API routes" --checklist "\nSelect (using the spacebar) the Hornet API routes that you want to protect. All routes not selected will be public:" 25 65 11 \
+                                "/health" "" $hornetApiRoutesHealth \
+                                "/mqtt" "" $hornetApiRoutesMqtt \
+                                "/api/v1/info" "" $hornetApiRoutesInfo \
+                                "/api/v1/tips" "" $hornetApiRoutesTips \
+                                "/api/v1/messages*" "" $hornetApiRoutesMessages \
+                                "/api/v1/transactions*" "" $hornetApiRoutesTransactions \
+                                "/api/v1/milestones*" "" $hornetApiRoutesMilestones \
+                                "/api/v1/outputs*" "" $hornetApiRoutesOutputs \
+                                "/api/v1/addresses*" "" $hornetApiRoutesAddresses \
+                                "/api/v1/treasury" "" $hornetApiRoutesTreasury \
+                                "/api/v1/receipts*" "" $hornetApiRoutesReceipts 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            hornetApiRoutes=$(echo $hornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+                            if [ "$exitStatus" != "1" ]; then
+                                hornetUpdateApiRoutes=true
+                                source $hornetModules/hornetApiRoutes
+                                source $hornetConfigParsers/hornetApiPublicRoutes
+                                source $hornetConfigParsers/hornetApiProtectedRoutes
+                                unset hornetUpdateApiRoutes
+                            fi
+                            unset hornetApiRoutes
+                        fi
                     ;;
                     "2)")
                         if (whiptail --title "Hornet - API & JWT" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
