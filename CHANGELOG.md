@@ -9,6 +9,7 @@
 ### Removed
 - Removed faucet from Hornet plugin menu
 - Removed parser for snapshot DL in Bee
+- Removed port checks for Hornet, Bee and GoShimmer
 
 ---
 
