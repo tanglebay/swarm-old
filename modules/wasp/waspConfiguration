@@ -1,0 +1,210 @@
+#!/bin/bash
+while [ $exitCode -lt 1 ]; do
+    clear
+    source $swarmConfigs/wasp.cfg
+    CHOICE=$(
+        whiptail --title "WASP Configurations" --menu "\nChoose an option" 18 65 0 \
+        "1)" "Dashboard-Auth" \
+        "2)" "Webapi-Auth" \
+        "3)" "Enable Plugins" \
+        "4)" "Disable Plugins" \
+        "5)" "Gossip Port" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+        if [ "$restartWasp" = "true" ]; then
+            if (whiptail --title "WASP Menu" --yesno "Would you like to apply the changes and restart WASP?" 8 65); then
+                {
+                    echo 0
+                    echo 33
+                    source $waspModules/waspParser
+                    echo 50
+                    sudo systemctl restart wasp
+                    sleep 0.25
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while the changes are applied and WASP is restarted..." 6 65 0
+                unset restartWasp
+            fi
+        fi
+    fi
+
+    case $CHOICE in
+        "1)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $swarmConfigs/wasp.cfg
+                if [ "$waspDashboardAuthEnabled" = "true" ]; then
+                    waspDashboardAuthEnabledMenu="Disable"
+                else
+                    waspDashboardAuthEnabledMenu="Enable"
+                fi
+                # wasp Dashboard
+                CHOICE=$(
+                    whiptail --title "WASP - Dashboard" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "$waspDashboardAuthEnabledMenu Dashboard-Auth" \
+                    "2)" "Dashboard Credentials" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/etc/nginx/wasp/.htpasswd_dashboard" ]; then
+                            waspDashboardAuthHash=$(cat /etc/nginx/wasp/.htpasswd_dashboard)
+                        fi
+                        if [ ! -z "$waspDashboardAuthHash" ]; then
+                            waspDashboardAuthEnabledMenu="${waspDashboardAuthEnabledMenu,,}"
+                            if (whiptail --title "WASP - Dashboard" --yesno --defaultno "Do you really want to $waspDashboardAuthEnabledMenu authentication for the dashboard?" 8 65); then
+                                if [ "$waspDashboardAuthEnabled" = "true" ]; then
+                                    waspDashboardAuthEnabled=false
+                                    waspDashboardAuthEnabledMenu="disabled"
+                                else
+                                    waspDashboardAuthEnabled=true
+                                    waspDashboardAuthEnabledMenu="enabled"
+                                fi
+                                sudo sed -i 's/^waspDashboardAuthEnabled=.*/waspDashboardAuthEnabled='$waspDashboardAuthEnabled'/' $swarmConfigs/wasp.cfg
+                                source $waspConfigParsers/waspDashboardAuth
+                                whiptail --title "WASP - Dashboard" --msgbox "Dashboard authentication $waspDashboardAuthEnabledMenu!" 8 65
+                            fi
+                        else
+                            whiptail --title "WASP - Dashboard" --msgbox "Please set the dashboard credentials first!" 8 65
+                        fi
+                    ;;
+                    "2)")
+                        waspDashboardAuthUsername=$(whiptail --inputbox "\nPlease set a username for the dashboard login:" 8 65 --title "WASP - Dashboard" 3>&1 1>&2 2>&3)
+                        waspDashboardAuthPassword=$(whiptail --passwordbox "\nPlease set a secure password for your dashboard login:" 8 65 --title "WASP - Dashboard" 3>&1 1>&2 2>&3)
+                        if [ ! -z "$waspDashboardAuthUsername" ] && [ ! -z "$waspDashboardAuthPassword" ]; then
+                            source $waspConfigParsers/waspDashboardAuthHash
+                            whiptail --title "WASP - Dashboard" --msgbox "New Dashboard credentials applied!" 8 65
+                        else
+                            whiptail --title "WASP - Dashboard" --msgbox "No valid credentials, please try again!" 8 65
+                        fi
+                        unset waspDashboardAuthUsername
+                        unset waspDashboardAuthPassword
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $swarmConfigs/wasp.cfg
+                if [ "$waspWebapiAuthEnabled" = "true" ]; then
+                    waspWebapiAuthEnabledMenu="Disable"
+                else
+                    waspWebapiAuthEnabledMenu="Enable"
+                fi
+                # wasp webapi
+                CHOICE=$(
+                    whiptail --title "WASP - WebAPI" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "$waspWebapiAuthEnabledMenu WebAPI-Auth" \
+                    "2)" "WebAPI Credentials" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/etc/nginx/wasp/.htpasswd_webapi" ]; then
+                            waspWebapiAuthHash=$(cat /etc/nginx/wasp/.htpasswd_webapi)
+                        fi
+                        if [ ! -z "$waspWebapiAuthHash" ]; then
+                            waspWebapiAuthEnabledMenu="${waspWebapiAuthEnabledMenu,,}"
+                            if (whiptail --title "WASP - WebAPI" --yesno --defaultno "Do you really want to $waspWebapiAuthEnabledMenu authentication for the webAPI?" 8 65); then
+                                if [ "$waspWebapiAuthEnabled" = "true" ]; then
+                                    waspWebapiAuthEnabled=false
+                                    waspWebapiAuthEnabledMenu="disabled"
+                                else
+                                    waspWebapiAuthEnabled=true
+                                    waspWebapiAuthEnabledMenu="enabled"
+                                fi
+                                sudo sed -i 's/^waspWebapiAuthEnabled=.*/waspWebapiAuthEnabled='$waspWebapiAuthEnabled'/' $swarmConfigs/wasp.cfg
+                                source $waspconfigParsers/waspWebapiAuth
+                                whiptail --title "WASP - WebAPI" --msgbox "WebAPI authentication $waspWebapiAuthEnabledMenu!" 8 65
+                            fi
+                        else
+                            whiptail --title "WASP - WebAPI" --msgbox "Please set the WebAPI credentials first!" 8 65
+                        fi
+                    ;;
+                    "2)")
+                        waspWebapiAuthUsername=$(whiptail --inputbox "\nPlease set a username for the webAPI login:" 8 65 --title "WASP - WebAPI" 3>&1 1>&2 2>&3)
+                        waspWebapiAuthPassword=$(whiptail --passwordbox "\nPlease set a secure password for the webAPI login:" 8 65 --title "WASP - WebAPI" 3>&1 1>&2 2>&3)
+                        if [ ! -z "$waspWebapiAuthUsername" ] && [ ! -z "$waspWebapiAuthPassword" ]; then
+                            source $waspConfigParsers/waspWebapiAuthHash
+                            whiptail --title "WASP - WebAPI" --msgbox "New Dashboard credentials applied!" 8 65
+                        else
+                            whiptail --title "WASP - WebAPI" --msgbox "No valid credentials, please try again!" 8 65
+                        fi
+                        unset waspWebapiAuthUsername
+                        unset waspWebapiAuthPassword
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            useWaspEnablePlugins=true
+            source $swarmConfigs/wasp.cfg
+            currentWaspEnablePlugins=$waspEnablePlugins
+            source $waspModules/waspPlugins
+            waspEnablePlugins=$(whiptail --title "WASP - Plugins" --checklist "\nSelect (with spacebar) the WASP plugins to be activated:" 10 78 2 \
+                "Txstream" "plugin as connector for a WASP node" $waspTxstream \
+                "Prometheus" "plugin is used for metrics e.g. in Grafana" $waspPrometheus 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            waspEnablePlugins=$(echo $waspEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$waspEnablePlugins" != "$currentWaspEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                source $waspConfigParsers/waspEnablePlugins
+                sudo sed -i 's/^waspEnablePlugins=.*/waspEnablePlugins="'$waspEnablePlugins'"/' $swarmConfigs/wasp.cfg
+                if [ ! -z "$waspEnablePlugins" ]; then
+                    whiptail --title "WASP - Plugins" --msgbox "The following plugins are enabled: $waspEnablePlugins!" 8 65
+                else
+                    whiptail --title "WASP - Plugins" --msgbox "There are no plugins enabled for WASP!" 8 65
+                fi
+                restartWasp=true
+            fi
+            unset useWaspEnablePlugins
+        ;;
+        "4)")
+            useWaspDisablePlugins=true
+            source $swarmConfigs/wasp.cfg
+            currentWaspDisablePlugins=$waspDisablePlugins
+            source $waspModules/waspPlugins
+            waspDisablePlugins=$(whiptail --title "WASP - Plugins" --checklist "\nSelect (with spacebar) the WASP plugins to be deactivated:" 14 78 2 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            waspDisablePlugins=$(echo $waspDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$waspDisablePlugins" != "$currentWaspDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                source $waspConfigParsers/waspDisablePlugins
+                sudo sed -i 's/^waspDisablePlugins=.*/waspDisablePlugins="'$waspDisablePlugins'"/' $swarmConfigs/wasp.cfg
+                if [ ! -z "$waspDisablePlugins" ]; then
+                    whiptail --title "WASP Plugins" --msgbox "The following plugins are disabled: $waspDisablePlugins!" 8 65
+                else
+                    whiptail --title "WASP - Plugins" --msgbox "There are no plugins disabled for WASP!" 8 65
+                fi
+                restartWasp=true
+            fi
+            unset useWaspDisablePlugins
+        ;;
+        "5)")
+            source $swarmConfigs/wasp.cfg
+            currentWaspGossipPort=$waspGossipPort
+            waspGossipPort=$(whiptail --inputbox "\nSet the gossip port for the committee communication." 10 65 $waspGossipPort --title "WASP - Gossip" 3>&1 1>&2 2>&3)
+            if [ ! -z "$waspGossipPort" ] && [ $currentWaspGossipPort -ne $waspGossipPort ] && [ $waspGossipPort -eq $waspGossipPort ] 2>/dev/null; then
+                if [ "$ufw" = "true" ]; then
+                    sudo ufw delete allow $currentWaspGossipPort/tcp > /dev/null 2>&1
+                    sudo ufw allow $waspGossipPort/tcp > /dev/null 2>&1
+                fi
+                source $waspConfigParsers/waspGossipPort
+                sudo sed -i 's/^waspGossipPort=.*/waspGossipPort='$waspGossipPort'/' $swarmConfigs/wasp.cfg
+                whiptail --title "WASP - Gossip" --msgbox "Gossip port was set to \"$waspGossipPort/tcp\"!" 8 65
+            fi
+        ;;
+    esac
+done
+sudo chown -R wasp:wasp $waspDir/*.json
+exitCode=0
