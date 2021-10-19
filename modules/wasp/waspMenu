@@ -1,0 +1,308 @@
+#!/bin/bash
+
+if [ "$currentBranch" != "master" ]; then
+    # WASP MENU
+    while [ $exitCode -lt 1 ]; do
+        clear
+        CHOICE=$(
+            whiptail --title "WASP - Menu" --menu "\nChoose an option" 16 65 0 \
+            "1)" "WASP Info" \
+            "2)" "WASP Configurations" \
+            "3)" "WASP Debugging" \
+            "4)" "WASP Installer" 3>&2 2>&1 1>&3
+        )
+        exitstatus=$?
+        if [ "$exitstatus" = "1" ]; then
+            exitCode=1
+        fi
+
+        case $CHOICE in
+            "1)")
+                source $waspModules/waspInfo
+            ;;
+            "2)")
+                if [ -f "/usr/bin/wasp" ]; then
+                    while [ $exitCode -lt 1 ]; do
+                        clear
+                        CHOICE=$(
+                            whiptail --title "WASP - Configuration" --menu "\nChoose an option" 16 65 0 \
+                            "1)" "WASP configuration" \
+                            "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
+                        )
+
+                        exitstatus=$?
+                        if [ "$exitstatus" = "1" ]; then
+                            exitCode=1
+                        fi
+
+                        case $CHOICE in
+                            "1)")
+                                source $waspModules/waspConfiguration
+                            ;;
+                            "2)")
+                                while [ $exitCode -lt 1 ]; do
+                                    clear
+                                    CHOICE=$(
+                                        whiptail --title "WASP - Configuration" --menu "\nChoose an option" 16 65 0 \
+                                        "1)" "Config.json" \
+                                        "2)" "WASP.cfg (SWARM)" 3>&2 2>&1 1>&3
+                                    )
+
+                                    exitstatus=$?
+                                    if [ "$exitstatus" = "1" ]; then
+                                        exitCode=1
+                                    fi
+
+                                    case $CHOICE in
+                                        "1)")
+                                            sudo nano $waspHome/config.json
+                                            if (whiptail --title "WASP - Configuration" --yesno --defaultno "Would you like to restart WASP now?" 8 65); then
+                                                {
+                                                    echo 0
+                                                    echo 50
+                                                    sudo systemctl restart wasp
+                                                    echo 100
+                                                    sleep 0.25
+                                                } | whiptail --gauge "Please wait while WASP is restarting..." 8 65 0
+                                            fi
+                                        ;;
+                                        "2)")
+                                            sudo nano $swarmConfigs/wasp.cfg
+                                            if (whiptail --title "WASP - Configuration" --yesno --defaultno "Would you like to restart WASP now?" 8 65); then
+                                                {
+                                                    echo 0
+                                                    source $waspModules/waspParser
+                                                    echo 50
+                                                    sudo systemctl restart wasp
+                                                    echo 100
+                                                    sleep 0.25
+                                                } | whiptail --gauge "Please wait while WASP is restarting..." 8 65 0
+                                            fi
+                                        ;;
+                                    esac
+                                done
+                                exitCode=0
+                            ;;
+                        esac
+                    done
+                    exitCode=0
+                else
+                    whiptail --title "WASP - Configuration" --msgbox "WASP installation not found, please install WASP first!" 8 65
+                fi
+            ;;
+            "3)")
+                if [ -f "/usr/bin/wasp" ]; then
+                    while [ $exitCode -lt 1 ]; do
+                        CHOICE=$(
+                            whiptail --title "WASP Debugging" --menu "\nChoose your option" 16 65 0 \
+                            "1)" "Show WASP log" \
+                            "2)" "Start/Stop WASP" \
+                            "3)" "Reset WASP Database" 3>&2 2>&1 1>&3
+                        )
+                        exitstatus=$?
+                        if [ "$exitstatus" = "1" ]; then
+                            exitCode=1
+                        fi
+                        case $CHOICE in
+                            "1)")
+                                # Display last 65 lines of log
+                                sudo journalctl -fu wasp | less -FRSXM
+                                clear
+                            ;;
+                            "2)")
+                                CHOICE=$(
+                                    whiptail --title "WASP - Debugging" --menu "\nChoose your option" 16 65 0 \
+                                    "1)" "Restart WASP" \
+                                    "2)" "Start WASP" \
+                                    "3)" "Stop WASP" \
+                                    "4)" "Status WASP" 3>&2 2>&1 1>&3
+                                )
+                                case $CHOICE in
+                                    "1)")
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl restart wasp
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while WASP is restarting..." 8 65 0
+                                        whiptail --title "WASP - Debugging" --msgbox "WASP successfully restarted" 8 65
+                                    ;;
+                                    "2)")
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl start wasp
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while WASP is starting..." 8 65 0
+                                        whiptail --title "WASP - Debugging" --msgbox "WASP successfully started" 8 65
+                                    ;;
+                                    "3)")
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl stop wasp
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while WASP is stopping..." 8 65 0
+                                        whiptail --title "WASP - Debugging" --msgbox "WASP successfully stopped" 8 65
+                                    ;;
+                                    "4)")
+                                        waspStatus="$(sudo systemctl status wasp)"
+                                        whiptail --title "WASP - Debugging" --msgbox "$waspStatus" 15 65
+                                    ;;
+                                esac
+                            ;;
+                            "3)")
+                                if (whiptail --title "WASP - Debugging" --yesno --defaultno "Do you really want to remove the wasp database?" 8 65); then
+                                    if ! (whiptail --title "WASP - Debugging" --yesno "Do you want to download latest database from the IF?" 8 65); then
+                                        waspSkipDbDownload=true
+                                    fi
+                                    source $swarmConfigs/wasp.cfg
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl stop wasp
+                                        sudo rm -rf $waspHome/mainnetdb $waspHome/peerdb
+                                        source $waspModules/waspDbDownload
+                                        sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter=0/' $swarmConfigs/watchdog.cfg
+                                        sudo sed -i 's/^waspSyncCounter=.*/waspSyncCounter=0/' $swarmConfigs/watchdog.cfg
+                                        sudo systemctl start wasp
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while the cleanup is running..." 8 65 0
+                                    whiptail --title "WASP - Debugging" --msgbox "WASP database successfully reset" 8 65
+                                fi
+                            ;;
+                        esac
+                    done
+                    exitCode=0
+                else
+                    whiptail --title "WASP - Debugging" --msgbox "WASP installation not found, please install WASP first!" 8 65
+                fi
+            ;;
+            "4)")
+                if [ "$osArchitecture" = "amd64" ]; then
+                    while [ $exitCode -lt 1 ]; do
+                        CHOICE=$(
+                            whiptail --title "WASP - Installer" --menu "\nChoose your option" 16 65 0 \
+                            "1)" "Update WASP" \
+                            "2)" "Install WASP" \
+                            "3)" "Remove WASP" 3>&2 2>&1 1>&3
+                        )
+
+                        exitstatus=$?
+                        if [ "$exitstatus" = "1" ]; then
+                            exitCode=1
+                        fi
+
+                        case $CHOICE in
+                            "1)")
+                                if [ -f "/usr/bin/wasp" ]; then
+                                    if (whiptail --title "WASP - Installer" --yesno --defaultno "Do you really want to update WASP?" 8 65); then
+                                        # Update WASP
+                                        source $waspModules/waspVersion
+                                        if [ ! -z "$latestGoshimmerVersion" ]; then
+                                            {
+                                                echo 0
+                                                echo 20
+                                                sudo rm -rf $waspHome/mainnetdb $waspHome/peerdb
+                                                echo 40
+                                                source $waspModules/waspInstaller
+                                                echo 60
+                                                source $waspModules/waspParser
+                                                echo 80
+                                                sudo systemctl restart wasp
+                                                echo 100
+                                                sleep 0.5
+                                            } | whiptail --gauge "Please wait while WASP is updated..." 8 65 0
+                                            whiptail --title "WASP - Installer" --msgbox "WASP successfully updated" 8 65
+                                        else
+                                            whiptail --title "WASP - Installer" --msgbox "Congratulations, you have already installed the latest version of WASP!" 8 65
+                                        fi
+                                    fi
+                                else
+                                    whiptail --title "WASP - Installer" --msgbox "Sorry, but WASP is not installed!" 8 65
+                                fi
+                            ;;
+                            "2)")
+                                # INSTALL WASP
+                                if [ ! -f "/usr/bin/wasp" ]; then
+                                    {
+                                        echo 0
+                                        echo 10
+                                        source $swarmConfigs/wasp.cfg
+                                        echo 30
+                                        source $waspModules/waspVersion
+                                        echo 40
+                                        source $waspModules/waspInstaller
+                                        echo 50
+                                        # CALL MODULE CONFIGPARSER
+                                        if [ -f "/usr/bin/wasp" ] && [ -f "$waspHome/config.json" ]; then
+                                            if ! [ -x "$(command -v apache2-utils)" ]; then
+                                                sudo apt -qq install apache2-utils -y > /dev/null 2>&1
+                                            fi
+                                            source $swarmConfigs/wasp.cfg
+                                            echo 60
+                                            source $waspModules/waspParser
+                                            echo 70
+                                            if [ "$ufw" = "true" ]; then
+                                                sudo ufw allow $waspGossipPort/tcp > /dev/null 2>&1
+                                            fi
+                                            sudo systemctl start wasp > /dev/null 2>&1
+                                            echo 80
+                                            sleep 2
+                                            waspStatus="$(systemctl show -p ActiveState --value wasp)"
+                                            if [ "$waspStatus" != "active" ]; then
+                                                sudo systemctl restart wasp > /dev/null 2>&1
+                                            fi
+                                            echo 100
+                                            sleep 0.2
+                                        fi
+                                    } | whiptail --gauge "Please wait while installing WASP..." 8 65 0
+                                    if [ -f "/usr/bin/wasp" ] && [ -f "$waspHome/config.json" ]; then
+                                        whiptail --title "WASP - Installer" --msgbox "WASP installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $waspGossipPort/tcp" 15 65
+                                    else
+                                        {
+                                            echo 0
+                                            echo 25
+                                            source $swarmConfigs/wasp.cfg
+                                            echo 50
+                                            source $waspModules/waspRemoval
+                                            echo 75
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while the WASP files are removed...." 8 65 0
+                                        whiptail --title "WASP - Installer" --msgbox "Error while installing WASP. Please check WASP.cfg and try again!" 8 65
+                                    fi
+                                else
+                                    whiptail --title "WASP - Installer" --msgbox "WASP already installed or not set in the SWARM.cfg!" 8 65
+                                fi
+                            ;;
+                            "3)")
+                                if (whiptail --title "WASP - Installer" --yesno --defaultno "Do you really want to remove WASP?" 8 65); then
+                                    {
+                                        echo 0
+                                        echo 25
+                                        source $swarmConfigs/wasp.cfg
+                                        echo 50
+                                        source $waspModules/waspRemoval
+                                        echo 75
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while WASP will be removed..." 8 65 0
+                                    whiptail --title "WASP - Installer" --msgbox "WASP successfully removed" 8 65
+                                fi
+                            ;;
+                        esac
+                    done
+                    exitCode=0
+                else
+                    whiptail --title "WASP - Installer" --msgbox "Error - Unsupported OS architecture for Goshimmer detected!" 8 65
+                fi
+            ;;
+        esac
+    done
+    exitCode=0
+else
+    whiptail --title "WASP - Menu" --msgbox "Sorry, but WASP is not available yet." 8 65
+fi

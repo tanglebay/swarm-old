@@ -31,6 +31,16 @@ else
     sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter='$goshimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
+if [ -n "$waspStatusCounter" ]; then
+    if [ $waspStatusCounter -ne $waspStatusCounter ] 2>/dev/null; then
+        waspStatusCounter=0
+        sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter='$waspStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+else
+    waspStatusCounter=0
+    sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter='$waspStatusCounter'/' $swarmConfigs/watchdog.cfg
+fi
+
 # Hornet Status Check
 if [ "$hornetStatus" != "active" ] && [ -f "/usr/bin/hornet" ]; then
     sudo systemctl stop hornet
@@ -98,5 +108,28 @@ else
     if [ $goshimmerStatusCounter -gt 0 ] 2>/dev/null; then
         let goshimmerStatusCounter=$goshimmerStatusCounter-1
         sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter='$goshimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+fi
+
+# WASP Status Check
+if [ "$waspStatus" != "active" ] && [ -f "/usr/bin/wasp" ]; then
+    sudo systemctl stop wasp
+    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+    if [ $waspStatusCounter -ge 2 ] 2>/dev/null; then
+        if [ "$waspAllowDbReset" = "true" ]; then
+            sudo rm -rf $waspHome/waspdb
+            echo "$restartDate [WACHTDOG] - WASP - Database deleted because max. inactive counter reached" >> $swarmLogs/swarm.log
+        fi
+        waspStatusCounter=0
+    else
+        let waspStatusCounter=$waspStatusCounter+1
+    fi
+    sudo systemctl restart wasp
+    sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter='$waspStatusCounter'/' $swarmConfigs/watchdog.cfg
+    echo "$restartDate [WACHTDOG] - WASP - Node restarted because service was not active" >> $swarmLogs/swarm.log
+else
+    if [ $waspStatusCounter -gt 0 ] 2>/dev/null; then
+        let waspStatusCounter=$waspStatusCounter-1
+        sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter='$waspStatusCounter'/' $swarmConfigs/watchdog.cfg
     fi
 fi
