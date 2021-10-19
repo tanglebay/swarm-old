@@ -1,0 +1,61 @@
+#!/bin/bash
+
+if ! id wasp >/dev/null 2>&1; then
+    useradd --no-create-home --system wasp >/dev/null
+fi
+
+if [ ! -d "$waspHome" ]; then
+    sudo mkdir -p $waspHome > /dev/null 2>&1
+    sudo chown -R wasp:wasp $waspHome > /dev/null 2>&1
+fi
+
+# Install GO
+if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    sudo snap install go --classic > /dev/null 2>&1
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/wasp.service" ]; then
+    sudo cp -rf $swarmHome/templates/wasp/wasp.service /lib/systemd/system/wasp.service
+    if [ ! -f "/etc/default/wasp" ]; then
+        echo "OPTIONS=\"--config $waspHome/config.json\"" > /etc/default/wasp
+    fi
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/wasp.service" ]; then
+        sudo systemctl enable wasp > /dev/null 2>&1
+    fi
+    sudo systemctl daemon-reload
+fi
+
+##############################################################################################################################################
+
+# Create dir if not exist
+sudo mkdir -p /tmp/wasp > /dev/null 2>&1
+
+if [ "$osArchitecture" = "amd64" ]; then
+    # Download latest wasp
+    sudo wget -q -O /tmp/wasp/wasp-${latestWaspVersion}_Linux_x86_64.tar.gz https://github.com/iotaledger/wasp/releases/download/v${latestWaspVersion}/wasp-${latestWaspVersion}_Linux_x86_64.tar.gz
+
+    # Unzip archive
+    ( cd /tmp/wasp ; sudo tar -xzf /tmp/wasp/wasp-${latestWaspVersion}_Linux_x86_64.tar.gz ) > /dev/null 2>&1
+
+    # Copy files for wasp
+    if [ -f "/tmp/wasp/wasp" ] && [ -f "/tmp/wasp/config.json" ]; then
+        waspStatus="$(systemctl show -p ActiveState --value wasp)"
+        if [ "$waspStatus" = "active" ]; then
+            sudo systemctl stop wasp
+        fi
+        sudo cp -rf /tmp/wasp/wasp /usr/bin/wasp > /dev/null 2>&1
+        sudo cp -rf /tmp/wasp/config.json $waspHome/config.json > /dev/null 2>&1
+
+        restartWasp=true
+        waspUpdated=true
+    fi
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/wasp > /dev/null 2>&1
+
+if [ "$waspUpdated" = "true" ]; then
+    # Set owner
+    sudo chown -R wasp:wasp $waspDir > /dev/null 2>&1
+fi
