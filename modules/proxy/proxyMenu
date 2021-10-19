@@ -25,7 +25,8 @@ while [ $exitCode -lt 1 ]; do
                     whiptail --title "Proxy Menu" --menu "\nChoose an option" 14 65 0 \
                     "1)" "Hornet proxy settings" \
                     "2)" "Bee proxy settings" \
-                    "3)" "GoShimmer proxy settings" 3>&2 2>&1 1>&3
+                    "3)" "GoShimmer proxy settings" \
+                    "4)" "WASP proxy settings" 3>&2 2>&1 1>&3
                 )
 
                 exitStatus=$?
@@ -157,6 +158,49 @@ while [ $exitCode -lt 1 ]; do
                         done
                         exitCode=0
                     ;;
+                    "4)")
+                        while [ $exitCode -lt 1 ]; do
+                            source $swarmConfigs/proxy.cfg
+                            clear
+                            CHOICE=$(
+                                whiptail --title "Proxy - WASP Settings" --menu "\nWASP Domain: $proxyWaspDomain\nWASP Port: $proxyWaspPort\n\nChoose an option" 15 65 0 \
+                                "1)" "WASP domain" \
+                                "2)" "WASP port" 3>&2 2>&1 1>&3
+                            )
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
+                            fi
+                            case $CHOICE in
+                                "1)")
+                                    source $swarmConfigs/proxy.cfg
+                                    currentProxyWaspDomain=$proxyWaspDomain
+                                    proxyWaspDomain=$(whiptail --inputbox "\nSet your domain or your ddns name for WASP" 10 65 --title "Proxy - WASP Domain" 3>&1 1>&2 2>&3)
+                                    if [ "$currentProxyWaspDomain" != "$proxyWaspDomain" ]; then
+                                        sudo sed -i 's/^proxyWaspDomain=.*/proxyWaspDomain="'$proxyWaspDomain'"/' $swarmConfigs/proxy.cfg
+                                        whiptail --title "Proxy - WASP Domain" --msgbox "Domain for proxy set to \"$proxyWaspDomain\"" 8 65
+                                    else
+                                        whiptail --title "Proxy - WASP Domain" --msgbox "No WASP domain change detected" 8 65
+                                    fi
+                                ;;
+                                "2)")
+                                    source $swarmConfigs/proxy.cfg
+                                    currentProxyWaspPort=$proxyWaspPort
+                                    proxyWaspPort=$(whiptail --inputbox "\nSet a port for WASP" 10 65 $proxyWaspPort --title "Proxy - WASP Port" 3>&1 1>&2 2>&3)
+                                    if [ ! -z "$proxyWaspPort" ] && [ $proxyWaspPort -eq $proxyWaspPort ] 2>/dev/null; then
+                                        if [ "$currentProxyWaspPort" != "$proxyWaspPort" ]; then
+                                            if [ "$ufw" = "true" ]; then
+                                                ufw delete allow $currentProxyWaspPort/tcp > /dev/null 2>&1
+                                            fi
+                                            sudo sed -i 's/^proxyWaspPort=.*/proxyWaspPort='$proxyWaspPort'/' $swarmConfigs/proxy.cfg
+                                            whiptail --title "Proxy - WASP Port" --msgbox "The WASP port was set to \"$proxyWaspPort\"" 8 65
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
                 esac
             done
             exitCode=0
@@ -245,6 +289,7 @@ while [ $exitCode -lt 1 ]; do
                                 sudo ufw delete allow $proxyHornetPort/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $proxyBeePort/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
+                                sudo ufw delete allow $proxyWaspPort/tcp > /dev/null 2>&1
                             fi
                             echo 20
                             sudo apt -qq purge software-properties-common certbot python3-certbot-nginx nginx* -y > /dev/null 2>&1
@@ -263,6 +308,7 @@ while [ $exitCode -lt 1 ]; do
                             sudo sed -i 's/^proxyHornetPort=.*/proxyHornetPort=/' $swarmConfigs/proxy.cfg
                             sudo sed -i 's/^proxyBeePort=.*/proxyBeePort=/' $swarmConfigs/proxy.cfg
                             sudo sed -i 's/^proxyGoshimmerPort=.*/proxyGoshimmerPort=/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyWaspPort=.*/proxyWaspPort=/' $swarmConfigs/proxy.cfg
                             echo 100
                             sleep 0.25
                         } | whiptail --gauge "Please wait while removing the proxy..." 6 65 0
@@ -271,7 +317,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
                 "3)")
                     # Manual renew certificate if installed
-                    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
+                    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDomain/fullchain.pem" ]; then
                         sudo certbot renew
                     else
                         whiptail --title "Proxy Menu" --msgbox "Error! No SSL Certificate installed!" 8 65
