@@ -136,12 +136,19 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "2)")
                         goshimmerWebapiAuthUsername=$(whiptail --inputbox "\nPlease set a username for the webAPI login:" 8 65 --title "GoShimmer - WebAPI" 3>&1 1>&2 2>&3)
-                        goshimmerWebapiAuthPassword=$(whiptail --passwordbox "\nPlease set a secure password for the webAPI login:" 8 65 --title "GoShimmer - WebAPI" 3>&1 1>&2 2>&3)
-                        if [ ! -z "$goshimmerWebapiAuthUsername" ] && [ ! -z "$goshimmerWebapiAuthPassword" ]; then
-                            source $goshimmerConfigParsers/goshimmerWebapiAuthHash
-                            whiptail --title "GoShimmer - WebAPI" --msgbox "New Dashboard credentials applied!" 8 65
-                        else
-                            whiptail --title "GoShimmer - WebAPI" --msgbox "No valid credentials, please try again!" 8 65
+                        exitStatus=$?
+                        if [ $exitStatus != 1 ]; then
+                            goshimmerWebapiAuthPassword=$(whiptail --passwordbox "\nPlease set a secure password for the webAPI login:" 8 65 --title "GoShimmer - WebAPI" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$goshimmerWebapiAuthUsername" ] && [ ! -z "$goshimmerWebapiAuthPassword" ]; then
+                                    source $goshimmerConfigParsers/goshimmerWebapiAuthHash
+                                    whiptail --title "GoShimmer - WebAPI" --msgbox "New Dashboard credentials applied!" 8 65
+                                else
+                                    whiptail --title "GoShimmer - WebAPI" --msgbox "No valid credentials, please try again!" 8 65
+                                fi
+                            fi
+
                         fi
                         unset goshimmerWebapiAuthUsername
                         unset goshimmerWebapiAuthPassword
@@ -213,10 +220,13 @@ while [ $exitCode -lt 1 ]; do
                         source $swarmConfigs/goshimmer.cfg
                         currentGoshimmerSeed=$goshimmerSeed
                         goshimmerSeed=$(whiptail --inputbox "\nSet your existing seed for the goshimmer node" 10 65 --title "GoShimmer - Node ID" 3>&1 1>&2 2>&3)
-                        if [ "$goshimmerSeed" != "$currentGoshimmerSeed" ] && [ ! -z "$goshimmerSeed" ]; then
-                            source $goshimmerConfigParsers/goshimmerSeed
-                            sudo sed -i 's~^goshimmerSeed=.*~goshimmerSeed="'$goshimmerSeed'"~g' $swarmConfigs/goshimmer.cfg
-                            whiptail --title "GoShimmer - Node ID" --msgbox "The following Seed was set: \n$goshimmerSeed!" 10 65
+                        exitStatus=$?
+                        if [ $exitStatus != 1 ]; then
+                            if [ "$goshimmerSeed" != "$currentGoshimmerSeed" ] && [ ! -z "$goshimmerSeed" ]; then
+                                source $goshimmerConfigParsers/goshimmerSeed
+                                sudo sed -i 's~^goshimmerSeed=.*~goshimmerSeed="'$goshimmerSeed'"~g' $swarmConfigs/goshimmer.cfg
+                                whiptail --title "GoShimmer - Node ID" --msgbox "The following Seed was set: \n$goshimmerSeed!" 10 65
+                            fi
                         fi
                     ;;
                     "2)")
@@ -235,23 +245,25 @@ while [ $exitCode -lt 1 ]; do
             source $swarmConfigs/goshimmer.cfg
             currentGoshimmerGossipPort=$goshimmerGossipPort
             goshimmerGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $goshimmerGossipPort --title "GoShimmer - Gossip" 3>&1 1>&2 2>&3)
-            if [ ! -z "$goshimmerGossipPort" ] && [ $currentGoshimmerGossipPort -ne $goshimmerGossipPort ] && [ $goshimmerGossipPort -eq $goshimmerGossipPort ] 2>/dev/null; then
-                if [ "$ufw" = "true" ]; then
-                    sudo ufw delete allow $currentGoshimmerGossipPort/tcp > /dev/null 2>&1
-                    sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
+            exitStatus=$?
+            if [ $exitStatus != 1 ]; then
+                if [ ! -z "$goshimmerGossipPort" ] && [ $currentGoshimmerGossipPort -ne $goshimmerGossipPort ] && [ $goshimmerGossipPort -eq $goshimmerGossipPort ] 2>/dev/null; then
+                    if [ "$ufw" = "true" ]; then
+                        sudo ufw delete allow $currentGoshimmerGossipPort/tcp > /dev/null 2>&1
+                        sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
+                    fi
+                    source $goshimmerConfigParsers/goshimmerGossipPort
+                    sudo sed -i 's/^goshimmerGossipPort=.*/goshimmerGossipPort='$goshimmerGossipPort'/' $swarmConfigs/goshimmer.cfg
+                    whiptail --title "GoShimmer - Gossip" --msgbox "Gossip port was set to \"$goshimmerGossipPort/tcp\"!" 8 65
                 fi
-                source $goshimmerConfigParsers/goshimmerGossipPort
-                sudo sed -i 's/^goshimmerGossipPort=.*/goshimmerGossipPort='$goshimmerGossipPort'/' $swarmConfigs/goshimmer.cfg
-                whiptail --title "GoShimmer - Gossip" --msgbox "Gossip port was set to \"$goshimmerGossipPort/tcp\"!" 8 65
             fi
         ;;
         "7)")
             source $swarmConfigs/goshimmer.cfg
             currentGoshimmerAutopeeringPort=$goshimmerAutopeeringPort
             goshimmerAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port for the automatic neighbors detection." 10 65 $goshimmerAutopeeringPort --title "GoShimmer - Autopeering" 3>&1 1>&2 2>&3)
-            if [ $goshimmerAutopeeringPort -eq $hornetAutopeeringPort ]; then
-                whiptail --title "GoShimmer - Autopeering" --msgbox "Autopeering port \"$goshimmerAutopeeringPort\" is already in use for Hornet!" 8 65
-            else
+            exitStatus=$?
+            if [ $exitStatus != 1 ]; then
                 if [ ! -z "$goshimmerAutopeeringPort" ] && [ $currentGoshimmerAutopeeringPort -ne $goshimmerAutopeeringPort ] && [ $goshimmerAutopeeringPort -eq $goshimmerAutopeeringPort ] 2>/dev/null; then
                     if [ "$ufw" = "true" ]; then
                         sudo ufw delete allow $currentGoshimmerAutopeeringPort/udp > /dev/null 2>&1
