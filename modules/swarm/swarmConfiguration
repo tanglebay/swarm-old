@@ -12,14 +12,15 @@ while [ $exitCode -lt 1 ]; do
         proxyCheckMenu="Enable"
     fi
     CHOICE=$(
-        whiptail --title "SWARM Menu" --menu "\nWachtdog: $watchdogStatus\n\nChoose an option" 22 65 0 \
+        whiptail --title "SWARM Menu" --menu "\nWachtdog: $watchdogStatus\n\nChoose an option" 23 65 0 \
         "1)" "Watchdog [SWARM]" \
         "2)" "SWARM Theme" \
         "3)" "$swarmAutoUpdateMenu SWARM Autoupdate" \
         "4)" "Hornet [Watchdog]" \
         "5)" "Bee [Watchdog]" \
         "6)" "GoShimmer [Watchdog]" \
-        "7)" "Log Rotation [SWARM]" 3>&2 2>&1 1>&3
+        "7)" "WASP [Watchdog]" \
+        "8)" "Log Rotation [SWARM]" 3>&2 2>&1 1>&3
     )
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
@@ -393,6 +394,56 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "7)")
+            while [ $exitCode -lt 1 ]; do
+                source $swarmConfigs/swarm.cfg
+                if [ "$waspAutoUpdate" = "true" ]; then
+                    waspAutoUpdateMenu="Disable"
+                else
+                    waspAutoUpdateMenu="Enable"
+                fi
+                if [ "$waspAllowDbReset" = "true" ]; then
+                    waspAllowDbResetMenu="Forbid"
+                else
+                    waspAllowDbResetMenu="Allow"
+                fi
+
+                CHOICE=$(
+                    whiptail --title "SWARM - WASP" --menu "\nChoose an option" 13 65 0 \
+                    "1)" "$waspAutoUpdateMenu WASP AutoUpdater" \
+                    "2)" "$waspAllowDbResetMenu WASP database reset" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ "$waspAutoUpdate" = "true" ]; then
+                            waspAutoUpdate=false
+                            waspAutoUpdateMenu="disabled"
+                        else
+                            waspAutoUpdate=true
+                            waspAutoUpdateMenu="enabled"
+                        fi
+                        sudo sed -i 's/^waspAutoUpdate=.*/waspAutoUpdate='$waspAutoUpdate'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "Watchdog - WASP" --msgbox "WASP AutoUpdater $waspAutoUpdateMenu!" 8 65
+                    ;;
+                    "2)")
+                        if [ "$waspAllowDbReset" = "true" ]; then
+                            waspAllowDbReset=false
+                            waspAllowDbResetMenu="disabled"
+                        else
+                            waspAllowDbReset=true
+                            waspAllowDbResetMenu="enabled"
+                        fi
+                        sudo sed -i 's/^waspAllowDbReset=.*/waspAllowDbReset='$waspAllowDbReset'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - WASP" --msgbox "Delete WASP database $waspAllowDbResetMenu for Watchdog!" 8 65
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "8)")
             while [ $exitCode -lt 1 ]; do
                 source $swarmConfigs/swarm.cfg
                 if [ "$swarmLogRotation" = "true" ]; then

@@ -65,4 +65,21 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             unset goshimmerSkipDbDownload
         fi
     fi
+
+    # WASP AutoUpdater
+    if [ "$waspAutoUpdate" = "true" ] && [ -f "/usr/bin/wasp" ]; then
+        source $waspModules/waspVersion
+        if [ "$waspVersion" != "$latestWaspVersion" ]; then
+            source $waspModules/waspInstaller
+            source $waspModules/waspParser
+            if [ "$restartWaso" = "true" ]; then
+                sudo systemctl restart wasp
+                unset restartWasp
+            fi
+            if [ "$waspUpdated" = "true" ]; then
+                echo "$restartDate [WACHTDOG] - AUTOUPDATE - New version $latestWaspVersion of WASP installed and WASP restarted!" >> $swarmLogs/swarm.log
+                unset waspUpdated
+            fi
+        fi
+    fi
 fi

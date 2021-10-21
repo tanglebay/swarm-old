@@ -8,7 +8,8 @@ while [ $exitCode -lt 1 ]; do
         "2)" "Webapi-Auth" \
         "3)" "Enable Plugins" \
         "4)" "Disable Plugins" \
-        "5)" "Gossip Port" 3>&2 2>&1 1>&3
+        "5)" "Gossip Port" \
+        "6)" "NanoMsg Port" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -188,17 +189,32 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "5)")
             source $swarmConfigs/wasp.cfg
-            currentWaspGossipPort=$waspGossipPort
-            waspGossipPort=$(whiptail --inputbox "\nSet the gossip port for the committee communication." 10 65 $waspGossipPort --title "WASP - Gossip" 3>&1 1>&2 2>&3)
+            currentWaspPeeringPort=$waspPeeringPort
+            waspPeeringPort=$(whiptail --inputbox "\nSet the pering port for the committee communication." 10 65 $waspPeeringPort --title "WASP - Peering" 3>&1 1>&2 2>&3)
             exitStatus=$?
-            if [ "$exitStatus" != "1" ] && [ ! -z "$waspGossipPort" ] && [ $currentWaspGossipPort -ne $waspGossipPort ] && [ $waspGossipPort -eq $waspGossipPort ] 2>/dev/null; then
+            if [ "$exitStatus" != "1" ] && [ ! -z "$waspPeeringPort" ] && [ $currentWaspPeeringPort -ne $waspPeeringPort ] && [ $waspPeeringPort -eq $waspPeeringPort ] 2>/dev/null; then
                 if [ "$ufw" = "true" ]; then
-                    sudo ufw delete allow $currentWaspGossipPort/tcp > /dev/null 2>&1
-                    sudo ufw allow $waspGossipPort/tcp > /dev/null 2>&1
+                    sudo ufw delete allow $currentWaspPeeringPort/tcp > /dev/null 2>&1
+                    sudo ufw allow $waspPeeringPort/tcp > /dev/null 2>&1
                 fi
-                source $waspConfigParsers/waspGossipPort
-                sudo sed -i 's/^waspGossipPort=.*/waspGossipPort='$waspGossipPort'/' $swarmConfigs/wasp.cfg
-                whiptail --title "WASP - Gossip" --msgbox "Gossip port was set to \"$waspGossipPort/tcp\"!" 8 65
+                source $waspConfigParsers/waspPeeringPort
+                sudo sed -i 's/^waspPeeringPort=.*/waspPeeringPort='$waspPeeringPort'/' $swarmConfigs/wasp.cfg
+                whiptail --title "WASP - Peering" --msgbox "Peering port was set to \"$waspPeeringPort/tcp\"!" 8 65
+            fi
+        ;;
+        "6)")
+            source $swarmConfigs/wasp.cfg
+            currentWaspNanomsgPort=$waspNanomsgPort
+            waspNanomsgPort=$(whiptail --inputbox "\nSet the nanomsg port for the committee communication." 10 65 $waspNanomsgPort --title "WASP - Peering" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ "$exitStatus" != "1" ] && [ ! -z "$waspNanomsgPort" ] && [ $currentWaspNanomsgPort -ne $waspNanomsgPort ] && [ $waspNanomsgPort -eq $waspNanomsgPort ] 2>/dev/null; then
+                if [ "$ufw" = "true" ]; then
+                    sudo ufw delete allow $currentWaspNanomsgPort/tcp > /dev/null 2>&1
+                    sudo ufw allow $waspNanomsgPort/tcp > /dev/null 2>&1
+                fi
+                source $waspConfigParsers/waspNanomsgPort
+                sudo sed -i 's/^waspNanomsgPort=.*/waspNanomsgPort='$waspNanomsgPort'/' $swarmConfigs/wasp.cfg
+                whiptail --title "WASP - Nanomsg" --msgbox "Nanomsg port was set to \"$waspNanomsgPort/tcp\"!" 8 65
             fi
         ;;
     esac
