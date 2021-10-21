@@ -1,0 +1,68 @@
+#!/bin/bash
+
+webMonitor="/var/www/html/index.html"
+
+if [ -f "$webMonitor" ]; then
+    # Hornet
+    if [ -f "/usr/bin/hornet" ]; then
+        hornetStatus="$(systemctl show -p ActiveState --value hornet)"
+        if [ "$hornetStatus" = "active" ]; then
+            hornetSyncStatus="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetJwtToken}"|jq '.data.isHealthy')"
+            if [ "$hornetSyncStatus" = "true" ]; then
+                sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_green.svg" alt="Hornet is online" id~'
+            else
+                sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_red.svg" alt="Hornet is offline" id~'
+            fi
+        else
+            sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_red.svg" alt="Hornet is offline" id~'
+        fi
+    else
+        sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_grey.svg" alt="Hornet not installed" id~'
+    fi
+
+    # Bee
+    if [ -f "/usr/bin/bee" ]; then
+        beeStatus="$(systemctl show -p ActiveState --value bee)"
+        if [ "$beeStatus" = "active" ]; then
+            beeSyncStatus="$(curl -s -X GET "http://localhost:14266/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+            if [ "$beeSyncStatus" = "true" ]; then
+                sudo sed -i 's~/img/bee.*id~/img/bee_logo_green.svg" alt="Bee is online" id~'
+            else
+                sudo sed -i 's~/img/bee.*id~/img/bee_logo_red.svg" alt="Bee is offline" id~'
+            fi
+        else
+            sudo sed -i 's~/img/bee.*id~/img/bee_logo_red.svg" alt="Bee is offline" id~'
+        fi
+    else
+        sudo sed -i 's~/img/bee.*id~/img/bee_logo_grey.svg" alt="Bee not installed" id~'
+    fi
+
+    # GoShimmer
+    if [ -f "/usr/bin/goshimmer" ]; then
+        goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+        if [ "$beeStatus" = "active" ]; then
+            goshimmerSyncStatus="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.synced')"
+            if [ "$goshimmerSyncStatus" = "true" ]; then
+                sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_green.svg" alt="GoShimmer is online" id~'
+            else
+                sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_red.svg" alt="GoShimmer is offline" id~'
+            fi
+        else
+            sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_red.svg" alt="GoShimmer is offline" id~'
+        fi
+    else
+        sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_grey.svg" alt="GoShimmer not installed" id~'
+    fi
+
+    # WASP
+    if [ -f "/usr/bin/wasp" ]; then
+        waspStatus="$(systemctl show -p ActiveState --value wasp)"
+        if [ "$beeStatus" = "active" ]; then
+            sudo sed -i 's~/img/wasp.*id~/img/wasp_logo_green.svg" alt="WASP is online" id~'
+        else
+            sudo sed -i 's~/img/wasp.*id~/img/wasp_logo_red.svg" alt="WASP is offline" id~'
+        fi
+    else
+        sudo sed -i 's~/img/wasp.*id~/img/wasp_logo_grey.svg" alt="WASP not installed" id~'
+    fi
+fi
