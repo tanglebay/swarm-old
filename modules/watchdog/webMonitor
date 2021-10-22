@@ -1,0 +1,56 @@
+#!/bin/bash
+
+webMonitor="/var/www/html/swarm-nodes/index.html"
+
+if [ -f "$webMonitor" ]; then
+    # Hornet
+    if [ -f "/usr/bin/hornet" ]; then
+        hornetStatus="$(systemctl show -p ActiveState --value hornet)"
+        hornetSyncStatus="$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetJwtToken}"|jq '.data.isHealthy')"
+        if [ "$hornetStatus" = "active" ] && [ "$hornetSyncStatus" = "true" ]; then
+            sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_green.svg" alt="Hornet node is healthy" id~' $webMonitor
+        else
+            sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_red.svg" alt="Hornet is not healthy" id~' $webMonitor
+        fi
+    else
+        sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_gray.svg" alt="Hornet not installed" id~' $webMonitor
+    fi
+
+    # Bee
+    if [ -f "/usr/bin/bee" ]; then
+        beeStatus="$(systemctl show -p ActiveState --value bee)"
+        beeSyncStatus="$(curl -s -X GET "http://localhost:14266/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+        if [ "$beeStatus" = "active" ] && [ "$beeSyncStatus" = "true" ]; then
+            sudo sed -i 's~/img/bee.*id~/img/bee_logo_green.svg" alt="Bee is healthy" id~' $webMonitor
+        else
+            sudo sed -i 's~/img/bee.*id~/img/bee_logo_red.svg" alt="Bee is not healthy" id~' $webMonitor
+        fi
+    else
+        sudo sed -i 's~/img/bee.*id~/img/bee_logo_gray.svg" alt="Bee not installed" id~' $webMonitor
+    fi
+
+    # GoShimmer
+    if [ -f "/usr/bin/goshimmer" ]; then
+        goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+        goshimmerSyncStatus="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.synced')"
+        if [ "$goshimmerStatus" = "active" ] && [ "$goshimmerSyncStatus" = "true" ]; then
+            sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_green.svg" alt="GoShimmer is healthy" id~' $webMonitor
+        else
+            sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_red.svg" alt="GoShimmer is not healthy" id~' $webMonitor
+        fi
+    else
+        sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_gray.svg" alt="GoShimmer not installed" id~' $webMonitor
+    fi
+
+    # WASP
+    if [ -f "/usr/bin/wasp" ]; then
+        waspStatus="$(systemctl show -p ActiveState --value wasp)"
+        if [ "$waspStatus" = "active" ]; then
+            sudo sed -i 's~/img/wasp.*id~/img/wasp_logo_green.svg" alt="WASP is online" id~' $webMonitor
+        else
+            sudo sed -i 's~/img/wasp.*id~/img/wasp_logo_red.svg" alt="WASP is offline" id~' $webMonitor
+        fi
+    else
+        sudo sed -i 's~/img/wasp.*id~/img/wasp_logo_gray.svg" alt="WASP not installed" id~' $webMonitor
+    fi
+fi

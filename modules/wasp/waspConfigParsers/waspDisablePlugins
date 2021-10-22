@@ -1,0 +1,21 @@
+#!/bin/bash
+
+useWaspDisablePlugins=true
+source $waspModules/waspPlugins
+
+IFS=', ' read -r -a ARRAYwaspDisablePlugins <<< "$waspDisablePlugins"
+
+parser="$(jq '.node.enablePlugins' $waspHome/config.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$waspDisablePlugins" ]; then
+    sudo jq '.node.disablePlugins |= []' $waspHome/config.json|sponge $waspHome/config.json
+    for waspDisablePlugin in "${ARRAYwaspDisablePlugins[@]}"
+    do
+        sudo jq '.node.disablePlugins |= .+ ["'$waspDisablePlugin'"]' $waspHome/config.json|sponge $waspHome/config.json
+    done
+    restartWasp=true
+fi
+
+unset ARRAYwaspDisablePlugins
+unset waspDisablePlugin
+unset useWaspDisablePlugins

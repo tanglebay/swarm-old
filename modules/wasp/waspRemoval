@@ -1,0 +1,31 @@
+#!/bin/bash
+
+sudo systemctl stop wasp > /dev/null 2>&1
+
+sudo systemctl disable wasp > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/wasp /var/lib/wasp /lib/systemd/system/wasp.service /etc/default/wasp > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+if [ "$ufw" = "true" ]; then
+    sudo ufw delete allow $waspGossipPort/tcp > /dev/null 2>&1
+fi
+
+sudo rm -rf $waspHome > /dev/null 2>&1
+
+if id wasp >/dev/null 2>&1; then
+    sudo deluser wasp >/dev/null
+fi
+
+if [ -x "$(command -v apache2-utils)" ] && [ ! -f "/usr/bin/goshimmer" ]; then
+    sudo apt -qq purge apache-utils -y > /dev/null 2>&1
+    sudo apt -qq autoremove -y > /dev/null 2>&1
+fi
+
+if [ -f "/etc/nginx/sites-enabled/wasp" ]; then
+    sudo sed -i 's/^waspApiPort=.*/waspApiPort=/' $swarmConfigs/proxy.cfg
+    sudo rm -rf /etc/nginx/sites-enabled/wasp > /dev/null 2>&1
+    sudo rm -rf /etc/nginx/wasp > /dev/null 2>&1
+    sudo systemctl reload nginx
+fi
