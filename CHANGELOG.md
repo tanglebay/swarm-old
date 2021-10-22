@@ -1,3 +1,14 @@
+## Version 0.9.5
+### Added
+- Added WASP to SWARM
+- Added landing page for all nodes
+- Added status monitor for all nodes to langdingpage
+### Changed
+- Fixed all missing exitStatus
+- Fixed general bugs
+
+---
+
 ## Version 0.9.4
 ### Added
 - Added routes configuration in Hornet configuration
