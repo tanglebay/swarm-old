@@ -55,25 +55,26 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ -f "/etc/nginx/goshimmer/.htpasswd_dashboard" ]; then
-                            goshimmerDashboardAuthHash=$(cat /etc/nginx/goshimmer/.htpasswd_dashboard)
-                            if [ ! -z "$goshimmerDashboardAuthHash" ]; then
-                                goshimmerDashboardAuthEnabledMenu="${goshimmerDashboardAuthEnabledMenu,,}"
-                                if (whiptail --title "GoShimmer - Dashboard" --yesno --defaultno "Do you really want to $goshimmerDashboardAuthEnabledMenu authentication for the dashboard?" 8 65); then
-                                    if [ "$goshimmerDashboardAuthEnabled" = "true" ]; then
-                                        goshimmerDashboardAuthEnabled=false
-                                        goshimmerDashboardAuthEnabledMenu="disabled"
-                                    else
-                                        goshimmerDashboardAuthEnabled=true
-                                        goshimmerDashboardAuthEnabledMenu="enabled"
-                                    fi
-                                    sudo sed -i 's/^goshimmerDashboardAuthEnabled=.*/goshimmerDashboardAuthEnabled='$goshimmerDashboardAuthEnabled'/' $swarmConfigs/goshimmer.cfg
-                                    source $goshimmerConfigParsers/goshimmerDashboardAuth
-                                    whiptail --title "GoShimmer - Dashboard" --msgbox "Dashboard authentication $goshimmerDashboardAuthEnabledMenu!" 8 65
+                        if [ ! -f "/etc/nginx/goshimmer/.htpasswd_dashboard" ]; then
+                            sudo touch /etc/nginx/goshimmer/.htpasswd_dashboard
+                        fi
+                        goshimmerDashboardAuthHash=$(cat /etc/nginx/goshimmer/.htpasswd_dashboard)
+                        if [ ! -z "$goshimmerDashboardAuthHash" ]; then
+                            goshimmerDashboardAuthEnabledMenu="${goshimmerDashboardAuthEnabledMenu,,}"
+                            if (whiptail --title "GoShimmer - Dashboard" --yesno --defaultno "Do you really want to $goshimmerDashboardAuthEnabledMenu authentication for the dashboard?" 8 65); then
+                                if [ "$goshimmerDashboardAuthEnabled" = "true" ]; then
+                                    goshimmerDashboardAuthEnabled=false
+                                    goshimmerDashboardAuthEnabledMenu="disabled"
+                                else
+                                    goshimmerDashboardAuthEnabled=true
+                                    goshimmerDashboardAuthEnabledMenu="enabled"
                                 fi
-                            else
-                                whiptail --title "GoShimmer - Dashboard" --msgbox "Please set the dashboard credentials first!" 8 65
+                                sudo sed -i 's/^goshimmerDashboardAuthEnabled=.*/goshimmerDashboardAuthEnabled='$goshimmerDashboardAuthEnabled'/' $swarmConfigs/goshimmer.cfg
+                                source $goshimmerConfigParsers/goshimmerDashboardAuth
+                                whiptail --title "GoShimmer - Dashboard" --msgbox "Dashboard authentication $goshimmerDashboardAuthEnabledMenu!" 8 65
                             fi
+                        else
+                            whiptail --title "GoShimmer - Dashboard" --msgbox "Please set the dashboard credentials first!" 8 65
                         fi
                     ;;
                     "2)")
@@ -119,9 +120,10 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ -f "/etc/nginx/goshimmer/.htpasswd_webapi" ]; then
-                            goshimmerWebapiAuthHash=$(cat /etc/nginx/goshimmer/.htpasswd_webapi)
+                        if [ ! -f "/etc/nginx/goshimmer/.htpasswd_webapi" ]; then
+                            sudo touch /etc/nginx/goshimmer/.htpasswd_webapi
                         fi
+                        goshimmerWebapiAuthHash=$(cat /etc/nginx/goshimmer/.htpasswd_webapi)
                         if [ ! -z "$goshimmerWebapiAuthHash" ]; then
                             goshimmerWebapiAuthEnabledMenu="${goshimmerWebapiAuthEnabledMenu,,}"
                             if (whiptail --title "GoShimmer - WebAPI" --yesno --defaultno "Do you really want to $goshimmerWebapiAuthEnabledMenu authentication for the webAPI?" 8 65); then
