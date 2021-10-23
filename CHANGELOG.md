@@ -1,3 +1,14 @@
+## Version 0.9.6
+### Added
+- Added peeringID configuration for WASP
+### Changed
+- Fixed Bee dashboard link
+- Fixed Bee username configuration
+- Fixed WASP dashboard password configuration
+- Updated readme
+
+---
+
 ## Version 0.9.5
 ### Added
 - Added WASP to SWARM
