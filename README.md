@@ -56,6 +56,9 @@ The configuration of the node should always be done via the configuration point 
 - Gossip port (peering): 14666/tcp (customizable)
 - Autopeering port (peering): 14646/udp
 - Prometheus: 9313/tcp (if the plugin is activated)
+### Wasp
+- Peering port: 4000/tcp (customizable)
+- Nanomsg port: 5550/tcp (customizable)
 ### Proxy
 In the proxy menu you can define a separate domain for each node or one domain for all. Please note that when using a shared domain, a separate port must be defined for each node.
 - HTTP: 80/tcp
