@@ -259,23 +259,14 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         sudo rm -rf /etc/nginx/sites-available/default > /dev/null 2>&1
     fi
     sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/hornet /etc/nginx/sites-enabled/bee /etc/nginx/sites-enabled/goshimmer > /dev/null 2>&1
-    sudo cat $swarmTemplates/proxy/nginx_default.template > /etc/nginx/sites-enabled/default
-    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ]; then
-        defaultDomain="$proxyHornetDomain"
-    else
-        if [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ]; then
-            defaultDomain="$proxyBeeDomain"
-        else
-            if [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
-                defaultDomain="$proxyGoshimmerDomain"
-            fi
-        fi
-    fi
-    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$defaultDomain'/g' {} \;
+    sudo cp -rf $swarmTemplates/proxy/nginx_default.template > /etc/nginx/sites-enabled/default
+    
     #################################################################################################
     echo 35
     if [ -f "/usr/bin/hornet" ] && [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ]; then
-        source $swarmConfigs/hornet.cfg
+        if [ -z "$defaultDomain" ]; then
+            defaultDomain="$proxyHornetDomain"
+        fi
         sudo cat $swarmTemplates/proxy/nginx_hornet.template > /etc/nginx/sites-enabled/hornet
         sudo find /etc/nginx/sites-enabled/hornet -type f -exec sed -i 's/domain.tld/'$proxyHornetDomain'/g' {} \;
         sudo find /etc/nginx/sites-enabled/hornet -type f -exec sed -i 's/443/'$proxyHornetPort'/g' {} \;
@@ -289,6 +280,9 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
     fi
     echo 45
     if [ -f "/usr/bin/bee" ] && [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ]; then
+        if [ -z "$defaultDomain" ]; then
+            defaultDomain="$proxyBeeDomain"
+        fi
         sudo cat $swarmTemplates/proxy/nginx_bee.template > /etc/nginx/sites-enabled/bee
         sudo find /etc/nginx/sites-enabled/bee -type f -exec sed -i 's/domain.tld/'$proxyBeeDomain'/g' {} \;
         sudo find /etc/nginx/sites-enabled/bee -type f -exec sed -i 's/443/'$proxyBeePort'/g' {} \;
@@ -303,6 +297,9 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
     echo 50
     if [ -f "/usr/bin/goshimmer" ] && [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
         source $swarmConfigs/goshimmer.cfg
+        if [ -z "$defaultDomain" ]; then
+            defaultDomain="$proxyGoshimmerDomain"
+        fi
         if [ ! -d "/etc/nginx/goshimmer" ]; then
             sudo mkdir -p /etc/nginx/goshimmer
         fi
@@ -326,6 +323,9 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
     echo 55
     if [ -f "/usr/bin/wasp" ] && [ -f "/etc/letsencrypt/live/$proxyWaspDomain/fullchain.pem" ]; then
         source $swarmConfigs/wasp.cfg
+        if [ -z "$defaultDomain" ]; then
+            defaultDomain="$proxyWaspDomain"
+        fi
         if [ ! -d "/etc/nginx/wasp" ]; then
             sudo mkdir -p /etc/nginx/wasp
         fi
@@ -346,6 +346,7 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
     echo 60
     sudo find /etc/nginx/nginx.conf -type f -exec sed -i 's/# server_tokens off;/server_tokens off;/g' {} \;
     sudo find /etc/nginx/nginx.conf -type f -exec sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g' {} \;
+    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$defaultDomain'/g' {} \;
     echo 75
     sudo systemctl restart nginx
     echo 90
