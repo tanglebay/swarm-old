@@ -1,3 +1,16 @@
+## Version 0.9.7
+### Added
+- Added waspPeeringId to configuration
+### Changed
+- Fixed duplicate error in wasp proxy template
+- Fixed missing wasp check in proxyMenu
+- Fixed wrong VAR for WASP dashboard auth
+- Fixed GoShimmer dashboard/webapi auth
+- Fixed missing _blank in index.html
+- Updated proxy deployment
+
+---
+
 ## Version 0.9.6
 ### Added
 - Added peeringID configuration for WASP

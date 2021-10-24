@@ -16,7 +16,7 @@ if [ ! -d "/etc/letsencrypt" ]; then
         echo 30
         sudo rm -rf /etc/nginx/sites-enabled/hornet /etc/nginx/sites-enabled/bee /etc/nginx/sites-enabled/goshimmer > /dev/null 2>&1
         echo 50
-        sudo cat $swarmTemplates/proxy/nginx_http.template > /etc/nginx/sites-enabled/default
+        sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
         echo 60
         echo 70
         sudo systemctl restart nginx
@@ -44,7 +44,7 @@ if [ -f "/usr/bin/hornet" ] && [ ! -z "$proxyHornetDomain" ]; then
                 echo 25
                 proxyStatus="$(systemctl show -p ActiveState --value nginx)"
                 if [ "$proxyStatus" != "active" ]; then
-                    sudo cat $swarmTemplates/proxy/nginx_http.template > /etc/nginx/sites-enabled/default
+                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
                     sudo systemctl restart nginx
                 fi
                 echo 50
@@ -79,14 +79,14 @@ if [ -f "/usr/bin/bee" ] && [ ! -z "$proxyBeeDomain" ]; then
                 echo 25
                 proxyStatus="$(systemctl show -p ActiveState --value nginx)"
                 if [ "$proxyStatus" != "active" ]; then
-                    sudo cat $swarmTemplates/proxy/nginx_http.template > /etc/nginx/sites-enabled/default
+                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
                     sudo systemctl restart nginx
                 fi
                 echo 50
                 sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyBeeDomain -m $emailAddress > /dev/null 2>&1
                 unset emailaddress
                 echo 100
-            } | whiptail --gauge "Requesting SSL certificate for Bee..." 6 65 0  
+            } | whiptail --gauge "Requesting SSL certificate for Bee..." 6 65 0
             # echo ""
             # read -p "Press any key to continue..."
             if [ ! -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ]; then
@@ -114,7 +114,7 @@ if [ -f "/usr/bin/goshimmer" ] && [ ! -z "$proxyGoshimmerDomain" ]; then
                 echo 25
                 proxyStatus="$(systemctl show -p ActiveState --value nginx)"
                 if [ "$proxyStatus" != "active" ]; then
-                    sudo cat $swarmTemplates/proxy/nginx_http.template > /etc/nginx/sites-enabled/default
+                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
                     sudo systemctl restart nginx
                 fi
                 echo 50
@@ -148,7 +148,7 @@ if [ -f "/usr/bin/wasp" ] && [ ! -z "$proxyWaspDomain" ]; then
                 echo 25
                 proxyStatus="$(systemctl show -p ActiveState --value nginx)"
                 if [ "$proxyStatus" != "active" ]; then
-                    sudo cat $swarmTemplates/proxy/nginx_http.template > /etc/nginx/sites-enabled/default
+                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
                     sudo systemctl restart nginx
                 fi
                 echo 50
@@ -259,23 +259,23 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         sudo rm -rf /etc/nginx/sites-available/default > /dev/null 2>&1
     fi
     sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/hornet /etc/nginx/sites-enabled/bee /etc/nginx/sites-enabled/goshimmer > /dev/null 2>&1
-    sudo cp -rf $swarmTemplates/proxy/nginx_default.template > /etc/nginx/sites-enabled/default
-    
+    sudo cp -rf $swarmTemplates/proxy/nginx_default.template /etc/nginx/sites-enabled/default
+
     #################################################################################################
     echo 35
     if [ -f "/usr/bin/hornet" ] && [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ]; then
         if [ -z "$defaultDomain" ]; then
             defaultDomain="$proxyHornetDomain"
         fi
-        sudo cat $swarmTemplates/proxy/nginx_hornet.template > /etc/nginx/sites-enabled/hornet
-        sudo find /etc/nginx/sites-enabled/hornet -type f -exec sed -i 's/domain.tld/'$proxyHornetDomain'/g' {} \;
-        sudo find /etc/nginx/sites-enabled/hornet -type f -exec sed -i 's/443/'$proxyHornetPort'/g' {} \;
-        sudo find $webMonitor -type f -exec sed -i 's/"hornet\/dashboard"/"https:\/\/'$proxyHornetDomain':'$proxyHornetPort'\/dashboard" target="_blank"/g' {} \;
+        sudo cp -rf $swarmTemplates/proxy/nginx_hornet.template /etc/nginx/sites-enabled/hornet
+        sudo sed -i 's/domain.tld/'$proxyHornetDomain'/g' /etc/nginx/sites-enabled/hornet
+        sudo sed -i 's/443/'$proxyHornetPort'/g' /etc/nginx/sites-enabled/hornet
+        sudo sed -i 's~"hornet\/dashboard"~"https:\/\/'$proxyHornetDomain':'$proxyHornetPort'\/dashboard" target="_blank"~g' $webMonitor
         if [ "$ufw" = "true" ]; then
             sudo ufw allow $proxyHornetPort/tcp > /dev/null 2>&1
         fi
     else
-        sudo find $webMonitor -type f -exec sed -i 's/wasp\/dashboard/#/g' {} \;
+        sudo sed -i 's/hornet\/dashboard/#/g' $webMonitor
         sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_gray.svg" alt="Hornet not installed" id~' $webMonitor
     fi
     echo 45
@@ -283,15 +283,15 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         if [ -z "$defaultDomain" ]; then
             defaultDomain="$proxyBeeDomain"
         fi
-        sudo cat $swarmTemplates/proxy/nginx_bee.template > /etc/nginx/sites-enabled/bee
-        sudo find /etc/nginx/sites-enabled/bee -type f -exec sed -i 's/domain.tld/'$proxyBeeDomain'/g' {} \;
-        sudo find /etc/nginx/sites-enabled/bee -type f -exec sed -i 's/443/'$proxyBeePort'/g' {} \;
-        sudo find $webMonitor -type f -exec sed -i 's/"bee\/dashboard"/"https:\/\/'$proxyBeeDomain':'$proxyBeePort'\/dashboard" target="_blank"/g' {} \;
+        sudo cp -rf $swarmTemplates/proxy/nginx_bee.template /etc/nginx/sites-enabled/bee
+        sudo sed -i 's/domain.tld/'$proxyBeeDomain'/g' /etc/nginx/sites-enabled/bee
+        sudo sed -i 's/443/'$proxyBeePort'/g' /etc/nginx/sites-enabled/bee
+        sudo sed -i 's/"bee\/dashboard"/"https:\/\/'$proxyBeeDomain':'$proxyBeePort'\/dashboard" target="_blank"/g' $webMonitor
         if [ "$ufw" = "true" ]; then
             sudo ufw allow $proxyBeePort/tcp > /dev/null 2>&1
         fi
     else
-        sudo find $webMonitor -type f -exec sed -i 's/bee\/dashboard/#/g' {} \;
+        sudo sed -i 's/bee\/dashboard/#/g' $webMonitor
         sudo sed -i 's~/img/bee.*id~/img/bee_logo_gray.svg" alt="Bee not installed" id~' $webMonitor
     fi
     echo 50
@@ -309,15 +309,15 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         if [ ! -f "/etc/nginx/goshimmer/webapiauth.conf" ]; then
             sudo echo "" > /etc/nginx/goshimmer/webapiauth.conf > /dev/null 2>&1
         fi
-        sudo cat $swarmTemplates/proxy/nginx_goshimmer.template > /etc/nginx/sites-enabled/goshimmer
-        sudo find /etc/nginx/sites-enabled/goshimmer -type f -exec sed -i 's/domain.tld/'$proxyGoshimmerDomain'/g' {} \;
-        sudo find /etc/nginx/sites-enabled/goshimmer -type f -exec sed -i 's/443/'$proxyGoshimmerPort'/g' {} \;
-        sudo find $webMonitor -type f -exec sed -i 's/"goshimmer\/dashboard"/"https:\/\/'$proxyGoshimmerDomain':'$proxyGoshimmerPort'\/dashboard" target="_blank"/g' {} \;
+        sudo cp -rf $swarmTemplates/proxy/nginx_goshimmer.template /etc/nginx/sites-enabled/goshimmer
+        sudo sed -i 's/domain.tld/'$proxyGoshimmerDomain'/g' /etc/nginx/sites-enabled/goshimmer
+        sudo sed -i 's/443/'$proxyGoshimmerPort'/g' /etc/nginx/sites-enabled/goshimmer
+        sudo sed -i 's/"goshimmer\/dashboard"/"https:\/\/'$proxyGoshimmerDomain':'$proxyGoshimmerPort'\/dashboard" target="_blank"/g' $webMonitor
         if [ "$ufw" = "true" ]; then
             sudo ufw allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
         fi
     else
-        sudo find $webMonitor -type f -exec sed -i 's/goshimmer\/dashboard/#/g' {} \;
+        sudo sed -i 's/goshimmer\/dashboard/#/g' $webMonitor
         sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_gray.svg" alt="GoShimmer not installed" id~' $webMonitor
     fi
     echo 55
@@ -332,21 +332,21 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         if [ ! -f "/etc/nginx/wasp/webapiauth.conf" ]; then
             sudo echo "" > /etc/nginx/wasp/webapiauth.conf > /dev/null 2>&1
         fi
-        sudo cat $swarmTemplates/proxy/nginx_wasp.template > /etc/nginx/sites-enabled/wasp
-        sudo find /etc/nginx/sites-enabled/wasp -type f -exec sed -i 's/domain.tld/'$proxyWaspDomain'/g' {} \;
-        sudo find /etc/nginx/sites-enabled/wasp -type f -exec sed -i 's/443/'$proxyWaspPort'/g' {} \;
-        sudo find $webMonitor -type f -exec sed -i 's/"wasp\/dashboard"/"https:\/\/'$proxyWaspDomain':'$proxyWaspPort'\/dashboard" target="_blank"/g' {} \;
+        sudo cp -rf $swarmTemplates/proxy/nginx_wasp.template /etc/nginx/sites-enabled/wasp
+        sudo sed -i 's/domain.tld/'$proxyWaspDomain'/g' /etc/nginx/sites-enabled/wasp
+        sudo sed -i 's/443/'$proxyWaspPort'/g' /etc/nginx/sites-enabled/wasp
+        sudo sed -i 's/"wasp\/dashboard"/"https:\/\/'$proxyWaspDomain':'$proxyWaspPort'\/dashboard" target="_blank"/g' $webMonitor
         if [ "$ufw" = "true" ]; then
             sudo ufw allow $proxyWaspPort/tcp > /dev/null 2>&1
         fi
     else
-        sudo find $webMonitor -type f -exec sed -i 's/wasp\/dashboard/#/g' {} \;
+        sudo sed -i 's/wasp\/dashboard/#/g' $webMonitor
         sudo sed -i 's~/img/wasp.*id~/img/wasp_logo_gray.svg" alt="WASP not installed" id~' $webMonitor
     fi
     echo 60
-    sudo find /etc/nginx/nginx.conf -type f -exec sed -i 's/# server_tokens off;/server_tokens off;/g' {} \;
-    sudo find /etc/nginx/nginx.conf -type f -exec sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g' {} \;
-    sudo find /etc/nginx/sites-enabled/default -type f -exec sed -i 's/domain.tld/'$defaultDomain'/g' {} \;
+    sudo sed -i 's/# server_tokens off;/server_tokens off;/g' /etc/nginx/nginx.conf
+    sudo sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
+    sudo sed -i 's/domain.tld/'$defaultDomain'/g' /etc/nginx/sites-enabled/default
     echo 75
     sudo systemctl restart nginx
     echo 90
