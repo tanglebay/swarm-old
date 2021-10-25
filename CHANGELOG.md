@@ -1,3 +1,9 @@
+## Version 0.9.8
+### Changed
+- Fixed WASP proxy configuration
+
+---
+
 ## Version 0.9.7
 ### Added
 - Added proxy deployment with SWARM update
