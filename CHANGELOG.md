@@ -1,6 +1,8 @@
 ## Version 0.9.7
 ### Added
+- Added proxy deployment with SWARM update
 - Added waspPeeringId to configuration
+- Added own proxy settings for WASP API
 ### Changed
 - Fixed duplicate error in wasp proxy template
 - Fixed missing wasp check in proxyMenu
