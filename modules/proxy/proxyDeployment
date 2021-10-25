@@ -2,7 +2,7 @@
 
 webMonitor="/var/www/html/swarm-nodes/index.html"
 
-if [ "$proxySkipCerts" != "true" ]; then
+if [ "$swarmProxyUpdate" != "true" ]; then
     # Check if letsencrypt is already installed on the node
     if [ ! -d "/etc/letsencrypt" ]; then
         {
@@ -154,7 +154,7 @@ if [ "$proxySkipCerts" != "true" ]; then
                 # echo ""
                 # read -p "Press any key to continue..."
                 if [ ! -f "/etc/letsencrypt/live/$proxyWaspDomain/fullchain.pem" ]; then
-                    whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for WASP not found!" 8 65
+                    whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for the WASP dashboard not found!" 8 65
                 fi
             fi
         fi
@@ -186,7 +186,7 @@ if [ "$proxySkipCerts" != "true" ]; then
                 # echo ""
                 # read -p "Press any key to continue..."
                 if [ ! -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
-                    whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for WASP not found!" 8 65
+                    whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for the WASP API not found!" 8 65
                 fi
             fi
         fi
@@ -403,15 +403,17 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
     sudo sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
     sudo sed -i 's/domain.tld/'$defaultDomain'/g' /etc/nginx/sites-enabled/default
     echo 75
-    sudo systemctl restart nginx
+    sudo systemctl restart nginx > /dev/null 2>&1
     echo 90
     echo 100
     } | whiptail --gauge "Please wait while SWARM deploying the config and restart the proxy..." 8 65 0
-    if [ "$proxySkipCerts" != "true" ]; then
+    if [ "$swarmProxyUpdate" = "true" ]; then
+        sudo systemctl restart nginx
+    else
         whiptail --title "Proxy - Deployment" --msgbox "Proxy configuration successfully applied!" 8 65
     fi
 else
-    if [ "$proxySkipCerts" != "true" ]; then
+    if [ "$swarmProxyUpdate" != "true" ]; then
         whiptail --title "Proxy - Deployment" --msgbox "Aborted - No SSL Certificates not found!" 8 65
     fi
 fi
