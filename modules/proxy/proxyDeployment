@@ -2,241 +2,284 @@
 
 webMonitor="/var/www/html/swarm-nodes/index.html"
 
-# Check if letsencrypt is already installed on the node
-if [ ! -d "/etc/letsencrypt" ]; then
-    {
-        echo 0
-        if [ "$ufw" = "true" ]; then
-            sudo ufw allow 80/tcp > /dev/null 2>&1
-        fi
-        echo 10
-        sudo apt-get -qq install software-properties-common certbot python3-certbot-nginx -y > /dev/null 2>&1
-        echo 20
-        sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default > /dev/null 2>&1
-        echo 30
-        sudo rm -rf /etc/nginx/sites-enabled/hornet /etc/nginx/sites-enabled/bee /etc/nginx/sites-enabled/goshimmer > /dev/null 2>&1
-        echo 50
-        sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-        echo 60
-        echo 70
-        sudo systemctl restart nginx
-        echo 90
-        if [ ! -f "/etc/nginx/nginx.conf" ]; then
-            sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
-        fi
-        echo 100
-        sleep 0.25
-    } | whiptail --gauge "Please wait while the proxy will be installed..." 6 65 0
-fi
+if [ "$proxySkipCerts" != "true" ]; then
+    # Check if letsencrypt is already installed on the node
+    if [ ! -d "/etc/letsencrypt" ]; then
+        {
+            echo 0
+            if [ "$ufw" = "true" ]; then
+                sudo ufw allow 80/tcp > /dev/null 2>&1
+            fi
+            echo 10
+            sudo apt-get -qq install software-properties-common certbot python3-certbot-nginx -y > /dev/null 2>&1
+            echo 20
+            sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default > /dev/null 2>&1
+            echo 30
+            sudo rm -rf /etc/nginx/sites-enabled/hornet /etc/nginx/sites-enabled/bee /etc/nginx/sites-enabled/goshimmer /etc/nginx/sites-enabled/wasp* > /dev/null 2>&1
+            echo 50
+            sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
+            echo 60
+            echo 70
+            sudo systemctl restart nginx
+            echo 90
+            if [ ! -f "/etc/nginx/nginx.conf" ]; then
+                sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+            fi
+            echo 100
+            sleep 0.25
+        } | whiptail --gauge "Please wait while the proxy will be installed..." 6 65 0
+    fi
 
-if [ -f "/usr/bin/hornet" ] && [ ! -z "$proxyHornetDomain" ]; then
-    if [ ! -d "/etc/letsencrypt/live/$proxyHornetDomain" ]; then
-        if [ -z "$emailAddress" ]; then
-            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-        fi
-        if [ ! -z "$emailAddress" ]; then
-            {
-                echo 0
-                echo 10
-                if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+    if [ -f "/usr/bin/hornet" ] && [ ! -z "$proxyHornetDomain" ]; then
+        if [ ! -d "/etc/letsencrypt/live/$proxyHornetDomain" ]; then
+            if [ -z "$emailAddress" ]; then
+                emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+            fi
+            if [ ! -z "$emailAddress" ]; then
+                {
+                    echo 0
+                    echo 10
+                    if [ ! -f "/etc/nginx/nginx.conf" ]; then
+                        sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+                    fi
+                    echo 25
+                    proxyStatus="$(systemctl show -p ActiveState --value nginx)"
+                    if [ "$proxyStatus" != "active" ]; then
+                        sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
+                        sudo systemctl restart nginx
+                    fi
+                    echo 50
+                    sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyHornetDomain -m $emailAddress > /dev/null 2>&1
+                    unset emailaddress
+                    echo 100
+                } | whiptail --gauge "Requesting SSL certificate for Hornet..." 6 65 0  
+                # echo ""
+                # read -p "Press any key to continue..."
+                if [ ! -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ]; then
+                    whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Hornet not found!" 8 65
                 fi
-                echo 25
-                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-                if [ "$proxyStatus" != "active" ]; then
-                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-                    sudo systemctl restart nginx
-                fi
-                echo 50
-                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyHornetDomain -m $emailAddress > /dev/null 2>&1
-                unset emailaddress
-                echo 100
-            } | whiptail --gauge "Requesting SSL certificate for Hornet..." 6 65 0  
-            # echo ""
-            # read -p "Press any key to continue..."
-            if [ ! -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ]; then
-                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Hornet not found!" 8 65
-            else
-                whiptail --title "Proxy - Deployment" --msgbox "SSL certificate for Hornet successfully issued!" 8 65
             fi
         fi
     fi
-fi
 
-if [ -f "/usr/bin/bee" ] && [ ! -z "$proxyBeeDomain" ]; then
-    if [ ! -d "/etc/letsencrypt/live/$proxyBeeDomain" ]; then
-        if [ -z "$emailAddress" ]; then
-            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-        fi
-        exitStatus=$?
-        if [ ! -z "$emailAddress" ] && [ $exitStatus != 1 ]; then
-            {
-                echo 0
-                echo 10
-                if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+    if [ -f "/usr/bin/bee" ] && [ ! -z "$proxyBeeDomain" ]; then
+        if [ ! -d "/etc/letsencrypt/live/$proxyBeeDomain" ]; then
+            if [ -z "$emailAddress" ]; then
+                emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+            fi
+            exitStatus=$?
+            if [ ! -z "$emailAddress" ] && [ $exitStatus != 1 ]; then
+                {
+                    echo 0
+                    echo 10
+                    if [ ! -f "/etc/nginx/nginx.conf" ]; then
+                        sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+                    fi
+                    echo 25
+                    proxyStatus="$(systemctl show -p ActiveState --value nginx)"
+                    if [ "$proxyStatus" != "active" ]; then
+                        sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
+                        sudo systemctl restart nginx
+                    fi
+                    echo 50
+                    sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyBeeDomain -m $emailAddress > /dev/null 2>&1
+                    unset emailaddress
+                    echo 100
+                } | whiptail --gauge "Requesting SSL certificate for Bee..." 6 65 0
+                # echo ""
+                # read -p "Press any key to continue..."
+                if [ ! -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ]; then
+                    whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Bee not found!" 8 65
                 fi
-                echo 25
-                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-                if [ "$proxyStatus" != "active" ]; then
-                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-                    sudo systemctl restart nginx
-                fi
-                echo 50
-                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyBeeDomain -m $emailAddress > /dev/null 2>&1
-                unset emailaddress
-                echo 100
-            } | whiptail --gauge "Requesting SSL certificate for Bee..." 6 65 0
-            # echo ""
-            # read -p "Press any key to continue..."
-            if [ ! -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ]; then
-                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Bee not found!" 8 65
-            else
-                whiptail --title "Proxy - Deployment" --msgbox "SSL certificate for Bee successfully issued!" 8 65
             fi
         fi
     fi
-fi
 
-if [ -f "/usr/bin/goshimmer" ] && [ ! -z "$proxyGoshimmerDomain" ]; then
-    if [ ! -d "/etc/letsencrypt/live/$proxyGoshimmerDomain" ]; then
-        if [ -z "$emailAddress" ]; then
-            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-        fi
-        exitStatus=$?
-        if [ ! -z "$emailAddress" ] && [ $exitStatus != 1 ]; then
-            {
-                echo 0
-                echo 10
-                if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+    if [ -f "/usr/bin/goshimmer" ] && [ ! -z "$proxyGoshimmerDomain" ]; then
+        if [ ! -d "/etc/letsencrypt/live/$proxyGoshimmerDomain" ]; then
+            if [ -z "$emailAddress" ]; then
+                emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+            fi
+            exitStatus=$?
+            if [ ! -z "$emailAddress" ] && [ $exitStatus != 1 ]; then
+                {
+                    echo 0
+                    echo 10
+                    if [ ! -f "/etc/nginx/nginx.conf" ]; then
+                        sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+                    fi
+                    echo 25
+                    proxyStatus="$(systemctl show -p ActiveState --value nginx)"
+                    if [ "$proxyStatus" != "active" ]; then
+                        sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
+                        sudo systemctl restart nginx
+                    fi
+                    echo 50
+                    sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyGoshimmerDomain -m $emailAddress > /dev/null 2>&1
+                    unset emailaddress
+                    echo 100
+                } | whiptail --gauge "Requesting SSL certificate for GoShimmer..." 6 65 0  
+                # echo ""
+                # read -p "Press any key to continue..."
+                if [ ! -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
+                    whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for GoShimmer not found!" 8 65
                 fi
-                echo 25
-                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-                if [ "$proxyStatus" != "active" ]; then
-                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-                    sudo systemctl restart nginx
-                fi
-                echo 50
-                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyGoshimmerDomain -m $emailAddress > /dev/null 2>&1
-                unset emailaddress
-                echo 100
-            } | whiptail --gauge "Requesting SSL certificate for GoShimmer..." 6 65 0  
-            # echo ""
-            # read -p "Press any key to continue..."
-            if [ ! -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
-                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for GoShimmer not found!" 8 65
-            else
-                whiptail --title "Proxy - Deployment" --msgbox "SSL certificate for GoShimmer successfully issued!" 8 65
             fi
         fi
     fi
-fi
 
-if [ -f "/usr/bin/wasp" ] && [ ! -z "$proxyWaspDomain" ]; then
-    if [ ! -d "/etc/letsencrypt/live/$proxyWaspDomain" ]; then
-        if [ -z "$emailAddress" ]; then
-            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-        fi
-        if [ ! -z "$emailAddress" ]; then
-            {
-                echo 0
-                echo 10
-                if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+    if [ -f "/usr/bin/wasp" ] && [ ! -z "$proxyWaspDashboardDomain" ]; then
+        if [ ! -d "/etc/letsencrypt/live/$proxyWaspDashoardDomain" ]; then
+            if [ -z "$emailAddress" ]; then
+                emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+            fi
+            if [ ! -z "$emailAddress" ]; then
+                {
+                    echo 0
+                    echo 10
+                    if [ ! -f "/etc/nginx/nginx.conf" ]; then
+                        sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+                    fi
+                    echo 25
+                    proxyStatus="$(systemctl show -p ActiveState --value nginx)"
+                    if [ "$proxyStatus" != "active" ]; then
+                        sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
+                        sudo systemctl restart nginx
+                    fi
+                    echo 50
+                    sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyWaspDashboardDomain -m $emailAddress > /dev/null 2>&1
+                    unset emailaddress
+                    echo 100
+                } | whiptail --gauge "Requesting SSL certificate for WASP dashboard..." 6 65 0  
+                # echo ""
+                # read -p "Press any key to continue..."
+                if [ ! -f "/etc/letsencrypt/live/$proxyWaspDomain/fullchain.pem" ]; then
+                    whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for WASP not found!" 8 65
                 fi
-                echo 25
-                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-                if [ "$proxyStatus" != "active" ]; then
-                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-                    sudo systemctl restart nginx
-                fi
-                echo 50
-                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyWaspDomain -m $emailAddress > /dev/null 2>&1
-                unset emailaddress
-                echo 100
-            } | whiptail --gauge "Requesting SSL certificate for WASP..." 6 65 0  
-            # echo ""
-            # read -p "Press any key to continue..."
-            if [ ! -f "/etc/letsencrypt/live/$proxyWaspDomain/fullchain.pem" ]; then
-                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for WASP not found!" 8 65
-            else
-                whiptail --title "Proxy - Deployment" --msgbox "SSL certificate for WASP successfully issued!" 8 65
             fi
         fi
     fi
-fi
 
-### PREPARING CONFIGURATIONS
-if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ]; then
-    if [ -f "/usr/bin/hornet" ]; then
-        if [ -z "$proxyHornetPort" ]; then
-            missingProxyHornetPort=true
+    if [ -f "/usr/bin/wasp" ] && [ ! -z "$proxyWaspApiDomain" ]; then
+        if [ ! -d "/etc/letsencrypt/live/$proxyWaspApiDomain" ]; then
+            if [ -z "$emailAddress" ]; then
+                emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+            fi
+            if [ ! -z "$emailAddress" ]; then
+                {
+                    echo 0
+                    echo 10
+                    if [ ! -f "/etc/nginx/nginx.conf" ]; then
+                        sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+                    fi
+                    echo 25
+                    proxyStatus="$(systemctl show -p ActiveState --value nginx)"
+                    if [ "$proxyStatus" != "active" ]; then
+                        sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
+                        sudo systemctl restart nginx
+                    fi
+                    echo 50
+                    sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyWaspApiDomain -m $emailAddress > /dev/null 2>&1
+                    unset emailaddress
+                    echo 100
+                } | whiptail --gauge "Requesting SSL certificate for WASP API..." 6 65 0  
+                # echo ""
+                # read -p "Press any key to continue..."
+                if [ ! -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
+                    whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for WASP not found!" 8 65
+                fi
+            fi
         fi
     fi
-    if [ "$missingProxyHornetPort" = "true" ]; then
-        whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
+
+    ### PREPARING CONFIGURATIONS
+    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ]; then
         if [ -f "/usr/bin/hornet" ]; then
             if [ -z "$proxyHornetPort" ]; then
-                proxyHornetPort=$(whiptail --inputbox "\nDefine the port for Hornet" 10 65 --title "Proxy - Hornet Port" 3>&1 1>&2 2>&3)
-                exitStatus=$?
-                if [ $exitStatus != 1 ]; then
-                    sudo sed -i 's/^proxyHornetPort=.*/proxyHornetPort='$proxyHornetPort'/' $swarmConfigs/proxy.cfg
+                missingProxyHornetPort=true
+            fi
+        fi
+        if [ "$missingProxyHornetPort" = "true" ]; then
+            whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
+            if [ -f "/usr/bin/hornet" ]; then
+                if [ -z "$proxyHornetPort" ]; then
+                    proxyHornetPort=$(whiptail --inputbox "\nDefine the port for Hornet" 10 65 --title "Proxy - Hornet Port" 3>&1 1>&2 2>&3)
+                    exitStatus=$?
+                    if [ $exitStatus != 1 ]; then
+                        sudo sed -i 's/^proxyHornetPort=.*/proxyHornetPort='$proxyHornetPort'/' $swarmConfigs/proxy.cfg
+                    fi
                 fi
             fi
         fi
     fi
-fi
 
-if [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ]; then
-    if [ -f "/usr/bin/bee" ]; then
-        if [ -z "$proxyBeePort" ]; then
-            missingProxyBeePort=true
-        fi
-    fi
-    if [ "$missingProxyBeePort" = "true" ]; then
-        whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
+    if [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ]; then
         if [ -f "/usr/bin/bee" ]; then
             if [ -z "$proxyBeePort" ]; then
-                proxyBeePort=$(whiptail --inputbox "\nDefine the port for Bee" 10 65 --title "Proxy - Bee Port" 3>&1 1>&2 2>&3)
-                sudo sed -i 's/^proxyBeePort=.*/proxyBeePort='$proxyBeePort'/' $swarmConfigs/proxy.cfg
+                missingProxyBeePort=true
             fi
         fi
-    fi
-fi
-
-if [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
-    if [ -f "/usr/bin/goshimmer" ]; then
-        if [ -z "$proxyGoshimmerPort" ]; then
-            missingProxyGoshimmerPort=true
-        fi
-    fi
-    if [ "$missingProxyGoshimmerPort" = "true" ]; then
-        whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
-        if [ -f "/usr/bin/goshimmer" ]; then
-            if [ -z "$proxyGoshimmerPort" ]; then
-                proxyGoshimmerPort=$(whiptail --inputbox "\nDefine the port for GoShimmer" 10 65 --title "Proxy - GoShimmer Port" 3>&1 1>&2 2>&3)
-                exitStatus=$?
-                if [ $exitStatus != 1 ]; then
-                    sudo sed -i 's/^proxyGoshimmerPort=.*/proxyGoshimmerPort='$proxyGoshimmerPort'/' $swarmConfigs/proxy.cfg
+        if [ "$missingProxyBeePort" = "true" ]; then
+            whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
+            if [ -f "/usr/bin/bee" ]; then
+                if [ -z "$proxyBeePort" ]; then
+                    proxyBeePort=$(whiptail --inputbox "\nDefine the port for Bee" 10 65 --title "Proxy - Bee Port" 3>&1 1>&2 2>&3)
+                    sudo sed -i 's/^proxyBeePort=.*/proxyBeePort='$proxyBeePort'/' $swarmConfigs/proxy.cfg
                 fi
             fi
         fi
     fi
-fi
 
-if [ -f "/etc/letsencrypt/live/$proxyWaspDomain/fullchain.pem" ]; then
-    if [ -f "/usr/bin/wasp" ]; then
-        if [ -z "$proxyWaspPort" ]; then
-            missingProxyWaspPort=true
+    if [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
+        if [ -f "/usr/bin/goshimmer" ]; then
+            if [ -z "$proxyGoshimmerPort" ]; then
+                missingProxyGoshimmerPort=true
+            fi
+        fi
+        if [ "$missingProxyGoshimmerPort" = "true" ]; then
+            whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
+            if [ -f "/usr/bin/goshimmer" ]; then
+                if [ -z "$proxyGoshimmerPort" ]; then
+                    proxyGoshimmerPort=$(whiptail --inputbox "\nDefine the port for GoShimmer" 10 65 --title "Proxy - GoShimmer Port" 3>&1 1>&2 2>&3)
+                    exitStatus=$?
+                    if [ $exitStatus != 1 ]; then
+                        sudo sed -i 's/^proxyGoshimmerPort=.*/proxyGoshimmerPort='$proxyGoshimmerPort'/' $swarmConfigs/proxy.cfg
+                    fi
+                fi
+            fi
         fi
     fi
-    if [ "$missingProxyWaspPort" = "true" ]; then
-        whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
+
+    if [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ]; then
         if [ -f "/usr/bin/wasp" ]; then
-            if [ -z "$proxyWaspPort" ]; then
-                proxyWaspPort=$(whiptail --inputbox "\nDefine the port for WASP" 10 65 --title "Proxy - WASP Port" 3>&1 1>&2 2>&3)
-                sudo sed -i 's/^proxyWaspPort=.*/proxyWaspPort='$proxyWaspPort'/' $swarmConfigs/proxy.cfg
+            if [ -z "$proxyWaspDashboardPort" ]; then
+                missingProxyWaspDashboardPort=true
+            fi
+        fi
+        if [ "$missingProxyWaspDashboardPort" = "true" ]; then
+            whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
+            if [ -f "/usr/bin/wasp" ]; then
+                if [ -z "$proxyWaspDashoardPort" ]; then
+                    proxyWaspDashboardPort=$(whiptail --inputbox "\nDefine the port for WASP" 10 65 --title "Proxy - WASP Dashboard Port" 3>&1 1>&2 2>&3)
+                    sudo sed -i 's/^proxyWaspDashboardPort=.*/proxyWaspDashboardPort='$proxyWaspDashboardPort'/' $swarmConfigs/proxy.cfg
+                fi
+            fi
+        fi
+    fi
+
+    if [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
+        if [ -f "/usr/bin/wasp" ]; then
+            if [ -z "$proxyWaspApiPort" ]; then
+                missingProxyWaspApiPort=true
+            fi
+        fi
+        if [ "$missingProxyWaspApiPort" = "true" ]; then
+            whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
+            if [ -f "/usr/bin/wasp" ]; then
+                if [ -z "$proxyWaspApiPort" ]; then
+                    proxyWaspApiPort=$(whiptail --inputbox "\nDefine the port for WASP" 10 65 --title "Proxy - WASP API Port" 3>&1 1>&2 2>&3)
+                    sudo sed -i 's/^proxyWaspApiPort=.*/proxyWaspApiPort='$proxyWaspApiPort'/' $swarmConfigs/proxy.cfg
+                fi
             fi
         fi
     fi
@@ -258,7 +301,7 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
     if [ -f "/etc/nginx/sites-available/default > /dev/null 2>&1" ]; then
         sudo rm -rf /etc/nginx/sites-available/default > /dev/null 2>&1
     fi
-    sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/hornet /etc/nginx/sites-enabled/bee /etc/nginx/sites-enabled/goshimmer > /dev/null 2>&1
+    sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/hornet /etc/nginx/sites-enabled/bee /etc/nginx/sites-enabled/goshimmer /etc/nginx/sites-enabled/wasp* > /dev/null 2>&1
     sudo cp -rf $swarmTemplates/proxy/nginx_default.template /etc/nginx/sites-enabled/default
 
     #################################################################################################
@@ -321,10 +364,26 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_gray.svg" alt="GoShimmer not installed" id~' $webMonitor
     fi
     echo 55
-    if [ -f "/usr/bin/wasp" ] && [ -f "/etc/letsencrypt/live/$proxyWaspDomain/fullchain.pem" ]; then
+    if [ -f "/usr/bin/wasp" ] && [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ]; then
         source $swarmConfigs/wasp.cfg
         if [ -z "$defaultDomain" ]; then
-            defaultDomain="$proxyWaspDomain"
+            defaultDomain="$proxyWaspDashboardDomain"
+        fi
+        sudo cp -rf $swarmTemplates/proxy/nginx_wasp-dashboard.template /etc/nginx/sites-enabled/wasp-dashboard
+        sudo sed -i 's/domain.tld/'$proxyWaspDashboardDomain'/g' /etc/nginx/sites-enabled/wasp-dashboard
+        sudo sed -i 's/443/'$proxyWaspDashboardPort'/g' /etc/nginx/sites-enabled/wasp-dashboard
+        sudo sed -i 's/"wasp\/dashboard"/"https:\/\/'$proxyWaspDashboardDomain':'$proxyWaspDashboardPort'\/dashboard" target="_blank"/g' $webMonitor
+        if [ "$ufw" = "true" ]; then
+            sudo ufw allow $proxyWaspDashboardPort/tcp > /dev/null 2>&1
+        fi
+    else
+        sudo sed -i 's/wasp\/dashboard/#/g' $webMonitor
+        sudo sed -i 's~/img/wasp.*id~/img/wasp_logo_gray.svg" alt="WASP not installed" id~' $webMonitor
+    fi
+    if [ -f "/usr/bin/wasp" ] && [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
+        source $swarmConfigs/wasp.cfg
+        if [ -z "$defaultDomain" ]; then
+            defaultDomain="$proxyWaspApiDomain"
         fi
         if [ ! -d "/etc/nginx/wasp" ]; then
             sudo mkdir -p /etc/nginx/wasp
@@ -332,16 +391,12 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         if [ ! -f "/etc/nginx/wasp/webapiauth.conf" ]; then
             sudo echo "" > /etc/nginx/wasp/webapiauth.conf > /dev/null 2>&1
         fi
-        sudo cp -rf $swarmTemplates/proxy/nginx_wasp.template /etc/nginx/sites-enabled/wasp
-        sudo sed -i 's/domain.tld/'$proxyWaspDomain'/g' /etc/nginx/sites-enabled/wasp
-        sudo sed -i 's/443/'$proxyWaspPort'/g' /etc/nginx/sites-enabled/wasp
-        sudo sed -i 's/"wasp\/dashboard"/"https:\/\/'$proxyWaspDomain':'$proxyWaspPort'\/dashboard" target="_blank"/g' $webMonitor
+        sudo cp -rf $swarmTemplates/proxy/nginx_wasp-api.template /etc/nginx/sites-enabled/wasp-api
+        sudo sed -i 's/domain.tld/'$proxyWaspApiDomain'/g' /etc/nginx/sites-enabled/wasp-api
+        sudo sed -i 's/443/'$proxyWaspApiPort'/g' /etc/nginx/sites-enabled/wasp-api
         if [ "$ufw" = "true" ]; then
-            sudo ufw allow $proxyWaspPort/tcp > /dev/null 2>&1
+            sudo ufw allow $proxyWaspApiPort/tcp > /dev/null 2>&1
         fi
-    else
-        sudo sed -i 's/wasp\/dashboard/#/g' $webMonitor
-        sudo sed -i 's~/img/wasp.*id~/img/wasp_logo_gray.svg" alt="WASP not installed" id~' $webMonitor
     fi
     echo 60
     sudo sed -i 's/# server_tokens off;/server_tokens off;/g' /etc/nginx/nginx.conf
@@ -352,7 +407,11 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
     echo 90
     echo 100
     } | whiptail --gauge "Please wait while SWARM deploying the config and restart the proxy..." 8 65 0
-    whiptail --title "Proxy - Deployment" --msgbox "Proxy configuration successfully applied!" 8 65       
+    if [ "$proxySkipCerts" != "true" ]; then
+        whiptail --title "Proxy - Deployment" --msgbox "Proxy configuration successfully applied!" 8 65
+    fi
 else
-    whiptail --title "Proxy - Deployment" --msgbox "Aborted - No SSL Certificates not found!" 8 65
+    if [ "$proxySkipCerts" != "true" ]; then
+        whiptail --title "Proxy - Deployment" --msgbox "Aborted - No SSL Certificates not found!" 8 65
+    fi
 fi
