@@ -32,8 +32,9 @@ if [ "$proxyCertReq" = "true" ]; then
         if [ ! -d "/etc/letsencrypt/live/$proxyHornetDomain" ]; then
             if [ -z "$emailAddress" ]; then
                 emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+                exitStatus=$?
             fi
-            if [ ! -z "$emailAddress" ]; then
+            if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
                 {
                     echo 0
                     echo 10
@@ -64,9 +65,9 @@ if [ "$proxyCertReq" = "true" ]; then
         if [ ! -d "/etc/letsencrypt/live/$proxyBeeDomain" ]; then
             if [ -z "$emailAddress" ]; then
                 emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+                exitStatus=$?
             fi
-            exitStatus=$?
-            if [ ! -z "$emailAddress" ] && [ $exitStatus != 1 ]; then
+            if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
                 {
                     echo 0
                     echo 10
@@ -97,8 +98,8 @@ if [ "$proxyCertReq" = "true" ]; then
         if [ ! -d "/etc/letsencrypt/live/$proxyGoshimmerDomain" ]; then
             if [ -z "$emailAddress" ]; then
                 emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+                exitStatus=$?
             fi
-            exitStatus=$?
             if [ ! -z "$emailAddress" ] && [ $exitStatus != 1 ]; then
                 {
                     echo 0
@@ -130,8 +131,9 @@ if [ "$proxyCertReq" = "true" ]; then
         if [ ! -d "/etc/letsencrypt/live/$proxyWaspDashoardDomain" ]; then
             if [ -z "$emailAddress" ]; then
                 emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+                exitStatus=$?
             fi
-            if [ ! -z "$emailAddress" ]; then
+            if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
                 {
                     echo 0
                     echo 10
@@ -162,8 +164,9 @@ if [ "$proxyCertReq" = "true" ]; then
         if [ ! -d "/etc/letsencrypt/live/$proxyWaspApiDomain" ]; then
             if [ -z "$emailAddress" ]; then
                 emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+                exitStatus=$?
             fi
-            if [ ! -z "$emailAddress" ]; then
+            if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
                 {
                     echo 0
                     echo 10
@@ -201,7 +204,7 @@ if [ "$proxyCertReq" = "true" ]; then
             whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
             if [ -f "/usr/bin/hornet" ]; then
                 if [ -z "$proxyHornetPort" ]; then
-                    proxyHornetPort=$(whiptail --inputbox "\nDefine the port for Hornet" 10 65 --title "Proxy - Hornet Port" 3>&1 1>&2 2>&3)
+                    proxyHornetPort=$(whiptail --inputbox "\nSet the port for Hornet" 10 65 --title "Proxy - Hornet Port" 3>&1 1>&2 2>&3)
                     exitStatus=$?
                     if [ $exitStatus != 1 ]; then
                         sudo sed -i 's/^proxyHornetPort=.*/proxyHornetPort='$proxyHornetPort'/' $swarmConfigs/proxy.cfg
@@ -221,8 +224,11 @@ if [ "$proxyCertReq" = "true" ]; then
             whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
             if [ -f "/usr/bin/bee" ]; then
                 if [ -z "$proxyBeePort" ]; then
-                    proxyBeePort=$(whiptail --inputbox "\nDefine the port for Bee" 10 65 --title "Proxy - Bee Port" 3>&1 1>&2 2>&3)
-                    sudo sed -i 's/^proxyBeePort=.*/proxyBeePort='$proxyBeePort'/' $swarmConfigs/proxy.cfg
+                    proxyBeePort=$(whiptail --inputbox "\nSet the port for Bee" 10 65 --title "Proxy - Bee Port" 3>&1 1>&2 2>&3)
+                    exitStatus=$?
+                    if [ "$exitStatus" != "1" ]; then
+                        sudo sed -i 's/^proxyBeePort=.*/proxyBeePort='$proxyBeePort'/' $swarmConfigs/proxy.cfg
+                    fi
                 fi
             fi
         fi
@@ -238,7 +244,7 @@ if [ "$proxyCertReq" = "true" ]; then
             whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
             if [ -f "/usr/bin/goshimmer" ]; then
                 if [ -z "$proxyGoshimmerPort" ]; then
-                    proxyGoshimmerPort=$(whiptail --inputbox "\nDefine the port for GoShimmer" 10 65 --title "Proxy - GoShimmer Port" 3>&1 1>&2 2>&3)
+                    proxyGoshimmerPort=$(whiptail --inputbox "\nSet the port for GoShimmer" 10 65 --title "Proxy - GoShimmer Port" 3>&1 1>&2 2>&3)
                     exitStatus=$?
                     if [ $exitStatus != 1 ]; then
                         sudo sed -i 's/^proxyGoshimmerPort=.*/proxyGoshimmerPort='$proxyGoshimmerPort'/' $swarmConfigs/proxy.cfg
@@ -257,9 +263,12 @@ if [ "$proxyCertReq" = "true" ]; then
         if [ "$missingProxyWaspDashboardPort" = "true" ]; then
             whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
             if [ -f "/usr/bin/wasp" ]; then
-                if [ -z "$proxyWaspDashoardPort" ]; then
-                    proxyWaspDashboardPort=$(whiptail --inputbox "\nDefine the port for WASP" 10 65 --title "Proxy - WASP Dashboard Port" 3>&1 1>&2 2>&3)
-                    sudo sed -i 's/^proxyWaspDashboardPort=.*/proxyWaspDashboardPort='$proxyWaspDashboardPort'/' $swarmConfigs/proxy.cfg
+                if [ -z "$proxyWaspDashboardPort" ]; then
+                    proxyWaspDashboardPort=$(whiptail --inputbox "\nSet the port for WASP dashboard" 10 65 --title "Proxy - WASP Dashboard" 3>&1 1>&2 2>&3)
+                    exitStatus=$?
+                    if [ "$exitStatus" != "1" ]; then
+                        sudo sed -i 's/^proxyWaspDashboardPort=.*/proxyWaspDashboardPort='$proxyWaspDashboardPort'/' $swarmConfigs/proxy.cfg
+                    fi
                 fi
             fi
         fi
@@ -275,8 +284,11 @@ if [ "$proxyCertReq" = "true" ]; then
             whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
             if [ -f "/usr/bin/wasp" ]; then
                 if [ -z "$proxyWaspApiPort" ]; then
-                    proxyWaspApiPort=$(whiptail --inputbox "\nDefine the port for WASP" 10 65 --title "Proxy - WASP API Port" 3>&1 1>&2 2>&3)
-                    sudo sed -i 's/^proxyWaspApiPort=.*/proxyWaspApiPort='$proxyWaspApiPort'/' $swarmConfigs/proxy.cfg
+                    proxyWaspApiPort=$(whiptail --inputbox "\nSet the port for the WASP API" 10 65 --title "Proxy - WASP API" 3>&1 1>&2 2>&3)
+                    exitStatus=$?
+                    if [ "$exitStatus" != "1" ]; then
+                        sudo sed -i 's/^proxyWaspApiPort=.*/proxyWaspApiPort='$proxyWaspApiPort'/' $swarmConfigs/proxy.cfg
+                    fi
                 fi
             fi
         fi
@@ -284,7 +296,7 @@ if [ "$proxyCertReq" = "true" ]; then
 fi
 
 # Check if the certificate for the domain already exist
-if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDomain/fullchain.pem" ]; then
+if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
     webMonitor="/var/www/html/swarm-nodes/index.html"
     {
     echo 0
