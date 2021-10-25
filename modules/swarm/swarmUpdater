@@ -7,7 +7,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
         if [ ! -d "$swarmTmp" ]; then
             sudo mkdir -p $swarmTmp > /dev/null 2>&1
         fi
-        echo 25
+        echo 20
         sudo cp -rf $swarmConfigs/swarm.cfg $swarmTmp/swarm.cfg
         sudo cp -rf $swarmConfigs/hornet.cfg $swarmTmp/hornet.cfg
         sudo cp -rf $swarmConfigs/bee.cfg $swarmTmp/bee.cfg
@@ -15,17 +15,19 @@ if [ "$swarmManualUpdate" = "true" ]; then
         sudo cp -rf $swarmConfigs/wasp.cfg $swarmTmp/wasp.cfg
         sudo cp -rf $swarmConfigs/proxy.cfg $swarmTmp/proxy.cfg
         sudo cp -rf $swarmConfigs/watchdog.cfg $swarmTmp/watchdog.cfg
-        echo 50
+        echo 30
         currentBranch=$( cd $swarmHome ; git rev-parse --abbrev-ref HEAD )
         ( cd $swarmHome ; sudo git pull ) > /dev/null 2>&1
         ( cd $swarmHome ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
         sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
-        echo 75
+        echo 40
 
         # Load new env
         source /var/lib/swarm/environment
 
         source $swarmModules/swarmParser
+
+        echo 50
 
         if [ -f "/usr/bin/hornet" ]; then
             # source $swarmConfigs/hornet.cfg
@@ -35,6 +37,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 unset restartHornet
             fi
         fi
+        echo 60
         if [ -f "/usr/bin/bee" ]; then
             ignoreBeePeersUpdate=true
             source $beeModules/beeParser
@@ -43,6 +46,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 unset restartBee
             fi
         fi
+        echo 70
         if [ -f "/usr/bin/goshimmer" ]; then
             # source $swarmConfigs/hornet.cfg
             source $goshimmerModules/goshimmerParser
@@ -51,6 +55,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 unset restartGoshimmer
             fi
         fi
+        echo 80
         if [ -f "/usr/bin/wasp" ]; then
             source $waspModules/waspParser
             if [ "$restartWasp" = "true" ]; then
@@ -58,6 +63,9 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 unset restartWasp
             fi
         fi
+        echo 90
+        proxySkipCerts=true
+        source $proxyModules/proxyDeployment
         echo 100
 
     } | whiptail --gauge "Updating SWARM..." 6 65 0
@@ -115,4 +123,6 @@ else
             unset restartWasp
         fi
     fi
+    proxySkipCerts=true
+    source $proxyModules/proxyDeployment
 fi
