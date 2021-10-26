@@ -27,7 +27,42 @@ if [ "$proxyCertReq" = "true" ]; then
             sleep 0.25
         } | whiptail --gauge "Please wait while the proxy will be installed..." 6 65 0
     fi
-
+    ###### Node certificates
+    if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
+        if [ ! -z "$proxyLandingDomain" ]; then
+            if [ ! -d "/etc/letsencrypt/live/$proxyLandingDomain" ]; then
+                if [ -z "$emailAddress" ]; then
+                    emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+                    exitStatus=$?
+                fi
+                if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
+                    {
+                        echo 0
+                        echo 10
+                        if [ ! -f "/etc/nginx/nginx.conf" ]; then
+                            sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+                        fi
+                        echo 25
+                        proxyStatus="$(systemctl show -p ActiveState --value nginx)"
+                        if [ "$proxyStatus" != "active" ]; then
+                            sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
+                            sudo systemctl restart nginx
+                        fi
+                        echo 50
+                        sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyLandingDomain -m $emailAddress > /dev/null 2>&1
+                        unset emailaddress
+                        echo 100
+                    } | whiptail --gauge "Requesting SSL certificate for the landing page..." 6 65 0  
+                    # echo ""
+                    # read -p "Press any key to continue..."
+                    if [ ! -f "/etc/letsencrypt/live/$proxyLandingDomain/fullchain.pem" ]; then
+                        whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for the landing page not found!" 8 65
+                    fi
+                fi
+            fi
+        fi
+    fi
+    ####
     if [ -f "/usr/bin/hornet" ] && [ ! -z "$proxyHornetDomain" ]; then
         if [ ! -d "/etc/letsencrypt/live/$proxyHornetDomain" ]; then
             if [ -z "$emailAddress" ]; then
@@ -194,6 +229,24 @@ if [ "$proxyCertReq" = "true" ]; then
     fi
 
     ### PREPARING CONFIGURATIONS
+    if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
+        if [ -f "/etc/letsencrypt/live/$proxyLandingDomain/fullchain.pem" ]; then
+            if [ -z "$proxyLandingPort" ]; then
+                missingProxyHornetPort=true
+            fi
+            if [ "$missingProxyLandingPort" = "true" ]; then
+                whiptail --title "Proxy - Deployment" --msgbox "Please specify the port below. If you use multiple nodes with the same domain, then they must have different ports!" 8 65
+                if [ -z "$proxyLandingPort" ]; then
+                    proxyLandingPort=$(whiptail --inputbox "\nSet the port for the landing page" 10 65 --title "Proxy - Landing port" 3>&1 1>&2 2>&3)
+                    exitStatus=$?
+                    if [ $exitStatus != 1 ]; then
+                        sudo sed -i 's/^proxyLandingPort=.*/proxyLandingPort='$proxyLandingPort'/' $swarmConfigs/proxy.cfg
+                    fi
+                fi
+            fi
+        fi
+    fi
+    ############################
     if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ]; then
         if [ -f "/usr/bin/hornet" ]; then
             if [ -z "$proxyHornetPort" ]; then
