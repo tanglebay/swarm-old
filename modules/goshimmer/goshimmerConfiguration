@@ -56,25 +56,26 @@ while [ $exitCode -lt 1 ]; do
                 case $CHOICE in
                     "1)")
                         if [ ! -f "/etc/nginx/goshimmer/.htpasswd_dashboard" ]; then
-                            sudo touch /etc/nginx/goshimmer/.htpasswd_dashboard
-                        fi
-                        goshimmerDashboardAuthHash=$(cat /etc/nginx/goshimmer/.htpasswd_dashboard)
-                        if [ ! -z "$goshimmerDashboardAuthHash" ]; then
-                            goshimmerDashboardAuthEnabledMenu="${goshimmerDashboardAuthEnabledMenu,,}"
-                            if (whiptail --title "GoShimmer - Dashboard" --yesno --defaultno "Do you really want to $goshimmerDashboardAuthEnabledMenu authentication for the dashboard?" 8 65); then
-                                if [ "$goshimmerDashboardAuthEnabled" = "true" ]; then
-                                    goshimmerDashboardAuthEnabled=false
-                                    goshimmerDashboardAuthEnabledMenu="disabled"
-                                else
-                                    goshimmerDashboardAuthEnabled=true
-                                    goshimmerDashboardAuthEnabledMenu="enabled"
+                            goshimmerDashboardAuthHash=$(cat /etc/nginx/goshimmer/.htpasswd_dashboard)
+                            if [ ! -z "$goshimmerDashboardAuthHash" ]; then
+                                goshimmerDashboardAuthEnabledMenu="${goshimmerDashboardAuthEnabledMenu,,}"
+                                if (whiptail --title "GoShimmer - Dashboard" --yesno --defaultno "Do you really want to $goshimmerDashboardAuthEnabledMenu authentication for the dashboard?" 8 65); then
+                                    if [ "$goshimmerDashboardAuthEnabled" = "true" ]; then
+                                        goshimmerDashboardAuthEnabled=false
+                                        goshimmerDashboardAuthEnabledMenu="disabled"
+                                    else
+                                        goshimmerDashboardAuthEnabled=true
+                                        goshimmerDashboardAuthEnabledMenu="enabled"
+                                    fi
+                                    sudo sed -i 's/^goshimmerDashboardAuthEnabled=.*/goshimmerDashboardAuthEnabled='$goshimmerDashboardAuthEnabled'/' $swarmConfigs/goshimmer.cfg
+                                    source $goshimmerConfigParsers/goshimmerDashboardAuth
+                                    whiptail --title "GoShimmer - Dashboard" --msgbox "Dashboard authentication $goshimmerDashboardAuthEnabledMenu!" 8 65
                                 fi
-                                sudo sed -i 's/^goshimmerDashboardAuthEnabled=.*/goshimmerDashboardAuthEnabled='$goshimmerDashboardAuthEnabled'/' $swarmConfigs/goshimmer.cfg
-                                source $goshimmerConfigParsers/goshimmerDashboardAuth
-                                whiptail --title "GoShimmer - Dashboard" --msgbox "Dashboard authentication $goshimmerDashboardAuthEnabledMenu!" 8 65
+                            else
+                                whiptail --title "GoShimmer - Dashboard" --msgbox "Please set the dashboard credentials first!" 8 65
                             fi
                         else
-                            whiptail --title "GoShimmer - Dashboard" --msgbox "Please set the dashboard credentials first!" 8 65
+                            sudo touch /etc/nginx/goshimmer/.htpasswd_dashboard
                         fi
                     ;;
                     "2)")
