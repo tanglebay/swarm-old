@@ -3,16 +3,17 @@ while [ $exitCode -lt 1 ]; do
     clear
     source $swarmConfigs/wasp.cfg
     CHOICE=$(
-        whiptail --title "WASP Configurations" --menu "\nChoose an option" 19 65 0 \
-        "1)" "Dashboard-Auth" \
-        "2)" "Webapi-Auth" \
-        "3)" "Enable Plugins" \
-        "4)" "Disable Plugins" \
-        "5)" "Nodeconn address" \
-        "6)" "WASP Alias" \
-        "7)" "Peering ID" \
-        "8)" "Peering Port" \
-        "9)" "NanoMsg Port" 3>&2 2>&1 1>&3
+        whiptail --title "WASP Configurations" --menu "\nChoose an option" 20 65 0 \
+        "1)" "WASP-CLI" \
+        "2)" "Dashboard-Auth" \
+        "3)" "Webapi-Auth" \
+        "4)" "Enable Plugins" \
+        "5)" "Disable Plugins" \
+        "6)" "Nodeconn address" \
+        "7)" "WASP Alias" \
+        "8)" "Network ID" \
+        "9)" "Peering Port" \
+        "10)" "NanoMsg Port" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -37,6 +38,40 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                CHOICE=$(
+                    whiptail --title "WASP - Dashboard" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "Show Peering ID" \
+                    "2)" "Set trusted neighbor" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/wasp-cli" ]; then
+                            waspPeeringId=$(cd /var/lib/wasp ; /usr/bin/wasp-cli peering info | head -n 1 | awk '{ print $2 }')
+                            whiptail --title "WASP - CLI" --msgbox "$waspAlias Peering-ID: $waspPeeringId" 8 65
+                        fi
+                    ;;
+                    "2)")
+                        inputNeighborId=$(whiptail --inputbox "\nSet the wasp ID of the new neighbor:" 8 65 --title "WASP - CLI" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$inputNeighborId" ]; then
+                            inputNeighborNetId=$(whiptail --inputbox "\nSet the wasp NetID of the new neighbor:" 8 65 --title "WASP - CLI" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ "$exitStatus" != "1" ] && [ ! -z "$inputNeighborNetId" ]; then
+                                (cd /var/lib/wasp ; /usr/bin/wasp-cli peering trust $inputNeighborId $inputNeighborNetId)
+                            fi
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "2)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 # wasp Dashboard
@@ -81,7 +116,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "2)")
+        "3)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/wasp.cfg
@@ -148,7 +183,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "3)")
+        "4)")
             useWaspEnablePlugins=true
             source $swarmConfigs/wasp.cfg
             currentWaspEnablePlugins=$waspEnablePlugins
@@ -168,7 +203,7 @@ while [ $exitCode -lt 1 ]; do
             fi
             unset useWaspEnablePlugins
         ;;
-        "4)")
+        "5)")
             useWaspDisablePlugins=true
             source $swarmConfigs/wasp.cfg
             currentWaspDisablePlugins=$waspDisablePlugins
@@ -188,7 +223,7 @@ while [ $exitCode -lt 1 ]; do
             fi
             unset useWaspDisablePlugins
         ;;
-        "5)")
+        "6)")
             currentWaspNodeconnAddress=$waspNodeconnAddress
             waspNodeconnAddress=$(whiptail --inputbox "\nPlease enter the address of a goshimmer node with active TXstream:" 10 65 $currentWaspNodeconnAddress --title "WASP - Nodeconn" 3>&1 1>&2 2>&3)
             exitStatus=$?
@@ -200,7 +235,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
             fi
         ;;
-        "6)")
+        "7)")
             source $swarmConfigs/wasp.cfg
             waspAlias=$(whiptail --inputbox "\nSet an alias for your WASP node" 10 65 $waspAlias --title "WASP - Alias" 3>&1 1>&2 2>&3)
             exitStatus=$?
@@ -209,7 +244,7 @@ while [ $exitCode -lt 1 ]; do
                 whiptail --title "WASP - Alias" --msgbox "WASP alias set to \"$waspAlias\"!" 8 65
             fi
         ;;
-        "7)")
+        "8)")
             source $swarmConfigs/wasp.cfg
             currentWaspPeeringId=$waspPeeringId
             waspPeeringId=$(whiptail --inputbox "\nSet the peering ID for the committee communication." 10 65 $waspPeeringId --title "WASP - Peering" 3>&1 1>&2 2>&3)
@@ -220,7 +255,7 @@ while [ $exitCode -lt 1 ]; do
                 whiptail --title "WASP - Peering" --msgbox "Peering ID was set to \"$waspPeeringId\"!" 8 65
             fi
         ;;
-        "8)")
+        "9)")
             source $swarmConfigs/wasp.cfg
             currentWaspPeeringPort=$waspPeeringPort
             waspPeeringPort=$(whiptail --inputbox "\nSet the peering port for the committee communication." 10 65 $waspPeeringPort --title "WASP - Peering" 3>&1 1>&2 2>&3)
@@ -235,7 +270,7 @@ while [ $exitCode -lt 1 ]; do
                 whiptail --title "WASP - Peering" --msgbox "Peering port was set to \"$waspPeeringPort/tcp\"!" 8 65
             fi
         ;;
-        "9)")
+        "10)")
             source $swarmConfigs/wasp.cfg
             currentWaspNanomsgPort=$waspNanomsgPort
             waspNanomsgPort=$(whiptail --inputbox "\nSet the nanomsg port for the committee communication." 10 65 $waspNanomsgPort --title "WASP - Peering" 3>&1 1>&2 2>&3)
