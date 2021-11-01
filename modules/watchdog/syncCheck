@@ -45,8 +45,8 @@ if [ -f "/usr/bin/hornet" ]; then
             if [ $hornetSyncCounter -gt 5 ]; then
                 if [ "$hornetAllowDbReset" = "true" ]; then
                     sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots/${hornetNetwork}/*.bin
-                    consoleLog="[WACHTDOG] - HORNET - The ${hornetNetwork}DB was deleted because too many milestones behind."
-                    echo "$restartDate $consoleLog" >> $swarmLogs/swarm.log
+                    echo "$restartDate [WACHTDOG] HORNET ${hornetNetwork}DB was deleted because too many milestones behind." >> $swarmLogs/swarm.log
+                    telegramText="[$hornetAlias] HORNET ${hornetNetwork}DB was deleted because too many milestones behind."
                     source $swarmPlugins/telegram
                 fi
                 hornetSyncCounter=0
@@ -54,8 +54,8 @@ if [ -f "/usr/bin/hornet" ]; then
                 let hornetSyncCounter=$hornetSyncCounter+1
             fi
             sudo systemctl start hornet
-            consoleLog="[WACHTDOG] - HORNET - Node restarted because max milestones difference reached."
-            echo "$restartDate $consoleLog" >> $swarmLogs/swarm.log
+            echo "$restartDate [WACHTDOG] HORNET node restarted because max milestones difference reached." >> $swarmLogs/swarm.log
+            telegramText="[$hornetAlias] HORNET node restarted because max milestones difference reached."
             source $swarmPlugins/telegram
             sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $swarmConfigs/watchdog.cfg
         else
@@ -82,8 +82,8 @@ if [ -f "/usr/bin/bee" ]; then
             if [ $beeSyncCounter -gt 5 ] 2>/dev/null; then
                 if [ "$beeAllowDbReset" = "true" ]; then
                     sudo rm -rf $beeHome/storage/$beeNetwork $beeHome/snapshots/$beeNetwork
-                    consoleLog="[WACHTDOG] - BEE - Database deleted because too many milestones behind."
-                    echo "$restartDate $consoleLog" >> $swarmLogs/swarm.log
+                    echo "$restartDate [WACHTDOG] BEE database deleted because too many milestones behind." >> $swarmLogs/swarm.log
+                    telegramText="[$beeAlias] BEE database deleted because too many milestones behind."
                     source $swarmPlugins/telegram
                 fi
                 beeSyncCounter=0
@@ -91,8 +91,8 @@ if [ -f "/usr/bin/bee" ]; then
                 let beeSyncCounter=$beeSyncCounter+1
             fi
             sudo systemctl start bee
-            consoleLog="[WACHTDOG] - BEE - Node restarted because max milestones difference reached."
-            echo "$restartDate $consoleLog" >> $swarmLogs/swarm.log
+            echo "$restartDate [WACHTDOG] BEE node restarted because max milestones difference reached." >> $swarmLogs/swarm.log
+            telegramText="[$beeAlias] BEE node restarted because max milestones difference reached."
             source $swarmPlugins/telegram
             sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $swarmConfigs/watchdog.cfg
         else
@@ -119,14 +119,14 @@ if [ -f "/usr/bin/goshimmer" ]; then
                         if [ "$goshimmerAllowDbReset" = "true" ]; then
                             sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb
                             source $goshimmerModules/goshimmerDbDownload
-                            consoleLog="[WACHTDOG] - GOSHIMMER - Database deleted because node was not synced."
-                            echo "$restartDate $consoleLog" >> $swarmLogs/swarm.log
+                            echo "$restartDate [WACHTDOG] GOSHIMMER database deleted because node was not synced." >> $swarmLogs/swarm.log
+                            telegramText="[$goshimmerAlias] GOSHIMMER database deleted because node was not synced."
                             source $swarmPlugins/telegram
                         fi
                         goshimmerSyncCounter=0
                         sudo systemctl start goshimmer
-                        consoleLog="[WACHTDOG] - GOSHIMMER - GoShimmer restarted because not was not sync."
-                        echo "$restartDate $consoleLog" >> $swarmLogs/swarm.log
+                        echo "$restartDate [WACHTDOG] GOSHIMMER restarted because node was not sync." >> $swarmLogs/swarm.log
+                        telegramText="[$goshimmerAlias] GOSHIMMER restarted because node was not sync."
                         source $swarmPlugins/telegram
                     else
                         let goshimmerSyncCounter=$goshimmerSyncCounter+1
