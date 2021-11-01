@@ -3,14 +3,15 @@ while [ $exitCode -lt 1 ]; do
     clear
     source $swarmConfigs/goshimmer.cfg
     CHOICE=$(
-        whiptail --title "GoShimmer Configurations" --menu "\nChoose an option" 18 65 0 \
+        whiptail --title "GoShimmer Configurations" --menu "\nChoose an option" 19 65 0 \
         "1)" "Dashboard-Auth" \
         "2)" "Webapi-Auth" \
         "3)" "Enable Plugins" \
         "4)" "Disable Plugins" \
-        "5)" "Node-ID" \
-        "6)" "Gossip Port" \
-        "7)" "Autopeering Port" 3>&2 2>&1 1>&3
+        "5)" "GoShimmer Alias" \
+        "6)" "Node-ID" \
+        "7)" "Gossip Port" \
+        "8)" "Autopeering Port" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -211,6 +212,15 @@ while [ $exitCode -lt 1 ]; do
             unset useGoshimmerDisablePlugins
         ;;
         "5)")
+            source $swarmConfigs/goshimmer.cfg
+            goshimmerAlias=$(whiptail --inputbox "\nSet an alias for your WASP node" 10 65 $goshimmerAlias --title "WASP - Alias" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ "$exitStatus" != "1" ] && [ ! -z "$goshimmerAlias" ]; then
+                sudo sed -i 's~^goshimmerAlias=.*~goshimmerAlias="'$goshimmerAlias'"~' $swarmConfigs/goshimmer.cfg
+                whiptail --title "WASP - Alias" --msgbox "WASP alias set to \"$goshimmerAlias\"!" 8 65
+            fi
+        ;;
+        "6)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/goshimmer.cfg
@@ -250,7 +260,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "6)")
+        "7)")
             source $swarmConfigs/goshimmer.cfg
             currentGoshimmerGossipPort=$goshimmerGossipPort
             goshimmerGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $goshimmerGossipPort --title "GoShimmer - Gossip" 3>&1 1>&2 2>&3)
@@ -267,7 +277,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
             fi
         ;;
-        "7)")
+        "8)")
             source $swarmConfigs/goshimmer.cfg
             currentGoshimmerAutopeeringPort=$goshimmerAutopeeringPort
             goshimmerAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port for the automatic neighbors detection." 10 65 $goshimmerAutopeeringPort --title "GoShimmer - Autopeering" 3>&1 1>&2 2>&3)
