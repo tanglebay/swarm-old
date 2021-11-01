@@ -1,3 +1,18 @@
+## Version 0.9.9
+### Added
+- Added Telegram Notifications for Watchdog
+- Added WASP-CLI for WASP ID/peering
+- Added alias for GoShimmer/WASP [Watchdog]
+- Added root landing page
+### Changed
+- Updated waspInfo informations
+- Fixed port parsing in the proxy
+- Fixed auth for GoShimmer/WASP
+- Fixed missing exitStatus
+- Fixed waspAllowDbReset for WASP
+
+---
+
 ## Version 0.9.8
 ### Changed
 - Fixed WASP proxy configuration
