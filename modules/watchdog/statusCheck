@@ -48,7 +48,9 @@ if [ "$hornetStatus" != "active" ] && [ -f "/usr/bin/hornet" ]; then
     if [ $hornetStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$hornetAllowDbReset" = "true" ]; then
             sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots/${hornetNetwork}/*.bin
-            echo "$restartDate [WACHTDOG] - HORNET - ${hornetNetwork}DB deleted because max. inactive counter reached" >> $swarmLogs/swarm.log
+            echo "$restartDate [WACHTDOG] HORNET ${hornetNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
+            telegramText="[$hornetAlias] HORNET ${hornetNetwork}DB deleted because the maximum number of attempted restarts was reached."
+            source $swarmPlugins/telegram
         fi
         hornetStatusCounter=0
     else
@@ -56,7 +58,9 @@ if [ "$hornetStatus" != "active" ] && [ -f "/usr/bin/hornet" ]; then
     fi
     sudo systemctl restart hornet
     sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $swarmConfigs/watchdog.cfg
-    echo "$restartDate [WACHTDOG] - HORNET - Node restarted because service was not active" >> $swarmLogs/swarm.log
+    echo "$restartDate [WACHTDOG] HORNET node was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$hornetAlias] HORNET node was restarted because the service is not active."
+    source $swarmPlugins/telegram
 else
     if [ $hornetStatusCounter -gt 0 ] 2>/dev/null; then
         let hornetStatusCounter=$hornetStatusCounter-1
@@ -71,7 +75,9 @@ if [ "$beeStatus" != "active" ] && [ -f "/usr/bin/bee" ]; then
     if [ $beeStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$beeAllowDbReset" = "true" ]; then
             sudo rm -rf $beeHome/storage/$beeNetwork $beeHome/snapshots/$beeNetwork
-            echo "$restartDate [WACHTDOG] - BEE - Database deleted because max. inactive counter reached" >> $swarmLogs/swarm.log
+            echo "$restartDate [WACHTDOG] BEE ${beeNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
+            telegramText="[$beeAlias] BEE ${beeNetwork}DB deleted because the maximum number of attempted restarts was reached."
+            source $swarmPlugins/telegram
         fi
         beeStatusCounter=0
     else
@@ -79,7 +85,9 @@ if [ "$beeStatus" != "active" ] && [ -f "/usr/bin/bee" ]; then
     fi
     sudo systemctl restart bee
     sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $swarmConfigs/watchdog.cfg
-    echo "$restartDate [WACHTDOG] - BEE - Node restarted because service was not active" >> $swarmLogs/swarm.log
+    echo "$restartDate [WACHTDOG] BEE node was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$beeAlias] BEE node was restarted because the service is not active."
+    source $swarmPlugins/telegram
 else
     if [ $beeStatusCounter -gt 0 ] 2>/dev/null; then
         let beeStatusCounter=$beeStatusCounter-1
@@ -95,7 +103,9 @@ if [ "$goshimmerStatus" != "active" ] && [ -f "/usr/bin/goshimmer" ]; then
         if [ "$goshimmerAllowDbReset" = "true" ]; then
             sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb
             source $goshimmerModules/goshimmerDbDownload
-            echo "$restartDate [WACHTDOG] - GOSHIMMER - Database deleted because max. inactive counter reached" >> $swarmLogs/swarm.log
+            echo "$restartDate [WACHTDOG] GOSHIMMER database deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
+            telegramText="[$goshimmerAlias] GOSHIMMER database deleted because the maximum number of attempted restarts was reached."
+            source $swarmPlugins/telegram
         fi
         goshimmerStatusCounter=0
     else
@@ -103,7 +113,9 @@ if [ "$goshimmerStatus" != "active" ] && [ -f "/usr/bin/goshimmer" ]; then
     fi
     sudo systemctl restart goshimmer
     sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter='$goshimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
-    echo "$restartDate [WACHTDOG] - GOSHIMMER - Node restarted because service was not active" >> $swarmLogs/swarm.log
+    echo "$restartDate [WACHTDOG] GOSHIMMER node was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$goshimmerAlias] GOSHIMMER node was restarted because the service is not active."
+    source $swarmPlugins/telegram
 else
     if [ $goshimmerStatusCounter -gt 0 ] 2>/dev/null; then
         let goshimmerStatusCounter=$goshimmerStatusCounter-1
@@ -118,15 +130,19 @@ if [ "$waspStatus" != "active" ] && [ -f "/usr/bin/wasp" ]; then
     if [ $waspStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$waspAllowDbReset" = "true" ]; then
             sudo rm -rf $waspHome/waspdb
-            echo "$restartDate [WACHTDOG] - WASP - Database deleted because max. inactive counter reached" >> $swarmLogs/swarm.log
+            echo "$restartDate [WACHTDOG] WASP database deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
+            telegramText="[$waspAlias] WASP database deleted because the maximum number of attempted restarts was reached."
+            source $swarmPlugins/telegram
         fi
         waspStatusCounter=0
     else
         let waspStatusCounter=$waspStatusCounter+1
     fi
-    sudo systemctl restart wasp
+    sudo systemctl start wasp
     sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter='$waspStatusCounter'/' $swarmConfigs/watchdog.cfg
-    echo "$restartDate [WACHTDOG] - WASP - Node restarted because service was not active" >> $swarmLogs/swarm.log
+    echo "$restartDate [WACHTDOG] WASP node was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$waspAlias] WASP node was restarted because the service is not active."
+    source $swarmPlugins/telegram
 else
     if [ $waspStatusCounter -gt 0 ] 2>/dev/null; then
         let waspStatusCounter=$waspStatusCounter-1
