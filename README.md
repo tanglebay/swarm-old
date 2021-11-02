@@ -14,7 +14,13 @@ SWARM is a script that allows you to easily install and manage an IOTA node. The
 ---
 
 ## Tutorials
-- <a href="https://iota-industrie-4-0.blogspot.com/2021/10/tutorial-zur-installation-einer-iota.html">[DE] Tutorial zur Installation einer IOTA-Fullnode mit SWARM (Autor - PIOTA)</a>
+### By dumdave#5233
+- <a href="https://tangledust.com/install_iota_hornet_node_with_SWARM.html">Installing an Iota Hornet node on a Netcup virtual server using SWARM</a>
+- <a href="https://tangledust.com/install_iota_bee_node_with_SWARM.html">Installing an Iota Bee node on a Netcup virtual server using SWARM</a>
+- <a href="https://tangledust.com/install_iota_goshimmer_node_with_SWARM.html">Installing an Iota GoShimmer node on a Netcup virtual server using SWARM</a>
+- <a href="https://tangledust.com/install_iota_wasp_node_with_SWARM.html">Installing an Iota WASP node on a Netcup virtual server using SWARM</a>
+### By PIOTA
+- <a href="https://iota-industrie-4-0.blogspot.com/2021/10/tutorial-zur-installation-einer-iota.html">Tutorial zur Installation einer IOTA-Fullnode mit SWARM</a>
 
 ---
 
