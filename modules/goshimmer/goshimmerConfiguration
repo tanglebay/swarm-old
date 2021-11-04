@@ -56,7 +56,13 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ ! -f "/etc/nginx/goshimmer/.htpasswd_dashboard" ]; then
+                        if [ -f "/usr/sbin/nginx" ]; then
+                            if [ ! -d "/etc/nginx/goshimmer" ]; then
+                                sudo mkdir -p /etc/nginx/goshimmer
+                            fi
+                            if [ ! -f "/etc/nginx/goshimmer/.htpasswd_dashboard" ]; then
+                                sudo touch /etc/nginx/goshimmer/.htpasswd_dashboard
+                            fi
                             goshimmerDashboardAuthHash=$(cat /etc/nginx/goshimmer/.htpasswd_dashboard)
                             if [ ! -z "$goshimmerDashboardAuthHash" ]; then
                                 goshimmerDashboardAuthEnabledMenu="${goshimmerDashboardAuthEnabledMenu,,}"
@@ -76,7 +82,7 @@ while [ $exitCode -lt 1 ]; do
                                 whiptail --title "GoShimmer - Dashboard" --msgbox "Please set the dashboard credentials first!" 8 65
                             fi
                         else
-                            sudo touch /etc/nginx/goshimmer/.htpasswd_dashboard
+                            whiptail --title "GoShimmer - Dashboard" --msgbox "Please install the proxy first before you can set the login credentials." 8 65
                         fi
                     ;;
                     "2)")
@@ -122,26 +128,33 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ ! -f "/etc/nginx/goshimmer/.htpasswd_webapi" ]; then
-                            sudo touch /etc/nginx/goshimmer/.htpasswd_webapi
-                        fi
-                        goshimmerWebapiAuthHash=$(cat /etc/nginx/goshimmer/.htpasswd_webapi)
-                        if [ ! -z "$goshimmerWebapiAuthHash" ]; then
-                            goshimmerWebapiAuthEnabledMenu="${goshimmerWebapiAuthEnabledMenu,,}"
-                            if (whiptail --title "GoShimmer - WebAPI" --yesno --defaultno "Do you really want to $goshimmerWebapiAuthEnabledMenu authentication for the webAPI?" 8 65); then
-                                if [ "$goshimmerWebapiAuthEnabled" = "true" ]; then
-                                    goshimmerWebapiAuthEnabled=false
-                                    goshimmerWebapiAuthEnabledMenu="disabled"
-                                else
-                                    goshimmerWebapiAuthEnabled=true
-                                    goshimmerWebapiAuthEnabledMenu="enabled"
+                        if [ -f "/usr/sbin/nginx" ]; then
+                            if [ ! -d "/etc/nginx/goshimmer" ]; then
+                                sudo mkdir -p /etc/nginx/goshimmer
+                            fi
+                            if [ ! -f "/etc/nginx/goshimmer/.htpasswd_webapi" ]; then
+                                sudo touch /etc/nginx/goshimmer/.htpasswd_webapi
+                            fi
+                            goshimmerWebapiAuthHash=$(cat /etc/nginx/goshimmer/.htpasswd_webapi)
+                            if [ ! -z "$goshimmerWebapiAuthHash" ]; then
+                                goshimmerWebapiAuthEnabledMenu="${goshimmerWebapiAuthEnabledMenu,,}"
+                                if (whiptail --title "GoShimmer - WebAPI" --yesno --defaultno "Do you really want to $goshimmerWebapiAuthEnabledMenu authentication for the webAPI?" 8 65); then
+                                    if [ "$goshimmerWebapiAuthEnabled" = "true" ]; then
+                                        goshimmerWebapiAuthEnabled=false
+                                        goshimmerWebapiAuthEnabledMenu="disabled"
+                                    else
+                                        goshimmerWebapiAuthEnabled=true
+                                        goshimmerWebapiAuthEnabledMenu="enabled"
+                                    fi
+                                    sudo sed -i 's/^goshimmerWebapiAuthEnabled=.*/goshimmerWebapiAuthEnabled='$goshimmerWebapiAuthEnabled'/' $swarmConfigs/goshimmer.cfg
+                                    source $goshimmerconfigParsers/goshimmerWebapiAuth
+                                    whiptail --title "GoShimmer - WebAPI" --msgbox "WebAPI authentication $goshimmerWebapiAuthEnabledMenu!" 8 65
                                 fi
-                                sudo sed -i 's/^goshimmerWebapiAuthEnabled=.*/goshimmerWebapiAuthEnabled='$goshimmerWebapiAuthEnabled'/' $swarmConfigs/goshimmer.cfg
-                                source $goshimmerconfigParsers/goshimmerWebapiAuth
-                                whiptail --title "GoShimmer - WebAPI" --msgbox "WebAPI authentication $goshimmerWebapiAuthEnabledMenu!" 8 65
+                            else
+                                whiptail --title "GoShimmer - WebAPI" --msgbox "Please set the WebAPI credentials first!" 8 65
                             fi
                         else
-                            whiptail --title "GoShimmer - WebAPI" --msgbox "Please set the WebAPI credentials first!" 8 65
+                            whiptail --title "GoShimmer - WebAPI" --msgbox "Please install the proxy first before you can set the login credentials." 8 65
                         fi
                     ;;
                     "2)")
