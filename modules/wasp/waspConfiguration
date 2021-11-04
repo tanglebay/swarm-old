@@ -137,25 +137,33 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ -f "/etc/nginx/wasp/.htpasswd_webapi" ]; then
+                        if [ -f "/usr/sbin/nginx" ]; then
+                            if [ ! -d "/etc/nginx/goshimmer" ]; then
+                                sudo mkdir -p /etc/nginx/goshimmer
+                            fi
+                            if [ ! -f "/etc/nginx/goshimmer/.htpasswd_webapi" ]; then
+                                sudo touch /etc/nginx/goshimmer/.htpasswd_webapi
+                            fi
                             waspWebapiAuthHash=$(cat /etc/nginx/wasp/.htpasswd_webapi)
-                        fi
-                        if [ ! -z "$waspWebapiAuthHash" ]; then
-                            waspWebapiAuthEnabledMenu="${waspWebapiAuthEnabledMenu,,}"
-                            if (whiptail --title "WASP - WebAPI" --yesno --defaultno "Do you really want to $waspWebapiAuthEnabledMenu authentication for the webAPI?" 8 65); then
-                                if [ "$waspWebapiAuthEnabled" = "true" ]; then
-                                    waspWebapiAuthEnabled=false
-                                    waspWebapiAuthEnabledMenu="disabled"
-                                else
-                                    waspWebapiAuthEnabled=true
-                                    waspWebapiAuthEnabledMenu="enabled"
+                            if [ ! -z "$waspWebapiAuthHash" ]; then
+                                waspWebapiAuthEnabledMenu="${waspWebapiAuthEnabledMenu,,}"
+                                if (whiptail --title "WASP - WebAPI" --yesno --defaultno "Do you really want to $waspWebapiAuthEnabledMenu authentication for the webAPI?" 8 65); then
+                                    if [ "$waspWebapiAuthEnabled" = "true" ]; then
+                                        waspWebapiAuthEnabled=false
+                                        waspWebapiAuthEnabledMenu="disabled"
+                                    else
+                                        waspWebapiAuthEnabled=true
+                                        waspWebapiAuthEnabledMenu="enabled"
+                                    fi
+                                    sudo sed -i 's/^waspWebapiAuthEnabled=.*/waspWebapiAuthEnabled='$waspWebapiAuthEnabled'/' $swarmConfigs/wasp.cfg
+                                    source $waspconfigParsers/waspWebapiAuth
+                                    whiptail --title "WASP - WebAPI" --msgbox "WebAPI authentication $waspWebapiAuthEnabledMenu!" 8 65
                                 fi
-                                sudo sed -i 's/^waspWebapiAuthEnabled=.*/waspWebapiAuthEnabled='$waspWebapiAuthEnabled'/' $swarmConfigs/wasp.cfg
-                                source $waspconfigParsers/waspWebapiAuth
-                                whiptail --title "WASP - WebAPI" --msgbox "WebAPI authentication $waspWebapiAuthEnabledMenu!" 8 65
+                            else
+                                whiptail --title "WASP - WebAPI" --msgbox "Please set the WebAPI credentials first!" 8 65
                             fi
                         else
-                            whiptail --title "WASP - WebAPI" --msgbox "Please set the WebAPI credentials first!" 8 65
+                            whiptail --title "WASP - WebAPI" --msgbox "Please install the proxy first before you can set the login credentials." 8 65
                         fi
                     ;;
                     "2)")
