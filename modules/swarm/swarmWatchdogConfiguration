@@ -1,0 +1,410 @@
+#!/bin/bash
+crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled
+while [ $exitCode -lt 1 ]; do
+    if [ "$swarmAutoUpdate" = "true" ]; then
+        swarmAutoUpdateMenu="Disable"
+    else
+        swarmAutoUpdateMenu="Enable"
+    fi
+    if [ "$proxyCheck" = "true" ]; then
+        proxyCheckMenu="Disable"
+    else
+        proxyCheckMenu="Enable"
+    fi
+
+    CHOICE=$(
+        whiptail --title "SWARM Menu" --menu "\nWachtdog: $watchdogStatus\n\nChoose an option" 23 65 0 \
+        "1)" "Watchdog [SWARM]" \
+        "2)" "Hornet [Watchdog]" \
+        "3)" "Bee [Watchdog]" \
+        "4)" "GoShimmer [Watchdog]" \
+        "5)" "WASP [Watchdog]" \
+        "6)" "Telegram Notifications [Watchdog]" 3>&2 2>&1 1>&3
+    )
+    exitStatus=$?
+    if [ "$exitStatus" = "1" ]; then
+        exitCode=1
+    fi
+    case $CHOICE in
+        "1)")
+            crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled > /dev/null 2>&1
+            # Control WATCHDOG
+            CHOICE=$(
+                whiptail --title "Watchdog Menu" --menu "\nWatchdog: $watchdogStatus\n\nChoose an option" 14 65 0 \
+                "1)" "Enable Watchdog" \
+                "2)" "Disable Watchdog" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    sudo chmod +x $swarmPlugins/watchdog
+                    ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
+                    whiptail --title "Watchdog" --msgbox "Watchdog successfully activated!" 8 65
+                ;;
+                "2)")
+                    ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
+                    sudo sed -i "s,^statusCounter=.*,statusCounter=0," $swarmConfigs/watchdog.cfg
+                    sudo sed -i "s,^restartDate=.*,restartDate=," $swarmConfigs/watchdog.cfg
+                    whiptail --title "Watchdog" --msgbox "Watchdog successfully deactivated!" 8 65
+                ;;
+            esac
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                source $swarmConfigs/swarm.cfg
+                if [ "$hornetAutoUpdate" = "true" ]; then
+                    hornetAutoUpdateMenu="Disable"
+                else
+                    hornetAutoUpdateMenu="Enable"
+                fi
+                if [ "$hornetAllowDbReset" = "true" ]; then
+                    hornetAllowDbResetMenu="Forbid"
+                else
+                    hornetAllowDbResetMenu="Allow"
+                fi
+
+                CHOICE=$(
+                    whiptail --title "SWARM - Hornet" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "Hornet Sync-Check" \
+                    "2)" "$hornetAutoUpdateMenu Hornet AutoUpdater" \
+                    "3)" "$hornetAllowDbResetMenu Hornet database reset" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        while [ $exitCode -lt 1 ]; do
+                            source $swarmConfigs/swarm.cfg
+                            if [ "$hornetCheckSync" = "true" ]; then
+                                hornetCheckSyncMenu="Disable"
+                            else
+                                hornetCheckSyncMenu="Enable"
+                            fi
+                            CHOICE=$(
+                                whiptail --title "Watchdog - Hornet" --menu "\nChoose an option" 14 65 0 \
+                                "1)" "$hornetCheckSyncMenu Sync-Check" \
+                                "2)" "Set max milestones" 3>&2 2>&1 1>&3
+                            )
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
+                            fi
+                            case $CHOICE in
+                                "1)")
+                                    if [ "$hornetCheckSync" = "true" ]; then
+                                        hornetCheckSync=false
+                                        hornetCheckSyncMenu="disabled"
+                                    else
+                                        hornetCheckSync=true
+                                        hornetCheckSyncMenu="enabled"
+                                    fi
+                                    sudo sed -i 's/^hornetCheckSync=.*/hornetCheckSync='$hornetCheckSync'/' $swarmConfigs/swarm.cfg
+                                    whiptail --title "SWARM - Hornet Sync" --msgbox "Hornet sync check $hornetCheckSyncMenu!" 8 65
+                                ;;
+                                "2)")
+                                    source $swarmConfigs/swarm.cfg
+                                    hornetMaxMilestones=$(whiptail --inputbox "\nSet the maximum difference between LMI and LSMI before the resync starts and a new database/snapshot is initialized" 10 65 $hornetMaxMilestones --title "Watchdog - Hornet Sync" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ "$exitStatus" != "1" ]; then
+                                        if [ $hornetMaxMilestones -eq $hornetMaxMilestones ] && [ $hornetMaxMilestones -gt 0 ] 2>/dev/null; then
+                                            sudo sed -i 's/^hornetMaxMilestones=.*/hornetMaxMilestones='$hornetMaxMilestones'/' $swarmConfigs/swarm.cfg
+                                            whiptail --title "Watchdog - Hornet Sync" --msgbox "Max milestones for Hornet set to $hornetMaxMilestones milestones!" 8 65
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                    "2)")
+                        if [ "$hornetAutoUpdate" = "true" ]; then
+                            hornetAutoUpdate=false
+                            hornetAutoUpdateMenu="disabled"
+                        else
+                            hornetAutoUpdate=true
+                            hornetAutoUpdateMenu="enabled"
+                        fi
+                        sudo sed -i 's/^hornetAutoUpdate=.*/hornetAutoUpdate='$hornetAutoUpdate'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "Watchdog - Hornet" --msgbox "Hornet AutoUpdater $hornetAutoUpdateMenu!" 8 65
+                    ;;
+                    "3)")
+                        if [ "$hornetAllowDbReset" = "true" ]; then
+                            hornetAllowDbReset=false
+                            hornetAllowDbResetMenu="disabled"
+                        else
+                            hornetAllowDbReset=true
+                            hornetAllowDbResetMenu="enabled"
+                        fi
+                        sudo sed -i 's/^hornetAllowDbReset=.*/hornetAllowDbReset='$hornetAllowDbReset'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - Hornet" --msgbox "Delete Hornet database $hornetAllowDbResetMenu for Watchdog!" 8 65
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            while [ $exitCode -lt 1 ]; do
+                source $swarmConfigs/swarm.cfg
+                if [ "$beeAutoUpdate" = "true" ]; then
+                    beeAutoUpdateMenu="Disable"
+                else
+                    beeAutoUpdateMenu="Enable"
+                fi
+                if [ "$beeAllowDbReset" = "true" ]; then
+                    beeAllowDbResetMenu="Forbid"
+                else
+                    beeAllowDbResetMenu="Allow"
+                fi
+
+                CHOICE=$(
+                    whiptail --title "SWARM - Bee" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "Bee Sync-Check" \
+                    "2)" "$beeAutoUpdateMenu Bee AutoUpdater" \
+                    "3)" "$beeAllowDbResetMenu Bee database reset" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        while [ $exitCode -lt 1 ]; do
+                            source $swarmConfigs/swarm.cfg
+                            if [ "$beeCheckSync" = "true" ]; then
+                                beeCheckSyncMenu="Disable"
+                            else
+                                beeCheckSyncMenu="Enable"
+                            fi
+                            CHOICE=$(
+                                whiptail --title "Watchdog - Bee" --menu "\nChoose an option" 14 65 0 \
+                                "1)" "$beeCheckSyncMenu Sync-Check" \
+                                "2)" "Set max milestones" 3>&2 2>&1 1>&3
+                            )
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
+                            fi
+                            case $CHOICE in
+                                "1)")
+                                    if [ "$beeCheckSync" = "true" ]; then
+                                        beeCheckSync=false
+                                        beeCheckSyncMenu="disabled"
+                                    else
+                                        beeCheckSync=true
+                                        beeCheckSyncMenu="enabled"
+                                    fi
+                                    sudo sed -i 's/^beeCheckSync=.*/beeCheckSync='$beeCheckSync'/' $swarmConfigs/swarm.cfg
+                                    whiptail --title "SWARM - Bee Sync" --msgbox "Bee sync check $beeCheckSyncMenu!" 8 65
+                                ;;
+                                "2)")
+                                    source $swarmConfigs/swarm.cfg
+                                    beeMaxLmi=$(whiptail --inputbox "\nSet the maximum difference between LMI and LSMI before the resync starts and a new database/snapshot is initialized" 10 65 $beeMaxMilestones --title "Watchdog - Bee Sync" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ "$exitStatus" != "1" ]; then
+                                        if [ $beeMaxMilestones -eq $beeMaxMilestones ] && [ $beeMaxMilestones -gt 0 ] 2>/dev/null; then
+                                            sudo sed -i 's/^beeMaxMilestones=.*/beeMaxMilestones='$beeMaxMilestones'/' $swarmConfigs/swarm.cfg
+                                            whiptail --title "Watchdog - Bee Sync" --msgbox "Max milestones for Bee set to $beeMaxMilestones milestones!" 8 65
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                    "2)")
+                        if [ "$beeAutoUpdate" = "true" ]; then
+                            beeAutoUpdate=false
+                            beeAutoUpdateMenu="disabled"
+                        else
+                            beeAutoUpdate=true
+                            beeAutoUpdateMenu="enabled"
+                        fi
+                        sudo sed -i 's/^beeAutoUpdate=.*/beeAutoUpdate='$beeAutoUpdate'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "Watchdog - Bee" --msgbox "Bee AutoUpdater $beeAutoUpdateMenu!" 8 65
+                    ;;
+                    "3)")
+                        if [ "$beeAllowDbReset" = "true" ]; then
+                            beeAllowDbReset=false
+                            beeAllowDbResetMenu="disabled"
+                        else
+                            beeAllowDbReset=true
+                            beeAllowDbResetMenu="enabled"
+                        fi
+                        sudo sed -i 's/^beeAllowDbReset=.*/beeAllowDbReset='$beeAllowDbReset'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - Bee" --msgbox "Delete Bee database $beeAllowDbResetMenu for Watchdog!" 8 65
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "4)")
+            while [ $exitCode -lt 1 ]; do
+                source $swarmConfigs/swarm.cfg
+                if [ "$goshimmerAutoUpdate" = "true" ]; then
+                    goshimmerAutoUpdateMenu="Disable"
+                else
+                    goshimmerAutoUpdateMenu="Enable"
+                fi
+                if [ "$goshimmerAllowDbReset" = "true" ]; then
+                    goshimmerAllowDbResetMenu="Forbid"
+                else
+                    goshimmerAllowDbResetMenu="Allow"
+                fi
+                if [ "$goshimmerCheckSync" = "true" ]; then
+                    goshimmerCheckSyncMenu="Disable"
+                else
+                    goshimmerCheckSyncMenu="Enable"
+                fi
+
+                CHOICE=$(
+                    whiptail --title "SWARM - GoShimmer" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "$goshimmerCheckSyncMenu GoShimmer Sync-Check" \
+                    "2)" "$goshimmerAutoUpdateMenu GoShimmer AutoUpdater" \
+                    "3)" "$goshimmerAllowDbResetMenu GoShimmer database reset" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ "$goshimmerCheckSync" = "true" ]; then
+                            goshimmerCheckSync=false
+                            goshimmerCheckSyncMenu="disabled"
+                        else
+                            goshimmerCheckSync=true
+                            goshimmerCheckSyncMenu="enabled"
+                        fi
+                        sudo sed -i 's/^goshimmerCheckSync=.*/goshimmerCheckSync='$goshimmerCheckSync'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - GoShimmer" --msgbox "GoShimmer sync check $goshimmerCheckSyncMenu!" 8 65
+                    ;;
+                    "2)")
+                        if [ "$goshimmerAutoUpdate" = "true" ]; then
+                            goshimmerAutoUpdate=false
+                            goshimmerAutoUpdateMenu="disabled"
+                        else
+                            goshimmerAutoUpdate=true
+                            goshimmerAutoUpdateMenu="enabled"
+                        fi
+                        sudo sed -i 's/^goshimmerAutoUpdate=.*/goshimmerAutoUpdate='$goshimmerAutoUpdate'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "Watchdog - GoShimmer" --msgbox "GoShimmer AutoUpdater $goshimmerAutoUpdateMenu!" 8 65
+                    ;;
+                    "3)")
+                        if [ "$goshimmerAllowDbReset" = "true" ]; then
+                            goshimmerAllowDbReset=false
+                            goshimmerAllowDbResetMenu="disabled"
+                        else
+                            goshimmerAllowDbReset=true
+                            goshimmerAllowDbResetMenu="enabled"
+                        fi
+                        sudo sed -i 's/^goshimmerAllowDbReset=.*/goshimmerAllowDbReset='$goshimmerAllowDbReset'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - GoShimmer" --msgbox "Delete GoShimmer database $goshimmerAllowDbResetMenu for Watchdog!" 8 65
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "5)")
+            while [ $exitCode -lt 1 ]; do
+                source $swarmConfigs/swarm.cfg
+                if [ "$waspAutoUpdate" = "true" ]; then
+                    waspAutoUpdateMenu="Disable"
+                else
+                    waspAutoUpdateMenu="Enable"
+                fi
+                if [ "$waspAllowDbReset" = "true" ]; then
+                    waspAllowDbResetMenu="Forbid"
+                else
+                    waspAllowDbResetMenu="Allow"
+                fi
+
+                CHOICE=$(
+                    whiptail --title "SWARM - WASP" --menu "\nChoose an option" 13 65 0 \
+                    "1)" "$waspAutoUpdateMenu WASP AutoUpdater" \
+                    "2)" "$waspAllowDbResetMenu WASP database reset" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ "$waspAutoUpdate" = "true" ]; then
+                            waspAutoUpdate=false
+                            waspAutoUpdateMenu="disabled"
+                        else
+                            waspAutoUpdate=true
+                            waspAutoUpdateMenu="enabled"
+                        fi
+                        sudo sed -i 's/^waspAutoUpdate=.*/waspAutoUpdate='$waspAutoUpdate'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "Watchdog - WASP" --msgbox "WASP AutoUpdater $waspAutoUpdateMenu!" 8 65
+                    ;;
+                    "2)")
+                        if [ "$waspAllowDbReset" = "true" ]; then
+                            waspAllowDbReset=false
+                            waspAllowDbResetMenu="disabled"
+                        else
+                            waspAllowDbReset=true
+                            waspAllowDbResetMenu="enabled"
+                        fi
+                        sudo sed -i 's/^waspAllowDbReset=.*/waspAllowDbReset='$waspAllowDbReset'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - WASP" --msgbox "Delete WASP database $waspAllowDbResetMenu for Watchdog!" 8 65
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "6)")
+            while [ $exitCode -lt 1 ]; do
+                source $swarmConfigs/swarm.cfg
+                if [ "$telegramNotifications" = "true" ]; then
+                    telegramNotificationsStatus="Disable"
+                else
+                    telegramNotificationsStatus="Enable"
+                fi
+                CHOICE=$(
+                    whiptail --title "SWARM - Telegram Notifications" --menu "\nChoose an option" 14 65 0 \
+                    "1)" "$telegramNotificationsStatus Telegram Notifications" \
+                    "2)" "Set Telegram Bot Token" \
+                    "3)" "Set Telegram Channel ID" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ "$telegramNotifications" = "true" ]; then
+                            sudo sed -i 's/^telegramNotifications=.*/telegramNotifications=false/' $swarmConfigs/swarm.cfg
+                            whiptail --title "SWARM - Telegram Notifications" --msgbox "Telegram notification for Watchdog disabled." 8 65
+                        else
+                            sudo sed -i 's/^telegramNotifications=.*/telegramNotifications=true/' $swarmConfigs/swarm.cfg
+                            whiptail --title "SWARM - Telegram Notifications" --msgbox "Telegram notification for Watchdog enabled." 8 65
+                        fi
+                    ;;
+                    "2)")
+                        currentTelegramBotToken="$telegramBotToken"
+                        telegramBotToken=$(whiptail --inputbox "\nEnter your Telegram Bot token" 10 65 $telegramBotToken --title "SWARM - Telegram Notifications" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$telegramBotToken" ] && [ "$currentTelegramBotToken" != "$telegramBotToken" ]; then
+                            sudo sed -i 's~^telegramBotToken=.*~telegramBotToken="'$telegramBotToken'"~' $swarmConfigs/swarm.cfg
+                            whiptail --title "SWARM - Telegram Notifications" --msgbox "New Telegram bot token successfully set." 8 65
+                        fi
+                    ;;
+                    "3)")
+                        currentTelegramChannelId="$telegramChannelId"
+                        telegramChannelId=$(whiptail --inputbox "\nEnter your Telegram Bot token" 10 65 $telegramChannelId --title "SWARM - Telegram Notifications" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$telegramChannelId" ] && [ "$currentTelegramChannelId" != "$telegramChannelId" ]; then
+                            sudo sed -i 's~^telegramChannelId=.*~telegramChannelId="'$telegramChannelId'"~' $swarmConfigs/swarm.cfg
+                            whiptail --title "SWARM - Telegram Notifications" --msgbox "New Telegram channel ID successfully set." 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+    esac
+done
+exitCode=0
