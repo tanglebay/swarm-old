@@ -13,7 +13,8 @@ while [ $exitCode -lt 1 ]; do
         "7)" "WASP Alias" \
         "8)" "Network ID" \
         "9)" "Peering Port" \
-        "10)" "NanoMsg Port" 3>&2 2>&1 1>&3
+        "10)" "NanoMsg Port" \
+        "11)" "Admin Whitelist" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -291,6 +292,17 @@ while [ $exitCode -lt 1 ]; do
                 source $waspConfigParsers/waspNanomsgPort
                 sudo sed -i 's/^waspNanomsgPort=.*/waspNanomsgPort='$waspNanomsgPort'/' $swarmConfigs/wasp.cfg
                 whiptail --title "WASP - Nanomsg" --msgbox "Nanomsg port was set to \"$waspNanomsgPort/tcp\"!" 8 65
+            fi
+        ;;
+        "11)")
+            source $swarmConfigs/wasp.cfg
+            currentWaspAdminWhitelist=$waspAdminWhitelist
+            waspAdminWhitelist=$(whiptail --inputbox "\nSet the nanomsg port for the committee communication." 10 65 $waspAdminWhitelist --title "WASP - Admin Whitelist" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ "$exitStatus" != "1" ] && [ ! -z "$waspAdminWhitelist" ] && [ "$currentWaspAdminWhitelist" != "$waspAdminWhitelist" ]; then
+                source $waspConfigParsers/waspAdminWhitelist
+                sudo sed -i 's/^waspAdminWhitelist=.*/waspAdminWhitelist="'$waspAdminWhitelist'"/' $swarmConfigs/wasp.cfg
+                whiptail --title "WASP - Admin Whitelist" --msgbox "\nFollowing addresses are admin \"$waspAdminWhitelist\"!" 10 65
             fi
         ;;
     esac
