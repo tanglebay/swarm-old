@@ -5,7 +5,8 @@ IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
 for hornetConfig in "${ARRAYhornetConfigs[@]}"
 do
     parser="$(jq '.node.alias' $hornetHome/$hornetConfig.json)"
-    if [ "\"$hornetAlias\"" != "$parser" ]; then
+    parser=$(echo $parser | tr -d '"')
+    if [ "$hornetAlias" != "$parser" ]; then
         if [ ! -z "$hornetAlias" ] 2>/dev/null; then
             sudo jq --arg hornetAlias "$hornetAlias" '.node.alias = ($hornetAlias)' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
             restartHornet=true

@@ -1,3 +1,28 @@
+## Version 1.0.0
+### Added
+- Added check for automatic proxy deploy (dev)
+- Added option to select command-line editor in SWARM
+- Added webAPI admin whitelist in WASP configuration
+### Changed
+- Fixed existing mainnetdb folder for goshimmer install process
+- Fixed missing node removal from landing page
+- Fixed missing default domain in proxy landing section
+- Fixed goshimmer/wasp auth
+- Fixed goshimmer proxy removal on goshimmer removal
+- Fixed low check rate for goshimmer sync check
+- Fixed GUI size
+- Fixed proxy automatic deployment
+- Fixed Hornet/Bee dashboard peers configuration
+- Updated SWARM menu and splitted SWARM/Watchdog configuration
+- Updated node information page
+- Updated swarmUpdater to prevent errors
+- Updated proxyInfo to hide urls of not installed nodes
+- Updated node config parsing
+### Removed
+- Remove timeFrame sync check for GoShimmer
+
+---
+
 ## Version 0.9.9
 ### Added
 - Added Telegram Notifications for Watchdog

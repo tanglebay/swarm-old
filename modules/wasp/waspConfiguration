@@ -3,7 +3,7 @@ while [ $exitCode -lt 1 ]; do
     clear
     source $swarmConfigs/wasp.cfg
     CHOICE=$(
-        whiptail --title "WASP Configurations" --menu "\nChoose an option" 20 65 0 \
+        whiptail --title "WASP Configurations" --menu "\nChoose an option" 22 65 0 \
         "1)" "WASP-CLI" \
         "2)" "Dashboard-Auth" \
         "3)" "Webapi-Auth" \
@@ -13,7 +13,8 @@ while [ $exitCode -lt 1 ]; do
         "7)" "WASP Alias" \
         "8)" "Network ID" \
         "9)" "Peering Port" \
-        "10)" "NanoMsg Port" 3>&2 2>&1 1>&3
+        "10)" "NanoMsg Port" \
+        "11)" "Admin Whitelist" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -41,7 +42,7 @@ while [ $exitCode -lt 1 ]; do
             while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
-                    whiptail --title "WASP - Dashboard" --menu "\nChoose an option" 14 65 0 \
+                    whiptail --title "WASP - Dashboard" --menu "\nChoose an option" 16 65 0 \
                     "1)" "Show Peering ID" \
                     "2)" "Set trusted neighbor" 3>&2 2>&1 1>&3
                 )
@@ -76,7 +77,7 @@ while [ $exitCode -lt 1 ]; do
                 clear
                 # wasp Dashboard
                 CHOICE=$(
-                    whiptail --title "WASP - Dashboard" --menu "\nChoose an option" 14 65 0 \
+                    whiptail --title "WASP - Dashboard" --menu "\nChoose an option" 16 65 0 \
                     "1)" "Dashboard Username" \
                     "2)" "Dashboard Password" 3>&2 2>&1 1>&3
                 )
@@ -254,19 +255,19 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "8)")
             source $swarmConfigs/wasp.cfg
-            currentWaspPeeringId=$waspPeeringId
-            waspPeeringId=$(whiptail --inputbox "\nSet the peering ID for the committee communication." 10 65 $waspPeeringId --title "WASP - Peering" 3>&1 1>&2 2>&3)
+            currentWaspNetworkId=$waspNetworkId
+            waspNetworkId=$(whiptail --inputbox "\nSet the network ID for the committee communication." 10 65 $waspNetworkId --title "WASP - NetID" 3>&1 1>&2 2>&3)
             exitStatus=$?
-            if [ "$exitStatus" != "1" ] && [ ! -z "$waspPeeringId" ] && [ "$currentWaspPeeringId" != "$waspPeeringPort" ]; then
-                source $waspConfigParsers/waspPeeringId
-                sudo sed -i 's/^waspPeeringId=.*/waspPeeringId="'$waspPeeringId'"/' $swarmConfigs/wasp.cfg
-                whiptail --title "WASP - Peering" --msgbox "Peering ID was set to \"$waspPeeringId\"!" 8 65
+            if [ "$exitStatus" != "1" ] && [ ! -z "$waspNetworkId" ] && [ "$currentWaspNetworkId" != "$waspNetworkId" ]; then
+                source $waspConfigParsers/waspNetworkId
+                sudo sed -i 's/^waspNetworkId=.*/wasNetworkId="'$waspNetworkId'"/' $swarmConfigs/wasp.cfg
+                whiptail --title "WASP - NetID" --msgbox "Network ID was set to \"$waspNetworkId\"!" 8 65
             fi
         ;;
         "9)")
             source $swarmConfigs/wasp.cfg
             currentWaspPeeringPort=$waspPeeringPort
-            waspPeeringPort=$(whiptail --inputbox "\nSet the peering port for the committee communication." 10 65 $waspPeeringPort --title "WASP - Peering" 3>&1 1>&2 2>&3)
+            waspPeeringPort=$(whiptail --inputbox "\nSet the peering (network) port for the committee communication." 10 65 $waspPeeringPort --title "WASP - Peering" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ "$exitStatus" != "1" ] && [ ! -z "$waspPeeringPort" ] && [ $currentWaspPeeringPort -ne $waspPeeringPort ] && [ $waspPeeringPort -eq $waspPeeringPort ] 2>/dev/null; then
                 if [ "$ufw" = "true" ]; then
@@ -291,6 +292,18 @@ while [ $exitCode -lt 1 ]; do
                 source $waspConfigParsers/waspNanomsgPort
                 sudo sed -i 's/^waspNanomsgPort=.*/waspNanomsgPort='$waspNanomsgPort'/' $swarmConfigs/wasp.cfg
                 whiptail --title "WASP - Nanomsg" --msgbox "Nanomsg port was set to \"$waspNanomsgPort/tcp\"!" 8 65
+            fi
+        ;;
+        "11)")
+            source $swarmConfigs/wasp.cfg
+            currentWaspWebapiAdminWhitelist=$waspWebapiAdminWhitelist
+            waspWebapiAdminWhitelist=$(whiptail --inputbox "\nAllow addresses (separated by comma) to access the admin webapi." 10 65 $waspWebapiAdminWhitelist --title "WASP - Admin Whitelist" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            waspWebapiAdminWhitelist=$(echo $waspWebapiAdminWhitelist | tr -d ' ')
+            if [ "$exitStatus" != "1" ] && [ ! -z "$waspWebapiAdminWhitelist" ] && [ "$currentWaspWebapiAdminWhitelist" != "$waspWebapiAdminWhitelist" ]; then
+                source $waspConfigParsers/waspAdminWhitelist
+                sudo sed -i 's/^waspWebapiAdminWhitelist=.*/waspWebapiAdminWhitelist="'$waspWebapiAdminWhitelist'"/' $swarmConfigs/wasp.cfg
+                whiptail --title "WASP - Admin Whitelist" --msgbox "\nFollowing addresses are admin \"$waspWebapiAdminWhitelist\"!" 10 65
             fi
         ;;
     esac
