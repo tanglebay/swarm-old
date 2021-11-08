@@ -1,8 +1,9 @@
 #!/bin/bash
 
 parser="$(jq '.node.seed' $goshimmerHome/config.json)"
-if [ -z "$goshimmerSeed" ] || [ "$goshimmerSeed" = "\"null\"" ] || [ "$goshimmerSeed" = "null" ]; then
-    if [ -z "$parser" ] || [ "$parser" = "\"null\"" ] || [ "$parser" = "null" ] || [ "$parser" = "\"\"" ]; then
+parser=$(echo $parser | tr -d '"')
+if [ -z "$goshimmerSeed" ] || [ "$goshimmerSeed" = "\"null" ] || [ "$goshimmerSeed" = "null" ]; then
+    if [ -z "$parser" ] || [ "$parser" = "null" ]; then
         goshimmerSeed=$(openssl rand -base64 32)
         goshimmerSeed="base64:$goshimmerSeed"
         sudo sed -i 's~^goshimmerSeed=.*~goshimmerSeed="'$goshimmerSeed'"~g' $swarmConfigs/goshimmer.cfg
@@ -11,7 +12,7 @@ if [ -z "$goshimmerSeed" ] || [ "$goshimmerSeed" = "\"null\"" ] || [ "$goshimmer
         sudo sed -i 's~^goshimmerSeed=.*~goshimmerSeed='$goshimmerSeed'~g' $swarmConfigs/goshimmer.cfg
     fi
 else
-    if [ "$parser" != "\"$goshimmerSeed\"" ]; then
+    if [ "$parser" != "$goshimmerSeed" ]; then
         sudo jq '.node.seed = "'$goshimmerSeed'"' $goshimmerHome/config.json|sponge $goshimmerHome/config.json
         restartGoshimmer=true
     fi

@@ -5,7 +5,8 @@ IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
 for hornetConfig in "${ARRAYhornetConfigs[@]}"
 do
     parser=$(jq '.p2p.autopeering.bindAddress' $hornetHome/$hornetConfig.json)
-    if [ "$parser" != "\"0.0.0.0:$hornetAutopeeringPort\"" ] && [ $hornetAutopeeringPort -eq $hornetAutopeeringPort ] && [ "$hornetAutopeeringPort" -gt 0 ] 2>/dev/null; then
+    parser=$(echo $parser | tr -d '"')
+    if [ "$parser" != "0.0.0.0:$hornetAutopeeringPort" ] && [ $hornetAutopeeringPort -eq $hornetAutopeeringPort ] && [ "$hornetAutopeeringPort" -gt 0 ] 2>/dev/null; then
         sudo jq '.p2p.autopeering.bindAddress = "0.0.0.0:'$hornetAutopeeringPort'"' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
         restartHornet=true
     fi
