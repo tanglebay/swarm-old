@@ -37,219 +37,71 @@ while [ $exitCode -lt 1 ]; do
 
                 case $CHOICE in
                     "1)")
-                        while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/proxy.cfg
-                            clear
-                            CHOICE=$(
-                                whiptail --title "Proxy - Landing page Settings" --menu "\nLanding page domain: $proxyLandingDomain\nLanding page Port: $proxyLandingPort\n\nChoose an option" 17 65 0 \
-                                "1)" "Landing domain" \
-                                "2)" "Landing port" 3>&2 2>&1 1>&3
-                            )
-                            exitStatus=$?
-                            if [ "$exitStatus" = "1" ]; then
-                                exitCode=1
+                        source $swarmConfigs/proxy.cfg
+                        currentProxyLandingUrl="$proxyLandingUrl"
+                        proxyLandingUrl=$(whiptail --inputbox "\nSet your domain and port for the landing page" 10 65 $proxyLandingUrl --title "Proxy - Landing" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ]; then
+                            if [ "$currentProxyLandingUrl" != "$proxyLandingUrl" ]; then
+                                proxyLandingDomain=$(echo $proxyLandingUrl | sed 's/:.*//')
+                                proxyLandingPort=$(echo $proxyLandingUrl | sed 's/.*://')
+                                sudo sed -i 's/^proxyLandingUrl=.*/proxyLandingUrl="'$proxyLandingUrl'"/' $swarmConfigs/proxy.cfg
+                                whiptail --title "Proxy - Landing" --msgbox "URL for landing proxy set to \"$proxyLandingUrl\"" 8 65
+                            else
+                                whiptail --title "Proxy - Landing" --msgbox "No landing url change detected" 8 65
                             fi
-                            case $CHOICE in
-                                "1)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyLandingDomain=$proxyLandingDomain
-                                    proxyLandingDomain=$(whiptail --inputbox "\nSet your domain or your ddns name for the landing page" 10 65 $proxyLandingDomain --title "Proxy - Landing Domain" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$exitStatus" != "1" ]; then
-                                        if [ "$currentProxyLandingDomain" != "$proxyLandingDomain" ]; then
-                                            sudo sed -i 's/^proxyLandingDomain=.*/proxyLandingDomain="'$proxyLandingDomain'"/' $swarmConfigs/proxy.cfg
-                                            whiptail --title "Proxy - Landing Domain" --msgbox "Domain for landing proxy set to \"$proxyLandingDomain\"" 8 65
-                                        else
-                                            whiptail --title "Proxy - Landing Domain" --msgbox "No landing domain change detected" 8 65
-                                        fi
-                                    fi
-                                ;;
-                                "2)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyLandingPort=$proxyLandingPort
-                                    proxyLandingPort=$(whiptail --inputbox "\nSet a port for the landing page" 10 65 $proxyLandingPort --title "Proxy - Landing Port" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$exitStatus" != "1" ]; then
-                                        if [ ! -z "$proxyLandingPort" ] && [ $proxyLandingPort -eq $proxyLandingPort ] 2>/dev/null; then
-                                            if [ "$currentProxyLandingPort" != "$proxyLandingPort" ]; then
-                                                if [ "$ufw" = "true" ]; then
-                                                    if [ "$currentProxyLandingPort" != "$proxyBeePort" ] && [ "$currentProxyLandingPort" != "$proxyGoshimmerPort" ] && [ "$currentProxyLandingPort" != "$proxyWaspDashboardPort" ] && [ "$currentProxyLandingPort" != "$proxyWaspApiPort" ] && [ "$currentProxyLandingPort" != "$proxyHornetPort" ]; then
-                                                        ufw delete allow $currentProxyLandingPort/tcp > /dev/null 2>&1
-                                                    fi
-                                                fi
-                                                sudo sed -i 's/^proxyLandingPort=.*/proxyLandingPort='$proxyLandingPort'/' $swarmConfigs/proxy.cfg
-                                                whiptail --title "Proxy - Landing Port" --msgbox "The landing port was set to \"$proxyLandingPort\"" 8 65
-                                            fi
-                                        fi
-                                    fi
-                                ;;
-                            esac
-                        done
-                        exitCode=0
+                        fi
                     ;;
                     "2)")
-                        while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/proxy.cfg
-                            clear
-                            CHOICE=$(
-                                whiptail --title "Proxy - Hornet Settings" --menu "\nHornet Domain: $proxyHornetDomain\nHornet Port: $proxyHornetPort\n\nChoose an option" 17 65 0 \
-                                "1)" "Hornet domain" \
-                                "2)" "Hornet port" 3>&2 2>&1 1>&3
-                            )
-                            exitStatus=$?
-                            if [ "$exitStatus" = "1" ]; then
-                                exitCode=1
+                        source $swarmConfigs/proxy.cfg
+                        currentProxyHornetUrl="$proxyHornetUrl"
+                        proxyHornetUrl=$(whiptail --inputbox "\nSet your domain and port for Hornet" 10 65 $proxyHornetUrl --title "Proxy - Hornet" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ]; then
+                            if [ "$currentProxyHornetUrl" != "$proxyHornetUrl" ]; then
+                                sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetUrl="'$proxyHornetUrl'"/' $swarmConfigs/proxy.cfg
+                                whiptail --title "Proxy - Hornet" --msgbox "URL for Hornet proxy set to \"$proxyHornetUrl\"" 8 65
+                            else
+                                whiptail --title "Proxy - Hornet" --msgbox "No Hornet url change detected" 8 65
                             fi
-                            case $CHOICE in
-                                "1)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyHornetDomain=$proxyHornetDomain
-                                    proxyHornetDomain=$(whiptail --inputbox "\nSet your domain or your ddns name for Hornet" 10 65 $proxyHornetDomain --title "Proxy - Hornet Domain" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$exitStatus" != "1" ]; then
-                                        if [ "$currentProxyHornetDomain" != "$proxyHornetDomain" ]; then
-                                            sudo sed -i 's/^proxyHornetDomain=.*/proxyHornetDomain="'$proxyHornetDomain'"/' $swarmConfigs/proxy.cfg
-                                            whiptail --title "Proxy - Hornet Domain" --msgbox "Domain for proxy set to \"$proxyHornetDomain\"" 8 65
-                                        else
-                                            whiptail --title "Proxy - Hornet Domain" --msgbox "No Hornet domain change detected" 8 65
-                                        fi
-                                    fi
-                                ;;
-                                "2)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyHornetPort=$proxyHornetPort
-                                    proxyHornetPort=$(whiptail --inputbox "\nSet a port for Hornet" 10 65 $proxyHornetPort --title "Proxy - Hornet Port" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$exitStatus" != "1" ]; then
-                                        if [ ! -z "$proxyHornetPort" ] && [ $proxyHornetPort -eq $proxyHornetPort ] 2>/dev/null; then
-                                            if [ "$currentProxyHornetPort" != "$proxyHornetPort" ]; then
-                                                if [ "$ufw" = "true" ]; then
-                                                    if [ "$currentProxyHornetPort" != "$proxyBeePort" ] && [ "$currentProxyHornetPort" != "$proxyGoshimmerPort" ] && [ "$currentProxyHornetPort" != "$proxyWaspDashboardPort" ] && [ "$currentProxyHornetPort" != "$proxyWaspApiPort" ] && [ "$currentProxyHornetPort" != "$proxyLandingPort" ]; then
-                                                        ufw delete allow $currentProxyHornetPort/tcp > /dev/null 2>&1
-                                                    fi
-                                                fi
-                                                sudo sed -i 's/^proxyHornetPort=.*/proxyHornetPort='$proxyHornetPort'/' $swarmConfigs/proxy.cfg
-                                                whiptail --title "Proxy - Hornet Port" --msgbox "The Hornet port was set to \"$proxyHornetPort\"" 8 65
-                                            fi
-                                        fi
-                                    fi
-                                ;;
-                            esac
-                        done
-                        exitCode=0
+                        fi
                     ;;
                     "3)")
-                        while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/proxy.cfg
-                            clear
-                            CHOICE=$(
-                                whiptail --title "Proxy - Bee Settings" --menu "\nBee Domain: $proxyBeeDomain\nBee Port: $proxyBeePort\n\nChoose an option" 17 65 0 \
-                                "1)" "Bee domain" \
-                                "2)" "Bee port" 3>&2 2>&1 1>&3
-                            )
-                            exitStatus=$?
-                            if [ "$exitStatus" = "1" ]; then
-                                exitCode=1
+                        source $swarmConfigs/proxy.cfg
+                        currentProxyBeeUrl="$proxyBeeUrl"
+                        proxyBeeUrl=$(whiptail --inputbox "\nSet your domain and port for Bee" 10 65 $proxyBeeUrl --title "Proxy - Bee" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ]; then
+                            if [ "$currentProxyBeeUrl" != "$proxyBeeUrl" ]; then
+                                sudo sed -i 's/^proxyBeeUrl=.*/proxyBeeUrl="'$proxyBeeUrl'"/' $swarmConfigs/proxy.cfg
+                                whiptail --title "Proxy - Bee" --msgbox "URL for Bee proxy set to \"$proxyBeeUrl\"" 8 65
+                            else
+                                whiptail --title "Proxy - Bee" --msgbox "No Bee url change detected" 8 65
                             fi
-                            case $CHOICE in
-                                "1)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyBeeDomain=$proxyBeeDomain
-                                    proxyBeeDomain=$(whiptail --inputbox "\nSet your domain or your ddns name for Bee" 10 65 $proxyBeeDomain --title "Proxy - Bee Domain" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$exitStatus" != "1" ]; then
-                                        if [ "$currentProxyBeeDomain" != "$proxyBeeDomain" ]; then
-                                            sudo sed -i 's/^proxyBeeDomain=.*/proxyBeeDomain="'$proxyBeeDomain'"/' $swarmConfigs/proxy.cfg
-                                            whiptail --title "Proxy - Bee Domain" --msgbox "Domain for proxy set to \"$proxyBeeDomain\"" 8 65
-                                        else
-                                            whiptail --title "Proxy - Bee Domain" --msgbox "No Bee domain change detected" 8 65
-                                        fi
-                                    fi
-                                ;;
-                                "2)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyBeePort=$proxyBeePort
-                                    proxyBeePort=$(whiptail --inputbox "\nSet a port for Bee" 10 65 $proxyBeePort --title "Proxy - Bee Port" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$exitStatus" != "1" ]; then
-                                        if [ ! -z "$proxyBeePort" ] && [ $proxyBeePort -eq $proxyBeePort ] 2>/dev/null; then
-                                            if [ "$currentProxyBeePort" != "$proxyBeePort" ]; then
-                                                if [ "$ufw" = "true" ]; then
-                                                    if [ "$currentProxyBeePort" != "$proxyHornetPort" ] && [ "$currentProxyBeePort" != "$proxyGoshimmerPort" ] && [ "$currentProxyBeePort" != "$proxyWaspDashboardPort" ] && [ "$currentProxyBeePort" != "$proxyWaspApiPort" ] && [ "$currentProxyBeePort" != "$proxyLandingPort" ]; then
-                                                        ufw delete allow $currentProxyBeePort/tcp > /dev/null 2>&1
-                                                    fi
-                                                fi
-                                                sudo sed -i 's/^proxyBeePort=.*/proxyBeePort='$proxyBeePort'/' $swarmConfigs/proxy.cfg
-                                                whiptail --title "Proxy - Bee Port" --msgbox "The Bee port was set to \"$proxyBeePort\"" 8 65
-                                            fi
-                                        fi
-                                    fi
-                                ;;
-                            esac
-                        done
-                        exitCode=0
+                        fi
                     ;;
                     "4)")
-                        while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/proxy.cfg
-                            clear
-                            CHOICE=$(
-                                whiptail --title "Proxy - GoShimmer Settings" --menu "\nGoShimmer Domain: $proxyGoshimmerDomain\nGoShimmer Port: $proxyGoshimmerPort\n\nChoose an option" 17 65 0 \
-                                "1)" "GoShimmer domain" \
-                                "2)" "GoShimmer port" 3>&2 2>&1 1>&3
-                            )
-                            exitStatus=$?
-                            if [ "$exitStatus" = "1" ]; then
-                                exitCode=1
+                        source $swarmConfigs/proxy.cfg
+                        currentProxyGoshimmerUrl="$proxyGoshimmerUrl"
+                        proxyGoshimmerUrl=$(whiptail --inputbox "\nSet your domain and port for Goshimmer" 10 65 $proxyGoshimmerUrl --title "Proxy - Goshimmer" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ]; then
+                            if [ "$currentProxyGoshimmerUrl" != "$proxyGoshimmerUrl" ]; then
+                                sudo sed -i 's/^proxyGoshimmerUrl=.*/proxyGoshimmerUrl="'$proxyGoshimmerUrl'"/' $swarmConfigs/proxy.cfg
+                                whiptail --title "Proxy - Goshimmer" --msgbox "URL for Goshimmer proxy set to \"$proxyGoshimmerUrl\"" 8 65
+                            else
+                                whiptail --title "Proxy - Goshimmer" --msgbox "No Goshimmer url change detected" 8 65
                             fi
-                            case $CHOICE in
-                                "1)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyGoshimmerDomain=$proxyGoshimmerDomain
-                                    proxyGoshimmerDomain=$(whiptail --inputbox "\nSet your domain or your ddns name for GoShimmer" 10 65 $proxyGoshimmerDomain --title "Proxy - GoShimmer Domain" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$exitStatus" != "1" ]; then
-                                        if [ "$currentProxyGoshimmerDomain" != "$proxyGoshimmerDomain" ]; then
-                                            sudo sed -i 's/^proxyGoshimmerDomain=.*/proxyGoshimmerDomain="'$proxyGoshimmerDomain'"/' $swarmConfigs/proxy.cfg
-                                            whiptail --title "Proxy - GoShimmer Domain" --msgbox "Domain for proxy set to \"$proxyGoshimmerDomain\"" 8 65
-                                        else
-                                            whiptail --title "Proxy - GoShimmer Domain" --msgbox "No GoShimmer domain change detected" 8 65
-                                        fi
-                                    fi
-                                ;;
-                                "2)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyGoshimmerPort=$proxyGoshimmerPort
-                                    proxyGoshimmerPort=$(whiptail --inputbox "\nSet a port for GoShimmer" 10 65 $proxyGoshimmerPort --title "Proxy - GoShimmer Port" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$exitStatus" != "1" ]; then
-                                        if [ ! -z "$proxyGoshimmerPort" ] && [ $proxyGoshimmerPort -eq $proxyGoshimmerPort ] 2>/dev/null; then
-                                            if [ "$currentProxyGoshimmerPort" != "$proxyGoshimmerPort" ]; then
-                                                if [ "$ufw" = "true" ]; then
-                                                    if [ "$currentProxyGoshimmerPort" != "$proxyHornetPort" ] && [ "$currentProxyGoshimmerPort" != "$proxyBeePort" ] && [ "$currentProxyGoshimmerPort" != "$proxyWaspDashboardPort" ] && [ "$currentProxyGoshimmerPort" != "$proxyWaspApiPort" ] && [ "$currentProxyGoshimmerPort" != "$proxyLandingPort" ]; then
-                                                        ufw delete allow $currentProxyGoshimmerPort/tcp > /dev/null 2>&1
-                                                    fi
-                                                fi
-                                                sudo sed -i 's/^proxyGoshimmerPort=.*/proxyGoshimmerPort='$proxyGoshimmerPort'/' $swarmConfigs/proxy.cfg
-                                                whiptail --title "Proxy - GoShimmer Port" --msgbox "The GoShimmer port was set to \"$proxyGoshimmerPort\"" 8 65
-                                            fi
-                                        fi
-                                    fi
-                                ;;
-                            esac
-                        done
-                        exitCode=0
+                        fi
                     ;;
                     "5)")
                         while [ $exitCode -lt 1 ]; do
                             source $swarmConfigs/proxy.cfg
                             clear
                             CHOICE=$(
-                                whiptail --title "Proxy - WASP Settings" --menu "\nWASP Dashboard: \"$proxyWaspDashboardDomain:$proxyWaspDashboardPort\"\nWASP API: \"$proxyWaspApiDomain:$proxyWaspApiPort\"\n\nChoose an option" 19 65 0 \
-                                "1)" "WASP dashboard domain" \
-                                "2)" "WASP dashboard port" \
-                                "3)" "WASP API domain" \
-                                "4)" "WASP API port" 3>&2 2>&1 1>&3
+                                whiptail --title "Proxy - WASP Settings" --menu "\nChoose an option" 14 65 0 \
+                                "1)" "WASP Dashboard" \
+                                "2)" "WASP API" 3>&2 2>&1 1>&3
                             )
                             exitStatus=$?
                             if [ "$exitStatus" = "1" ]; then
@@ -258,67 +110,29 @@ while [ $exitCode -lt 1 ]; do
                             case $CHOICE in
                                 "1)")
                                     source $swarmConfigs/proxy.cfg
-                                    currentProxyWaspDashboardDomain=$proxyWaspDashboardDomain
-                                    proxyWaspDashboardDomain=$(whiptail --inputbox "\nSet your domain or your ddns name for the WASP dashboard" 10 65 $proxyWaspDashboardDomain --title "Proxy - WASP Dashboard" 3>&1 1>&2 2>&3)
+                                    currentProxyWaspDashboardUrl="$proxyWaspDashboardUrl"
+                                    proxyWaspDashboardUrl=$(whiptail --inputbox "\nSet your domain and port for the WASP dashboard" 10 65 $proxyWaspDashboardUrl --title "Proxy - WASP Dashboard" 3>&1 1>&2 2>&3)
                                     exitStatus=$?
                                     if [ "$exitStatus" != "1" ]; then
-                                        if [ "$currentProxyWaspDashboardDomain" != "$proxyWaspDashboardDomain" ]; then
-                                            sudo sed -i 's/^proxyWaspDashboardDomain=.*/proxyWaspDashboardDomain="'$proxyWaspDashboardDomain'"/' $swarmConfigs/proxy.cfg
-                                            whiptail --title "Proxy - WASP Dashboard" --msgbox "Dashboard domain for proxy set to \"$proxyWaspDashboardDomain\"" 8 65
+                                        if [ "$currentProxyWaspDashboardUrl" != "$proxyWaspDashboardUrl" ]; then
+                                            sudo sed -i 's/^proxyWaspDashboardUrl=.*/proxyWaspDashboardUrl="'$proxyWaspDashboardUrl'"/' $swarmConfigs/proxy.cfg
+                                            whiptail --title "Proxy - WASP Dashboard" --msgbox "URL for WASP dashboard proxy set to \"$proxyWaspDashboardUrl\"" 8 65
                                         else
-                                            whiptail --title "Proxy - WASP Dashboard" --msgbox "No WASP dashboard domain change detected" 8 65
+                                            whiptail --title "Proxy - WASP Dashboard" --msgbox "No WASP dashboard url change detected" 8 65
                                         fi
                                     fi
                                 ;;
                                 "2)")
                                     source $swarmConfigs/proxy.cfg
-                                    currentProxyWaspDashboardPort=$proxyWaspDashboardPort
-                                    proxyWaspDashboardPort=$(whiptail --inputbox "\nSet a port for WASP dashboard" 10 65 $proxyWaspDashboardPort --title "Proxy - WASP Dashboard" 3>&1 1>&2 2>&3)
+                                    currentProxyWaspApiUrl="$proxyWaspApiUrl"
+                                    proxyWaspApiUrl=$(whiptail --inputbox "\nSet your domain and port for the WASP API" 10 65 $proxyWaspApiUrl --title "Proxy - WASP API" 3>&1 1>&2 2>&3)
                                     exitStatus=$?
                                     if [ "$exitStatus" != "1" ]; then
-                                        if [ ! -z "$proxyWaspDashboardPort" ] && [ $proxyWaspDashboardPort -eq $proxyWaspDashboardPort ] 2>/dev/null; then
-                                            if [ "$currentProxyWaspDashboardPort" != "$proxyWaspDashboardPort" ]; then
-                                                if [ "$ufw" = "true" ]; then
-                                                    if [ "$currentProxyWaspDashboardPort" != "$proxyHornetPort" ] && [ "$currentProxyWaspDashboardPort" != "$proxyBeePort" ] && [ "$currentProxyWaspDashboardPort" != "$proxyGoshimmerPort" ] && [ "$currentProxyWaspDashboardPort" != "$proxyWaspApiPort" ] && [ "$currentProxyWaspDashboardPort" != "$proxyLandingPort" ]; then
-                                                        ufw delete allow $currentProxyWaspDashboardPort/tcp > /dev/null 2>&1
-                                                    fi
-                                                fi
-                                                sudo sed -i 's/^proxyWaspDashboardPort=.*/proxyWaspDashboardPort='$proxyWaspDashboardPort'/' $swarmConfigs/proxy.cfg
-                                                whiptail --title "Proxy - WASP Dashboard" --msgbox "The WASP dashboard port was set to \"$proxyWaspDashboardPort\"" 8 65
-                                            fi
-                                        fi
-                                    fi
-                                ;;
-                                "3)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyWaspApiDomain=$proxyWaspApiDomain
-                                    proxyWaspApiDomain=$(whiptail --inputbox "\nSet your domain or your ddns name for WASP API" 10 65 $proxyWaspApiDomain --title "Proxy - WASP API" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$exitStatus" != "1" ]; then
-                                        if [ "$currentProxyWaspApiDomain" != "$proxyWaspApiDomain" ]; then
-                                            sudo sed -i 's/^proxyWaspApiDomain=.*/proxyWaspApiDomain="'$proxyWaspApiDomain'"/' $swarmConfigs/proxy.cfg
-                                            whiptail --title "Proxy - WASP API" --msgbox "WASP API domain for proxy set to \"$proxyWaspApiDomain\"" 8 65
+                                        if [ "$currentProxyWaspApiUrl" != "$proxyWaspApiUrl" ]; then
+                                            sudo sed -i 's/^proxyWaspApiUrl=.*/proxyWaspApiUrl="'$proxyWaspApiUrl'"/' $swarmConfigs/proxy.cfg
+                                            whiptail --title "Proxy - WASP API" --msgbox "URL for WASP API proxy set to \"$proxyWaspApiUrl\"" 8 65
                                         else
-                                            whiptail --title "Proxy - WASP API" --msgbox "No WASP API domain change detected" 8 65
-                                        fi
-                                    fi
-                                ;;
-                                "4)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyWaspApiPort=$proxyWaspApiPort
-                                    proxyWaspApiPort=$(whiptail --inputbox "\nSet a port for the WASP API" 10 65 $proxyWaspApiPort --title "Proxy - WASP API" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$exitStatus" != "1" ]; then
-                                        if [ ! -z "$proxyWaspApiPort" ] && [ $proxyWaspApiPort -eq $proxyWaspApiPort ] 2>/dev/null; then
-                                            if [ "$currentProxyWaspApiPort" != "$proxyWaspApiPort" ]; then
-                                                if [ "$ufw" = "true" ]; then
-                                                    if [ "$currentProxyWaspApiPort" != "$proxyHornetPort" ] && [ "$currentProxyWaspApiPort" != "$proxyBeePort" ] && [ "$currentProxyWaspApiPort" != "$proxyGoshimmerPort" ] && [ "$currentProxyWaspApiPort" != "$proxyWaspDashboardPort" ]; then
-                                                        ufw delete allow $currentProxyWaspApiPort/tcp > /dev/null 2>&1
-                                                    fi
-                                                fi
-                                                sudo sed -i 's/^proxyWaspApiPort=.*/proxyWaspApiPort='$proxyWaspApiPort'/' $swarmConfigs/proxy.cfg
-                                                whiptail --title "Proxy - WASP API" --msgbox "The WASP API port was set to \"$proxyWaspApiPort\"" 8 65
-                                            fi
+                                            whiptail --title "Proxy - WASP API" --msgbox "No WASP API url change detected" 8 65
                                         fi
                                     fi
                                 ;;

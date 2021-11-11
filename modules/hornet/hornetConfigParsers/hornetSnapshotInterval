@@ -1,19 +1,12 @@
 #!/bin/bash
 
-IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-
-for hornetConfig in "${ARRAYhornetConfigs[@]}"
-do
-    parser="$(jq '.snapshots.intervalSynced' $hornetHome/$hornetConfig.json)"
-    if [ ! -z "$parser" ]; then
-        jq 'del(.snapshots.intervalSynced)' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
-    fi
-    parser="$(jq '.snapshots.interval' $hornetHome/$hornetConfig.json)"
-    if [ "$hornetSnapshotInterval" != "$parser" ]; then
-        sudo jq '.snapshots.interval = '$hornetSnapshotInterval'' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
-        restartHornet=true
-        newHornetSnapshotInterval=true
-    fi
-done
-unset ARRAYhornetConfigs
-unset hornetConfig
+parser="$(jq '.snapshots.intervalSynced' $hornetHome/$hornetNetwork.json)"
+if [ ! -z "$parser" ]; then
+    jq 'del(.snapshots.intervalSynced)' $hornetHome/$hornetNetwork.json|sponge $hornetHome/$hornetNetwork.json
+fi
+parser="$(jq '.snapshots.interval' $hornetHome/$hornetNetwork.json)"
+if [ "$hornetSnapshotInterval" != "$parser" ]; then
+    sudo jq '.snapshots.interval = '$hornetSnapshotInterval'' $hornetHome/$hornetNetwork.json|sponge $hornetHome/$hornetNetwork.json
+    restartHornet=true
+    newHornetSnapshotInterval=true
+fi

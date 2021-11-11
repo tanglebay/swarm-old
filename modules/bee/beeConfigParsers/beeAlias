@@ -1,18 +1,12 @@
 #!/bin/bash
 
-IFS=', ' read -r -a ARRAYbeeConfigs <<< "$beeConfigs"
+parser=$(sed -n '/^alias/p' $beeHome/config.chrysalis-$beeNetwork.toml | head -n 1)
+if [ "$parser" != "alias      = \"$beeAlias\"" ]; then
+    sudo sed -i "4s~^alias.*~alias      = \"$beeAlias\"~g" $beeHome/config.chrysalis-$beeNetwork.toml
+    restartBee=true
+    newBeeAlias=true
+fi
 
-for beeConfig in "${ARRAYbeeConfigs[@]}"
-do
-    parser=$(sed -n '/^alias/p' $beeHome/config.chrysalis-$beeConfig.toml | head -n 1)
-    if [ "$parser" != "alias      = \"$beeAlias\"" ]; then
-        sudo sed -i "4s~^alias.*~alias      = \"$beeAlias\"~g" $beeHome/config.chrysalis-$beeConfig.toml
-        restartBee=true
-        newBeeAlias=true
-    fi
-done
-unset ARRAYbeeConfigs
-unset beeConfig
 
 
 
