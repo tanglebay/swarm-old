@@ -1,0 +1,41 @@
+#!/bin/bash
+
+if [ -f "/usr/bin/bee" ]; then
+    beeVersionCheck=$(curl -s -X GET "http://localhost:14266/api/v1/info" -H  "accept: application/json"|jq '.data.version' | tr -d '".' | cut -f1 -d"-")
+    beeVersionZeroCheck=${beeVersionCheck:0:1}
+    if [ "$beeVersionZeroCheck" = "0" ]; then
+        beeVersionCheck=${beeVersionCheck:1}
+    fi
+fi
+
+if [ ! -z "$beeVersionCheck" ] && [ $beeVersionCheck -gt 21 ]; then
+    if [ "$beeAutopeeringEnabled" = "true" ]; then
+        if [ "$beeNetwork" = "mainnet" ]; then
+            parserBefore=$(sed -n '/# Uncomment to enable autopeering\./,/\[protocol\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+            sed -i '/\# Uncomment to enable autopeering\./,/\[protocol\]/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
+            sed -i 's~\# Uncomment to enable autopeering\.~\# Uncomment to enable autopeering\.\n\[autopeering\]\nbind_address = \"0\.0\.0\.0:'$beeAutopeeringPort'\"\nentry_nodes = \[\n    \"\/dns\/lucamoser\.ch\/udp\/14826\/autopeering\/4H6WV54tB29u8xCcEaMGQMn37LFvM1ynNpp27TTXaqNM\"\,\n    \"/dns\/entry-hornet-0\.h\.chrysalis-mainnet\.iotaledger\.net\/udp\/14626/autopeering\/iotaPHdAn7eueBnXtikZMwhfPXaeGJGXDt4RBuLuGgb\"\,\n    \"/dns\/entry-hornet-1\.h\.chrysalis-mainnet\.iotaledger\.net\/udp\/14626\/autopeering\/iotaJJqMd5CQvv1A61coSQCYW9PNT1QKPs7xh2Qg5K2\"\,\n    \"\/dns\/entry-mainnet\.tanglebay\.com\/udp\/14626\/autopeering\/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC\"\,\n\]\nentry_nodes_prefer_ipv6 = false\nrun_as_entry_node = '$beeRunAsEntryNode'\ndrop_neighbors_on_salt_update = false\n~g' $beeHome/config.chrysalis-$beeNetwork.toml
+            parserAfter=$(sed -n '/# Uncomment to enable autopeering\./,/\[protocol\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+        fi
+        if [ "$beeNetwork" = "comnet" ]; then
+            parserBefore=$(sed -n '/# Uncomment to enable autopeering\./,/\[protocol\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+            sed -i '/\# Uncomment to enable autopeering\./,/\[protocol\]/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
+            sed -i 's~\# Uncomment to enable autopeering\.~\# Uncomment to enable autopeering\.\n\[autopeering\]\nbind_address = \"0\.0\.0\.0:'$beeAutopeeringPort'\"\nentry_nodes = \[\n    "/dns/entry-comnet.tanglebay.com/udp/14636/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"\,\n    \"\/dns\/comnet\.positronium\.io\/udp\/14626\/autopeering\/CiL1Np3Uihmsa2ZpdEtcHPkwSL8qCs9yNktjWx5dyy2S\"\,\n\]\nentry_nodes_prefer_ipv6 = false\nrun_as_entry_node = '$beeRunAsEntryNode'\ndrop_neighbors_on_salt_update = false\n~g' $beeHome/config.chrysalis-$beeNetwork.toml
+            parserAfter=$(sed -n '/# Uncomment to enable autopeering\./,/\[protocol\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+        fi
+        if [ "$beeNetwork" = "devnet" ]; then
+            parserBefore=$(sed -n '/# Uncomment to enable autopeering\./,/\[protocol\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+            sed -i '/\# Uncomment to enable autopeering\./,/\[protocol\]/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
+            sed -i 's~\# Uncomment to enable autopeering\.~\# Uncomment to enable autopeering\.\n\[autopeering\]\nbind_address = \"0\.0\.0\.0:'$beeAutopeeringPort'\"\nentry_nodes = \[\n    \"\/dns\/entry-hornet-0\.h\.chrysalis-devnet\.iota\.cafe\/udp\/14626\/autopeering\/iotab4LmPqc3GLin7voytPr8oQnHToQad3ULbvhPZwq\"\,\n    \"\/dns\/entry-hornet-1\.h\.chrysalis-devnet\.iota\.cafe\/udp\/14626\/autopeering\/iotaUTEYvLskg8ZqLHBaCK5BiYNt6R1byksZQXobVUn\"\,\n\]\nentry_nodes_prefer_ipv6 = false\nrun_as_entry_node = '$beeRunAsEntryNode'\ndrop_neighbors_on_salt_update = false\n~g' $beeHome/config.chrysalis-$beeNetwork.toml
+            parserAfter=$(sed -n '/# Uncomment to enable autopeering\./,/\[protocol\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+        fi
+    else
+        parserBefore=$(sed -n '/# Uncomment to enable autopeering\./,/\[protocol\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+        sed -i '/\# Uncomment to enable autopeering\./,/\[protocol\]/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
+        sed -i 's~\# Uncomment to enable autopeering\.~\# Uncomment to enable autopeering\.\n\#\[autopeering\]\n\#bind_address = \"0\.0\.0\.0:'$beeAutopeeringPort'\"\n\#entry_nodes = \[\]\n\#entry_nodes_prefer_ipv6 = false\n\#run_as_entry_node = '$beeRunAsEntryNode'\n\#drop_neighbors_on_salt_update = false\n~g' $beeHome/config.chrysalis-$beeNetwork.toml
+        parserAfter=$(sed -n '/# Uncomment to enable autopeering\./,/\[protocol\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+    fi
+
+    if [ "$parserBefore" != "$parserAfter" ]; then
+        restartBee=true
+    fi
+fi
