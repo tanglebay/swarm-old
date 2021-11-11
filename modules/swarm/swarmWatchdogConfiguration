@@ -256,11 +256,16 @@ while [ $exitCode -lt 1 ]; do
                 else
                     goshimmerCheckSyncMenu="Enable"
                 fi
-
+                if [ "$goshimmerDenyDbDownload" = "true" ]; then
+                    goshimmerDenyDbDownloadMenu="Deny"
+                else
+                    goshimmerDenyDbDownloadMenu="Allow"
+                fi
                 CHOICE=$(
                     whiptail --title "SWARM - GoShimmer" --menu "\nChoose an option" 18 65 0 \
                     "1)" "$goshimmerCheckSyncMenu GoShimmer Sync-Check" \
                     "2)" "$goshimmerAutoUpdateMenu GoShimmer AutoUpdater" \
+                    "3)" "$goshimmerDenyDbDownloadMenu GoShimmer DB backup download" \
                     "3)" "$goshimmerAllowDbResetMenu GoShimmer database reset" 3>&2 2>&1 1>&3
                 )
                 exitStatus=$?
@@ -291,6 +296,17 @@ while [ $exitCode -lt 1 ]; do
                         whiptail --title "Watchdog - GoShimmer" --msgbox "GoShimmer AutoUpdater $goshimmerAutoUpdateMenu!" 8 65
                     ;;
                     "3)")
+                        if [ "$goshimmerAllowDbDownload" = "true" ]; then
+                            goshimmerAllowDbDownload=false
+                            sudo sed -i 's/^goshimmerAllowDbDownload=.*/goshimmerAllowDbDownload=false/' $swarmConfigs/goshimmer.cfg
+                            whiptail --title "GoShimmer - DB Download" --msgbox "GoShimmer DB download denied." 8 65
+                        else
+                            goshimmerAllowDbDownload=true
+                            sudo sed -i 's/^goshimmerAllowDbDownload=.*/goshimmerAllowDbDownload=true/' $swarmConfigs/goshimmer.cfg
+                            whiptail --title "GoShimmer - DB Download" --msgbox "GoShimmer DB download allowed." 8 65
+                        fi
+                    ;;
+                    "4)")
                         if [ "$goshimmerAllowDbReset" = "true" ]; then
                             goshimmerAllowDbReset=false
                             goshimmerAllowDbResetMenu="disabled"

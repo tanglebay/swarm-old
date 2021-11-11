@@ -155,7 +155,9 @@ while [ $exitCode -lt 1 ]; do
                         "3)")
                             if (whiptail --title "GoShimmer - Debugging" --yesno --defaultno "Do you really want to remove the goshimmer database?" 8 65); then
                                 if (whiptail --title "GoShimmer - Debugging" --yesno "Do you want to download latest database from the IF?" 8 65); then
-                                    goshimmerDenyDbDownload=false
+                                    goshimmerTmpAllowDbDownload=true
+                                else
+                                    goshimmerTmpAllowDbDownload=false
                                 fi
                                 source $swarmConfigs/goshimmer.cfg
                                 {
@@ -200,8 +202,11 @@ while [ $exitCode -lt 1 ]; do
                         "1)")
                             if [ -f "/usr/bin/goshimmer" ]; then
                                 if (whiptail --title "GoShimmer - Updater" --yesno --defaultno "Do you really want to update GoShimmer?" 8 65); then
+                                    sudo touch /tmp/goshimmer.lock
                                     if (whiptail --title "GoShimmer - Updater" --yesno --defaultno "Do want to download the latest GoShimmer DB backup?" 8 65); then
-                                        goshimmerDenyDbDownload=false
+                                        goshimmerTmpAllowDbDownload=true
+                                    else
+                                        goshimmerTmpAllowDbDownload=false
                                     fi
                                     # Update GoShimmer
                                     source $goshimmerModules/goshimmerVersion
@@ -211,7 +216,7 @@ while [ $exitCode -lt 1 ]; do
                                             echo 10
                                             sudo systemctl stop goshimmer
                                             echo 20
-                                            sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb > /dev/null 2>&1
+                                            sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb $goshimmerHome/snapshot.bin > /dev/null 2>&1
                                             echo 40
                                             source $goshimmerModules/goshimmerInstaller
                                             echo 60
@@ -222,6 +227,7 @@ while [ $exitCode -lt 1 ]; do
                                             sleep 0.5
                                         } | whiptail --gauge "Please wait while GoShimmer is updated..." 8 65 0
                                         whiptail --title "GoShimmer - Updater" --msgbox "GoShimmer successfully updated" 8 65
+                                    sudo rm -rf /tmp/goshimmer.lock > /dev/null 2>&1
                                     else
                                         whiptail --title "GoShimmer - Updater" --msgbox "Congratulations, you have already installed the latest version of GoShimmer!" 8 65
                                     fi
@@ -233,6 +239,7 @@ while [ $exitCode -lt 1 ]; do
                         "2)")
                             # INSTALL GoShimmer
                             if [ ! -f "/usr/bin/goshimmer" ]; then
+                                sudo touch /tmp/goshimmer.lock
                                 {
                                     echo 0
                                     echo 10
@@ -241,7 +248,9 @@ while [ $exitCode -lt 1 ]; do
                                     source $goshimmerModules/goshimmerVersion
                                     echo 40
                                     if (whiptail --title "GoShimmer - Installer" --yesno "Do you want to download latest database from the IF?" 8 65); then
-                                        goshimmerDenyDbDownload=false
+                                        goshimmerTmpAllowDbDownload=true
+                                    else
+                                        goshimmerTmpAllowDbDownload=false
                                     fi
                                     source $goshimmerModules/goshimmerInstaller
                                     echo 50
@@ -283,12 +292,14 @@ while [ $exitCode -lt 1 ]; do
                                     } | whiptail --gauge "Please wait while the GoShimmer files are removed...." 8 65 0
                                     whiptail --title "GoShimmer - Installer" --msgbox "Error while installing GoShimmer. Please check GoShimmer.cfg and try again!" 8 65
                                 fi
+                                sudo rm -rf /tmp/goshimmer.lock > /dev/null 2>&1
                             else
                                 whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer already installed or not set in the SWARM.cfg!" 8 65
                             fi
                         ;;
                         "3)")
                             if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Do you really want to remove GoShimmer?" 8 65); then
+                                sudo touch /tmp/goshimmer.lock
                                 {
                                     echo 0
                                     echo 25
@@ -299,6 +310,7 @@ while [ $exitCode -lt 1 ]; do
                                     echo 100
                                 } | whiptail --gauge "Please wait while GoShimmer will be removed..." 8 65 0
                                 whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer successfully removed" 8 65
+                                sudo rm -rf /tmp/goshimmer.lock > /dev/null 2>&1
                             fi
                         ;;
                     esac
