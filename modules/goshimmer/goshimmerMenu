@@ -154,15 +154,15 @@ while [ $exitCode -lt 1 ]; do
                         ;;
                         "3)")
                             if (whiptail --title "GoShimmer - Debugging" --yesno --defaultno "Do you really want to remove the goshimmer database?" 8 65); then
-                                if ! (whiptail --title "GoShimmer - Debugging" --yesno "Do you want to download latest database from the IF?" 8 65); then
-                                    goshimmerSkipDbDownload=true
+                                if (whiptail --title "GoShimmer - Debugging" --yesno "Do you want to download latest database from the IF?" 8 65); then
+                                    goshimmerDenyDbDownload=false
                                 fi
                                 source $swarmConfigs/goshimmer.cfg
                                 {
                                     echo 0
                                     echo 50
                                     sudo systemctl stop goshimmer
-                                    sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb > /dev/null 2>&1
+                                    sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb $goshimmerHome/snapshot.bin > /dev/null 2>&1
                                     source $goshimmerModules/goshimmerDbDownload
                                     sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter=0/' $swarmConfigs/watchdog.cfg
                                     sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter=0/' $swarmConfigs/watchdog.cfg
@@ -172,6 +172,7 @@ while [ $exitCode -lt 1 ]; do
                                 } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
                                 whiptail --title "GoShimmer - Debugging" --msgbox "GoShimmer database successfully reset" 8 65
                             fi
+                            unset goshimmerResetDbDownload
                         ;;
                     esac
                 done
@@ -198,7 +199,10 @@ while [ $exitCode -lt 1 ]; do
                     case $CHOICE in
                         "1)")
                             if [ -f "/usr/bin/goshimmer" ]; then
-                                if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Do you really want to update GoShimmer?" 8 65); then
+                                if (whiptail --title "GoShimmer - Updater" --yesno --defaultno "Do you really want to update GoShimmer?" 8 65); then
+                                    if (whiptail --title "GoShimmer - Updater" --yesno --defaultno "Do want to download the latest GoShimmer DB backup?" 8 65); then
+                                        goshimmerDenyDbDownload=false
+                                    fi
                                     # Update GoShimmer
                                     source $goshimmerModules/goshimmerVersion
                                     if [ ! -z "$latestGoshimmerVersion" ]; then
@@ -217,13 +221,13 @@ while [ $exitCode -lt 1 ]; do
                                             echo 100
                                             sleep 0.5
                                         } | whiptail --gauge "Please wait while GoShimmer is updated..." 8 65 0
-                                        whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer successfully updated" 8 65
+                                        whiptail --title "GoShimmer - Updater" --msgbox "GoShimmer successfully updated" 8 65
                                     else
-                                        whiptail --title "GoShimmer - Installer" --msgbox "Congratulations, you have already installed the latest version of GoShimmer!" 8 65
+                                        whiptail --title "GoShimmer - Updater" --msgbox "Congratulations, you have already installed the latest version of GoShimmer!" 8 65
                                     fi
                                 fi
                             else
-                                whiptail --title "GoShimmer - Installer" --msgbox "Sorry, but GoShimmer is not installed!" 8 65
+                                whiptail --title "GoShimmer - Updater" --msgbox "Sorry, but GoShimmer is not installed!" 8 65
                             fi
                         ;;
                         "2)")
@@ -236,6 +240,9 @@ while [ $exitCode -lt 1 ]; do
                                     echo 30
                                     source $goshimmerModules/goshimmerVersion
                                     echo 40
+                                    if (whiptail --title "GoShimmer - Installer" --yesno "Do you want to download latest database from the IF?" 8 65); then
+                                        goshimmerDenyDbDownload=false
+                                    fi
                                     source $goshimmerModules/goshimmerInstaller
                                     echo 50
                                     # CALL MODULE CONFIGPARSER
