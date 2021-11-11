@@ -23,7 +23,12 @@ IFS=', ' read -r -a ARRAYbeeConfigs <<< "$beeConfigs"
 
 for beeConfig in "${ARRAYbeeConfigs[@]}"
 do
-    sed -i '/\[network\.peering\]/,/\# Uncomment to enable autopeering\./{//!d}' $beeHome/config.chrysalis-$beeConfig.toml
+    if ! grep -q "# Uncomment to enable autopeering." $beeHome/config.chrysalis-$beeConfig.toml
+    then
+        sed -i '/\[network\.peering\]/,/\# Uncomment to enable autopeering\./{//!d}' $beeHome/config.chrysalis-$beeConfig.toml
+    else
+        sed -i '/\[network\.peering\]/,/\[protocol\]/{//!d}' $beeHome/config.chrysalis-$beeConfig.toml
+    fi
     sed -i 's~\[network\.peering\]~\[network\.peering\]\n'$unsetBeePeer1'\[\[network\.peering\.peers\]\]\n'$unsetBeePeer1'address  = "'$beePeer1'"\n'$unsetBeePeer1'alias    = "'$beePeerAlias1'"\n'$unsetBeePeer2'\[\[network\.peering\.peers\]\]\n'$unsetBeePeer2'address  = "'$beePeer2'"\n'$unsetBeePeer2'alias    = "'$beePeerAlias2'"\n'$unsetBeePeer3'\[\[network\.peering\.peers\]\]\n'$unsetBeePeer3'address  = "'$beePeer3'"\n'$unsetBeePeer3'alias    = "'$beePeerAlias3'"\n'$unsetBeePeer4'\[\[network\.peering\.peers\]\]\n'$unsetBeePeer4'address  = "'$beePeer4'"\n'$unsetBeePeer4'alias    = "'$beePeerAlias4'"\n'$unsetBeePeer5'\[\[network\.peering\.peers\]\]\n'$unsetBeePeer5'address  = "'$beePeer5'"\n'$unsetBeePeer5'alias    = "'$beePeerAlias5'"\n'$unsetBeePeer6'\[\[network\.peering\.peers\]\]\n'$unsetBeePeer6'address  = "'$beePeer6'"\n'$unsetBeePeer6'alias    = "'$beePeerAlias5'"\n~g' $beeHome/config.chrysalis-$beeConfig.toml
     restartBee=true
 done
