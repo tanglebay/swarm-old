@@ -1,3 +1,17 @@
+## Version 1.0.1
+### Added
+- Added option to allow/deny GoShimmer db download by Watchdog
+- Added lock file for GoShimmer to prevent an error by Watchdog
+- Added Bee autopeering (disabled until release)
+- Added WASP tutorial by dumdave#5233 to readme
+### Changed
+- Updated parsing to used network config
+- Updated proxy templates
+- Updated proxy configuration
+- Fixed CL editor output
+
+---
+
 ## Version 1.0.0
 ### Added
 - Added check for automatic proxy deploy (dev)
