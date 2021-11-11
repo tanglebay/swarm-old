@@ -3,24 +3,18 @@
 useHornetDisablePlugins=true
 source $hornetModules/hornetPlugins
 
-IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
 IFS=', ' read -r -a ARRAYhornetDisablePlugins <<< "$hornetDisablePlugins"
 
-for hornetConfig in "${ARRAYhornetConfigs[@]}"
-do
-    parser="$(jq '.node.disablePlugins' $hornetHome/$hornetConfig.json)"
-    parser="$(echo $parser | tr -d '[]" ')"
-    if [ "$parser" != "$hornetDisablePlugins" ]; then
-        sudo jq '.node.disablePlugins |= []' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
-        for hornetDisablePlugin in "${ARRAYhornetDisablePlugins[@]}"
-        do
-            sudo jq '.node.disablePlugins |= .+ ["'$hornetDisablePlugin'"]' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
-        done
-        restartHornet=true
-    fi
-done
+parser="$(jq '.node.disablePlugins' $hornetHome/$hornetNetwork.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$hornetDisablePlugins" ]; then
+    sudo jq '.node.disablePlugins |= []' $hornetHome/$hornetNetwork.json|sponge $hornetHome/$hornetNetwork.json
+    for hornetDisablePlugin in "${ARRAYhornetDisablePlugins[@]}"
+    do
+        sudo jq '.node.disablePlugins |= .+ ["'$hornetDisablePlugin'"]' $hornetHome/$hornetNetwork.json|sponge $hornetHome/$hornetNetwork.json
+    done
+    restartHornet=true
+fi
 unset ARRAYhornetDisablePlugins
-unset ARRAYhornetConfigs
-unset hornetConfig
 unset hornetDisablePlugin
 unset useHornetDisablePlugins

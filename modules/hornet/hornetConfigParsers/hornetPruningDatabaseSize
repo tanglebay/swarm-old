@@ -20,17 +20,10 @@ if [ "$hornetPruningEnabled" = "true" ]; then
         sudo sed -i 's/^hornetPruningDatabaseSize=.*/hornetPruningDatabaseSize='$hornetPruningDatabaseSize'/' $swarmConfigs/hornet.cfg
     fi
 
-    IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-
-    for hornetConfig in "${ARRAYhornetConfigs[@]}"
-    do
-        parser="$(jq '.pruning.size.targetSize' $hornetHome/$hornetConfig.json)"
-        parser=$(echo $parser | tr -d '"')
-        if [ "$parser" != "${hornetPruningDatabaseSize}GB" ] && [ $hornetPruningDatabaseSize -eq $hornetPruningDatabaseSize ]; then
-            sudo jq '.pruning.size.targetSize = "'$hornetPruningDatabaseSize'GB"' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
-            restartHornet=true
-        fi
-    done
-    unset ARRAYhornetConfigs
-    unset hornetConfig
+    parser="$(jq '.pruning.size.targetSize' $hornetHome/$hornetNetwork.json)"
+    parser=$(echo $parser | tr -d '"')
+    if [ "$parser" != "${hornetPruningDatabaseSize}GB" ] && [ $hornetPruningDatabaseSize -eq $hornetPruningDatabaseSize ]; then
+        sudo jq '.pruning.size.targetSize = "'$hornetPruningDatabaseSize'GB"' $hornetHome/$hornetNetwork.json|sponge $hornetHome/$hornetNetwork.json
+        restartHornet=true
+    fi
 fi

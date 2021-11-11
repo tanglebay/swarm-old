@@ -1,18 +1,11 @@
 #!/bin/bash
 
-IFS=', ' read -r -a ARRAYbeeConfigs <<< "$beeConfigs"
-
-for beeConfig in "${ARRAYbeeConfigs[@]}"
-do
-    parser=$(sed -n '/^bind_address/p' $beeHome/config.chrysalis-$beeConfig.toml | sed -n 3p | awk '{ print $3 }')
-    if [ "$parser" != "\"/ip4/0.0.0.0/tcp/8082\"" ]; then
-        sudo sed -i 's~^bind_address    = '$parser'~bind_address    = "/ip4/0.0.0.0/tcp/8082"~g' $beeHome/config.chrysalis-$beeConfig.toml
-        if [ -f "/etc/nginx/sites-enabled/bee" ]; then
-            sudo find /etc/nginx/sites-enabled/bee -type f -exec sed -i 's/8081/8082/g' {} \;
-            sudo systemctl reload nginx
-        fi
-        restartBee=true
+parser=$(sed -n '/^bind_address/p' $beeHome/config.chrysalis-$beeNetwork.toml | sed -n 3p | awk '{ print $3 }')
+if [ "$parser" != "\"/ip4/0.0.0.0/tcp/8082\"" ]; then
+    sudo sed -i 's~^bind_address    = '$parser'~bind_address    = "/ip4/0.0.0.0/tcp/8082"~g' $beeHome/config.chrysalis-$beeNetwork.toml
+    if [ -f "/etc/nginx/sites-enabled/bee" ]; then
+        sudo find /etc/nginx/sites-enabled/bee -type f -exec sed -i 's/8081/8082/g' {} \;
+        sudo systemctl reload nginx
     fi
-done
-unset ARRAYbeeConfigs
-unset beeConfig
+    restartBee=true
+fi

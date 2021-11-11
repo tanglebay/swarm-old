@@ -1,17 +1,9 @@
 #!/bin/bash
 
-IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-
-for hornetConfig in "${ARRAYhornetConfigs[@]}"
-do
-    parser="$(jq '.p2p.autopeering.runAsEntryNode' $hornetHome/$hornetConfig.json)"
-    if [ "$hornetRunAsEntryNode" = "true" ] || [ "$hornetRunAsEntryNode" = "false" ]; then
-        if [ "$parser" != "$hornetRunAsEntryNode" ]; then
-            sudo jq '.p2p.autopeering.runAsEntryNode = '$hornetRunAsEntryNode'' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
-            restartHornet=true
-        fi
+parser="$(jq '.p2p.autopeering.runAsEntryNode' $hornetHome/$hornetNetwork.json)"
+if [ "$hornetRunAsEntryNode" = "true" ] || [ "$hornetRunAsEntryNode" = "false" ]; then
+    if [ "$parser" != "$hornetRunAsEntryNode" ]; then
+        sudo jq '.p2p.autopeering.runAsEntryNode = '$hornetRunAsEntryNode'' $hornetHome/$hornetNetwork.json|sponge $hornetHome/$hornetNetwork.json
+        restartHornet=true
     fi
-done
-
-unset ARRAYhornetConfigs
-unset hornetConfig
+fi
