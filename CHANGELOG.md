@@ -1,3 +1,10 @@
+## Version 1.0.4
+### Changed
+- Fixed proxy deployent
+- Fixed WASP admin whitelist configuration
+
+---
+
 ## Version 1.0.3
 - Hotfix proxy
 
