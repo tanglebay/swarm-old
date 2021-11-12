@@ -1,3 +1,8 @@
+## Version 1.0.3
+- Hotfix proxy
+
+---
+
 ## Version 1.0.2
 - Hotfix for Bee parser
 - Hotfix for Hornet parser
