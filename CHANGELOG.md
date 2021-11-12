@@ -1,4 +1,10 @@
-## Version 1.0.4
+## Version 1.0.3.2
+### Changed
+- Fixed proxy webapi status in waspInfo
+
+---
+
+## Version 1.0.3.1
 ### Changed
 - Fixed proxy deployent
 - Fixed WASP admin whitelist configuration
