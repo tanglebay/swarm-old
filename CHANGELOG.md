@@ -1,3 +1,8 @@
+## Version 1.0.2
+- Hotfix for Bee
+
+---
+
 ## Version 1.0.1
 ### Added
 - Added option to allow/deny GoShimmer db download by Watchdog
