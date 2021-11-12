@@ -1,5 +1,6 @@
 ## Version 1.0.2
-- Hotfix for Bee
+- Hotfix for Bee parser
+- Hotfix for Hornet parser
 
 ---
 
