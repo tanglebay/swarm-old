@@ -1,6 +1,7 @@
 ## Version 1.0.3.2
 ### Changed
 - Fixed proxy webapi status in waspInfo
+- Disabled WASP installation
 
 ---
 
