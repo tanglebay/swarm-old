@@ -1,5 +1,22 @@
 #!/bin/bash
 
+if [ -f "/usr/bin/bee" ]; then
+    beeVersionCheck=$(curl -s -X GET "http://localhost:14266/api/v1/info" -H  "accept: application/json"|jq '.data.version' | tr -d '".' | cut -f1 -d"-")
+    beeVersionZeroCheck=${beeVersionCheck:0:1}
+    if [ "$beeVersionZeroCheck" = "0" ]; then
+        beeVersionCheck=${beeVersionCheck:1}
+    fi
+    if [ ! -z "$beeVersionCheck" ] && [ $beeVersionCheck -gt 21 ]; then
+        if [ "$ufw" = "true" ]; then
+            sudo ufw allow $beeAutopeeringPort/udp > /dev/null 2>&1
+        fi
+    fi
+else
+    if [ "$ufw" = "true" ]; then
+        sudo ufw delete allow $beeAutopeeringPort/udp > /dev/null 2>&1
+    fi
+fi
+
 if [ "$beeNetwork" = "mainnet" ]; then
     parserBefore=$(sed -n '/\[autopeering\]/,/\[protocol\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
     sed -i '/\[autopeering\]/,/\[protocol\]/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
