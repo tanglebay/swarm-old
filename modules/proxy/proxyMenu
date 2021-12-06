@@ -23,7 +23,7 @@ while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
                     whiptail --title "Proxy Menu" --menu "\nChoose an option" 16 65 0 \
-                    "1)" "Landing page settings" \
+                    "1)" "SWARM dashboard settings" \
                     "2)" "Hornet proxy settings" \
                     "3)" "Bee proxy settings" \
                     "4)" "GoShimmer proxy settings" \
@@ -38,17 +38,17 @@ while [ $exitCode -lt 1 ]; do
                 case $CHOICE in
                     "1)")
                         source $swarmConfigs/proxy.cfg
-                        currentProxyLandingUrl="$proxyLandingUrl"
-                        proxyLandingUrl=$(whiptail --inputbox "\nSet your domain and port for the landing page" 10 65 $proxyLandingUrl --title "Proxy - Landing" 3>&1 1>&2 2>&3)
+                        currentProxySwarmDashboardUrl="$proxySwarmDashboardUrl"
+                        proxySwarmDashboardUrl=$(whiptail --inputbox "\nSet your domain and port for the SWARM dashboard" 10 65 $proxySwarmDashboardUrl --title "Proxy - SWARM Dashboard" 3>&1 1>&2 2>&3)
                         exitStatus=$?
                         if [ "$exitStatus" != "1" ]; then
-                            if [ "$currentProxyLandingUrl" != "$proxyLandingUrl" ]; then
-                                proxyLandingDomain=$(echo $proxyLandingUrl | sed 's/:.*//')
-                                proxyLandingPort=$(echo $proxyLandingUrl | sed 's/.*://')
-                                sudo sed -i 's/^proxyLandingUrl=.*/proxyLandingUrl="'$proxyLandingUrl'"/' $swarmConfigs/proxy.cfg
-                                whiptail --title "Proxy - Landing" --msgbox "URL for landing proxy set to \"$proxyLandingUrl\"" 8 65
+                            if [ "$currentProxySwarmDashboardUrl" != "$proxySwarmDashboardUrl" ]; then
+                                proxySwarmDashboardDomain=$(echo $proxySwarmDashboardUrl | sed 's/:.*//')
+                                proxySwarmDashboardPort=$(echo $proxySwarmDashboardUrl | sed 's/.*://')
+                                sudo sed -i 's/^proxySwarmDashboardUrl=.*/proxySwarmDashboardUrl="'$proxySwarmDashboardUrl'"/' $swarmConfigs/proxy.cfg
+                                whiptail --title "Proxy - SWARM Dashboard" --msgbox "URL for SWARM dashboard proxy set to \"$proxySwarmDashboardUrl\"" 8 65
                             else
-                                whiptail --title "Proxy - Landing" --msgbox "No landing url change detected" 8 65
+                                whiptail --title "Proxy - SWARM Dashboard" --msgbox "No SWARM dashboard url change detected" 8 65
                             fi
                         fi
                     ;;
@@ -225,6 +225,7 @@ while [ $exitCode -lt 1 ]; do
                             echo 0
                             if [ "$ufw" = "true" ]; then
                                 sudo ufw delete allow 80/tcp > /dev/null 2>&1
+                                sudo ufw delete allow $proxySwarmDashboardPort/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $proxyHornetPort/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $proxyBeePort/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
@@ -242,14 +243,12 @@ while [ $exitCode -lt 1 ]; do
                             if [ -d "/etc/letsencrypt" ]; then
                                 sudo rm -rf /etc/letsencrypt > /dev/null 2>&1
                             fi
-                            sudo sed -i 's/^proxyHornetDomain=.*/proxyHornetDomain=""/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyBeeDomain=.*/proxyBeeDomain=""/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyGoshimmerDomain=.*/proxyGoshimmerDomain=""/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyHornetPort=.*/proxyHornetPort=/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyBeePort=.*/proxyBeePort=/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyGoshimmerPort=.*/proxyGoshimmerPort=/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyWaspDashboardPort=.*/proxyWaspDashboardPort=/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyWaspApiPort=.*/proxyWaspApiPort=/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxySwarmDashboardUrl=.*/proxySwarmDashboardUrl=/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetDomain=""/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyBeeUrl=.*/proxyBeeUrl=""/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyGoshimmerUrl=.*/proxyGoshimmerUrl=""/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyWaspDashboardUrl=.*/proxyWaspDashboardUrl=/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyWaspApiUrl=.*/proxyWaspApiUrl=/' $swarmConfigs/proxy.cfg
                             echo 100
                             sleep 0.25
                         } | whiptail --gauge "Please wait while removing the proxy..." 6 65 0
@@ -258,7 +257,8 @@ while [ $exitCode -lt 1 ]; do
                 ;;
                 "3)")
                     # Manual renew certificate if installed
-                    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
+                    source $proxyModules/proxyParser
+                    if [ -f "/etc/letsencrypt/live/$proxySwarmDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
                         sudo certbot renew
                     else
                         whiptail --title "Proxy Menu" --msgbox "Error! No SSL Certificate installed!" 8 65
