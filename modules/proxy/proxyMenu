@@ -27,7 +27,8 @@ while [ $exitCode -lt 1 ]; do
                     "2)" "Hornet proxy settings" \
                     "3)" "Bee proxy settings" \
                     "4)" "GoShimmer proxy settings" \
-                    "5)" "WASP proxy settings" 3>&2 2>&1 1>&3
+                    "5)" "WASP proxy settings" \
+                    "6)" "Advanced Settings" 3>&2 2>&1 1>&3
                 )
 
                 exitStatus=$?
@@ -134,6 +135,40 @@ while [ $exitCode -lt 1 ]; do
                                         else
                                             whiptail --title "Proxy - WASP API" --msgbox "No WASP API url change detected" 8 65
                                         fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                    "6)")
+                        while [ $exitCode -lt 1 ]; do
+                            source $swarmConfigs/proxy.cfg
+                            clear
+                            if [ "$proxyAutomaticDeployment" = "true" ]; then
+                                proxyAutomaticDeploymentMenu="Disable"
+                            else
+                                proxyAutomaticDeploymentMenu="Enable"
+                            fi
+                            CHOICE=$(
+                                whiptail --title "Proxy - Advanced Settings" --menu "\nChoose an option" 14 65 0 \
+                                "1)" "$proxyAutomaticDeploymentMenu automatic proxy deployment" 3>&2 2>&1 1>&3
+                            )
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
+                            fi
+                            case $CHOICE in
+                                "1)")
+                                    source $swarmConfigs/proxy.cfg
+                                    if [ "$proxyAutomaticDeployment" = "true" ]; then
+                                        proxyAutomaticDeployment=false
+                                        sudo sed -i 's/^proxyAutomaticDeployment=.*/proxyAutomaticDeployment='$proxyAutomaticDeployment'/' $swarmConfigs/proxy.cfg
+                                        whiptail --title "Proxy - Advanced Settings" --msgbox "Automatic proxy deployment disabled successfully." 8 65
+                                    else
+                                        proxyAutomaticDeployment=true
+                                        sudo sed -i 's/^proxyAutomaticDeployment=.*/proxyAutomaticDeployment='$proxyAutomaticDeployment'/' $swarmConfigs/proxy.cfg
+                                        whiptail --title "Proxy - Advanced Settings" --msgbox "Automatic proxy deployment enabled successfully." 8 65
                                     fi
                                 ;;
                             esac
