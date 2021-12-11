@@ -24,10 +24,13 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "2)")
             while [ $exitCode -lt 1 ]; do
+                beePeerNumber=1
+                currentBeePeer="$beePeer1"
                 CHOICE=$(
-                    whiptail --title "Bee - Peer 1" --menu "\nChoose an option" 16 65 0 \
-                    "1)" "Edit alias" \
-                    "2)" "Edit address" 3>&2 2>&1 1>&3
+                    whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beePeerNumber address" \
+                    "2)" "Edit Peer$beePeerNumber alias" \ 
+                    "3)" "Delete Peer$beePeerNumber" 3>&2 2>&1 1>&3
                 )
                 exitstatus=$?
                 if [ "$exitstatus" = "1" ]; then
@@ -35,18 +38,110 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        currentBeePeerAlias1="$beePeerAlias1"
-                        beePeerAlias1=$(whiptail --inputbox "\nPlease enter a alias for \"peer 1\" or select cancel" 10 65 $beePeerAlias1 --title "Bee - Peer 1" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeerAlias1" != "$beePeerAlias1" ]; then
-                            sudo sed -i 's/^beePeerAlias1=.*/beePeerAlias1="'$beePeerAlias1'"/' $swarmConfigs/bee.cfg
-                            restartBee=true
-                        fi
+                        CHOICE=$(
+                            whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                            "1)" "DNS" \
+                            "2)" "IPv4" \
+                            "3)" "IPv6" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the domain for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv4 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv6 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                        esac
                     ;;
                     "2)")
-                        currentBeePeer1="$beePeer1"
-                        beePeer1=$(whiptail --inputbox "\nPlease enter the address for \"peer 1\" or select cancel" 10 65 $beePeer1 --title "Bee - Peer 1" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeer1" != "$beePeer1" ]; then
-                            sudo sed -i 's~^beePeer1=.*~beePeer1="'$beePeer1'"~g' $swarmConfigs/bee.cfg
+                        currentBeePeerAlias="$beePeerAlias1"
+                        beePeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beePeerNumber\" or select cancel" 10 65 $currentBeePeerAlias --title "Bee - Peer $beePeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeePeerAlias" != "$beePeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'="'$beePeerAlias'"/' $swarmConfigs/bee.cfg
+                            restartBee=true
+                        fi
+                        unset currentBeePeerAlias
+                        unset beePeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee - Peer $beePeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beePeerNumber?" 8 65); then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'=""/' $swarmConfigs/bee.cfg
                             restartBee=true
                         fi
                     ;;
@@ -56,10 +151,13 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "3)")
             while [ $exitCode -lt 1 ]; do
+                beePeerNumber=2
+                currentBeePeer="$beePeer2"
                 CHOICE=$(
-                    whiptail --title "Bee - Peer 2" --menu "\nChoose an option" 16 65 0 \
-                    "1)" "Edit alias" \
-                    "2)" "Edit address" 3>&2 2>&1 1>&3
+                    whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beePeerNumber address" \
+                    "2)" "Edit Peer$beePeerNumber alias" \ 
+                    "3)" "Delete Peer$beePeerNumber" 3>&2 2>&1 1>&3
                 )
                 exitstatus=$?
                 if [ "$exitstatus" = "1" ]; then
@@ -67,18 +165,110 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        currentBeePeerAlias2="$beePeerAlias2"
-                        beePeerAlias2=$(whiptail --inputbox "\nPlease enter a alias for \"peer 2\" or select cancel" 10 65 $beePeerAlias2 --title "Bee - Peer 2" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeerAlias2" != "$beePeerAlias2" ]; then
-                            sudo sed -i 's/^beePeerAlias2=.*/beePeerAlias2="'$beePeerAlias2'"/' $swarmConfigs/bee.cfg
-                            restartBee=true
-                        fi
+                        CHOICE=$(
+                            whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                            "1)" "DNS" \
+                            "2)" "IPv4" \
+                            "3)" "IPv6" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the domain for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv4 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv6 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                        esac
                     ;;
                     "2)")
-                        currentBeePeer2="$beePeer2"
-                        beePeer2=$(whiptail --inputbox "\nPlease enter the address for \"peer 2\" or select cancel" 10 65 $beePeer2 --title "Bee - Peer 2" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeer2" != "$beePeer2" ]; then
-                            sudo sed -i 's~^beePeer2=.*~beePeer2="'$beePeer2'"~g' $swarmConfigs/bee.cfg
+                        currentBeePeerAlias="$beePeerAlias2"
+                        beePeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beePeerNumber\" or select cancel" 10 65 $currentBeePeerAlias --title "Bee - Peer $beePeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeePeerAlias" != "$beePeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'="'$beePeerAlias'"/' $swarmConfigs/bee.cfg
+                            restartBee=true
+                        fi
+                        unset currentBeePeerAlias
+                        unset beePeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee - Peer $beePeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beePeerNumber?" 8 65); then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'=""/' $swarmConfigs/bee.cfg
                             restartBee=true
                         fi
                     ;;
@@ -88,10 +278,13 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "4)")
             while [ $exitCode -lt 1 ]; do
+                beePeerNumber=3
+                currentBeePeer="$beePeer3"
                 CHOICE=$(
-                    whiptail --title "Bee - Peer 3" --menu "\nChoose an option" 16 65 0 \
-                    "1)" "Edit alias" \
-                    "2)" "Edit address" 3>&2 2>&1 1>&3
+                    whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beePeerNumber address" \
+                    "2)" "Edit Peer$beePeerNumber alias" \ 
+                    "3)" "Delete Peer$beePeerNumber" 3>&2 2>&1 1>&3
                 )
                 exitstatus=$?
                 if [ "$exitstatus" = "1" ]; then
@@ -99,18 +292,110 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        currentBeePeerAlias3="$beePeerAlias3"
-                        beePeerAlias3=$(whiptail --inputbox "\nPlease enter a alias for \"peer 3\" or select cancel" 10 65 $beePeerAlias3 --title "Bee - Peer 3" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeerAlias3" != "$beePeerAlias3" ]; then
-                            sudo sed -i 's/^beePeerAlias3=.*/beePeerAlias3="'$beePeerAlias3'"/' $swarmConfigs/bee.cfg
-                            restartBee=true
-                        fi
+                        CHOICE=$(
+                            whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                            "1)" "DNS" \
+                            "2)" "IPv4" \
+                            "3)" "IPv6" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the domain for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv4 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv6 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                        esac
                     ;;
                     "2)")
-                        currentBeePeer3="$beePeer3"
-                        beePeer3=$(whiptail --inputbox "\nPlease enter the address for \"peer 3\" or select cancel" 10 65 $beePeer3 --title "Bee - Peer 3" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeer3" != "$beePeer3" ]; then
-                            sudo sed -i 's~^beePeer3=.*~beePeer3="'$beePeer3'"~g' $swarmConfigs/bee.cfg
+                        currentBeePeerAlias="$beePeerAlias3"
+                        beePeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beePeerNumber\" or select cancel" 10 65 $currentBeePeerAlias --title "Bee - Peer $beePeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeePeerAlias" != "$beePeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'="'$beePeerAlias'"/' $swarmConfigs/bee.cfg
+                            restartBee=true
+                        fi
+                        unset currentBeePeerAlias
+                        unset beePeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee - Peer $beePeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beePeerNumber?" 8 65); then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'=""/' $swarmConfigs/bee.cfg
                             restartBee=true
                         fi
                     ;;
@@ -120,10 +405,13 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "5)")
             while [ $exitCode -lt 1 ]; do
+                beePeerNumber=4
+                currentBeePeer="$beePeer4"
                 CHOICE=$(
-                    whiptail --title "Bee - Peer 4" --menu "\nChoose an option" 16 65 0 \
-                    "1)" "Edit alias" \
-                    "2)" "Edit address" 3>&2 2>&1 1>&3
+                    whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beePeerNumber address" \
+                    "2)" "Edit Peer$beePeerNumber alias" \ 
+                    "3)" "Delete Peer$beePeerNumber" 3>&2 2>&1 1>&3
                 )
                 exitstatus=$?
                 if [ "$exitstatus" = "1" ]; then
@@ -131,18 +419,110 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        currentBeePeerAlias4="$beePeerAlias4"
-                        beePeerAlias4=$(whiptail --inputbox "\nPlease enter a alias for \"peer 4\" or select cancel" 10 65 $beePeerAlias4 --title "Bee - Peer 4" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeerAlias4" != "$beePeerAlias4" ]; then
-                            sudo sed -i 's/^beePeerAlias4=.*/beePeerAlias4="'$beePeerAlias4'"/' $swarmConfigs/bee.cfg
-                            restartBee=true
-                        fi
+                        CHOICE=$(
+                            whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                            "1)" "DNS" \
+                            "2)" "IPv4" \
+                            "3)" "IPv6" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the domain for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv4 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv6 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                        esac
                     ;;
                     "2)")
-                        currentBeePeer4="$beePeer4"
-                        beePeer4=$(whiptail --inputbox "\nPlease enter the address for \"peer 4\" or select cancel" 10 65 $beePeer4 --title "Bee - Peer 4" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeer4" != "$beePeer4" ]; then
-                            sudo sed -i 's~^beePeer4=.*~beePeer4="'$beePeer4'"~g' $swarmConfigs/bee.cfg
+                        currentBeePeerAlias="$beePeerAlias4"
+                        beePeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beePeerNumber\" or select cancel" 10 65 $currentBeePeerAlias --title "Bee - Peer $beePeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeePeerAlias" != "$beePeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'="'$beePeerAlias'"/' $swarmConfigs/bee.cfg
+                            restartBee=true
+                        fi
+                        unset currentBeePeerAlias
+                        unset beePeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee - Peer $beePeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beePeerNumber?" 8 65); then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'=""/' $swarmConfigs/bee.cfg
                             restartBee=true
                         fi
                     ;;
@@ -152,10 +532,13 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "6)")
             while [ $exitCode -lt 1 ]; do
+                beePeerNumber=5
+                currentBeePeer="$beePeer5"
                 CHOICE=$(
-                    whiptail --title "Bee - Peer 5" --menu "\nChoose an option" 16 65 0 \
-                    "1)" "Edit alias" \
-                    "2)" "Edit address" 3>&2 2>&1 1>&3
+                    whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beePeerNumber address" \
+                    "2)" "Edit Peer$beePeerNumber alias" \ 
+                    "3)" "Delete Peer$beePeerNumber" 3>&2 2>&1 1>&3
                 )
                 exitstatus=$?
                 if [ "$exitstatus" = "1" ]; then
@@ -163,18 +546,110 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        currentBeePeerAlias5="$beePeerAlias5"
-                        beePeerAlias5=$(whiptail --inputbox "\nPlease enter a alias for \"peer 5\" or select cancel" 10 65 $beePeerAlias5 --title "Bee - Peer 5" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeerAlias5" != "$beePeerAlias5" ]; then
-                            sudo sed -i 's/^beePeerAlias5=.*/beePeerAlias5="'$beePeerAlias5'"/' $swarmConfigs/bee.cfg
-                            restartBee=true
-                        fi
+                        CHOICE=$(
+                            whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                            "1)" "DNS" \
+                            "2)" "IPv4" \
+                            "3)" "IPv6" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the domain for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv4 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv6 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                        esac
                     ;;
                     "2)")
-                        currentBeePeer5="$beePeer5"
-                        beePeer5=$(whiptail --inputbox "\nPlease enter the address for \"peer 5\" or select cancel" 10 65 $beePeer5 --title "Bee - Peer 5" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeer5" != "$beePeer5" ]; then
-                            sudo sed -i 's~^beePeer5=.*~beePeer5="'$beePeer5'"~g' $swarmConfigs/bee.cfg
+                        currentBeePeerAlias="$beePeerAlias5"
+                        beePeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beePeerNumber\" or select cancel" 10 65 $currentBeePeerAlias --title "Bee - Peer $beePeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeePeerAlias" != "$beePeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'="'$beePeerAlias'"/' $swarmConfigs/bee.cfg
+                            restartBee=true
+                        fi
+                        unset currentBeePeerAlias
+                        unset beePeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee - Peer $beePeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beePeerNumber?" 8 65); then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'=""/' $swarmConfigs/bee.cfg
                             restartBee=true
                         fi
                     ;;
@@ -184,10 +659,13 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "7)")
             while [ $exitCode -lt 1 ]; do
+                beePeerNumber=6
+                currentBeePeer="$beePeer6"
                 CHOICE=$(
-                    whiptail --title "Bee - Peer 6" --menu "\nChoose an option" 16 65 0 \
-                    "1)" "Edit alias" \
-                    "2)" "Edit address" 3>&2 2>&1 1>&3
+                    whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beePeerNumber address" \
+                    "2)" "Edit Peer$beePeerNumber alias" \ 
+                    "3)" "Delete Peer$beePeerNumber" 3>&2 2>&1 1>&3
                 )
                 exitstatus=$?
                 if [ "$exitstatus" = "1" ]; then
@@ -195,18 +673,110 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        currentBeePeerAlias6="$beePeerAlias6"
-                        beePeerAlias6=$(whiptail --inputbox "\nPlease enter a alias for \"peer 6\" or select cancel" 10 65 $beePeerAlias6 --title "Bee - Peer 6" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeerAlias6" != "$beePeerAlias6" ]; then
-                            sudo sed -i 's/^beePeerAlias6=.*/beePeerAlias6="'$beePeerAlias6'"/' $swarmConfigs/bee.cfg
-                            restartBee=true
-                        fi
+                        CHOICE=$(
+                            whiptail --title "Bee - Peer $beePeerNumber" --menu "\nChoose an option" 16 65 0 \
+                            "1)" "DNS" \
+                            "2)" "IPv4" \
+                            "3)" "IPv6" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the domain for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv4 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                            "2)")
+                                beePeerAddress=$(echo $currentBeePeer | cut -c 6- | cut -f1 -d "/")
+                                beePeerAddress=$(whiptail --inputbox "\nPlease enter the IPv6 address for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerAddress --title "Bee - Peer$beePeerNumber Address" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beePeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                                    beePeerPort=$(echo $currentBeePeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                    beePeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerPort --title "Bee - Peer$beePeerNumber Port" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beePeerPort" ] && [ $beePeerPort -eq $beePeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                        beePeerId=$(echo $currentBeePeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                        beePeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beePeerNumber\" or select cancel" 10 65 $beePeerId --title "Bee - Peer$beePeerNumber ID" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ ! -z "$beePeerId" ] && [ "$exitStatus" != "1" ]; then
+                                            beePeer="/dns/$beePeerAddress/tcp/$beePeerPort/p2p/$beePeerId"
+                                            if [ "$currentBeePeer" != "$beePeer" ]; then
+                                                sudo sed -i 's~^beePeer'$beePeerNumber'=.*~beePeer'$beePeerNumber'="'$beePeer'"~g' $swarmConfigs/bee.cfg
+                                                restartBee=true
+                                            fi
+                                        fi
+                                    fi
+                                fi
+                                unset beePeerNumber
+                                unset currentBeePeer
+                                unset beePeerAddress
+                                unset beePeerPort
+                                unset beePeerId
+                            ;;
+                        esac
                     ;;
                     "2)")
-                        currentBeePeer6="$beePeer6"
-                        beePeer6=$(whiptail --inputbox "\nPlease enter the address for \"peer 6\" or select cancel" 10 65 $beePeer6 --title "Bee - Peer 6" 3>&1 1>&2 2>&3)
-                        if [ "$currentBeePeer6" != "$beePeer6" ]; then
-                            sudo sed -i 's~^beePeer6=.*~beePeer6="'$beePeer6'"~g' $swarmConfigs/bee.cfg
+                        currentBeePeerAlias="$beePeerAlias6"
+                        beePeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beePeerNumber\" or select cancel" 10 65 $currentBeePeerAlias --title "Bee - Peer $beePeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeePeerAlias" != "$beePeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'="'$beePeerAlias'"/' $swarmConfigs/bee.cfg
+                            restartBee=true
+                        fi
+                        unset currentBeePeerAlias
+                        unset beePeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee - Peer $beePeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beePeerNumber?" 8 65); then
+                            sudo sed -i 's/^beePeerAlias'$beePeerNumber'=.*/beePeerAlias'$beePeerNumber'=""/' $swarmConfigs/bee.cfg
                             restartBee=true
                         fi
                     ;;
