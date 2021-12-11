@@ -1,3 +1,11 @@
+## Version 1.0.5
+### Added
+- Added new Bee peers configuration
+### Changed
+- Updated proxy templates for Hornet/bee
+
+---
+
 ## Version 1.0.3.2
 ### Changed
 - Fixed proxy webapi status in waspInfo
