@@ -91,7 +91,7 @@ After the reinstallation, simply replace the configurations with your backup, ru
 
 ---
 
-## Tips
+## Donate
 
 **IOTA Address:**
 ```
