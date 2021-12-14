@@ -4,7 +4,9 @@ if [ ! -f "$hornetHome/p2pstore/identity.key" ]; then
     if [ -z "$hornetIdentity" ]; then
         sudo systemctl stop hornet
         ( cd $hornetHome ; sudo -u hornet /usr/bin/hornet tools p2pidentity-gen )
-        restartHornet=true
+        hornetIdentity=$(cat $hornetHome/p2pstore/identity.key | sed -n '2 p')
+        sudo sed -i 's~^hornetIdentity=.*~hornetIdentity="'$hornetIdentity'"~' $swarmConfigs/hornet.cfg
+        sudo systemctl start hornet
     else
         sudo systemctl stop hornet
         sudo rm -rf $hornetHome/config*db $hornetHome/db $hornetHome/p2pstore/*.* 2>/dev/null
@@ -14,8 +16,6 @@ if [ ! -f "$hornetHome/p2pstore/identity.key" ]; then
         sudo chown 660 $hornetHome/p2pstore/identity.key
         sudo systemctl start hornet
     fi
-    hornetIdentity=$(cat $hornetHome/p2pstore/identity.key | sed -n '2 p')
-    sudo sed -i 's~^hornetIdentity=.*~hornetIdentity="'$hornetIdentity'"~' $swarmConfigs/hornet.cfg
 fi
 
 parser=$(cat $hornetHome/p2pstore/identity.key | sed -n '2 p')
