@@ -1,26 +1,18 @@
 #!/bin/bash
 
-if [ -z "$hornetP2pIdentity" ]; then
-    hornetP2pIdentity="$(jq '.p2p.identityPrivateKey' $hornetHome/config.json)"
-fi
-if [ "$hornetP2pIdentity" != "null" ] && [ ! -z "$hornetP2pIdentity" ]; then
-    if [ -f "$hornetHome/p2pstore/identity.key" ]; then
-        sudo rm -rf $hornetHome/p2pstore/identity.key
-    fi
-    ( cd $hornetHome ; sudo -u hornet /usr/bin/hornet tools p2pidentity-gen p2pstore $hornetP2pIdentity )
-    if [ -f "$hornetHome/p2pstore/identity.key" ]; then
-        hornetIdentity=$(cat $hornetHome/p2pstore/identity.key | sed -n '2 p')
-        sed -i '2 s~.*~'$hornetIdentity'~' $hornetHome/p2pstore/identity.key
-        sudo jq 'del(.p2p.identityPrivateKey)' $hornetHome/config.json|sponge $hornetHome/config.json
-        restartHornet=true
-        hornetIdentityUpdated=true
-        unset hornetP2pIdentity
-    fi
-fi
-
-if [ -z "$hornetIdentity" ] || [ ! -f "$hornetHome/p2pstore/identity.key" ]; then
-    if [ ! -f "$hornetHome/p2pstore/identity.key" ]; then
+if [ ! -f "$hornetHome/p2pstore/identity.key" ]; then
+    if [ -z "$hornetIdentity" ]; then
+        sudo systemctl stop hornet
         ( cd $hornetHome ; sudo -u hornet /usr/bin/hornet tools p2pidentity-gen )
+        restartHornet=true
+    else
+        sudo systemctl stop hornet
+        sudo rm -rf $hornetHome/config*db $hornetHome/db $hornetHome/p2pstore/*.* 2>/dev/null
+        sudo -u hornet echo "-----BEGIN PRIVATE KEY-----" > $hornetHome/p2pstore/identity.key
+        sudo -u hornet echo "$hornetIdentity" >> $hornetHome/p2pstore/identity.key
+        sudo -u hornet echo "-----END PRIVATE KEY-----" >> $hornetHome/p2pstore/identity.key
+        sudo chown 660 $hornetHome/p2pstore/identity.key
+        sudo systemctl start hornet
     fi
     hornetIdentity=$(cat $hornetHome/p2pstore/identity.key | sed -n '2 p')
     sudo sed -i 's~^hornetIdentity=.*~hornetIdentity="'$hornetIdentity'"~' $swarmConfigs/hornet.cfg

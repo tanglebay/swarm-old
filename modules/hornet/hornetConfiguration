@@ -140,19 +140,20 @@ while [ $exitCode -lt 1 ]; do
                     "2)")
                         if (whiptail --title "Hornet - API & JWT" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
                             sudo systemctl stop hornet
-                            hornetJwtToken=$( cd $hornetHome ; hornet tools jwt-api)
-                            echo $hornetJwtToken >> $swarmLogs/jwt.log
+                            hornetApiJwtToken=$( cd $hornetHome ; hornet tools jwt-api)
+                            sudo sed -i 's~^hornetApiJwtToken=.*~hornetApiJwtToken="'$hornetApiJwtToken'"~' $swarmConfigs/hornet.cfg
+                            echo $hornetApiJwtToken >> $swarmLogs/hornetJwtToken.log
                             clear
                             echo ""
-                            echo $hornetJwtToken
+                            echo $hornetApiJwtToken
                             echo ""
                             read -n 1 -s -r -p "Press any key to continue"
                             sudo systemctl start hornet
                         fi
                     ;;
                     "3)")
-                        if [ -f "$swarmLogs/hornetJwt.log" ]; then
-                            sudo $swarmCLEditor $swarmLogs/hornetJwt.log
+                        if [ -f "$swarmLogs/hornetJwtToken.log" ]; then
+                            sudo $swarmCLEditor $swarmLogs/hornetJwtToken.log
                         else
                             whiptail --title "Hornet - API & JWT" --msgbox "No JWT token log found, please generate one first!" 8 65
                         fi
@@ -161,16 +162,19 @@ while [ $exitCode -lt 1 ]; do
                         if (whiptail --title "Hornet - API & JWT" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
                             hornetApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
                             sudo sed -i 's~^hornetApiJwtSalt=.*~hornetApiJwtSalt="'$hornetApiJwtSalt'"~' $swarmConfigs/hornet.cfg
-                            source $hornetConfigParsers/hornetApiJwtSalt
-                            sudo rm -rf $swarmLogs/hornetJwt.log
                             {
                                 echo 0
+                                echo 25
+                                source $hornetConfigParsers/hornetApiJwtSalt
+                                sudo rm -rf $swarmLogs/hornetJwt.log
                                 echo 50
-                                sudo systemctl restart hornet
+                                source $hornetConfigParsers/hornetIdentity
+                                echo 75
+                                sudo sed -i 's~^hornetApiJwtToken=.*~hornetApiJwtToken=""~' $swarmConfigs/hornet.cfg
                                 echo 100
                             } | whiptail --gauge "Please wait while all JWT tokens will be revoked..." 8 65 0
-                            newHornetApiJwtToken=true
-                            source $hornetConfigParsers/hornetApiJwtToken
+                            restartHornet=true
+                            unset hornetApiJwtToken
                         fi
                     ;;
                 esac
@@ -215,7 +219,7 @@ while [ $exitCode -lt 1 ]; do
                     "2)")
                         if (whiptail --title "Hornet - Participation" --yesno --defaultno "Do you really want to add a new event?" 8 65); then
                             if [ -s "$hornetHome/event.json" ]; then
-                                hornetApiParticipationEventId=$(curl -s -X POST "http://localhost:14265/api/plugins/participation/admin/events" -H "Content-Type: application/json" -H "Authorization: Bearer ${hornetApiJwtToken}" -d @event.json |jq -r '.data.eventId')
+                                hornetApiParticipationEventId=$(curl -s -X POST "http://localhost:14265/api/plugins/participation/admin/events" -H "Content-Type: application/json" -H "Authorization: Bearer ${hornetApiJwtToken}" -d @$hornetHome/event.json |jq -r '.data.eventId')
                                 if [ ! -z "$hornetApiParticipationEventId" ] && [ "$hornetApiParticipationEventId" != "null" ] && [ "$hornetApiParticipationEventId" != "\"null\"" ]; then
                                     clear
                                     echo ""
