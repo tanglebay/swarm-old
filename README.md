@@ -2,7 +2,7 @@
 SWARM
 </h1>
 
-<p><img src="https://raw.githubusercontent.com/tanglebay/swarm/master/swarm_gh_banner.png?sanitize=true"></p>
+<p><img src="https://raw.githubusercontent.com/tanglebay/swarm/master/logo/swarm_gh_banner.png?sanitize=true"></p>
 
 <p align="center">
 SWARM is a script that allows you to easily install and manage an IOTA node. The most important configuration options are given via simple and selectable menu items. About the additional feature "Watchdog", the status of the nodes can be monitored, as well as automatically install updates. A reverse proxy installation is also offered for secure access via HTTPS.
