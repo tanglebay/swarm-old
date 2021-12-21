@@ -4,12 +4,14 @@ IFS=', ' read -r -a ARRAYhornetApiProtectedRoutes <<< "$hornetApiProtectedRoutes
 validateHornetApiProtectedRoutes=$(echo "${hornetApiProtectedRoutes: -1}")
 if [ "$validateHornetApiProtectedRoutes" = "," ]; then
     hornetApiProtectedRoutes="${hornetApiProtectedRoutes%?}"
+    sudo sed -i 's~^hornetApiProtectedRoutes=.*~hornetApiProtectedRoutes="'$hornetApiProtectedRoutes'"~' $swarmConfigs/hornet.cfg
+    hornetForceApiProtectedRoutes=true
 fi
 
 parser="$(jq '.restAPI.protectedRoutes' $hornetHome/$hornetConfig.json)"
 parser="$(echo $parser | tr -d '[]" ')"
 
-if [ "$parser" != "$hornetApiProtectedRoutes" ]; then
+if [ "$parser" != "$hornetApiProtectedRoutes" ] || [ "$hornetForceApiProtectedRoutes" = "true" ]; then
     sudo jq '.restAPI.protectedRoutes |= []' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
     for hornetApiProtectedRoute in "${ARRAYhornetApiProtectedRoutes[@]}"
     do
@@ -19,3 +21,4 @@ if [ "$parser" != "$hornetApiProtectedRoutes" ]; then
 fi
 unset ARRAYhornetApiProtectedRoutes
 unset hornetApiProtectedRoute
+unset hornetForceApiProtectedRoutes
