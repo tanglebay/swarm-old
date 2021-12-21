@@ -106,42 +106,44 @@ if [ -f "/usr/bin/bee" ] && [ "$beeRunAsEntryNode" = "false" ]; then
     fi
 fi
 
-if [ -f "/usr/bin/goshimmer" ] && [ ! -f "/tmp/goshimmer.lock" ] && [ "$goshimmerRunAsEntryNode" = "false" ]; then
-    # GoShimmer Sync Check
-    goshimmerSyncStatus="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.synced')"
-    if [ "$goshimmerCheckSync" = "true" ] && [ "$goshimmerStatus" = "active" ] && [ "$goshimmerSyncStatus" = "false" ]; then
-            getGoshimmerTangleTime=$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.time')
-            if [ "$getGoshimmerTangleTime" = "$goshimmerTangleTime" ]; then
-                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                if [ $goshimmerSyncCounter -gt 4 ] 2>/dev/null; then
-                    sudo systemctl stop goshimmer
-                    if [ "$goshimmerAllowDbReset" = "true" ]; then
-                        sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb
-                        source $goshimmerModules/goshimmerDbDownload
-                        echo "$restartDate [WACHTDOG] GOSHIMMER database deleted because node was not synced." >> $swarmLogs/swarm.log
-                        telegramText="[$HOSTNAME] GOSHIMMER database deleted because node was not synced."
+if [ "$timeFrame" = "00" ] || [ "$timeFrame" = "15" ] || [ "$timeFrame" = "30" ] || [ "$timeFrame" = "45" ]; then
+    if [ -f "/usr/bin/goshimmer" ] && [ ! -f "/tmp/goshimmer.lock" ] && [ "$goshimmerRunAsEntryNode" = "false" ]; then
+        # GoShimmer Sync Check
+        goshimmerSyncStatus="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.synced')"
+        if [ "$goshimmerCheckSync" = "true" ] && [ "$goshimmerStatus" = "active" ] && [ "$goshimmerSyncStatus" = "false" ]; then
+                getGoshimmerTangleTime=$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.time')
+                if [ "$getGoshimmerTangleTime" = "$goshimmerTangleTime" ]; then
+                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    if [ $goshimmerSyncCounter -gt 4 ] 2>/dev/null; then
+                        sudo systemctl stop goshimmer
+                        if [ "$goshimmerAllowDbReset" = "true" ]; then
+                            sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb
+                            source $goshimmerModules/goshimmerDbDownload
+                            echo "$restartDate [WACHTDOG] GOSHIMMER database deleted because node was not synced." >> $swarmLogs/swarm.log
+                            telegramText="[$HOSTNAME] GOSHIMMER database deleted because node was not synced."
+                            source $watchdogModules/watchdogTelegram
+                        fi
+                        goshimmerSyncCounter=0
+                        sudo systemctl start goshimmer
+                        echo "$restartDate [WACHTDOG] GOSHIMMER restarted because node was not sync." >> $swarmLogs/swarm.log
+                        telegramText="[$HOSTNAME] GOSHIMMER restarted because node was not sync."
                         source $watchdogModules/watchdogTelegram
+                    else
+                        let goshimmerSyncCounter=$goshimmerSyncCounter+1
                     fi
-                    goshimmerSyncCounter=0
-                    sudo systemctl start goshimmer
-                    echo "$restartDate [WACHTDOG] GOSHIMMER restarted because node was not sync." >> $swarmLogs/swarm.log
-                    telegramText="[$HOSTNAME] GOSHIMMER restarted because node was not sync."
-                    source $watchdogModules/watchdogTelegram
                 else
-                    let goshimmerSyncCounter=$goshimmerSyncCounter+1
+                    if [ "$goshimmerSyncCounter" -gt "0" ]; then
+                        let goshimmerSyncCounter=$goshimmerSyncCounter-1
+                        sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
+                    fi
                 fi
-            else
-                if [ "$goshimmerSyncCounter" -gt "0" ]; then
-                    let goshimmerSyncCounter=$goshimmerSyncCounter-1
-                    sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
-                fi
+                sudo sed -i 's/^goshimmerTangleTime=.*/goshimmerTangleTime='$getGoshimmerTangleTime'/' $swarmConfigs/watchdog.cfg
+                sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
+        else
+            if [ "$goshimmerSyncCounter" -gt "0" ]; then
+                let goshimmerSyncCounter=$goshimmerSyncCounter-1
+                sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
             fi
-            sudo sed -i 's/^goshimmerTangleTime=.*/goshimmerTangleTime='$getGoshimmerTangleTime'/' $swarmConfigs/watchdog.cfg
-            sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
-    else
-        if [ "$goshimmerSyncCounter" -gt "0" ]; then
-            let goshimmerSyncCounter=$goshimmerSyncCounter-1
-            sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
         fi
     fi
 fi
