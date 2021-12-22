@@ -61,12 +61,18 @@ while [ $exitCode -lt 1 ]; do
                 else
                     hornetAllowDbResetMenu="Allow"
                 fi
+                if [ "$hornetServiceStatusCheck" = "true" ]; then
+                    hornetServiceStatusCheckMenu="Disable"
+                else
+                    hornetServiceStatusCheckMenu="Enable"
+                fi
 
                 CHOICE=$(
                     whiptail --title "SWARM - Hornet" --menu "\nChoose an option" 18 65 0 \
                     "1)" "Hornet Sync-Check" \
                     "2)" "$hornetAutoUpdateMenu Hornet AutoUpdater" \
-                    "3)" "$hornetAllowDbResetMenu Hornet database reset" 3>&2 2>&1 1>&3
+                    "3)" "$hornetAllowDbResetMenu Hornet database reset" \
+                    "4)" "$hornetServiceStatusCheckMenu Hornet service status check" 3>&2 2>&1 1>&3
                 )
                 exitStatus=$?
                 if [ "$exitStatus" = "1" ]; then
@@ -138,6 +144,17 @@ while [ $exitCode -lt 1 ]; do
                         fi
                         sudo sed -i 's/^hornetAllowDbReset=.*/hornetAllowDbReset='$hornetAllowDbReset'/' $swarmConfigs/swarm.cfg
                         whiptail --title "SWARM - Hornet" --msgbox "Delete Hornet database $hornetAllowDbResetMenu for Watchdog!" 8 65
+                    ;;
+                    "4)")
+                        if [ "$hornetServiceStatusCheck" = "true" ]; then
+                            hornetServiceStatusCheck=false
+                            hornetServiceStatusCheckMenu="disabled"
+                        else
+                            hornetServiceStatusCheck=true
+                            hornetServiceStatusCheckMenu="enabled"
+                        fi
+                        sudo sed -i 's/^hornetServiceStatusCheck=.*/hornetServiceStatusCheck='$hornetServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - Hornet" --msgbox "Hornet service check with Watchdog $hornetAllowDbResetMenu!" 8 65
                     ;;
                 esac
             done
