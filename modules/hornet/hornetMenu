@@ -230,19 +230,27 @@ while [ $exitCode -lt 1 ]; do
                                         sudo systemctl stop hornet
                                         echo 50
                                         sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots
-                                        sudo wget -O $hornetHome/latest-mainnetdb.tar.gz $hornetUrlDlMainnetDb
+                                        sudo wget -q -O $hornetHome/latest-mainnetdb.tar.gz $hornetUrlDlMainnetDb
                                         if [ -s "$hornetHome/latest-mainnetdb.tar.gz" ]; then
-                                            ( cd $hornetHome ; sudo tar -xzf $hornetHome/latest-mainnetdb.tar.gz ) > /dev/null 2>&1
-                                            sudo chown -R hornet:hornet $hornetHome
+                                            if [ -f "$hornetHome/latest-mainnetdb.tar.gz" ]; then
+                                                ( cd $hornetHome ; sudo tar -xzf $hornetHome/latest-mainnetdb.tar.gz ) > /dev/null 2>&1
+                                                sudo chown -R hornet:hornet $hornetHome
+                                                sudo rm -rf $hornetHome/latest-mainnetdb.tar.gz
+                                            fi
                                         fi
                                         echo 75
                                         sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter=0/' $swarmConfigs/watchdog.cfg
                                         sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter=0/' $swarmConfigs/watchdog.cfg
-                                        sudo systemctl start hornet
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
-                                    whiptail --title "Hornet - Debugging" --msgbox "${hornetNetwork}DB successfully reset and latest DB for voting downloaded." 8 65
+                                    if [ -d "$hornetHome/mainnetdb" ] && [ -d "$hornetHome/snapshots" ]; then
+                                        whiptail --title "Hornet - Debugging" --msgbox "${hornetNetwork}DB successfully reset and latest DB for voting downloaded." 8 65
+                                        sudo systemctl start hornet
+                                    else
+                                        whiptail --title "Hornet - Debugging" --msgbox "${hornetNetwork}DB successfully reset, but downloading latest DB for voting failed." 8 65
+                                        sudo systemctl start hornet
+                                    fi
                                     if [ "$resetHornetServiceStatusCheck" = "true" ]; then
                                         sudo sed -i 's/^hornetServiceStatusCheck=.*/hornetServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
                                         unset resetHornetServiceStatusCheck
