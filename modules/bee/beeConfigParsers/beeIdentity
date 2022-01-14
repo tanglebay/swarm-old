@@ -1,12 +1,20 @@
 #!/bin/bash
+if grep -q "\# identity" $beeHome/config.chrysalis-$beeNetwork.toml
+    sudo sed -i 's~^# identity.*~identity   = ""~' $beeHome/config.chrysalis-$beeNetwork.toml
+fi
 
 if [ -z "$beeIdentity" ]; then
-    beeIdentity=$(/usr/bin/bee p2p-identity | head -n 1 | awk '{ print $5 }')
-    sudo sed -i 's/^beeIdentity=.*/beeIdentity="'$beeIdentity'"/' $swarmConfigs/bee.cfg
+    if [ $beeVersionNumber -gt 29 ] > /dev/null 2>&1; then
+        beeIdentity=$(/usr/bin/bee p2p-identity | head -n 1 | awk '{ print $4 }')
+    else
+        beeIdentity=$(/usr/bin/bee p2p-identity | head -n 1 | awk '{ print $5 }')
+    fi
+    sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
 fi
 
 parser=$(sed -n '/^identity/p' $beeHome/config.chrysalis-$beeNetwork.toml | awk '{ print $3 }')
-if [ "$parser" != "\"$beeIdentity\"" ]; then
+parser=$(echo $parser | tr -d '"')
+if [ "$parser" != "$beeIdentity" ]; then
     sudo sed -i 's~^identity.*~identity   = "'$beeIdentity'"~g' $beeHome/config.chrysalis-$beeNetwork.toml
     restartBee=true
 fi
