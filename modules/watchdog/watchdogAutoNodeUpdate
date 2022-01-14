@@ -38,9 +38,16 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             source $beeModules/beeParser
             if [ "$restartBee" = "true" ]; then
                 sudo systemctl restart bee
+                sleep 5
                 unset restartBee
             fi
             if [ "$beeUpdated" = "true" ]; then
+                source $beeModules/beeVersion
+                if [ ! -z "$beeVersionNumber" ] && [ $beeVersionNumber -ge 30 ] 2>/dev/null; then
+                    if [ "$ufw" = "true" ]; then
+                        sudo ufw allow $beeAutopeeringPort/udp > /dev/null 2>&1
+                    fi
+                fi
                 restartDate=`date '+%d-%m-%Y %H-%M-%S'`
                 consoleLog="[AUTOUPDATE] New version ($latestBeeVersion) of Bee installed and Bee restarted."
                 echo "$restartDate $consoleLog" >> $swarmLogs/swarm.log
