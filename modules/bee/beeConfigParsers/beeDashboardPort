@@ -1,11 +1,12 @@
 #!/bin/bash
 
-parser=$(sed -n '/^bind_address/p' $beeHome/config.chrysalis-$beeNetwork.toml | sed -n 3p | awk '{ print $3 }')
-if [ "$parser" != "\"/ip4/0.0.0.0/tcp/8082\"" ]; then
-    sudo sed -i 's~^bind_address    = '$parser'~bind_address    = "/ip4/0.0.0.0/tcp/8082"~g' $beeHome/config.chrysalis-$beeNetwork.toml
-    if [ -f "/etc/nginx/sites-enabled/bee" ]; then
-        sudo find /etc/nginx/sites-enabled/bee -type f -exec sed -i 's/8081/8082/g' {} \;
-        sudo systemctl reload nginx
-    fi
+parserBefore=$(sed -n '/\[dashboard\]/,/\[dashboard\.auth\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+sudo sed -i 's~^bind_address    = "/ip4/0.0.0.0/tcp/8081"~bind_address    = "/ip4/0.0.0.0/tcp/8082"~' $beeHome/config.chrysalis-$beeNetwork.toml
+parserAfter=$(sed -n '/\[dashboard\]/,/\[dashboard\.auth\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+
+if [ "$parserBefore" != "$parserAfter" ]; then
     restartBee=true
 fi
+
+unset parserBefore
+unset parserAfter
