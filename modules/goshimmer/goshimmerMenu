@@ -95,7 +95,8 @@ while [ $exitCode -lt 1 ]; do
                         whiptail --title "GoShimmer Debugging" --menu "\nChoose your option" 18 65 0 \
                         "1)" "Show GoShimmer log" \
                         "2)" "Start/Stop GoShimmer" \
-                        "3)" "Reset GoShimmer Database" 3>&2 2>&1 1>&3
+                        "3)" "Reset GoShimmer Database" \
+                        "4)" "Reset GoShimmer Config" 3>&2 2>&1 1>&3
                     )
                     exitstatus=$?
                     if [ "$exitstatus" = "1" ]; then
@@ -171,6 +172,25 @@ while [ $exitCode -lt 1 ]; do
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
                                 whiptail --title "GoShimmer - Debugging" --msgbox "GoShimmer database successfully reset" 8 65
+                            fi
+                        ;;
+                        "4)")
+                            if (whiptail --title "GoShimmer - Debugging" --yesno --defaultno "Are you sure you want to reset the GoShimmer config file?" 8 65); then
+                                source $swarmConfigs/goshimmer.cfg
+                                {
+                                    echo 0
+                                    echo 20
+                                    sudo systemctl stop goshimmer
+                                    echo 40
+                                    sudo -u goshimmer wget -q -O $goshimmerHome/config.json https://raw.githubusercontent.com/iotaledger/goshimmer/master/config.json
+                                    echo 60
+                                    source $goshimmerModules/goshimmerParser
+                                    echo 80
+                                    sudo systemctl start goshimmer
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the config reset is running (this may take a while)..." 8 65 0
+                                whiptail --title "GoShimmer - Debugging" --msgbox "GoShimmer config successfully reset" 8 65
                             fi
                         ;;
                     esac
