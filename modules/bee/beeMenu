@@ -122,7 +122,8 @@ while [ $exitCode -lt 1 ]; do
                         whiptail --title "Bee - Debugging" --menu "\nChoose your option" 18 65 0 \
                         "1)" "Show Bee log" \
                         "2)" "Start/Stop Bee" \
-                        "3)" "Reset Bee Database" 3>&2 2>&1 1>&3
+                        "3)" "Reset Bee Database" \
+                        "4)" "Reset Bee config" 3>&2 2>&1 1>&3
                     )
                     exitstatus=$?
                     if [ "$exitstatus" = "1" ]; then
@@ -194,6 +195,32 @@ while [ $exitCode -lt 1 ]; do
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
                                 whiptail --title "Bee - Debugging" --msgbox "Bee database successfully reset" 8 65
+                            fi
+                        ;;
+                        "4)")
+                            if (whiptail --title "Bee - Debugging" --yesno --defaultno "Are you sure you want to reset the Bee config file?" 8 65); then
+                                source $swarmConfigs/bee.cfg
+                                {
+                                    echo 0
+                                    echo 20
+                                    sudo systemctl stop bee
+                                    echo 40
+                                    if [ "$beeNetwork" = "mainnet" ]; then
+                                        sudo -u bee wget -q -O $beeHome/config.chrysalis-mainnet.toml https://raw.githubusercontent.com/iotaledger/bee/dev/bee-node/config.chrysalis-mainnet.toml
+                                    if [ "$beeNetwork" = "comnet" ]; then
+                                        sudo -u bee wget -q -O $beeHome/config.chrysalis-comnet.toml https://raw.githubusercontent.com/iotaledger/bee/dev/bee-node/config.chrysalis-comnet.toml
+                                    fi
+                                    if [ "$beeNetwork" = "devnet" ]; then
+                                        sudo -u bee wget -q -O $beeHome/config.chrysalis-devnet.toml https://raw.githubusercontent.com/iotaledger/bee/dev/bee-node/config.chrysalis-devnet.toml
+                                    fi
+                                    echo 60
+                                    source $beeModules/beeParser
+                                    echo 80
+                                    sudo systemctl start bee
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the config reset is running (this may take a while)..." 8 65 0
+                                whiptail --title "Bee - Debugging" --msgbox "${beeNetwork} config successfully reset" 8 65
                             fi
                         ;;
                     esac
