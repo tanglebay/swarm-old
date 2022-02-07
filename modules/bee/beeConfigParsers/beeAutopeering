@@ -1,13 +1,15 @@
 #!/bin/bash
 
-parserBefore=$(sed -n '/\[autopeering\]/,/entry_nodes/p' $beeHome/config.chrysalis-$beeNetwork.toml)
-sed -i '/\[autopeering\]/,/entry_nodes/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
-sed -i 's~\[autopeering\]~\[autopeering\]\nenabled = '$beeAutopeeringEnabled'\nbind_address = "0.0.0.0:'$beeAutopeeringPort'"~g' $beeHome/config.chrysalis-$beeNetwork.toml
-parserAfter=$(sed -n '/\[autopeering\]/,/entry_nodes/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+parser=$(sed -n '/\[autopeering\]/,/entry_nodes/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+parserAutopeeringEnabled=$(echo $parser | awk '{ print $4}')
+parserAutopeeringAddress=$(echo $parser | awk '{ print $7}' | tr -d '"')
 
-if [ "$parserBefore" != "$parserAfter" ]; then
+if [ "$parserAutopeeringEnabled" != "$beeAutopeeringEnabled" ] || [ "$parserAutopeeringAddress" != "0.0.0.0:$beeAutopeeringPort" ]; then
+    sed -i '/\[autopeering\]/,/entry_nodes/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
+    sed -i 's~\[autopeering\]~\[autopeering\]\nenabled = '$beeAutopeeringEnabled'\nbind_address = "0.0.0.0:'$beeAutopeeringPort'"~g' $beeHome/config.chrysalis-$beeNetwork.toml
     restartBee=true
 fi
 
-unset parserBefore
-unset parserAfter
+unset parser
+unset parserAutopeeringEnabled
+unset parserAutopeeringAddress

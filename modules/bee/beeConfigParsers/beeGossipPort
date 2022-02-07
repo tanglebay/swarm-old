@@ -1,7 +1,11 @@
 #!/bin/bash
 
-parser=$(sed -n '/^bind_address/p' $beeHome/config.chrysalis-$beeNetwork.toml | sed -n 1p | awk '{ print $3 }')
-if [ "$parser" != "\"/ip4/0.0.0.0/tcp/$beeGossipPort\"" ]; then
-    sudo sed -i 's~^bind_address            = '$parser'~bind_address            = "/ip4/0.0.0.0/tcp/'$beeGossipPort'"~g' $beeHome/config.chrysalis-$beeNetwork.toml
+parser=$(sed -n '/\[network\]/,/reconnect_interval_secs/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+parser=$(echo $parser | awk '{ print $4 }' | tr -d '"')
+if [ "$parser" != "/ip4/0.0.0.0/tcp/$beeGossipPort" ]; then
+    sed -i '/\[network\]/,/reconnect_interval_secs/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
+    sed -i 's~\[network\]~\[network\]\nbind_address            = "/ip4/0.0.0.0/tcp/'$beeGossipPort'"~g' $beeHome/config.chrysalis-$beeNetwork.toml
     restartBee=true
 fi
+
+unset parser
