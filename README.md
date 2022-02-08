@@ -49,6 +49,7 @@ The configuration of the node should always be done via the configuration point 
 - Mqtt: 1833/tcp (if the plugin is activated)
 ### Bee
 - Gossip port (peering): 15601/tcp (customizable)
+- Autopeering port (peering): 14636/udp (customizable)
 ### GoShimmer
 - Gossip port (peering): 14666/tcp (customizable)
 - Autopeering port (peering): 14646/udp
