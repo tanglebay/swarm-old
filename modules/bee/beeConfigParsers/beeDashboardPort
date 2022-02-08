@@ -1,12 +1,12 @@
 #!/bin/bash
 
-parserBefore=$(sed -n '/\[dashboard\]/,/\[dashboard\.auth\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
-sudo sed -i 's~^bind_address    = "/ip4/0.0.0.0/tcp/8081"~bind_address    = "/ip4/0.0.0.0/tcp/8082"~' $beeHome/config.chrysalis-$beeNetwork.toml
-parserAfter=$(sed -n '/\[dashboard\]/,/\[dashboard\.auth\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+parser=$(sed -n '/\[dashboard\]/,/\[dashboard\.auth\]/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+parser=$(echo $parser | awk '{ print $4 }' | tr -d '"')
 
-if [ "$parserBefore" != "$parserAfter" ]; then
+if [ "$parser" != "/ip4/0.0.0.0/tcp/8082" ]; then
+    sed -i '/\[dashboard\]/,/\[dashboard\.auth\]/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
+    sed -i 's~\[dashboard\]~\[dashboard\]\nbind_address    = "/ip4/0.0.0.0/tcp/8082"~g' $beeHome/config.chrysalis-$beeNetwork.toml
     restartBee=true
 fi
 
-unset parserBefore
-unset parserAfter
+unset parser

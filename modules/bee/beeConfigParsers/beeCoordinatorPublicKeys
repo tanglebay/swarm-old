@@ -1,20 +1,24 @@
 #!/bin/bash
 
 if [ "$beeNetwork" = "mainnet" ]; then
-    if [ ! -f "/usr/bin/bee" ]; then
-        beeVersion=$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.version' | tr -d '"' | cut -f1 -d"-")
-    fi
+    if [ "$beeVersion" = "[3-9].[0-9].[0-9]" ] || [ "$beeVersion" = "[3-9].[0-9].[0-9]-rc[4-9]" ]; then
+        echo "" > /dev/null 2>&1
+    else
+        if [ ! -f "/usr/bin/bee" ]; then
+            beeVersion=$(curl -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json"|jq '.data.version' | tr -d '"' | cut -f1 -d"-")
+        fi
 
-    if ! grep -q "start       = 2108160" $beeHome/config.chrysalis-$beeNetwork.toml
-    then
-        sudo sed -i 's~start       = 2111060~start       = 2108160~g' $beeHome/config.chrysalis-$beeNetwork.toml
-        restartBee=true
-    fi
-    if ! grep -q "edd9c639a719325e465346b84133bf94740b7d476dd87fc949c0e8df516f9954" $beeHome/config.chrysalis-$beeNetwork.toml
-    then
-        sed -i '/\[protocol\.coordinator\]/,/\[protocol\.workers\]/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
-        sed -i 's~\[protocol\.coordinator\]~\[protocol\.coordinator\]\npublic_key_count  = 2\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = "a9b46fe743df783dedd00c954612428b34241f5913cf249d75bed3aafd65e4cd"\nstart       = 0\nend         = 777600\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = "365fb85e7568b9b32f7359d6cbafa9814472ad0ecbad32d77beaf5dd9e84c6ba"\nstart       = 0\nend         = 1555200\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = "ba6d07d1a1aea969e7e435f9f7d1b736ea9e0fcb8de400bf855dba7f2a57e947"\nstart       = 552960\nend         = 2108160\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = \"760d88e112c0fd210cf16a3dce3443ecf7e18c456c2fb9646cabb2e13e367569\"\nstart       = 1333460\nend         = 2888660\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = \"7bac2209b576ea2235539358c7df8ca4d2f2fc35a663c760449e65eba9f8a6e7\"\nstart       = 2108160\nend         = 3666260\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = \"edd9c639a719325e465346b84133bf94740b7d476dd87fc949c0e8df516f9954\"\nstart       = 2888660\nend         = 4443860\n~g' $beeHome/config.chrysalis-$beeNetwork.toml
+        if ! grep -q "start       = 2108160" $beeHome/config.chrysalis-$beeNetwork.toml
+        then
+            sudo sed -i 's~start       = 2111060~start       = 2108160~g' $beeHome/config.chrysalis-$beeNetwork.toml
+            restartBee=true
+        fi
+        if ! grep -q "edd9c639a719325e465346b84133bf94740b7d476dd87fc949c0e8df516f9954" $beeHome/config.chrysalis-$beeNetwork.toml
+        then
+            sed -i '/\[protocol\.coordinator\]/,/\[protocol\.workers\]/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
+            sed -i 's~\[protocol\.coordinator\]~\[protocol\.coordinator\]\npublic_key_count  = 2\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = "a9b46fe743df783dedd00c954612428b34241f5913cf249d75bed3aafd65e4cd"\nstart       = 0\nend         = 777600\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = "365fb85e7568b9b32f7359d6cbafa9814472ad0ecbad32d77beaf5dd9e84c6ba"\nstart       = 0\nend         = 1555200\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = "ba6d07d1a1aea969e7e435f9f7d1b736ea9e0fcb8de400bf855dba7f2a57e947"\nstart       = 552960\nend         = 2108160\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = \"760d88e112c0fd210cf16a3dce3443ecf7e18c456c2fb9646cabb2e13e367569\"\nstart       = 1333460\nend         = 2888660\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = \"7bac2209b576ea2235539358c7df8ca4d2f2fc35a663c760449e65eba9f8a6e7\"\nstart       = 2108160\nend         = 3666260\n\[\[protocol\.coordinator\.public_key_ranges\]\]\npublic_key  = \"edd9c639a719325e465346b84133bf94740b7d476dd87fc949c0e8df516f9954\"\nstart       = 2888660\nend         = 4443860\n~g' $beeHome/config.chrysalis-$beeNetwork.toml
 
-        restartBee=true
+            restartBee=true
+        fi
     fi
 fi

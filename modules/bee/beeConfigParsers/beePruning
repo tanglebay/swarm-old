@@ -1,0 +1,15 @@
+#!/bin/bash
+
+parser=$(sed -n '/\[pruning\]/,/prune_receipts/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+parserPruningEnabled=$(echo $parser | awk '{ print $4}')
+parserPruningDelay=$(echo $parser | awk '{ print $7}')
+
+if [ "$parserPruningEnabled" != "$beePruningEnabled" ] || [ "$parserPruningDelay" != "$beePruningDelay" ]; then
+    sed -i '/\[pruning\]/,/prune_receipts/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
+    sed -i 's~\[pruning\]~\[pruning\]\nenabled = '$beePruningEnabled'\ndelay           = '$beePruningDelay'~g' $beeHome/config.chrysalis-$beeNetwork.toml
+    restartBee=true
+fi
+
+unset parser
+unset parserPruningEnabled
+unset parserPruningDelay

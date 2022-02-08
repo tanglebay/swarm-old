@@ -1,22 +1,59 @@
 #!/bin/bash
-if grep -q "\# identity" $beeHome/config.chrysalis-$beeNetwork.toml
-then
-    sudo sed -i 's~^# identity.*~identity   = ""~' $beeHome/config.chrysalis-$beeNetwork.toml
-fi
 
-if [ -z "$beeIdentity" ]; then
-    source $beeModules/beeVersion
-    if [ $beeVersionNumber -ge 30 ] 2>/dev/null; then
-        beeIdentity=$(/usr/bin/bee p2p-identity | head -n 1 | awk '{ print $4 }')
-    else
-        beeIdentity=$(/usr/bin/bee p2p-identity | head -n 1 | awk '{ print $5 }')
+if [ "$beeResetIdentity" != "true" ]; then
+    parser=$(cat $beeHome/identity.key | sed -n '2 p')
+    if [ "$parser" != "$beeIdentity" ]; then
+        if [ ! -z "$beeIdentity" ]; then
+            sudo systemctl stop bee
+            sudo -u bee echo "-----BEGIN PRIVATE KEY-----" > $beeHome/identity.key
+            sudo -u bee echo "$beeIdentity" >> $beeHome/identity.key
+            sudo -u bee echo "-----END PRIVATE KEY-----" >> $beeHome/identity.key
+            sudo systemctl start bee
+        else
+            beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
+            if [ ! -z "$beeIdentity" ]; then
+                sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
+            else
+                sudo systemctl stop bee
+                sudo rm -rf $beeHome/identity.key 2>/dev/null
+                sudo systemctl start bee
+                sleep 3
+                beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
+                sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
+            fi
+        fi
     fi
-    sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
-fi
+else
+    {
+        echo 0
+        echo 20
+        sudo systemctl stop bee
+    } | whiptail --gauge "Stopping Bee..." 8 65 0
+    {
+        echo 20
+        echo 40
+        sudo rm -rf $beeHome/identity.key 2>/dev/null
+    } | whiptail --gauge "Delete old identity..." 8 65 0
+    {
+        echo 40
+        echo 60
+        sudo systemctl start bee
+        sleep 3
+    } | whiptail --gauge "Start Bee and create new identity..." 8 65 0
+    {
+        echo 60
+        echo 80
+        beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
 
-parser=$(sed -n '/^identity/p' $beeHome/config.chrysalis-$beeNetwork.toml | awk '{ print $3 }')
-parser=$(echo $parser | tr -d '"')
-if [ "$parser" != "$beeIdentity" ]; then
-    sudo sed -i 's~^identity.*~identity   = "'$beeIdentity'"~g' $beeHome/config.chrysalis-$beeNetwork.toml
-    restartBee=true
+    } | whiptail --gauge "Start Bee and create new identity..." 8 65 0
+    {
+        echo 80
+        echo 100
+        if [ ! -z "$beeIdentity" ]; then
+            sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
+        else
+            sudo sed -i 's~^beeIdentity=.*~beeIdentity=""~' $swarmConfigs/bee.cfg
+        fi
+        sleep 1
+    } | whiptail --gauge "Apply new identity and exit." 8 65 0
 fi
