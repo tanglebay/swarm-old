@@ -7,7 +7,6 @@ if [ ! -f "$beeHome/identity.key" ]; then
         sudo systemctl start bee
         beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
         sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
-        sudo systemctl start bee
     else
         sudo systemctl stop bee
         sudo rm -rf $beeHome/identity.key 2>/dev/null
@@ -16,6 +15,17 @@ if [ ! -f "$beeHome/identity.key" ]; then
         sudo -u bee echo "-----END PRIVATE KEY-----" >> $beeHome/identity.key
         sudo chown 660 $beeHome/identity.key
         sudo systemctl start bee
+    fi
+else
+    parser=$(cat $beeHome/identity.key | sed -n '2 p')
+    if [ -z "$parser" ]; then
+        if [ -z "$beeIdentity" ]; then
+            sudo systemctl stop bee
+            sudo rm -rf $beeHome/identity.key 2>/dev/null
+            sudo systemctl start bee
+            beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
+            sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
+        fi
     fi
 fi
 
