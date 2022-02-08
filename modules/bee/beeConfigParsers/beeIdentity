@@ -1,22 +1,20 @@
 #!/bin/bash
-if grep -q "\# identity" $beeHome/config.chrysalis-$beeNetwork.toml
-then
-    sudo sed -i 's~^# identity.*~identity   = ""~' $beeHome/config.chrysalis-$beeNetwork.toml
-fi
 
 if [ -z "$beeIdentity" ]; then
-    source $beeModules/beeVersion
-    if [ $beeVersionNumber -ge 30 ] 2>/dev/null; then
-        beeIdentity=$(/usr/bin/bee p2p-identity | head -n 1 | awk '{ print $4 }')
+    if [ ! -f "$beeHome/identity.key" ]; then
+        sudo systemctl restart bee
+        if [ ! -f "$beeHome/identity.key" ]; then
+            beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
+            sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
+        fi
     else
-        beeIdentity=$(/usr/bin/bee p2p-identity | head -n 1 | awk '{ print $5 }')
+        beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
+        sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
     fi
-    sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
 fi
 
-parser=$(sed -n '/^identity/p' $beeHome/config.chrysalis-$beeNetwork.toml | awk '{ print $3 }')
-parser=$(echo $parser | tr -d '"')
+parser=$(cat $beeHome/identity.key | sed -n '2 p')
 if [ "$parser" != "$beeIdentity" ]; then
-    sudo sed -i 's~^identity.*~identity   = "'$beeIdentity'"~g' $beeHome/config.chrysalis-$beeNetwork.toml
+    sed -i '2 s~.*~'$beeIdentity'~' $beeHome/identity.key
     restartBee=true
 fi
