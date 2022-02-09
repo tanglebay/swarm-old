@@ -1,7 +1,18 @@
 #!/bin/bash
 
-if grep -q "\/ip4\/0\.0\.0\.0\/tcp\/14265" $beeHome/config.chrysalis-$beeNetwork.toml
-then
-    sudo sed -i 's~^bind_address          = "/ip4/0.0.0.0/tcp/14265"~bind_address          = "/ip4/0.0.0.0/tcp/14266"~' $beeHome/config.chrysalis-$beeNetwork.toml
-    restartBee=true
+if [ "$beeVersion" = "[0-9].[3-9].[0-9]" ] || [ "$beeVersion" = "[0-9].[3-9].[0-9]-rc[4-9]" ]; then
+    parser="$(jq '.restApi.bindAddress' $beeHome/config.chrysalis-$beeNetwork.json)"
+    parser=$(echo $parser | tr -d '"/.')
+    if [ "$parser" != "ip40000tcp14266" ]; then
+        sudo jq '.restApi.bindAddress = "/ip4/0.0.0.0/tcp/14266"' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
+        restartBee=true
+    fi
+else
+    if grep -q "\/ip4\/0\.0\.0\.0\/tcp\/14265" $beeHome/config.chrysalis-$beeNetwork.toml
+    then
+        sudo sed -i 's~^bind_address          = "/ip4/0.0.0.0/tcp/14265"~bind_address          = "/ip4/0.0.0.0/tcp/14266"~' $beeHome/config.chrysalis-$beeNetwork.toml
+        restartBee=true
+    fi
 fi
+
+unset parser

@@ -1,7 +1,16 @@
 #!/bin/bash
 
-parser=$(sed -n '/^max_unknown_peers/p' $beeHome/config.chrysalis-$beeNetwork.toml | awk '{ print $3 }')
-if [ "$parser" != "$beeMaxUnknownPeers" ]; then
-    sudo sed -i 's~^max_unknown_peers.*~max_unknown_peers       = '$beeMaxUnknownPeers'~g' $beeHome/config.chrysalis-$beeNetwork.toml
-    restartBee=true
+if [ "$beeVersion" = "[0-9].[3-9].[0-9]" ] || [ "$beeVersion" = "[0-9].[3-9].[0-9]-rc[4-9]" ]; then
+    parser="$(jq '.network.maxUnknownPeers' $beeHome/config.chrysalis-$beeNetwork.json)"
+    if [ "$parser" != "$beeMaxUnknownPeers" ]; then
+        sudo jq '.network.maxUnknownPeers = '$beeMaxUnknownPeers'' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
+        restartBee=true
+    fi
+else
+    parser=$(sed -n '/^max_unknown_peers/p' $beeHome/config.chrysalis-$beeNetwork.toml | awk '{ print $3 }')
+    if [ "$parser" != "$beeMaxUnknownPeers" ]; then
+        sudo sed -i 's~^max_unknown_peers.*~max_unknown_peers       = '$beeMaxUnknownPeers'~g' $beeHome/config.chrysalis-$beeNetwork.toml
+        restartBee=true
+    fi
 fi
+unset parser

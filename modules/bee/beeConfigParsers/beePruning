@@ -1,15 +1,29 @@
 #!/bin/bash
 
-parser=$(sed -n '/\[pruning\]/,/prune_receipts/p' $beeHome/config.chrysalis-$beeNetwork.toml)
-parserPruningEnabled=$(echo $parser | awk '{ print $4}')
-parserPruningDelay=$(echo $parser | awk '{ print $7}')
+if [ "$beeVersion" = "[0-9].[3-9].[0-9]" ] || [ "$beeVersion" = "[0-9].[3-9].[0-9]-rc[4-9]" ]; then
+    parser="$(jq '.pruning.enabled' $beeHome/config.chrysalis-$beeNetwork.json)"
+    if [ "$parser" != "$beePruningEnabled" ]; then
+        sudo jq '.pruning.enabled = '$beePruningEnabled'' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
+        restartBee=true
+    fi
+    parser="$(jq '.pruning.delay' $beeHome/config.chrysalis-$beeNetwork.json)"
+    if [ "$parser" != "$beePruningDelay" ]; then
+        sudo jq '.pruning.delay = '$beePruningDelay'' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
+        restartBee=true
+    fi
+else
+    parser=$(sed -n '/\[pruning\]/,/prune_receipts/p' $beeHome/config.chrysalis-$beeNetwork.toml)
+    parserPruningEnabled=$(echo $parser | awk '{ print $4}')
+    parserPruningDelay=$(echo $parser | awk '{ print $7}')
 
-if [ "$parserPruningEnabled" != "$beePruningEnabled" ] || [ "$parserPruningDelay" != "$beePruningDelay" ]; then
-    sed -i '/\[pruning\]/,/prune_receipts/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
-    sed -i 's~\[pruning\]~\[pruning\]\nenabled = '$beePruningEnabled'\ndelay           = '$beePruningDelay'~g' $beeHome/config.chrysalis-$beeNetwork.toml
-    restartBee=true
+    if [ "$parserPruningEnabled" != "$beePruningEnabled" ] || [ "$parserPruningDelay" != "$beePruningDelay" ]; then
+        sed -i '/\[pruning\]/,/prune_receipts/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
+        sed -i 's~\[pruning\]~\[pruning\]\nenabled = '$beePruningEnabled'\ndelay           = '$beePruningDelay'~g' $beeHome/config.chrysalis-$beeNetwork.toml
+        restartBee=true
+    fi
+
+    unset parserPruningEnabled
+    unset parserPruningDelay
 fi
 
 unset parser
-unset parserPruningEnabled
-unset parserPruningDelay

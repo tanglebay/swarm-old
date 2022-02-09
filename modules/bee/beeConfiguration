@@ -145,7 +145,7 @@ while [ $exitCode -lt 1 ]; do
                         if [ $exitStatus != 1 ]; then
                             if [ $beePruningDelay -gt 0 ] && [ $beePruningDelay -eq $beePruningDelay ] && [ $currentBeePruningDelay -ne $beePruningDelay ]> /dev/null 2>&1; then
                                 source $beeConfigParsers/beePruningDelay
-                                sudo sed -i 's/^beePruningDelay=.*/beePruningDelay='$beePruningDelay'/' $swarmConfigs/hornet.cfg
+                                sudo sed -i 's/^beePruningDelay=.*/beePruningDelay='$beePruningDelay'/' $swarmConfigs/bee.cfg
                                 whiptail --title "Bee - Pruning" --msgbox "Pruning delay set to ${beePruningDelay} milestones!" 8 65
                             fi
                         fi
@@ -254,7 +254,8 @@ while [ $exitCode -lt 1 ]; do
                     CHOICE=$(
                         whiptail --title "Bee - Autopeering" --menu "\nChoose an option" 14 65 0 \
                         "1)" "$beeAutopeeringEnabledMenu autopeering" \
-                        "2)" "Set autopeering port" 3>&2 2>&1 1>&3
+                        "2)" "Set max discovered peers" \
+                        "3)" "Set autopeering port" 3>&2 2>&1 1>&3
                     )
                     exitstatus=$?
                     if [ "$exitstatus" = "1" ]; then
@@ -282,6 +283,19 @@ while [ $exitCode -lt 1 ]; do
                             fi
                         ;;
                         "2)")
+                            source $swarmConfigs/bee.cfg
+                            currentBeeMaxDiscoveredPeers=$beeMaxDiscoveredPeers
+                            beeMaxDiscoveredPeers=$(whiptail --inputbox "\nSet the max amount of discovered peers via autopeering." 10 65 $beeMaxDiscoveredPeers --title "Bee - Autopeering" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$beeMaxDiscoveredPeers" ] && [ $currentBeeMaxDiscoveredPeers -ne $beeMaxDiscoveredPeers ] && [ $beeMaxDiscoveredPeers -eq $beeMaxDiscoveredPeers ] 2>/dev/null; then
+                                    source $beeConfigParsers/beeMaxDiscoveredPeers
+                                    sudo sed -i 's/^beeMaxDiscoveredPeers=.*/beeMaxDiscoveredPeers='$beeMaxDiscoveredPeers'/' $swarmConfigs/bee.cfg
+                                    whiptail --title "Bee - Autopeering" --msgbox "Max amount of autodiscovered peeers set to $beeMaxDiscoveredPeers." 8 65
+                                fi
+                            fi
+                        ;;
+                        "3)")
                             source $swarmConfigs/bee.cfg
                             currentBeeAutopeeringPort=$beeAutopeeringPort
                             beeAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port." 10 65 $beeAutopeeringPort --title "Bee - Autopeering" 3>&1 1>&2 2>&3)
