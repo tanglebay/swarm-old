@@ -1,5 +1,14 @@
 #!/bin/bash
 
+if [[ ${#beeIdentity} -gt 70 ]]; then
+    sudo systemctl stop bee
+    sudo rm -rf $beeHome/identity.key 2>/dev/null
+    sudo systemctl start bee
+    sleep 3
+    beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
+    sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
+fi
+
 if [ "$beeResetIdentity" != "true" ]; then
     if [ -f "$beeHome/identity.key" ]; then
         parser=$(cat $beeHome/identity.key | sed -n '2 p')
@@ -47,3 +56,5 @@ else
         sleep 1
     } | whiptail --gauge "Generate new identity for Bee..." 8 65 0
 fi
+
+unset beeResetIdentity
