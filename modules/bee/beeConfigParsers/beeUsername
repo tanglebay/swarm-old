@@ -1,12 +1,21 @@
 #!/bin/bash
 
-parser=$(sed -n '/^user/p' $beeHome/config.chrysalis-$beeNetwork.toml | awk '{ print $3 }')
-parser=$(echo $parser | tr -d '"')
+if [ "$beeVersion" = "[0-9].[3-9].[0-9]" ] || [ "$beeVersion" = "[0-9].[3-9].[0-9]-rc[4-9]" ]; then
+    parser="$(jq '.dashboard.auth.user' $beeHome/config.chrysalis-$beeNetwork.json)"
+    parser=$(echo $parser | tr -d '"')
+    if [ "$parser" != "$beeUsername" ]; then
+        sudo jq '.dashboard.auth.user = "'$beeUsername'"' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
+        restartBee=true
+    fi
+else
+    parser=$(sed -n '/^user/p' $beeHome/config.chrysalis-$beeNetwork.toml | awk '{ print $3 }')
+    parser=$(echo $parser | tr -d '"')
 
-if [ "$parser" != "$beeUsername" ]; then
-    sudo sed -i 's~^user            =.*~user            = "'$beeUsername'"~g' $beeHome/config.chrysalis-$beeNetwork.toml
-    restartBee=true
-    newBeeUsername=true
+    if [ "$parser" != "$beeUsername" ]; then
+        sudo sed -i 's~^user            =.*~user            = "'$beeUsername'"~g' $beeHome/config.chrysalis-$beeNetwork.toml
+        restartBee=true
+        newBeeUsername=true
+    fi
 fi
 
 unset parser
