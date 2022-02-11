@@ -7,19 +7,25 @@ if [ -f "/usr/bin/goshimmer" ]; then
     goshimmerStatus=$(systemctl show -p ActiveState --value goshimmer)
 
     goshimmerVersion=$(cd $goshimmerHome ; /usr/bin/goshimmer -v | awk '{print $2}' | tr -d 'v')
-    goshimmerSyncedStatus="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq -r '.tangleTime.synced' 2> /dev/null)"
-    if [ -z "$goshimmerSyncedStatus" ] || [ "$goshimmerSyncedStatus" = "null" ]; then
-        goshimmerSyncedStatus="N/A"
-    else
-        if [ "$goshimmerSyncedStatus" = "true" ]; then
-            goshimmerSyncedStatus="Yes"
-        else
-            goshimmerSyncedStatus="No"
-        fi
-    fi
 
-    goshimmerPledgeId="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq -r '.identityID' 2> /dev/null)"
-    if [ -z "$goshimmerPledgeId" ] || [ "$goshimmerPledgeId" = "null" ]; then
+    if [ "$goshimmerStatus" = "active" ]; then
+        goshimmerSyncedStatus="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq -r '.tangleTime.synced' 2> /dev/null)"
+        if [ -z "$goshimmerSyncedStatus" ] || [ "$goshimmerSyncedStatus" = "null" ]; then
+            goshimmerSyncedStatus="N/A"
+        else
+            if [ "$goshimmerSyncedStatus" = "true" ]; then
+                goshimmerSyncedStatus="Yes"
+            else
+                goshimmerSyncedStatus="No"
+            fi
+        fi
+
+        goshimmerPledgeId="$(curl -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq -r '.identityID' 2> /dev/null)"
+        if [ -z "$goshimmerPledgeId" ] || [ "$goshimmerPledgeId" = "null" ]; then
+            goshimmerPledgeId="N/A"
+        fi
+    else
+        goshimmerSyncedStatus="N/A"
         goshimmerPledgeId="N/A"
     fi
 
