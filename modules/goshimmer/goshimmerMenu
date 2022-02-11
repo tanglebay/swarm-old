@@ -158,20 +158,26 @@ while [ $exitCode -lt 1 ]; do
                                 source $swarmConfigs/goshimmer.cfg
                                 if (whiptail --title "GoShimmer - Debugging" --yesno "Do you want to download latest database from the IF?" 8 65); then
                                     goshimmerAllowDbDownload=true
+                                else
+                                    goshimmerAllowDbDownload=false
                                 fi
-                                {
-                                    echo 0
-                                    echo 50
-                                    sudo systemctl stop goshimmer
-                                    sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb $goshimmerHome/snapshot.bin > /dev/null 2>&1
-                                    source $goshimmerModules/goshimmerDbDownload
-                                    sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter=0/' $swarmConfigs/watchdog.cfg
-                                    sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter=0/' $swarmConfigs/watchdog.cfg
-                                    sudo systemctl start goshimmer
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
-                                whiptail --title "GoShimmer - Debugging" --msgbox "GoShimmer database successfully reset" 8 65
+                                exitStatus=$?
+                                if [ $exitStatus != 1 ]; then
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl stop goshimmer
+                                        sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb $goshimmerHome/snapshot.bin > /dev/null 2>&1
+                                        source $goshimmerModules/goshimmerDbDownload
+                                        sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter=0/' $swarmConfigs/watchdog.cfg
+                                        sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter=0/' $swarmConfigs/watchdog.cfg
+                                        sudo systemctl start goshimmer
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
+                                    whiptail --title "GoShimmer - Debugging" --msgbox "GoShimmer database successfully reset" 8 65
+                                    unset goshimmerAllowDbDownload
+                                fi
                             fi
                         ;;
                         "4)")
