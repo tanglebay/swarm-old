@@ -155,11 +155,16 @@ while [ $exitCode -lt 1 ]; do
                         ;;
                         "3)")
                             if (whiptail --title "GoShimmer - Debugging" --yesno --defaultno "Do you really want to remove the goshimmer database?" 8 65); then
+                                source $goshimmerModules/goshimmerVersion
                                 source $swarmConfigs/goshimmer.cfg
-                                if (whiptail --title "GoShimmer - Debugging" --yesno "Do you want to download latest database from the IF?" 8 65); then
-                                    goshimmerAllowDbDownload=true
+                                if [ "$goshimmerVersion" != "0.7.7" ]; then
+                                    if (whiptail --title "GoShimmer - Debugging" --yesno "Do you want to download latest database from the IF?" 8 65); then
+                                        goshimmerAllowDbDownload=true
+                                    else
+                                        goshimmerAllowDbDownload=false
+                                    fi
                                 else
-                                    goshimmerAllowDbDownload=false
+                                    exitStatus=0
                                 fi
                                 exitStatus=$?
                                 if [ $exitStatus != 1 ]; then
@@ -172,8 +177,12 @@ while [ $exitCode -lt 1 ]; do
                                             sudo systemctl stop goshimmer
                                         fi
                                         echo 50
-                                        sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb $goshimmerHome/snapshot.bin > /dev/null 2>&1
-                                        source $goshimmerModules/goshimmerDbDownload
+                                        if [ "$goshimmerVersion" = "0.7.7" ]; then
+                                            sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb > /dev/null 2>&1
+                                        else
+                                            sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb $goshimmerHome/snapshot.bin > /dev/null 2>&1
+                                            source $goshimmerModules/goshimmerDbDownload
+                                        fi
                                         sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter=0/' $swarmConfigs/watchdog.cfg
                                         sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter=0/' $swarmConfigs/watchdog.cfg
                                         echo 75
@@ -188,13 +197,18 @@ while [ $exitCode -lt 1 ]; do
                         ;;
                         "4)")
                             if (whiptail --title "GoShimmer - Debugging" --yesno --defaultno "Are you sure you want to reset the GoShimmer config file?" 8 65); then
+                                source $goshimmerModules/goshimmerVersion
                                 source $swarmConfigs/goshimmer.cfg
                                 {
                                     echo 0
                                     echo 20
                                     sudo systemctl stop goshimmer
                                     echo 40
-                                    sudo -u goshimmer wget -q -O $goshimmerHome/config.json https://raw.githubusercontent.com/iotaledger/goshimmer/master/config.json
+                                    if [ "$goshimmerVersion" = "0.7.7" ]; then
+                                        sudo cat $goshimmerHome/config.json.bak > $goshimmerHome/config.json
+                                    else
+                                        sudo -u goshimmer wget -q -O $goshimmerHome/config.json https://raw.githubusercontent.com/iotaledger/goshimmer/master/config.json
+                                    fi
                                     echo 60
                                     source $goshimmerModules/goshimmerParser
                                     echo 80
