@@ -32,13 +32,13 @@ else
     sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
-if [ -f "/usr/bin/hornet" ] && [ "$hornetRunAsEntryNode" = "false" ]; then
+if [ -f "/usr/bin/hornet" ] && [ "$hornetRunAsEntryNode" = "false" ] && [ "$hornetStatus" = "active" ]; then
     # Hornet Sync Check
     hornetSyncStatus="$(curl --max-time 2 -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetJwtToken}"|jq '.data.isHealthy')"
     if [ -z "$hornetSyncStatus" ]; then
         hornetSyncStatus=false
     fi
-    if [ "$hornetCheckSync" = "true" ] && [ "$hornetStatus" = "active" ] && [ "$hornetSyncStatus" = "false" ]; then
+    if [ "$hornetCheckSync" = "true" ] && [ "$hornetSyncStatus" = "false" ]; then
         latestHornetLatestMilestoneIndex="$(curl --max-time 2 -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetJwtToken}"|jq '.data.latestMilestoneIndex')"
         latestHornetConfirmedMilestoneIndex="$(curl --max-time 2 -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetJwtToken}"|jq '.data.confirmedMilestoneIndex')"
         if [ -z "$latestHornetLatestMilestoneIndex" ] && [ -z "$latestHornetConfirmedMilestoneIndex" ]; then
@@ -81,13 +81,13 @@ if [ -f "/usr/bin/hornet" ] && [ "$hornetRunAsEntryNode" = "false" ]; then
     fi
 fi
 
-if [ -f "/usr/bin/bee" ] && [ "$beeRunAsEntryNode" = "false" ]; then
+if [ -f "/usr/bin/bee" ] && [ "$beeRunAsEntryNode" = "false" ] && [ "$beeStatus" = "active" ]; then
     # Bee Sync Check
     beeSyncStatus="$(curl --max-time 5 -s -X GET "http://localhost:14266/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
     if [ -z "$beeSyncStatus" ]; then
         beeSyncStatus=false
     fi
-    if [ "$beeCheckSync" = "true" ] && [ "$beeStatus" = "active" ] && [ "$beeSyncStatus" = "false" ]; then
+    if [ "$beeCheckSync" = "true" ] && [ "$beeSyncStatus" = "false" ]; then
         latestBeeLatestMilestoneIndex="$(curl --max-time 2 -s -X GET "http://localhost:14266/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
         latestBeeConfirmedMilestoneIndex="$(curl --max-time 2 -s -X GET "http://localhost:14266/api/v1/info" -H  "accept: application/json"|jq '.data.confirmedMilestoneIndex')"
         if [ -z "$latestBeeLatestMilestoneIndex" ] && [ -z "$latestBeeConfirmedMilestoneIndex" ]; then
@@ -131,13 +131,13 @@ if [ -f "/usr/bin/bee" ] && [ "$beeRunAsEntryNode" = "false" ]; then
 fi
 
 if [ "$timeFrame" = "00" ] || [ "$timeFrame" = "15" ] || [ "$timeFrame" = "30" ] || [ "$timeFrame" = "45" ]; then
-    if [ -f "/usr/bin/goshimmer" ] && [ ! -f "/tmp/goshimmer.lock" ] && [ "$goshimmerRunAsEntryNode" = "false" ]; then
+    if [ -f "/usr/bin/goshimmer" ] && [ ! -f "/tmp/goshimmer.lock" ] && [ "$goshimmerRunAsEntryNode" = "false" ] && [ "$goshimmerStatus" = "active" ]; then
         # GoShimmer Sync Check
         goshimmerSyncStatus="$(curl --max-time 2 -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.synced')"
         if [ -z "$goshimmerSyncStatus" ]; then
             goshimmerSyncStatus=false
         fi
-        if [ "$goshimmerCheckSync" = "true" ] && [ "$goshimmerStatus" = "active" ] && [ "$goshimmerSyncStatus" = "false" ]; then
+        if [ "$goshimmerCheckSync" = "true" ] && [ "$goshimmerSyncStatus" = "false" ]; then
                 getGoshimmerTangleTime=$(curl --max-time 2 -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq '.tangleTime.time')
                 if [ -z "$getGoshimmerTangleTime" ]; then
                     getGoshimmerTangleTime=0
