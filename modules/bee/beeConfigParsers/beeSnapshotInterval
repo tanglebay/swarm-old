@@ -1,18 +1,9 @@
 #!/bin/bash
 
-if [[ $beeVersion = [0-9].[3-9].[0-9] ]] || [[ $beeVersion = [0-9].[3-9].[0-9]-rc[4-9] ]]; then
-    parser="$(jq '.snapshot.intervalSynced' $beeHome/config.chrysalis-$beeNetwork.json)"
-    if [ "$parser" != "$beeSnapshotInterval" ]; then
-        sudo jq '.snapshot.intervalSynced = '$beeSnapshotInterval'' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
-        restartBee=true
-    fi
-else
-    parser=$(sed -n '/^interval_synced/p' $beeHome/config.chrysalis-$beeNetwork.toml | awk '{ print $3 }')
-    if [ "$parser" != "$beeSnapshotInterval" ]; then
-        sudo sed -i 's~^interval_synced.*~interval_synced   = '$beeSnapshotInterval'~g' $beeHome/config.chrysalis-$beeNetwork.toml
-        restartBee=true
-        newBeeSnapshotInterval=true
-    fi
+parser="$(jq '.snapshot.intervalSynced' $beeHome/config.chrysalis-$beeNetwork.json)"
+if [ "$parser" != "$beeSnapshotInterval" ]; then
+    sudo jq '.snapshot.intervalSynced = '$beeSnapshotInterval'' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
+    restartBee=true
 fi
 
 unset parser
