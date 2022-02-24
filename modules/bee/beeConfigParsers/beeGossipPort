@@ -1,19 +1,11 @@
 #!/bin/bash
 
-if [[ $beeVersion = [0-9].[3-9].[0-9] ]] || [[ $beeVersion = [0-9].[3-9].[0-9]-rc[4-9] ]]; then
-    parser="$(jq '.network.bindAddress' $beeHome/config.chrysalis-$beeNetwork.json)"
-    parser=$(echo $parser | tr -d '"/.')
-    if [ "$parser" != "ip40000tcp$beeGossipPort" ]; then
-        sudo jq '.network.bindAddress = "/ip4/0.0.0.0/tcp/'$beeGossipPort'"' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
-        restartBee=true
-    fi
-else
-    parser=$(sed -n '/\[network\]/,/reconnect_interval_secs/p' $beeHome/config.chrysalis-$beeNetwork.toml)
-    parser=$(echo $parser | awk '{ print $4 }' | tr -d '"')
-    if [ "$parser" != "/ip4/0.0.0.0/tcp/$beeGossipPort" ]; then
-        sed -i '/\[network\]/,/reconnect_interval_secs/{//!d}' $beeHome/config.chrysalis-$beeNetwork.toml
-        sed -i 's~\[network\]~\[network\]\nbind_address            = "/ip4/0.0.0.0/tcp/'$beeGossipPort'"~g' $beeHome/config.chrysalis-$beeNetwork.toml
-        restartBee=true
-    fi
+parser="$(jq '.network.bindAddress' $beeHome/config.chrysalis-$beeNetwork.json)"
+parser=$(echo $parser | tr -d '"/.')
+if [ "$parser" != "ip40000tcp$beeGossipPort" ]; then
+    sudo jq '.network.bindAddress = "/ip4/0.0.0.0/tcp/'$beeGossipPort'"' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
+    restartBee=true
+    echo "beeGossipPort" >> /tmp/beeParsing
 fi
+
 unset parser

@@ -1,72 +1,21 @@
 #!/bin/bash
 
-if [[ $beeVersion = [0-9].[3-9].[0-9] ]] || [[ $beeVersion = [0-9].[3-9].[0-9]-rc[4-9] ]]; then
-    if grep -Ex "OPTIONS=\"--config config.chrysalis-mainnet.toml\"" /etc/default/bee > /dev/null 2>&1
-    then
-        sudo echo "OPTIONS=\"--config config.chrysalis-mainnet.json\"" > /etc/default/bee
-        restartBee=true
-    fi
-    if grep -Ex "OPTIONS=\"--config config.chrysalis-comnet.toml\"" /etc/default/bee > /dev/null 2>&1
-    then
-        sudo echo "OPTIONS=\"--config config.chrysalis-comnet.json\"" > /etc/default/bee
-        restartBee=true
-    fi
-    if grep -Ex "OPTIONS=\"--config config.chrysalis-devnet.toml\"" /etc/default/bee > /dev/null 2>&1
-    then
-        sudo echo "OPTIONS=\"--config config.chrysalis-devnet.json\"" > /etc/default/bee
-        restartBee=true
-    fi
+if [ ! -s "$beeHome/config.chrysalis-mainnet.json" ]; then
+    #source $beeModules/beeVersion
+    sudo wget -q -O $beeHome/config.chrysalis-mainnet.json https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-mainnet.json
+fi
+if [ ! -s "$beeHome/config.chrysalis-comnet.json" ]; then
+    #source $beeModules/beeVersion
+    sudo wget -q -O $beeHome/config.chrysalis-comnet.json https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-comnet.json
+fi
 
-    if [ ! -s "$beeHome/config.chrysalis-mainnet.json" ]; then
-        #source $beeModules/beeVersion
-        sudo wget -q -O $beeHome/config.chrysalis-mainnet.json https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-mainnet.json
-    fi
-    if [ ! -s "$beeHome/config.chrysalis-comnet.json" ]; then
-        #source $beeModules/beeVersion
-        sudo wget -q -O $beeHome/config.chrysalis-comnet.json https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-comnet.json
-    fi
+if [ ! -s "$beeHome/config.chrysalis-devnet.json" ]; then
+    #source $beeModules/beeVersion
+    sudo wget -q -O $beeHome/config.chrysalis-devnet.json https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-devnet.json
+fi
 
-    if [ ! -s "$beeHome/config.chrysalis-devnet.json" ]; then
-        #source $beeModules/beeVersion
-        sudo wget -q -O $beeHome/config.chrysalis-devnet.json https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-devnet.json
-    fi
+sudo chown bee:bee $beeHome/config.*.json > /dev/null 2>&1
 
-    sudo chown bee:bee $beeHome/config.*.json > /dev/null 2>&1
-else
-    if grep -Ex "OPTIONS=\"--config config.toml\"" /etc/default/bee > /dev/null 2>&1
-    then
-        sudo echo "OPTIONS=\"--config config.chrysalis-mainnet.toml\"" > /etc/default/bee
-        restartBee=true
-    fi
-
-    if [ -f "$beeHome/config.toml" ]; then
-        if [ ! -f "$beeHome/config.chrysalis-mainnet.toml" ]; then
-            sudo mv -f $beeHome/config.toml $beeHome/config.chrysalis-mainnet.toml > /dev/null 2>&1
-            restartBee=true
-        else
-            sudo rm -rf $beeHome/config.toml > /dev/null 2>&1
-        fi
-    fi
-
-    if [ ! -s "$beeHome/config.chrysalis-mainnet.toml" ]; then
-        source $beeModules/beeVersion
-        sudo wget -q -O $beeHome/config.chrysalis-mainnet.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-mainnet.toml
-    fi
-    if [ ! -s "$beeHome/config.chrysalis-comnet.toml" ]; then
-        source $beeModules/beeVersion
-        sudo wget -q -O $beeHome/config.chrysalis-comnet.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-comnet.toml
-    fi
-
-    if [ ! -s "$beeHome/config.chrysalis-devnet.toml" ]; then
-        source $beeModules/beeVersion
-        sudo wget -q -O $beeHome/config.chrysalis-devnet.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-devnet.toml
-    fi
-
-    if ! grep -q "\[dashboard\.auth\]" $beeHome/config.chrysalis-$beeNetwork.toml
-    then
-        source $beeModules/beeVersion
-        sudo wget -q -O $beeHome/config.chrysalis-mainnet.toml https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-$beeNetwork.toml
-    fi
-
-    sudo chown bee:bee $beeHome/config.*.toml > /dev/null 2>&1
+if [ -f "/tmp/beeParsing" ]; then
+    sudo rm -rf /tmp/beeParsing > /dev/null 2>&1
 fi

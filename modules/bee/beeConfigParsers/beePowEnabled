@@ -1,17 +1,10 @@
 #!/bin/bash
 
-if [[ $beeVersion = [0-9].[3-9].[0-9] ]] || [[ $beeVersion = [0-9].[3-9].[0-9]-rc[4-9] ]]; then
-    parser="$(jq '.restApi.featureProofOfWork' $beeHome/config.chrysalis-$beeNetwork.json)"
-    if [ "$parser" != "$beePowEnabled" ]; then
-        sudo jq '.restApi.featureProofOfWork = '$beePowEnabled'' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
-        restartBee=true
-    fi
-else
-    parser=$(sed -n '/^feature_proof_of_work/p' $beeHome/config.chrysalis-$beeNetwork.toml | awk '{ print $3 }')
-    if [ "$parser" != "$beePowEnabled" ]; then
-        sudo sed -i 's~^feature_proof_of_work.*~feature_proof_of_work = '$beePowEnabled'~g' $beeHome/config.chrysalis-$beeNetwork.toml
-        restartBee=true
-    fi
+parser="$(jq '.restApi.featureProofOfWork' $beeHome/config.chrysalis-$beeNetwork.json)"
+if [ "$parser" != "$beePowEnabled" ]; then
+    sudo jq '.restApi.featureProofOfWork = '$beePowEnabled'' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
+    restartBee=true
+    echo "beePowEnabled" >> /tmp/beeParsing
 fi
 
 unset parser

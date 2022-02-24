@@ -1,30 +1,18 @@
 #!/bin/bash
 
-if [[ $beeVersion = [0-9].[3-9].[0-9] ]] || [[ $beeVersion = [0-9].[3-9].[0-9]-rc[4-9] ]]; then
-    parser="$(jq '.autopeering.runAsEntryNode' $beeHome/config.chrysalis-$beeNetwork.json)"
-    if [ "$parser" != "$beePowEnabled" ]; then
-        sudo jq '.autopeering.runAsEntryNode = '$beeRunAsEntryNode'' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
-        if [ "$beeRunAsEntryNode" = "true" ]; then
-            parser="$(jq '.autopeering.enabled' $beeHome/config.chrysalis-$beeNetwork.json)"
-            if [ "$parser" = "false" ]; then
-                beeAutopeeringEnabled=true
-                sudo jq '.autopeering.enabled = '$beeAutopeeringEnabled'' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
-                sudo sed -i 's/^beeAutopeeringEnabled=.*/beeAutopeeringEnabled=true/' $swarmConfigs/bee.cfg
-            fi
+parser="$(jq '.autopeering.runAsEntryNode' $beeHome/config.chrysalis-$beeNetwork.json)"
+if [ "$parser" != "$beePowEnabled" ]; then
+    sudo jq '.autopeering.runAsEntryNode = '$beeRunAsEntryNode'' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
+    if [ "$beeRunAsEntryNode" = "true" ]; then
+        parser="$(jq '.autopeering.enabled' $beeHome/config.chrysalis-$beeNetwork.json)"
+        if [ "$parser" = "false" ]; then
+            beeAutopeeringEnabled=true
+            sudo jq '.autopeering.enabled = '$beeAutopeeringEnabled'' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
+            sudo sed -i 's/^beeAutopeeringEnabled=.*/beeAutopeeringEnabled=true/' $swarmConfigs/bee.cfg
         fi
-        restartBee=true
     fi
-else
-    parserBefore=$(sed -n '/run_as_entry_node/,/drop_neighbors_on_salt_update/p' $beeHome/config.chrysalis-$beeNetwork.toml)
-    sudo sed -i 's~^run_as_entry_node =.*~run_as_entry_node = '$beeRunAsEntryNode'~' $beeHome/config.chrysalis-$beeNetwork.toml
-    parserAfter=$(sed -n '/run_as_entry_node/,/drop_neighbors_on_salt_update/p' $beeHome/config.chrysalis-$beeNetwork.toml)
-
-    if [ "$parserBefore" != "$parserAfter" ]; then
-        restartBee=true
-    fi
-
-    unset parserBefore
-    unset parserAfter
+    restartBee=true
+    echo "beeRunAsEntryNode" >> /tmp/beeParsing
 fi
 
 unset parser

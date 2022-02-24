@@ -1,20 +1,12 @@
 #!/bin/bash
 
-if [[ $beeVersion = [0-9].[3-9].[0-9] ]] || [[ $beeVersion = [0-9].[3-9].[0-9]-rc[4-9] ]]; then
-    parser="$(jq '.alias' $beeHome/config.chrysalis-$beeNetwork.json)"
-    parser=$(echo $parser | tr -d '"')
-    if [ "$hornetAlias" != "$parser" ]; then
-        if [ ! -z "$hornetAlias" ]; then
-            sudo jq --arg beeAlias "$beeAlias" '.alias = ($beeAlias)' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
-            restartBee=true
-            newBeeAlias=true
-        fi
-    fi
-else
-    parser=$(sed -n '/^alias/p' $beeHome/config.chrysalis-$beeNetwork.toml | head -n 1 | awk '{print $3 }' | tr -d '"')
-    if [ "$parser" != "$beeAlias" ]; then
-        sudo sed -i "3s~^alias.*~alias      = \"$beeAlias\"~g" $beeHome/config.chrysalis-$beeNetwork.toml
+parser="$(jq '.alias' $beeHome/config.chrysalis-$beeNetwork.json)"
+parser=$(echo $parser | tr -d '"')
+if [ "$beeAlias" != "$parser" ]; then
+    if [ ! -z "$beeAlias" ]; then
+        sudo jq --arg beeAlias "$beeAlias" '.alias = ($beeAlias)' $beeHome/config.chrysalis-$beeNetwork.json|sponge $beeHome/config.chrysalis-$beeNetwork.json
         restartBee=true
         newBeeAlias=true
+        echo "beeAlias" >> /tmp/beeParsing
     fi
 fi
