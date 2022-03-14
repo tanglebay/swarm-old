@@ -1,6 +1,14 @@
 #!/bin/bash
 source $swarmLogs/githubVersion
 
+if [ -z "$latestWaspVersion" ] || [ "$latestWaspVersion" = "null" ] || [ "$latestWaspVersion" = "\"\"" ]; then
+    latestWaspVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/wasp/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+    if [ ! -z "$latestWaspVersion" ] && [ "$latestWaspVersion" != "null" ] && [ "$latestWaspVersion" != "\"\"" ]; then
+        latestWaspVersion=$(echo $latestWaspVersion | tr -d 'v"')
+        sudo sed -i 's~^latestWaspVersion=.*~latestWaspVersion="'$latestWaspVersion'"~' $swarmLogs/githubVersion
+    fi
+fi
+
 # Latest WASP version
 if [ -f "/usr/bin/wasp" ]; then
     waspVersion=$(cd $waspHome ; /usr/bin/wasp -v | awk '{print $2}' | tr -d 'v')
