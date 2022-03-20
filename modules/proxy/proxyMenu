@@ -38,20 +38,87 @@ while [ $exitCode -lt 1 ]; do
 
                 case $CHOICE in
                     "1)")
-                        source $swarmConfigs/proxy.cfg
-                        currentProxySwarmDashboardUrl="$proxySwarmDashboardUrl"
-                        proxySwarmDashboardUrl=$(whiptail --inputbox "\nSet your domain and port for the SWARM dashboard" 10 65 $proxySwarmDashboardUrl --title "Proxy - SWARM Dashboard" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ "$exitStatus" != "1" ]; then
-                            if [ "$currentProxySwarmDashboardUrl" != "$proxySwarmDashboardUrl" ]; then
-                                proxySwarmDashboardDomain=$(echo $proxySwarmDashboardUrl | sed 's/:.*//')
-                                proxySwarmDashboardPort=$(echo $proxySwarmDashboardUrl | sed 's/.*://')
-                                sudo sed -i 's/^proxySwarmDashboardUrl=.*/proxySwarmDashboardUrl="'$proxySwarmDashboardUrl'"/' $swarmConfigs/proxy.cfg
-                                whiptail --title "Proxy - SWARM Dashboard" --msgbox "URL for SWARM dashboard proxy set to \"$proxySwarmDashboardUrl\"" 8 65
+                        while [ $exitCode -lt 1 ]; do
+                            clear
+                            source $swarmConfigs/proxy.cfg
+                            if [ "$proxyHornetExternalDashboard" = "true" ]; then
+                                proxyMenuHornetDashboard="external"
                             else
-                                whiptail --title "Proxy - SWARM Dashboard" --msgbox "No SWARM dashboard url change detected" 8 65
+                                proxyMenuHornetDashboard="internal"
                             fi
-                        fi
+                            if [ "$proxyBeeExternalDashboard" = "true" ]; then
+                                proxyMenuBeeDashboard="external"
+                            else
+                                proxyMenuBeeDashboard="internal"
+                            fi
+                            if [ "$proxyGoshimmerExternalDashboard" = "true" ]; then
+                                proxyMenuGoshimmerDashboard="external"
+                            else
+                                proxyMenuGoshimmerDashboard="internal"
+                            fi
+                            CHOICE=$(
+                                whiptail --title "Proxy Menu" --menu "\nChoose an option" 16 65 0 \
+                                "1)" "SWARM dashboard url" \
+                                "2)" "Use $proxyMenuHornetDashboard dashboard for Hornet" \
+                                "3)" "Use $proxyMenuBeeDashboard dashboard for Bee" \
+                                "4)" "Use $proxyMenuGoshimmerDashboard dashboard for Goshimmer" 3>&2 2>&1 1>&3
+                            )
+
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
+                            fi
+
+                            case $CHOICE in
+                                "1)")
+                                    source $swarmConfigs/proxy.cfg
+                                    currentProxySwarmDashboardUrl="$proxySwarmDashboardUrl"
+                                    proxySwarmDashboardUrl=$(whiptail --inputbox "\nSet your domain and port for the SWARM dashboard" 10 65 $proxySwarmDashboardUrl --title "Proxy - SWARM Dashboard" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ "$exitStatus" != "1" ]; then
+                                        if [ "$currentProxySwarmDashboardUrl" != "$proxySwarmDashboardUrl" ]; then
+                                            proxySwarmDashboardDomain=$(echo $proxySwarmDashboardUrl | sed 's/:.*//')
+                                            proxySwarmDashboardPort=$(echo $proxySwarmDashboardUrl | sed 's/.*://')
+                                            sudo sed -i 's/^proxySwarmDashboardUrl=.*/proxySwarmDashboardUrl="'$proxySwarmDashboardUrl'"/' $swarmConfigs/proxy.cfg
+                                            whiptail --title "Proxy - SWARM Dashboard" --msgbox "URL for SWARM dashboard proxy set to \"$proxySwarmDashboardUrl\"" 8 65
+                                        else
+                                            whiptail --title "Proxy - SWARM Dashboard" --msgbox "No SWARM dashboard url change detected" 8 65
+                                        fi
+                                    fi
+                                ;;
+                                "2)")
+                                    source $swarmConfigs/proxy.cfg
+                                    if [ "$proxyHornetExternalDashboard" = "true" ]; then
+                                        proxyHornetExternalDashboard=false
+                                        sudo sed -i 's/^proxyHornetExternalDashboard=.*/proxyHornetExternalDashboard='$proxyHornetExternalDashboard'/' $swarmConfigs/proxy.cfg
+                                    else
+                                        proxyHornetExternalDashboard=true
+                                        sudo sed -i 's/^proxyHornetExternalDashboard=.*/proxyHornetExternalDashboard='$proxyHornetExternalDashboard'/' $swarmConfigs/proxy.cfg
+                                    fi
+                                ;;
+                                "3)")
+                                    source $swarmConfigs/proxy.cfg
+                                    if [ "$proxyBeeExternalDashboard" = "true" ]; then
+                                        proxyBeeExternalDashboard=false
+                                        sudo sed -i 's/^proxyBeeExternalDashboard=.*/proxyBeeExternalDashboard='$proxyBeeExternalDashboard'/' $swarmConfigs/proxy.cfg
+                                    else
+                                        proxyBeeExternalDashboard=true
+                                        sudo sed -i 's/^proxyBeeExternalDashboard=.*/proxyBeeExternalDashboard='$proxyBeeExternalDashboard'/' $swarmConfigs/proxy.cfg
+                                    fi
+                                ;;
+                                "4)")
+                                    source $swarmConfigs/proxy.cfg
+                                    if [ "$proxyGoshimmerExternalDashboard" = "true" ]; then
+                                        proxyGoshimmerExternalDashboard=false
+                                        sudo sed -i 's/^proxyGoshimmerExternalDashboard=.*/proxyGoshimmerExternalDashboard='$proxyGoshimmerExternalDashboard'/' $swarmConfigs/proxy.cfg
+                                    else
+                                        proxyGoshimmerExternalDashboard=true
+                                        sudo sed -i 's/^proxyGoshimmerExternalDashboard=.*/proxyGoshimmerExternalDashboard='$proxyGoshimmerExternalDashboard'/' $swarmConfigs/proxy.cfg
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
                     ;;
                     "2)")
                         source $swarmConfigs/proxy.cfg

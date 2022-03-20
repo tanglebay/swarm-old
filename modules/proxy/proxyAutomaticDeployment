@@ -52,8 +52,12 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
                 sudo ufw allow $proxyHornetPort/tcp > /dev/null 2>&1
             fi
         else
-            sudo sed -i 's/hornet\/dashboard/#/g' $proxySwarmDashboard
-            sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_gray.svg" alt="Hornet not installed" id~' $proxySwarmDashboard
+            if [ "$proxyHornetExternalDashboard" = "true" ] && [ ! -z "$proxyHornetDomain" ] && [ ! -z "$proxyHornetPort" ]; then
+                sudo sed -i 's~"hornet\/dashboard"~"https:\/\/'$proxyHornetDomain':'$proxyHornetPort'\/dashboard" target="_blank"~g' $proxySwarmDashboard
+            else
+                sudo sed -i 's/hornet\/dashboard/#/g' $proxySwarmDashboard
+                sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_gray.svg" alt="Hornet not installed" id~' $proxySwarmDashboard
+            fi
         fi
         if [ -f "/usr/bin/bee" ] && [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] && [ ! -z "$proxyBeeDomain" ] && [ ! -z "$proxyBeePort" ]; then
             if [ -z "$defaultDomain" ]; then
@@ -67,8 +71,13 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
                 sudo ufw allow $proxyBeePort/tcp > /dev/null 2>&1
             fi
         else
-            sudo sed -i 's/bee\/dashboard/#/g' $proxySwarmDashboard
-            sudo sed -i 's~/img/bee.*id~/img/bee_logo_gray.svg" alt="Bee not installed" id~' $proxySwarmDashboard
+            if [ "$proxyBeeExternalDashboard" = "true" ] && [ ! -z "$proxyBeeDomain" ] && [ ! -z "$proxyBeePort" ]; then
+            if [ -z "$defaultDomain" ]; then
+                sudo sed -i 's/"bee\/dashboard"/"https:\/\/'$proxyBeeDomain':'$proxyBeePort'\/dashboard" target="_blank"/g' $proxySwarmDashboard
+            else
+                sudo sed -i 's/bee\/dashboard/#/g' $proxySwarmDashboard
+                sudo sed -i 's~/img/bee.*id~/img/bee_logo_gray.svg" alt="Bee not installed" id~' $proxySwarmDashboard
+            fi
         fi
         if [ -f "/usr/bin/goshimmer" ] && [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] && [ ! -z "$proxyGoshimmerDomain" ] && [ ! -z "$proxyGoshimmerPort" ]; then
             source $swarmConfigs/goshimmer.cfg
@@ -92,8 +101,12 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
                 sudo ufw allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
             fi
         else
-            sudo sed -i 's/goshimmer\/dashboard/#/g' $proxySwarmDashboard
-            sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_gray.svg" alt="GoShimmer not installed" id~' $proxySwarmDashboard
+            if [ "$proxyGoshimmerExternalDashboard" = "true" ] && [ ! -z "$proxyGoshimmerDomain" ] && [ ! -z "$proxyGoshimmerPort" ]; then
+                sudo sed -i 's/"goshimmer\/dashboard"/"https:\/\/'$proxyGoshimmerDomain':'$proxyGoshimmerPort'\/dashboard" target="_blank"/g' $proxySwarmDashboard
+            else
+                sudo sed -i 's/goshimmer\/dashboard/#/g' $proxySwarmDashboard
+                sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_gray.svg" alt="GoShimmer not installed" id~' $proxySwarmDashboard
+            fi
         fi
         if [ -f "/usr/bin/wasp" ] && [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyWaspDashboardDomain" ] && [ ! -z "$proxyWaspDashboardPort" ]; then
             source $swarmConfigs/wasp.cfg
