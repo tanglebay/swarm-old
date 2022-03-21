@@ -229,95 +229,99 @@ while [ $exitCode -lt 1 ]; do
 
                     case $CHOICE in
                         "1)")
-                            if [ -f "/usr/bin/goshimmer" ]; then
-                                if (whiptail --title "GoShimmer - Updater" --yesno --defaultno "Do you really want to update GoShimmer?" 8 65); then
-                                    sudo touch /tmp/goshimmer.lock
-                                    if (whiptail --title "GoShimmer - Updater" --yesno --defaultno "Do want to download the latest GoShimmer DB backup?" 8 65); then
-                                        goshimmerAllowDbDownload=true
+                            if [ "$goshimmerUnblockUpdate" = "true" ]; then
+                                if [ -f "/usr/bin/goshimmer" ]; then
+                                    if (whiptail --title "GoShimmer - Updater" --yesno --defaultno "Do you really want to update GoShimmer?" 8 65); then
+                                        sudo touch /tmp/goshimmer.lock
+                                        if (whiptail --title "GoShimmer - Updater" --yesno --defaultno "Do want to download the latest GoShimmer DB backup?" 8 65); then
+                                            goshimmerAllowDbDownload=true
+                                        fi
+                                        # Update GoShimmer
+                                        source $goshimmerModules/goshimmerVersion
+                                        if [ ! -z "$latestGoshimmerVersion" ]; then
+                                            {
+                                                echo 0
+                                                echo 10
+                                                sudo systemctl stop goshimmer
+                                                echo 20
+                                                sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb $goshimmerHome/snapshot.bin > /dev/null 2>&1
+                                                echo 40
+                                                source $goshimmerModules/goshimmerInstaller
+                                                echo 60
+                                                source $goshimmerModules/goshimmerParser
+                                                echo 80
+                                                sudo systemctl start goshimmer
+                                                echo 100
+                                                sleep 0.5
+                                            } | whiptail --gauge "Please wait while GoShimmer is updated..." 8 65 0
+                                            whiptail --title "GoShimmer - Updater" --msgbox "GoShimmer successfully updated" 8 65
+                                        sudo rm -rf /tmp/goshimmer.lock > /dev/null 2>&1
+                                        else
+                                            whiptail --title "GoShimmer - Updater" --msgbox "Congratulations, you have already installed the latest version of GoShimmer!" 8 65
+                                        fi
                                     fi
-                                    # Update GoShimmer
-                                    source $goshimmerModules/goshimmerVersion
-                                    if [ ! -z "$latestGoshimmerVersion" ]; then
-                                        {
-                                            echo 0
-                                            echo 10
-                                            sudo systemctl stop goshimmer
-                                            echo 20
-                                            sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb $goshimmerHome/snapshot.bin > /dev/null 2>&1
-                                            echo 40
-                                            source $goshimmerModules/goshimmerInstaller
-                                            echo 60
-                                            source $goshimmerModules/goshimmerParser
-                                            echo 80
-                                            sudo systemctl start goshimmer
-                                            echo 100
-                                            sleep 0.5
-                                        } | whiptail --gauge "Please wait while GoShimmer is updated..." 8 65 0
-                                        whiptail --title "GoShimmer - Updater" --msgbox "GoShimmer successfully updated" 8 65
-                                    sudo rm -rf /tmp/goshimmer.lock > /dev/null 2>&1
-                                    else
-                                        whiptail --title "GoShimmer - Updater" --msgbox "Congratulations, you have already installed the latest version of GoShimmer!" 8 65
-                                    fi
+                                else
+                                    whiptail --title "GoShimmer - Updater" --msgbox "Sorry, but GoShimmer is not installed or update blocked!" 8 65
                                 fi
-                            else
-                                whiptail --title "GoShimmer - Updater" --msgbox "Sorry, but GoShimmer is not installed!" 8 65
                             fi
                         ;;
                         "2)")
-                            source $goshimmerModules/goshimmerVersion
-                            # INSTALL GoShimmer
-                            if [ ! -f "/usr/bin/goshimmer" ]; then
-                                if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Are you sure you want to install Goshimmer v$latestGoshimmerVersion?" 8 65); then
-                                    sudo touch /tmp/goshimmer.lock
-                                    {
-                                        echo 0
-                                        echo 20
-                                        source $swarmConfigs/goshimmer.cfg
-                                        echo 40
-                                        source $goshimmerModules/goshimmerInstaller
-                                        echo 50
-                                        # CALL MODULE CONFIGPARSER
-                                        if [ -f "/usr/bin/goshimmer" ] && [ -f "$goshimmerHome/config.json" ]; then
-                                            if ! [ -x "$(command -v apache2-utils)" ]; then
-                                                sudo apt -qq install apache2-utils -y > /dev/null 2>&1
-                                            fi
-                                            source $swarmConfigs/goshimmer.cfg
-                                            echo 60
-                                            source $goshimmerModules/goshimmerParser
-                                            echo 70
-                                            if [ "$ufw" = "true" ]; then
-                                                sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
-                                                sudo ufw allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
-                                            fi
-                                            sudo systemctl start goshimmer > /dev/null 2>&1
-                                            echo 80
-                                            sleep 2
-                                            goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
-                                            if [ "$goshimmerStatus" != "active" ]; then
-                                                sudo systemctl restart goshimmer > /dev/null 2>&1
-                                            fi
-                                            echo 100
-                                            sleep 0.2
-                                        fi
-                                    } | whiptail --gauge "Please wait while installing GoShimmer..." 8 65 0
-                                    if [ -f "/usr/bin/goshimmer" ] && [ -f "$goshimmerHome/config.json" ]; then
-                                        whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $goshimmerGossipPort/tcp\nAutopeering: $goshimmerAutopeeringPort/udp" 15 65
-                                    else
+                            if [ "$goshimmerUnblockInstaller" = "true" ]; then
+                                source $goshimmerModules/goshimmerVersion
+                                # INSTALL GoShimmer
+                                if [ ! -f "/usr/bin/goshimmer" ]; then
+                                    if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Are you sure you want to install Goshimmer v$latestGoshimmerVersion?" 8 65); then
+                                        sudo touch /tmp/goshimmer.lock
                                         {
                                             echo 0
-                                            echo 25
+                                            echo 20
                                             source $swarmConfigs/goshimmer.cfg
+                                            echo 40
+                                            source $goshimmerModules/goshimmerInstaller
                                             echo 50
-                                            source $goshimmerModules/goshimmerRemoval
-                                            echo 75
-                                            echo 100
-                                        } | whiptail --gauge "Please wait while the GoShimmer files are removed...." 8 65 0
-                                        whiptail --title "GoShimmer - Installer" --msgbox "Error while installing GoShimmer! Please try again later." 8 65
+                                            # CALL MODULE CONFIGPARSER
+                                            if [ -f "/usr/bin/goshimmer" ] && [ -f "$goshimmerHome/config.json" ]; then
+                                                if ! [ -x "$(command -v apache2-utils)" ]; then
+                                                    sudo apt -qq install apache2-utils -y > /dev/null 2>&1
+                                                fi
+                                                source $swarmConfigs/goshimmer.cfg
+                                                echo 60
+                                                source $goshimmerModules/goshimmerParser
+                                                echo 70
+                                                if [ "$ufw" = "true" ]; then
+                                                    sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
+                                                    sudo ufw allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
+                                                fi
+                                                sudo systemctl start goshimmer > /dev/null 2>&1
+                                                echo 80
+                                                sleep 2
+                                                goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+                                                if [ "$goshimmerStatus" != "active" ]; then
+                                                    sudo systemctl restart goshimmer > /dev/null 2>&1
+                                                fi
+                                                echo 100
+                                                sleep 0.2
+                                            fi
+                                        } | whiptail --gauge "Please wait while installing GoShimmer..." 8 65 0
+                                        if [ -f "/usr/bin/goshimmer" ] && [ -f "$goshimmerHome/config.json" ]; then
+                                            whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $goshimmerGossipPort/tcp\nAutopeering: $goshimmerAutopeeringPort/udp" 15 65
+                                        else
+                                            {
+                                                echo 0
+                                                echo 25
+                                                source $swarmConfigs/goshimmer.cfg
+                                                echo 50
+                                                source $goshimmerModules/goshimmerRemoval
+                                                echo 75
+                                                echo 100
+                                            } | whiptail --gauge "Please wait while the GoShimmer files are removed...." 8 65 0
+                                            whiptail --title "GoShimmer - Installer" --msgbox "Error while installing GoShimmer! Please try again later." 8 65
+                                        fi
+                                        sudo rm -rf /tmp/goshimmer.lock > /dev/null 2>&1
                                     fi
-                                    sudo rm -rf /tmp/goshimmer.lock > /dev/null 2>&1
+                                else
+                                    whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer already installed." 8 65
                                 fi
-                            else
-                                whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer already installed." 8 65
                             fi
                         ;;
                         "3)")
