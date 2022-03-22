@@ -340,14 +340,17 @@ while [ $exitCode -lt 1 ]; do
                 "Prometheus" "plugin is used for metrics e.g. in Grafana" $hornetPluginPrometheus 3>&1 1>&2 2>&3)
             exitStatus=$?
             hornetEnablePlugins=$(echo $hornetEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ "$hornetEnablePlugins" != "$currentHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                source $hornetConfigParsers/hornetEnablePlugins
-                sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="'$hornetEnablePlugins'"/' $swarmConfigs/hornet.cfg
-                if [ ! -z "$hornetEnablePlugins" ]; then
-                    whiptail --title "Hornet - Plugins" --msgbox "The following plugins are enabled:\n$hornetEnablePlugins" 14 65
-                else
-                    whiptail --title "Hornet - Plugins" --msgbox "There are no plugins enabled for Hornet!" 8 65
+            if [ -z "$hornetEnablePlugins" ] || [[ $hornetEnablePlugins = *autopeering* ]] || [[ $hornetEnablePlugins = *participation* ]] || [[ $hornetEnablePlugins = *mqtt* ]] || [[ $hornetEnablePlugins = *prometheus* ]]; then
+                if [ "$hornetEnablePlugins" != "$currentHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    source $hornetConfigParsers/hornetEnablePlugins
+                    sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="'$hornetEnablePlugins'"/' $swarmConfigs/hornet.cfg
+                    if [ ! -z "$hornetEnablePlugins" ]; then
+                        whiptail --title "Hornet - Plugins" --msgbox "The following plugins are enabled:\n$hornetEnablePlugins" 14 65
+                    else
+                        whiptail --title "Hornet - Plugins" --msgbox "There are no plugins enabled for Hornet!" 8 65
+                    fi
                 fi
+                unset hornetEnablePlugins
             fi
             unset useHornetEnablePlugins
         ;;
@@ -360,14 +363,18 @@ while [ $exitCode -lt 1 ]; do
                 "Warpsync" "plugin to sync more faster" $hornetPluginWarpsync 3>&1 1>&2 2>&3)
             exitStatus=$?
             hornetDisablePlugins=$(echo $hornetDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ "$hornetDisablePlugins" != "$currentHornetDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                source $hornetConfigParsers/hornetDisablePlugins
-                sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins="'$hornetDisablePlugins'"/' $swarmConfigs/hornet.cfg
-                if [ ! -z "$hornetDisablePlugins" ]; then
-                    whiptail --title "Hornet Plugins" --msgbox "The following plugins are disabled:\n$hornetDisablePlugins" 14 65
-                else
-                    whiptail --title "Hornet - Plugins" --msgbox "There are no plugins disabled for Hornet!" 8 65
+            if [ -z "$hornetDisablePlugins" ] || [[ $hornetDisablePlugins = *warpsync* ]]; then
+                if [ "$hornetDisablePlugins" != "$currentHornetDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    source $hornetConfigParsers/hornetDisablePlugins
+                    sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins="'$hornetDisablePlugins'"/' $swarmConfigs/hornet.cfg
+                    if [ ! -z "$hornetDisablePlugins" ]; then
+                        whiptail --title "Hornet Plugins" --msgbox "The following plugins are disabled:\n$hornetDisablePlugins" 14 65
+                    else
+                        whiptail --title "Hornet - Plugins" --msgbox "There are no plugins disabled for Hornet!" 8 65
+                    fi
                 fi
+            else
+                unset hornetDisablePlugins
             fi
             unset useHornetDisablePlugins
         ;;
