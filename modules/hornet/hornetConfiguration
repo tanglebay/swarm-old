@@ -139,15 +139,20 @@ while [ $exitCode -lt 1 ]; do
                     "2)")
                         if (whiptail --title "Hornet - API & JWT" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
                             sudo systemctl stop hornet
-                            hornetApiJwtToken=$( cd $hornetHome ; hornet tools jwt-api)
-                            sudo sed -i 's~^hornetApiJwtToken=.*~hornetApiJwtToken="'$hornetApiJwtToken'"~' $swarmConfigs/hornet.cfg
-                            echo $hornetApiJwtToken >> $swarmLogs/hornetJwtToken.log
-                            clear
-                            echo ""
-                            echo $hornetApiJwtToken
-                            echo ""
-                            read -n 1 -s -r -p "Press any key to continue"
-                            sudo systemctl start hornet
+                            hornetApiJwtToken=$( cd $hornetHome ; hornet tools jwt-api | awk '{ print $5 }')
+                            if [ ! -z "$hornetApiJwtToken" ]; then
+                                sudo sed -i 's~^hornetApiJwtToken=.*~hornetApiJwtToken="'$hornetApiJwtToken'"~' $swarmConfigs/hornet.cfg
+                                echo $hornetApiJwtToken >> $swarmLogs/hornetJwtToken.log
+                                clear
+                                echo ""
+                                echo $hornetApiJwtToken
+                                echo ""
+                                sudo systemctl start hornet
+                                read -n 1 -s -r -p "Press any key to continue"
+                            else
+                                sudo systemctl start hornet
+                                whiptail --title "Hornet - API & JWT" --msgbox "Error generating JWT token, please try again later." 8 65
+                            fi
                         fi
                     ;;
                     "3)")
