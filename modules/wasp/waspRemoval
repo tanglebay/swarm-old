@@ -1,4 +1,7 @@
 #!/bin/bash
+source $swarmConfigs/wasp.cfg
+source $swarmConfigs/proxy.cfg
+source $proxyModules/proxyParser
 
 sudo systemctl stop wasp > /dev/null 2>&1
 
@@ -10,6 +13,8 @@ sudo systemctl daemon-reload > /dev/null 2>&1
 
 if [ "$ufw" = "true" ]; then
     sudo ufw delete allow $waspGossipPort/tcp > /dev/null 2>&1
+    sudo ufw delete allow $proxyWaspDashboardPort/tcp > /dev/null 2>&1
+    sudo ufw delete allow $proxyWaspApiPort/tcp > /dev/null 2>&1
 fi
 
 sudo rm -rf $waspHome > /dev/null 2>&1
@@ -24,7 +29,8 @@ if [ -x "$(command -v apache2-utils)" ] && [ ! -f "/usr/bin/goshimmer" ]; then
 fi
 
 if [ -f "/etc/nginx/sites-enabled/wasp-dashboard" ] || [ -f "/etc/nginx/sites-enabled/wasp-api" ]; then
-    sudo sed -i 's/^waspApiPort=.*/waspApiPort=/' $swarmConfigs/proxy.cfg
+    sudo sed -i 's/^proxyWaspDashboardUrl=.*/proxyWaspDashboardUrl=""/' $swarmConfigs/proxy.cfg
+    sudo sed -i 's/^proxyWaspApiUrl=.*/proxyWaspApiUrl=""/' $swarmConfigs/proxy.cfg
     sudo rm -rf /etc/nginx/sites-enabled/wasp-dashboard /etc/nginx/sites-enabled/wasp-api > /dev/null 2>&1
     sudo rm -rf /etc/nginx/wasp > /dev/null 2>&1
     sudo systemctl reload nginx
