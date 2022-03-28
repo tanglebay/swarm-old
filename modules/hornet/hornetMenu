@@ -140,8 +140,9 @@ while [ $exitCode -lt 1 ]; do
                         whiptail --title "Hornet - Debugging" --menu "\nChoose your option" 18 65 0 \
                         "1)" "Show Hornet log" \
                         "2)" "Start/Stop Hornet" \
-                        "3)" "Reset Hornet DB" \
-                        "4)" "Reset Hornet config" 3>&2 2>&1 1>&3
+                        "3)" "Reset Hornet event database"
+                        "4)" "Reset Hornet all databases" \
+                        "5)" "Reset Hornet config" 3>&2 2>&1 1>&3
                     )
                     exitstatus=$?
                     if [ "$exitstatus" = "1" ]; then
@@ -190,7 +191,7 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while Hornet is stopping..." 8 65 0
-                                    whiptail --title "Hornet - Debugging" --msgbox "Hornet successfully stopped" 8 65
+                                    whiptail --title "Hornet - Debugging" --msgbox "Hornet successfully stopped." 8 65
                                 ;;
                                 "4)")
                                     hornetStatus="$(sudo systemctl status hornet)"
@@ -198,7 +199,24 @@ while [ $exitCode -lt 1 ]; do
                                 ;;
                             esac
                         ;;
-                        "3)")
+                        "4)")
+                            if (whiptail --title "Hornet - Debugging" --yesno --defaultno "Are you sure you want to delete the hornet event database?" 8 65); then
+                                source $swarmConfigs/hornet.cfg
+                                {
+                                    echo 0
+                                    echo 25
+                                    sudo systemctl stop hornet
+                                    echo 50
+                                    sudo rm -rf $hornetHome/${hornetNetwork}db/participation > /dev/null 2>&1
+                                    echo 75
+                                    sudo systemctl start hornet
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
+                                whiptail --title "Hornet - Debugging" --msgbox "Event database successfully reset." 8 65
+                            fi
+                        ;;
+                        "4)")
                             if (whiptail --title "Hornet - Debugging" --yesno --defaultno "Are you sure you want to delete the hornet database?" 8 65); then
                                 source $swarmConfigs/hornet.cfg
                                 {
@@ -218,10 +236,10 @@ while [ $exitCode -lt 1 ]; do
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
-                                whiptail --title "Hornet - Debugging" --msgbox "${hornetNetwork}DB successfully reset" 8 65
+                                whiptail --title "Hornet - Debugging" --msgbox "${hornetNetwork}DB successfully reset." 8 65
                             fi
                         ;;
-                        "4)")
+                        "5)")
                             if (whiptail --title "Hornet - Debugging" --yesno --defaultno "Are you sure you want to reset the hornet config file?" 8 65); then
                                 source $swarmConfigs/hornet.cfg
                                 {
@@ -241,14 +259,14 @@ while [ $exitCode -lt 1 ]; do
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the config reset is running (this may take a while)..." 8 65 0
-                                whiptail --title "Hornet - Debugging" --msgbox "${hornetNetwork} config successfully reset" 8 65
+                                whiptail --title "Hornet - Debugging" --msgbox "${hornetNetwork} config successfully reset." 8 65
                             fi
                         ;;
                     esac
                 done
                 exitCode=0
             else
-                whiptail --title "Hornet - Debugging" --msgbox "Hornet installation not found, please install Hornet first!" 8 65
+                whiptail --title "Hornet - Debugging" --msgbox "Hornet installation not found, please install Hornet first." 8 65
             fi
         ;;
         "4)")
@@ -299,13 +317,13 @@ while [ $exitCode -lt 1 ]; do
                                             sudo systemctl restart hornet
                                         } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
                                     fi
-                                    whiptail --title "Hornet - Installer" --msgbox "Hornet successfully updated" 8 65
+                                    whiptail --title "Hornet - Installer" --msgbox "Hornet successfully updated." 8 65
                                 else
-                                    whiptail --title "Hornet - Installer" --msgbox "Congratulations, you have already installed the latest version of Hornet!" 8 65
+                                    whiptail --title "Hornet - Installer" --msgbox "Congratulations, you have already installed the latest version of Hornet." 8 65
                                 fi
                             fi
                         else
-                            whiptail --title "Hornet - Installer" --msgbox "Sorry, but Hornet is not installed!" 8 65
+                            whiptail --title "Hornet - Installer" --msgbox "Sorry, but Hornet is not installed." 8 65
                         fi
                     ;;
                     "2)")
@@ -343,7 +361,7 @@ while [ $exitCode -lt 1 ]; do
                                 fi
                                 echo 100
                             } | whiptail --gauge "Please wait while Hornet will be removed..." 8 65 0
-                            whiptail --title "Hornet - Installer" --msgbox "Hornet successfully removed" 8 65
+                            whiptail --title "Hornet - Installer" --msgbox "Hornet successfully removed." 8 65
                         fi
                     ;;
                 esac
