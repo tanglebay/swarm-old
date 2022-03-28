@@ -1,5 +1,9 @@
 #!/bin/bash
 
+source $swarmConfigs/goshimmer.cfg
+source $swarmConfigs/proxy.cfg
+source $proxyModules/proxyParser
+
 sudo systemctl stop goshimmer > /dev/null 2>&1
 
 sudo systemctl disable goshimmer > /dev/null 2>&1
@@ -25,6 +29,11 @@ if [ -x "$(command -v apache2-utils)" ]; then
 fi
 
 if [ -f "/etc/nginx/sites-enabled/goshimmer" ]; then
+    if [ "$ufw" = "true" ]; then
+        if [ "$proxyGoshimmerPort" != "$proxySwarmDashboardPort" ] && [ "$proxyGoshimmerPort" != "$proxyHornetPort" ] && [ "$proxyGoshimmerPort" != "$proxyBeePort" ] && [ "$proxyGoshimmerPort" != "$proxyWaspDashboardPort" ] && [ "$proxyGoshimmerPort" != "$proxyWaspApiPort" ]; then
+            sudo ufw delete allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
+        fi
+    fi
     sudo sed -i 's/^goshimmerApiPort=.*/goshimmerApiPort=/' $swarmConfigs/proxy.cfg
     sudo rm -rf /etc/nginx/sites-enabled/goshimmer > /dev/null 2>&1
     sudo rm -rf /etc/nginx/goshimmer > /dev/null 2>&1
