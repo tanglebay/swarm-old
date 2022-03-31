@@ -1,0 +1,41 @@
+#!/bin/bash
+
+source $swarmConfigs/hornet.cfg
+source $swarmConfigs/proxy.cfg
+source $proxyModules/proxyParser
+
+if [ "$killall" = "true" ]; then
+    sudo killall -s SIGKILL hornet > /dev/null 2>&1
+else
+    sudo systemctl stop hornet > /dev/null 2>&1
+fi
+
+sudo systemctl disable hornet > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/hornet /var/lib/hornet /lib/systemd/system/hornet.service /etc/default/hornet > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+if [ "$ufw" = "true" ]; then
+    sudo ufw delete allow $hornetGossipPort/tcp > /dev/null 2>&1
+    sudo ufw delete allow $hornetAutopeeringPort/udp > /dev/null 2>&1
+fi
+
+if [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ]; then
+    sudo snap remove go > /dev/null 2>&1
+fi
+
+if [ -f "/etc/nginx/sites-enabled/hornet" ]; then
+    if [ "$ufw" = "true" ]; then
+        if [ "$proxyHornetPort" != "$proxySwarmDashboardPort" ] && [ "$proxyHornetPort" != "$proxyBeePort" ] && [ "$proxyHornetPort" != "$proxyGoshimmerPort" ] && [ "$proxyHornetPort" != "$proxyWaspDashboardPort" ] && [ "$proxyHornetPort" != "$proxyWaspApiPort" ]; then
+            sudo ufw delete allow $proxyHornetPort/tcp > /dev/null 2>&1
+        fi
+    fi
+    sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetUrl=""/' $swarmConfigs/proxy.cfg
+    sudo rm -rf /etc/nginx/sites-enabled/hornet > /dev/null 2>&1
+    sudo systemctl reload nginx
+fi
+if [ -f "$proxyLandingPage" ]; then
+    sudo sed -i 's/https:\/\/'$proxyHornetDashboardDomain':'$proxyHornetDashboardPort'\/dashboard" target="_blank/#/g' $proxyLandingPage
+    sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_gray.svg" alt="Hornet not installed" id~' $proxyLandingPage
+fi

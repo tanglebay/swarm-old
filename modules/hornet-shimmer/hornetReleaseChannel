@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# Write selected release to config
+if [ "$hornetRelease" = "stable" ]; then
+    sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+fi
+if [ "$hornetRelease" = "testing" ]; then
+    sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+    sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
+fi
+if [ "$hornetRelease" = "alpha" ]; then
+    sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+    sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
+    sudo sh -c 'echo "deb http://ppa.hornet.zone alpha main" >> /etc/apt/sources.list.d/hornet.list'
+fi
+
+# Check if release is changed
+if [ "$hornetRelease" != "$currentHornetRelease" ]; then
+    {
+        echo 0
+        echo 20
+        sudo apt-get -qq update -y > /dev/null 2>&1
+        echo 40
+        sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
+        IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
+        for hornetConfig in "${ARRAYhornetConfigs[@]}"
+        do
+            if [ -f "$hornetHome/$hornetConfig.json.dpkg-dist" ]; then
+            sudo cp -r $hornetHome/$hornetConfig.json.dpkg-dist $hornetHome/$hornetConfig.json
+            sudo rm -rf $hornetHome/$hornetConfig.json.dpkg*
+            fi
+        done
+        unset ARRAYhornetConfigs
+        unset hornetConfig
+        echo 60
+        source $hornetModules/hornetParser
+        echo 80
+        source $hornetModules/hornetVersion
+        if [ "$hornetVersion" != "$latestHornetVersion" ]; then
+            sudo systemctl restart hornet
+            unset restartHornet
+        fi
+        echo 100
+    } | whiptail --gauge "Please wait while Hornet is prepared..." 8 65 0
+    whiptail --title "Hornet Configuration" --msgbox "New release channel ($hornetRelease) applied and Hornet was reinstalled!" 8 65
+fi

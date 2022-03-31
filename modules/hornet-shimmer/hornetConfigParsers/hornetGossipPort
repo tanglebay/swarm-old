@@ -1,0 +1,11 @@
+#!/bin/bash
+
+parser="$(jq '.p2p.bindMultiAddresses' $hornetHome/$hornetConfig.json)"
+parser="$(echo $parser | tr -d '[]":/. ')"
+
+if [ -n "$hornetGossipPort" ] && [ "$hornetGossipPort" -gt 0 ] && [[ $parser != *$hornetGossipPort* ]] 2>/dev/null; then
+    sudo jq '.p2p.bindMultiAddresses = ["/ip4/0.0.0.0/tcp/'$hornetGossipPort'"]' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+    sudo jq '.p2p.bindMultiAddresses |= .+ ["/ip6/::/tcp/'$hornetGossipPort'"]' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+    restartHornet=true
+    echo "hornetGossipPort" >> /tmp/hornetParsing
+fi
