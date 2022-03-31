@@ -1,33 +1,33 @@
 #!/bin/bash
-if [ -f "/usr/bin/hornet" ]; then
+if [ -f "/usr/bin/hornet-shimmer" ]; then
 
-    source $swarmConfigs/hornet.cfg
+    source $swarmConfigs/hornet-shimmer.cfg
 
-    hornetStatus=$(systemctl show -p ActiveState --value hornet)
+    hornetShimmerStatus=$(systemctl show -p ActiveState --value hornet-shimmer)
 
-    hornetVersion=$(hornet -v | awk '{ print $2 }')
-    if [ -z "$hornetVersion" ]; then
+    hornetShimmerVersion=$(/usr/bin/hornet-shimmer -v | awk '{ print $2 }')
+    if [ -z "$hornetShimmerVersion" ]; then
         hornetVersion="N/A"
     fi
 
-    if [ "$hornetStatus" = "active" ]; then
-        hornetHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetApiJwtToken}"|jq -r '.data.isHealthy' 2> /dev/null)"
-        if [ -z "$hornetHealthy" ]; then
-            hornetHealthy="N/A"
+    if [ "$hornetShimmerStatus" = "active" ]; then
+        hornetShimmerHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14267/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetShimmerApiJwtToken}"|jq -r '.data.isHealthy' 2> /dev/null)"
+        if [ -z "$hornetShimmerHealthy" ]; then
+            hornetShimmerHealthy="N/A"
         else
-            if [ "$hornetHealthy" = "true" ]; then
-                hornetHealthy="Yes"
+            if [ "$hornetShimmerHealthy" = "true" ]; then
+                hornetShimmerHealthy="Yes"
             else
-                hornetHealthy="No"
+                hornetShimmerHealthy="No"
             fi
         fi
     else
-        hornetHealthy="N/A"
+        hornetShimmerHealthy="N/A"
     fi
 
     # DB size
-    if [ -d "$hornetHome/${hornetNetwork}db" ]; then
-        getCurrentDbSize="$(du -sb $hornetHome/${hornetNetwork}db | cut -f1)"
+    if [ -d "$hornetShimmerHome/${hornetShimmerNetwork}db" ]; then
+        getCurrentDbSize="$(du -sb $hornetShimmerHome/${hornetShimmerNetwork}db | cut -f1)"
         let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
         if [ $getCurrentDbSizeInMb -gt 999 ]; then
             let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
@@ -39,33 +39,33 @@ if [ -f "/usr/bin/hornet" ]; then
         currentHornetDbSize="N/A"
     fi
 
-    if [ "$hornetAutoRevalidation" = "true" ]; then
+    if [ "$hornetShimmerAutoRevalidation" = "true" ]; then
         hornetAutoRevalidationStatus=enabled
     else
         hornetAutoRevalidationStatus=disabled
     fi
 
-    if [ "$hornetPruningEnabled" = "true" ]; then
+    if [ "$hornetShimmerPruningEnabled" = "true" ]; then
         hornetPruningEnabledStatus=enabled
     else
         hornetPruningEnabledStatus=disabled
     fi
 
-    if [ "$hornetPowEnabled" = "true" ]; then
+    if [ "$hornetShimmerPowEnabled" = "true" ]; then
         hornetPowEnabledStatus=active
     else
         hornetPowEnabledStatus=inactive
     fi
 
-    if [ -f "/etc/nginx/sites-enabled/hornet" ]; then
+    if [ -f "/etc/nginx/sites-enabled/hornet-shimmer" ]; then
         hornetProxyStatus=active
     else
         hornetProxyStatus=inactive
     fi
 
     # OUTPUT
-    whiptail --title "Hornet Info" --msgbox "Hornet: $hornetStatus\nVersion: v$hornetVersion\nNetwork: $hornetNetwork\nHealthy: $hornetHealthy\nDB size: $currentHornetDbSize\nProxy: $hornetProxyStatus\n\nAlias: $hornetAlias\nPoW: $hornetPowEnabledStatus\nLS Interval: $hornetSnapshotInterval milestones\nGossip Port: ${hornetGossipPort}/tcp\nAutopeering Port: ${hornetAutopeeringPort}/udp\nDB Revalidation: $hornetAutoRevalidation\n\nPruning: $hornetPruningEnabledStatus\nMax DB size: ${hornetPruningDatabaseSize} GB\nPruning percentage: ${hornetPruningPercentage}%\nPruning Cooldown: $hornetPruningCooldownTime minutes\n\nEnabled Plugins: \"$hornetEnablePlugins\"\nDisabled Plugins: \"$hornetDisablePlugins\"" 32 68
+    whiptail --title "Hornet Shimmer - Info" --msgbox "Hornet: $hornetStatus\nVersion: v$hornetVersion\nNetwork: $hornetNetwork\nHealthy: $hornetHealthy\nDB size: $currentHornetDbSize\nProxy: $hornetProxyStatus\n\nAlias: $hornetAlias\nPoW: $hornetPowEnabledStatus\nLS Interval: $hornetSnapshotInterval milestones\nGossip Port: ${hornetGossipPort}/tcp\nAutopeering Port: ${hornetAutopeeringPort}/udp\nDB Revalidation: $hornetAutoRevalidation\n\nPruning: $hornetPruningEnabledStatus\nMax DB size: ${hornetPruningDatabaseSize} GB\nPruning percentage: ${hornetPruningPercentage}%\nPruning Cooldown: $hornetPruningCooldownTime minutes\n\nEnabled Plugins: \"$hornetEnablePlugins\"\nDisabled Plugins: \"$hornetDisablePlugins\"" 32 68
 else
     # OUTPUT
-    whiptail --title "Hornet Info" --msgbox "Hornet not installed!" 8 65
+    whiptail --title "Hornet Shimmer - Info" --msgbox "Hornet not installed!" 8 65
 fi
