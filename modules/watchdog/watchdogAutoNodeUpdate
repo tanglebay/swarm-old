@@ -5,20 +5,9 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
     if [ "$hornetAutoUpdate" = "true" ] && [ -f "/usr/bin/hornet" ]; then
         source $hornetModules/hornetVersion
         if [ "$hornetVersion" != "$latestHornetVersion" ]; then
-            sudo apt-get update
-            sudo apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet
-            IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-            for hornetConfig in "${ARRAYhornetConfigs[@]}"
-            do
-                if [ -f "$hornetHome/$hornetConfig.json.dpkg-dist" ]; then
-                sudo cp -r $hornetHome/$hornetConfig.json.dpkg-dist $hornetHome/$hornetConfig.json
-                sudo rm -rf $hornetHome/$hornetConfig.json.dpkg*
-                fi
-            done
-            unset ARRAYhornetConfigs
-            unset hornetConfig
+            source $hornetModules/hornetInstaller
 
-            newHornetVersion=$(hornet -v | awk '{ print $2 }')
+            newHornetVersion=$(/usr/bin/hornet -v | awk '{ print $2 }')
             if [ "$hornetVersion" != "$newHornetVersion" ]; then
                 restartDate=`date '+%d-%m-%Y %H-%M-%S'`
                 # CALL MODULE CONFIGPARSER
@@ -26,6 +15,24 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 sudo systemctl restart hornet
                 echo "$restartDate [AUTOUPDATE] New Version ($latestHornetVersion) of Hornet installed and Hornet restarted." >> $swarmLogs/swarm.log
                 telegramText="[$HOSTNAME] New Version ($latestHornetVersion) of Hornet installed and Hornet restarted."
+                source $watchdogModules/watchdogTelegram
+            fi
+        fi
+    fi
+
+    if [ "$hornetAutoUpdate" = "true" ] && [ -f "/usr/bin/hornet-shimmer" ]; then
+        source $hornetShimmerModules/hornetShimmerVersion
+        if [ "$hornetShimmerVersion" != "$latestHornetShimmerVersion" ]; then
+            source $hornetShimmerModules/hornetShimmerInstaller
+
+            newHornetShimmerVersion=$(/usr/bin/hornet-shimmer -v | awk '{ print $2 }')
+            if [ "$hornetShimmerVersion" != "$newHornetShimmerVersion" ]; then
+                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                # CALL MODULE CONFIGPARSER
+                source $hornetShimmerModules/hornetShimmerParser
+                sudo systemctl restart hornet-shimmer
+                echo "$restartDate [AUTOUPDATE] New Version ($latestHornetShimmerVersion) of Hornet-Shimmer installed and node restarted." >> $swarmLogs/swarm.log
+                telegramText="[$HOSTNAME] New Version ($latestHornetShimmerVersion) of Hornet-Shimmer installed and node restarted."
                 source $watchdogModules/watchdogTelegram
             fi
         fi

@@ -25,6 +25,28 @@ if [ -f "$swarmDashboardHtml" ]; then
         fi
     fi
 
+    # Hornet-Shimmer
+    if [ -f "/usr/bin/hornet-shimmer" ]; then
+        hornetShimmerStatus="$(systemctl show -p ActiveState --value hornet-shimmer)"
+        hornetShimmerSyncStatus="$(curl --max-time 5 -s -X GET "http://localhost:14267/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetShimmerApiJwtToken}"|jq '.data.isHealthy')"
+        if [ "$hornetShimmerStatus" = "active" ] && [ "$hornetShimmerSyncStatus" = "true" ]; then
+            sudo sed -i 's~/img/hornet-shimmer.*id~/img/hornet_logo_green.svg" alt="Hornet-Shimmer node is healthy" id~' $swarmDashboardHtml
+        else
+            sudo sed -i 's~/img/hornet-shimmer.*id~/img/hornet_logo_red.svg" alt="Hornet-Shimmer node is not healthy" id~' $swarmDashboardHtml
+        fi
+    else
+        if [ "$proxyHornetShimmerExternalDashboard" = "true" ] && [ ! -z "$proxyHornetShimmerUrl" ]; then
+            hornetShimmerSyncStatus="$(curl --max-time 5 -s -X GET "https://$proxyHornetShimmerUrl/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+            if [ "$hornetShimmerSyncStatus" = "true" ]; then
+                sudo sed -i 's~/img/hornet-shimmer.*id~/img/hornet_logo_green.svg" alt="Hornet-Shimmer node is healthy" id~' $swarmDashboardHtml
+            else
+                sudo sed -i 's~/img/hornet-shimmer.*id~/img/hornet_logo_red.svg" alt="Hornet-Shimmer node is not healthy" id~' $swarmDashboardHtml
+            fi
+        else
+            sudo sed -i 's~/img/hornet-shimmer.*id~/img/hornet_logo_gray.svg" alt="Hornet-Shimmer node not installed" id~' $swarmDashboardHtml
+        fi
+    fi
+
     # Bee
     if [ -f "/usr/bin/bee" ]; then
         beeStatus="$(systemctl show -p ActiveState --value bee)"
