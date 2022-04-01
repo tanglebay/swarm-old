@@ -66,7 +66,7 @@ while [ $exitCode -lt 1 ]; do
                                 if [ "$newHornetShimmerUsername" = "true" ]; then
                                     sudo sed -i 's/^hornetShimmerUsername=.*/hornetShimmerUsername="'$hornetShimmerUsername'"/' $swarmConfigs/hornet-shimmer.cfg
                                     whiptail --title "Hornet Shimmer - Dashboard" --msgbox "New username \"$hornetShimmerUsername\" applied!" 8 65
-                                    unset newHornetUsername
+                                    unset newHornetShimmerUsername
                                 else
                                     whiptail --title "Hornet Shimmer - Dashboard" --msgbox "No username change detected!" 8 65
                                 fi
@@ -144,7 +144,7 @@ while [ $exitCode -lt 1 ]; do
                                 sudo systemctl start hornet-shimmer
                                 read -n 1 -s -r -p "Press any key to continue"
                             else
-                                sudo systemctl start hornet
+                                sudo systemctl start hornet-shimmer
                                 whiptail --title "Hornet Shimmer - API & JWT" --msgbox "Error generating JWT token, please try again later." 8 65
                             fi
                         fi
@@ -186,7 +186,7 @@ while [ $exitCode -lt 1 ]; do
                 if [ "$newHornetShimmerAlias" = "true" ]; then
                     sudo sed -i 's~^hornetShimmerAlias=.*~hornetShimmerAlias="'$hornetShimmerAlias'"~' $swarmConfigs/hornet-shimmer.cfg
                     whiptail --title "Hornet Shimmer - Alias" --msgbox "New alias \"$hornetShimmerAlias\" applied!" 8 65
-                    unset newHornetAlias
+                    unset newHornetShimmerAlias
                 else
                     whiptail --title "Hornet Shimmer - Alias" --msgbox "No node alias change detected!" 8 65
                 fi
@@ -319,7 +319,7 @@ while [ $exitCode -lt 1 ]; do
                 if [ ! -z "$hornetShimmerSnapshotInterval" ] && [ $hornetShimmerSnapshotInterval -eq $hornetShimmerSnapshotInterval ] 2>/dev/null; then
                     source $hornetShimmerConfigParsers/hornetShimmerSnapshotInterval
                     sudo sed -i 's/^hornetShimmerSnapshotInterval=.*/hornetShimmerSnapshotInterval='$hornetShimmerSnapshotInterval'/' $swarmConfigs/hornet-shimmer.cfg
-                    if [ "$newHornetSnapshotInterval" = "true" ]; then
+                    if [ "$newHornetShimmerSnapshotInterval" = "true" ]; then
                         whiptail --title "Hornet Shimmer - Snapshots" --msgbox "Snapshot interval changed to $hornetShimmerSnapshotInterval milestones!" 8 65
                     else
                         whiptail --title "Hornet Shimmer - Snapshots" --msgbox "No new snapshot interval detected!" 8 65
@@ -354,10 +354,10 @@ while [ $exitCode -lt 1 ]; do
             unset useHornetShimmerEnablePlugins
         ;;
         "8)")
-            useHornetDisablePlugins=true
+            useHornetShimmerDisablePlugins=true
             source $swarmConfigs/hornet-shimmer.cfg
-            currentHornetDisablePlugins=$hornetDisablePlugins
-            source $hornetModules/hornetPlugins
+            currentHornetShimmerDisablePlugins=$hornetShimmerDisablePlugins
+            source $hornetShimmerModules/hornetShimmerPlugins
             hornetShimmerDisablePlugins=$(whiptail --title "Hornet Shimmer - Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be deactivated:" 10 78 1 \
                 "Warpsync" "plugin to sync more faster" $hornetShimmerPluginWarpsync 3>&1 1>&2 2>&3)
             exitStatus=$?
@@ -381,7 +381,7 @@ while [ $exitCode -lt 1 ]; do
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/hornet-shimmer.cfg
-                hornetVersion=$(/usr/bin/hornet-shimmer -v | awk '{ print $2 }')
+                hornetShimmerVersion=$(/usr/bin/hornet-shimmer -v | awk '{ print $2 }')
                 # Hornet Dashboard
                 CHOICE=$(
                     whiptail --title "Hornet Shimmer - Identity" --menu "\nChoose an option" 18 65 0 \
@@ -435,13 +435,13 @@ while [ $exitCode -lt 1 ]; do
                 "1)")
                     hornetShimmerAutoRevalidation=true
                     sudo sed -i 's/^hornetShimmerAutoRevalidation=.*/hornetShimmerAutoRevalidation=true/' $swarmConfigs/hornet-shimmer.cfg
-                    source $hornetConfigParsers/hornetAutoRevalidation
+                    source $hornetShimmerConfigParsers/hornetShimmerAutoRevalidation
                     whiptail --title "Hornet Shimmer - DB Revalidation" --msgbox "Hornet DB Revalidation enabled!" 8 65
                 ;;
                 "2)")
                     hornetShimmerAutoRevalidation=false
                     sudo sed -i 's/^hornetShimmerAutoRevalidation=.*/hornetShimmerAutoRevalidation=false/' $swarmConfigs/hornet-shimmer.cfg
-                    source $hornetConfigParsers/hornetAutoRevalidation
+                    source $hornetShimmerConfigParsers/hornetShimmerAutoRevalidation
                     whiptail --title "Hornet Shimmer - DB Revalidation" --msgbox "Hornet DB Revalidation disabled!" 8 65
                 ;;
             esac
@@ -495,7 +495,7 @@ while [ $exitCode -lt 1 ]; do
             fi
         ;;
         "14)")
-            source $hornetModules/hornetConfigs
+            source $hornetShimmerModules/hornetShimmerConfigs
             # Hornet Networks
             CHOICE=$(
                 whiptail --title "Hornet Shimmer - Network" --menu "\nCurrent network: $hornetShimmerNetwork\n\nChoose an option" 18 65 0 \
@@ -521,7 +521,7 @@ while [ $exitCode -lt 1 ]; do
                             source $hornetShimmerModules/hornetShimmerNetwork
                         fi
                     else
-                        whiptail --title "Hornet - Network" --msgbox "The Comnet is currently unavailable, please try again later." 8 65
+                        whiptail --title "Hornet Shimmer - Network" --msgbox "The Comnet is currently unavailable, please try again later." 8 65
                     fi
                 ;;
                 "3)")
@@ -547,7 +547,7 @@ while [ $exitCode -lt 1 ]; do
                     if (whiptail --title "Hornet Shimmer - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"stable\" (hornet will be reinstalled)?" 8 65); then
                         currentHornetShimmerRelease=$hornetShimmerRelease
                         hornetShimmerRelease=stable
-                        sudo sed -i 's/^hornetRelease=.*/hornetRelease='$hornetRelease'/' $swarmConfigs/hornet-shimmer.cfg
+                        sudo sed -i 's/^hornetShimmerRelease=.*/hornetShimmerRelease='$hornetShimmerRelease'/' $swarmConfigs/hornet-shimmer.cfg
                         source $hornetShimmerModules/hornetShimmerReleaseChannel
                         source $hornetShimmerModules/hornetShimmerParser
                     fi
