@@ -9,6 +9,11 @@ if [ -f "/usr/sbin/nginx" ]; then
     else
         proxyInfoHornetDashboard="Internal"
     fi
+    if [ "$proxyHornetShimmerExternalDashboard" = "true" ]; then
+        proxyInfoHornetShimmerDashboard="External"
+    else
+        proxyInfoHornetShimmerDashboard="Internal"
+    fi
     if [ "$proxyBeeExternalDashboard" = "true" ]; then
         proxyInfoBeeDashboard="External"
     else
@@ -34,6 +39,13 @@ if [ -f "/usr/sbin/nginx" ]; then
             proxyHornetInfo="\n\n$proxyInfoHornetDashboard Hornet (Dashboard/API)\nhttps://$proxyHornetUrl"
         fi
     fi
+    if [ "$proxyHornetShimmerExternalDashboard" = "true" ] && [ ! -z "$proxyHornetShimmerUrl" ]; then
+        proxyHornetShimmerInfo="\n\n$proxyInfoHornetShimmerDashboard Hornet-Shimmer (Dashboard/API)\nhttps://$proxyHornetShimmerUrl"
+    else
+        if [ ! -z "$proxyHornetShimmerUrl" ] && [ -d "/etc/letsencrypt/live/$proxyHornetShimmerDomain" ] && [ -f "/usr/bin/hornet-shimmer" ]; then
+            proxyHornetShimmerInfo="\n\n$proxyInfoHornetShimmerDashboard Hornet-Shimmer (Dashboard/API)\nhttps://$proxyHornetShimmerUrl"
+        fi
+    fi
     if [ "$proxyBeeExternalDashboard" = "true" ] && [ ! -z "$proxyBeeUrl" ]; then
         proxyBeeInfo="\n\n$proxyInfoBeeDashboard Bee (Dashboard/API)\nhttps://$proxyBeeUrl"
     else
@@ -56,7 +68,7 @@ if [ -f "/usr/sbin/nginx" ]; then
     fi
 
     # OUTPUT
-    whiptail --title "Proxy Info [v$version]" --msgbox "Webserver: ${proxyStatus}${proxySwarmDashboardInfo}${hr}${proxyHornetInfo}${proxyBeeInfo}${proxyGoshimmerInfo}${proxyWaspDashboardInfo}${proxyWaspApiInfo}" 27 65
+    whiptail --title "Proxy Info [v$version]" --msgbox "Webserver: ${proxyStatus}${proxySwarmDashboardInfo}${hr}${proxyHornetInfo}${proxyHornetShimmerInfo}${proxyBeeInfo}${proxyGoshimmerInfo}${proxyWaspDashboardInfo}${proxyWaspApiInfo}" 27 65
 else
     whiptail --title "Proxy Info [v$version]" --msgbox "Reverse proxy not installed!" 8 65
 fi

@@ -8,7 +8,7 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
         sudo touch /etc/nginx/tb-lbs.conf
     fi
 
-    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
+    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyHornetShimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
         if [ -d "/var/www/html/swarm-dashboard" ]; then
             sudo rm -rf /var/www/html/swarm-dashboard/*.*
         else
@@ -25,7 +25,7 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
         sudo cp -rf $swarmTemplates/proxy/nginx_default.template /etc/nginx/sites-enabled/default
 
         #################################################################################################
-        if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
+        if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/hornet-shimmer" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
             if [ -f "/etc/letsencrypt/live/$proxySwarmDashboardDomain/fullchain.pem" ]; then
                 if [ -z "$defaultDomain" ]; then
                     defaultDomain="$proxySwarmDashboardDomain"
@@ -57,6 +57,25 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
             else
                 sudo sed -i 's/hornet\/dashboard/#/g' $proxySwarmDashboard
                 sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_gray.svg" alt="Hornet not installed" id~' $proxySwarmDashboard
+            fi
+        fi
+        if [ -f "/usr/bin/hornet-shimmer" ] && [ -f "/etc/letsencrypt/live/$proxyHornetShimmerDomain/fullchain.pem" ] && [ ! -z "$proxyHornetShimmerDomain" ] && [ ! -z "$proxyHornetShimmerPort" ]; then
+            if [ -z "$defaultDomain" ]; then
+                defaultDomain="$proxyHornetShimmerDomain"
+            fi
+            sudo cp -rf $swarmTemplates/proxy/nginx_hornet.template /etc/nginx/sites-enabled/hornet
+            sudo sed -i 's/domain.tld/'$proxyHornetShimmerDomain'/g' /etc/nginx/sites-enabled/hornet
+            sudo sed -i 's/443/'$proxyHornetShimmerPort'/g' /etc/nginx/sites-enabled/hornet
+            sudo sed -i 's~"hornet-shimmer\/dashboard"~"https:\/\/'$proxyHornetShimmerDomain':'$proxyHornetShimmerPort'\/dashboard" target="_blank"~g' $proxySwarmDashboard
+            if [ "$ufw" = "true" ]; then
+                sudo ufw allow $proxyHornetShimmerPort/tcp > /dev/null 2>&1
+            fi
+        else
+            if [ "$proxyHornetShimmerExternalDashboard" = "true" ] && [ ! -z "$proxyHornetShimmerDomain" ] && [ ! -z "$proxyHornetShimmerPort" ]; then
+                sudo sed -i 's~"hornet-shimmer\/dashboard"~"https:\/\/'$proxyHornetShimmerDomain':'$proxyHornetShimmerPort'\/dashboard" target="_blank"~g' $proxySwarmDashboard
+            else
+                sudo sed -i 's/hornet-shimmer\/dashboard/#/g' $proxySwarmDashboard
+                sudo sed -i 's~/img/hornet-shimmer.*id~/img/hornet_logo_gray.svg" alt="Hornet-Shimmer not installed" id~' $proxySwarmDashboard
             fi
         fi
         if [ -f "/usr/bin/bee" ] && [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] && [ ! -z "$proxyBeeDomain" ] && [ ! -z "$proxyBeePort" ]; then
