@@ -1,1 +1,8 @@
 alias swarm='sudo /var/lib/swarm/swarm'
+alias hornet='/usr/bin/hornet'
+alias hornet-shimmer='/usr/bin/hornet-shimmer'
+alias bee='/usr/bin/bee'
+alias bee-shimmer='/usr/bin/bee-shimmer'
+alias goshimmer='/usr/bin/goshimmer'
+alias wasp='/usr/bin/wasp'
+alias wasp-cli='/usr/bin/wasp-cli'

@@ -1,0 +1,341 @@
+#!/bin/bash
+
+# Bee MENU
+while [ $exitCode -lt 1 ]; do
+    clear
+    CHOICE=$(
+        whiptail --title "Bee-Shimmer - Menu" --menu "\nChoose an option" 20 65 0 \
+        "1)" "Bee Info" \
+        "2)" "Bee Configurations" \
+        "3)" "Bee Management" \
+        "4)" "Bee Installer" 3>&2 2>&1 1>&3
+    )
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $beeShimmerModules/beeShimmerInfo
+        ;;
+        "2)")
+            if [ -f "/usr/bin/bee-shimmer" ]; then
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    CHOICE=$(
+                        whiptail --title "Bee-Shimmer - Configurations" --menu "\nChoose an option" 16 65 0 \
+                        "1)" "Bee-Shimmer configuration" \
+                        "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
+                    )
+
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+
+                    case $CHOICE in
+                        "1)")
+                            source $beeShimmerModules/beeShimmerConfiguration
+                        ;;
+                        "2)")
+                            while [ $exitCode -lt 1 ]; do
+                                clear
+                                CHOICE=$(
+                                    whiptail --title "Bee-Shimmer - Configurations" --menu "\nChoose an option" 20 65 0 \
+                                    "1)" "Shimmer-Mainnet.json" \
+                                    "2)" "Shimmer-Devnet.json" \
+                                    "3)" "Bee.cfg (SWARM)" 3>&2 2>&1 1>&3
+                                )
+
+                                exitstatus=$?
+                                if [ "$exitstatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+
+                                case $CHOICE in
+                                    "1)")
+                                        sudo $swarmCLEditor $beeShimmerHome/config.shimmer-mainnet.json
+                                        if (whiptail --title "Bee-Shimmer - Configuration" --yesno --defaultno "Would you like to restart Bee-Shimmer now?" 8 65); then
+                                            {
+                                                echo 0
+                                                echo 50
+                                                sudo systemctl restart bee-shimmer
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while Bee is restarting..." 8 65 0
+                                        fi
+                                    ;;
+                                    "2)")
+                                        sudo $swarmCLEditor $beeShimmerHome/config.shimmer-comnet.json
+                                        if (whiptail --title "Bee-Shimmer - Configuration" --yesno --defaultno "Would you like to restart Bee-Shimmer now?" 8 65); then
+                                            {
+                                                echo 0
+                                                echo 50
+                                                sudo systemctl restart bee-shimmer
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while Bee-Shimmer is restarting..." 8 65 0
+                                        fi
+                                    ;;
+                                    "3)")
+                                        sudo $swarmCLEditor $swarmConfigs/bee-shimmer.cfg
+                                        if (whiptail --title "Bee-Shimmer - Menu" --yesno --defaultno "Would you like to restart Bee-Shimmer now?" 8 65); then
+                                            {
+                                                echo 0
+                                                source $beeShimmerModules/beeShimmerParser
+                                                echo 50
+                                                sudo systemctl restart bee-shimmer
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while Bee is restarting..." 8 65 0
+                                        fi
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
+                        ;;
+                    esac
+                done
+                exitCode=0
+            else
+                whiptail --title "Bee-Shimmer - Configuration" --msgbox "Bee-Shimmer installation not found, please install Bee-Shimmer first." 8 65
+            fi
+        ;;
+        "3)")
+            if [ -f "/usr/bin/bee-shimmer" ]; then
+                while [ $exitCode -lt 1 ]; do
+                    CHOICE=$(
+                        whiptail --title "Bee-Shimmer - Management" --menu "\nChoose your option" 18 65 0 \
+                        "1)" "Show Bee-Shimmer log" \
+                        "2)" "Start/Stop Bee-Shimmer" \
+                        "3)" "Reset Bee-Shimmer Database" \
+                        "4)" "Reset Bee-Shimmer config" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            # Display last 65 lines of log
+                            sudo journalctl -fu bee-shimmer | less -FRSXM
+                            clear
+                        ;;
+                        "2)")
+                            CHOICE=$(
+                                whiptail --title "Bee-Shimmer - Menu" --menu "\nChoose your option" 20 65 0 \
+                                "1)" "Restart Bee-Shimmer" \
+                                "2)" "Start Bee-Shimmer" \
+                                "3)" "Stop Bee-Shimmer" \
+                                "4)" "Status Bee-Shimmer" 3>&2 2>&1 1>&3
+                            )
+                            case $CHOICE in
+                                "1)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl restart bee-shimmer
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while Bee-Shimmer is restarting..." 8 65 0
+                                    whiptail --title "Bee-Shimmer - Management" --msgbox "Bee-Shimmer successfully restarted" 8 65
+                                ;;
+                                "2)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl start bee-shimmer
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while Bee-Shimmer is starting..." 8 65 0
+                                    whiptail --title "Bee-Shimmer - Management" --msgbox "Bee successfully started" 8 65
+                                ;;
+                                "3)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl stop bee-shimmer
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while Bee-Shimmer is stopping..." 8 65 0
+                                    whiptail --title "Bee-Shimmer - Management" --msgbox "Bee-Shimmer successfully stopped" 8 65
+                                ;;
+                                "4)")
+                                    beeShimmerStatus="$(sudo systemctl status bee-shimmer)"
+                                    whiptail --title "Bee-Shimmer - Management" --msgbox "$beeStatus" 15 65
+                                ;;
+                            esac
+                        ;;
+                        "3)")
+                            if (whiptail --title "Bee-Shimmer - Management" --yesno --defaultno "Do you really want to remove the Bee-Shimmer database?" 8 65); then
+                                source $swarmConfigs/bee-shimmer.cfg
+                                {
+                                    echo 0
+                                    echo 25
+                                    if [ "$killall" = "true" ]; then
+                                        sudo killall -s SIGKILL bee-shimmer > /dev/null 2>&1
+                                    else
+                                        sudo systemctl stop bee-shimmer
+                                    fi
+                                    echo 50
+                                    sudo rm -rf $beeShimmerHome/storage $beeShimmerHome/snapshots
+                                    sudo sed -i 's/^beeShimmerStatusCounter=.*/beeShimmerStatusCounter=0/' $swarmConfigs/watchdog.cfg
+                                    sudo sed -i 's/^beeShimmerSyncCounter=.*/beeShimmerSyncCounter=0/' $swarmConfigs/watchdog.cfg
+                                    echo 75
+                                    sudo systemctl start bee-shimmer
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
+                                whiptail --title "Bee-Shimmer - Management" --msgbox "Bee-Shimmer database successfully reset" 8 65
+                            fi
+                        ;;
+                        "4)")
+                            if (whiptail --title "Bee-Shimmer - Management" --yesno --defaultno "Are you sure you want to reset the Bee-Shimmer config file?" 8 65); then
+                                source $swarmConfigs/bee-shimmer.cfg
+                                {
+                                    echo 0
+                                    source $beeShimmerModules/beeShimmerVersion
+                                    echo 20
+                                    sudo systemctl stop bee-shimmer
+                                    echo 40
+                                    if [ "$beeShimmerNetwork" = "mainnet" ]; then
+                                        sudo -u bee wget -q -O /tmp/bee/config.shimmer-mainnet.json https://github.com/iotaledger/bee/releases/download/v${latestBeeShimmerVersion}/config.shimmer-mainnet.json
+                                    fi
+                                    if [ "$beeShimmerNetwork" = "devnet" ]; then
+                                        sudo -u bee wget -q -O /tmp/bee/config.shimmer-devnet.json https://github.com/iotaledger/bee/releases/download/v${latestBeeShimmerVersion}/config.shimmer-devnet.json
+                                    fi
+                                    echo 60
+                                    source $beeShimmerModules/beeShimmerParser
+                                    echo 80
+                                    sudo systemctl start bee-shimmer
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the config reset is running (this may take a while)..." 8 65 0
+                                whiptail --title "Bee-Shimmer - Management" --msgbox "${beeShimmerNetwork} config successfully reset" 8 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            else
+                whiptail --title "Bee-Shimmer - Configuration" --msgbox "Bee-Shimmer installation not found, please install Bee-Shimmer first." 8 65
+            fi
+        ;;
+        "4)")
+            if [ "$osArchitecture" = "amd64" ]; then
+                while [ $exitCode -lt 1 ]; do
+                    CHOICE=$(
+                        whiptail --title "Bee-Shimmer - Installer" --menu "\nChoose your option" 18 65 0 \
+                        "1)" "Update Bee-Shimmer" \
+                        "2)" "Install Bee-Shimmer" \
+                        "3)" "Remove Bee-Shimmer" 3>&2 2>&1 1>&3
+                    )
+
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+
+                    case $CHOICE in
+                        "1)")
+                            if [ -f "/usr/bin/bee-shimmer" ]; then
+                                if (whiptail --title "Bee-Shimmer - Installer" --yesno --defaultno "Do you really want to update Bee-Shimmer?" 8 65); then
+                                    source $beeShimmerModules/beeShimmerVersion
+                                    if [ "$beeShimmerVersion" != "$latestBeeShimmerVersion" ]; then
+                                        {
+                                            echo 0
+                                            echo 20
+                                            source $beeShimmerModules/beeShimmerInstaller
+                                            echo 40
+                                            source $beeShimmerModules/beeShimmerParser
+                                            echo 60
+                                            if [ "$restartBeeShimmer" = "true" ]; then
+                                                sudo systemctl restart bee-shimmer
+                                            fi
+                                            echo 80
+                                            echo 100
+                                            sleep 0.5
+                                        } | whiptail --gauge "Please wait while Bee-Shimmer is updated..." 8 65 0
+                                        whiptail --title "Bee-Shimmer - Installer" --msgbox "Bee-Shimmer successfully updated." 8 65
+                                    else
+                                        whiptail --title "Bee-Shimmer - Installer" --msgbox "Congratulations, you have already installed the latest version of Bee-Shimmer." 8 65
+                                    fi
+                                fi
+                            else
+                                whiptail --title "Bee-Shimmer - Installer" --msgbox "Sorry, but Bee-Shimmer is not installed." 8 65
+                            fi
+                        ;;
+                        "2)")
+                            # INSTALL Bee
+                            if [ ! -f "/usr/bin/bee-shimmer" ]; then
+                                {
+                                    echo 0
+                                    echo 10
+                                    source $swarmConfigs/bee-shimmer.cfg
+                                    echo 30
+                                    source $beeShimmerModules/beeShimmerVersion
+                                    echo 40
+                                    source $beeShimmerModules/beeShimmerInstaller
+                                    echo 50
+                                    if [ -f "/usr/bin/bee-shimmer" ] && [ -f "$beeShimmerHome/config.shimmer-$beeNetwork.json" ]; then
+                                        source $swarmConfigs/bee-shimmer.cfg
+                                        echo 60
+                                        # CALL MODULE CONFIGPARSER
+                                        source $beeShimmerModules/beeShimmerParser
+                                        echo 70
+                                        if [ "$ufw" = "true" ]; then
+                                            sudo ufw allow $beeShimmerGossipPort/tcp > /dev/null 2>&1
+                                        fi
+                                        sudo systemctl start bee-shimmer > /dev/null 2>&1
+                                        echo 80
+                                        sleep 2
+                                        beeStatus="$(systemctl show -p ActiveState --value bee-shimmer)"
+                                        if [ "$beeShimmerStatus" != "active" ]; then
+                                            sudo systemctl restart bee-shimmer > /dev/null 2>&1
+                                        fi
+                                        echo 100
+                                    fi
+                                } | whiptail --gauge "Please wait while installing Bee-Shimmer..." 8 65 0
+                                if [ -f "/usr/bin/bee-shimmer" ] && [ -f "$beeShimmerHome/config.shimmer-$beeShimmerNetwork.json" ]; then
+                                    whiptail --title "Bee-Shimmer - Installer" --msgbox "Bee-Shimmer installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $beeShimmerGossipPort/tcp\nAutopeering: $beeShimmerAutopeeringPort/udp" 15 65
+                                else
+                                    {
+                                        echo 0
+                                        echo 25
+                                        source $swarmConfigs/bee-shimmer.cfg
+                                        echo 50
+                                        source $beeShimmerModules/beeShimmerRemoval
+                                        echo 75
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while the Bee-Shimmer files are removed...." 8 65 0
+                                    whiptail --title "Bee-Shimmer - Installer" --msgbox "Error while installing Bee! Please try again later." 8 65
+                                fi
+                            else
+                                whiptail --title "Bee-Shimmer - Installer" --msgbox "Bee-Shimmer already installed!" 8 65
+                            fi
+                        ;;
+                        "3)")
+                            if (whiptail --title "Bee-Shimmer - Installer" --yesno --defaultno "Do you really want to remove Bee-Shimmer?" 8 65); then
+                                {
+                                    echo 0
+                                    echo 25
+                                    source $swarmConfigs/bee-shimmer.cfg
+                                    echo 50
+                                    source $beeShimmerModules/beeShimmerRemoval
+                                    echo 75
+                                    echo 100
+                                } | whiptail --gauge "Please wait while Bee-Shimmer will be removed..." 8 65 0
+                                whiptail --title "Bee-Shimmer - Installer" --msgbox "Bee-Shimmer successfully removed" 8 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            else
+                whiptail --title "Bee-Shimmer - Installer" --msgbox "Error - Unsupported OS architecture for Bee-Shimmer detected." 8 65
+            fi
+        ;;
+    esac
+done
+exitCode=0

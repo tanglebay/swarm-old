@@ -19,6 +19,11 @@ if [ -f "/usr/sbin/nginx" ]; then
     else
         proxyInfoBeeDashboard="Internal"
     fi
+    if [ "$proxyBeeShimmerExternalDashboard" = "true" ]; then
+        proxyInfoBeeShimmerDashboard="External"
+    else
+        proxyInfoBeeShimmerDashboard="Internal"
+    fi
     if [ "$proxyGoshimmerExternalDashboard" = "true" ]; then
         proxyInfoGoshimmerDashboard="External"
     else
@@ -53,6 +58,13 @@ if [ -f "/usr/sbin/nginx" ]; then
             proxyBeeInfo="\n\n$proxyInfoBeeDashboard Bee (Dashboard/API)\nhttps://$proxyBeeUrl"
         fi
     fi
+    if [ "$proxyBeeShimmerExternalDashboard" = "true" ] && [ ! -z "$proxyBeeShimmerUrl" ]; then
+        proxyBeeShimmerInfo="\n\n$proxyInfoBeeShimmerDashboard Bee (Dashboard/API)\nhttps://$proxyBeeShimmerUrl"
+    else
+        if [ ! -z "$proxyBeeShimmerUrl" ] && [ -d "/etc/letsencrypt/live/$proxyBeeShimmerDomain" ] && [ -f "/usr/bin/bee-shimmer" ]; then
+            proxyBeeShimmerInfo="\n\n$proxyInfoBeeShimmerDashboard Bee-Shimmer (Dashboard/API)\nhttps://$proxyBeeShimmerUrl"
+        fi
+    fi
     if [ "$proxyGoshimmerExternalDashboard" = "true" ] && [ ! -z "$proxyGoshimmerUrl" ]; then
         proxyGoshimmerInfo="\n\n$proxyInfoGoshimmerDashboard Goshimmer (Dashboard/API)\nhttps://$proxyGoshimmerUrl"
     else
@@ -68,7 +80,7 @@ if [ -f "/usr/sbin/nginx" ]; then
     fi
 
     # OUTPUT
-    whiptail --title "Proxy Info [v$version]" --msgbox "Webserver: ${proxyStatus}${proxySwarmDashboardInfo}${hr}${proxyHornetInfo}${proxyHornetShimmerInfo}${proxyBeeInfo}${proxyGoshimmerInfo}${proxyWaspDashboardInfo}${proxyWaspApiInfo}" 27 65
+    whiptail --title "Proxy Info [v$version]" --msgbox "Webserver: ${proxyStatus}${proxySwarmDashboardInfo}${hr}${proxyHornetInfo}${proxyHornetShimmerInfo}${proxyBeeInfo}${proxyBeeShimmerInfo}${proxyGoshimmerInfo}${proxyWaspDashboardInfo}${proxyWaspApiInfo}" 30 65
 else
     whiptail --title "Proxy Info [v$version]" --msgbox "Reverse proxy not installed!" 8 65
 fi

@@ -13,13 +13,14 @@ while [ $exitCode -lt 1 ]; do
     fi
 
     CHOICE=$(
-        whiptail --title "SWARM Menu" --menu "\nWachtdog: $watchdogStatus\n\nChoose an option" 24 65 0 \
+        whiptail --title "SWARM Menu" --menu "\nWachtdog: $watchdogStatus\n\nChoose an option" 26 65 0 \
         "1)" "Hornet [Watchdog]" \
         "2)" "Hornet-Shimmer [Watchdog]" \
         "3)" "Bee [Watchdog]" \
-        "4)" "GoShimmer [Watchdog]" \
-        "5)" "WASP [Watchdog]" \
-        "6)" "Telegram Notifications [Watchdog]" 3>&2 2>&1 1>&3
+        "4)" "Bee-Shimmer [Watchdog]" \
+        "5)" "GoShimmer [Watchdog]" \
+        "6)" "WASP [Watchdog]" \
+        "7)" "Telegram Notifications [Watchdog]" 3>&2 2>&1 1>&3
     )
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
@@ -348,6 +349,101 @@ while [ $exitCode -lt 1 ]; do
         "4)")
             while [ $exitCode -lt 1 ]; do
                 source $swarmConfigs/swarm.cfg
+                if [ "$beeShimmerAutoUpdate" = "true" ]; then
+                    beeShimmerAutoUpdateMenu="Disable"
+                else
+                    beeShimmerAutoUpdateMenu="Enable"
+                fi
+                if [ "$beeShimmerAllowDbReset" = "true" ]; then
+                    beeShimmerAllowDbResetMenu="Forbid"
+                else
+                    beeShimmerAllowDbResetMenu="Allow"
+                fi
+
+                CHOICE=$(
+                    whiptail --title "SWARM - Bee-Shimmer" --menu "\nChoose an option" 18 65 0 \
+                    "1)" "Bee-Shimmer Sync-Check" \
+                    "2)" "$beeShimmerAutoUpdateMenu Bee-Shimmer AutoUpdater" \
+                    "3)" "$beeShimmerAllowDbResetMenu Bee-Shimmer database reset" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        while [ $exitCode -lt 1 ]; do
+                            source $swarmConfigs/swarm.cfg
+                            if [ "$beeShimmerCheckSync" = "true" ]; then
+                                beeShimmerCheckSyncMenu="Disable"
+                            else
+                                beeShimmerCheckSyncMenu="Enable"
+                            fi
+                            CHOICE=$(
+                                whiptail --title "Watchdog - Bee-Shimmer" --menu "\nChoose an option" 14 65 0 \
+                                "1)" "$beeCheckSyncMenu Sync-Check" \
+                                "2)" "Set max milestones" 3>&2 2>&1 1>&3
+                            )
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
+                            fi
+                            case $CHOICE in
+                                "1)")
+                                    if [ "$beeShimmerCheckSync" = "true" ]; then
+                                        beeShimmerCheckSync=false
+                                        beeShimmerCheckSyncMenu="disabled"
+                                    else
+                                        beeShimmerCheckSync=true
+                                        beeShimmerCheckSyncMenu="enabled"
+                                    fi
+                                    sudo sed -i 's/^beeShimmerCheckSync=.*/beeShimmerCheckSync='$beeShimmerCheckSync'/' $swarmConfigs/swarm.cfg
+                                    whiptail --title "SWARM - Bee-Shimmer Sync" --msgbox "Bee sync check $beeShimmerCheckSyncMenu!" 8 65
+                                ;;
+                                "2)")
+                                    source $swarmConfigs/swarm.cfg
+                                    beeMaxLmi=$(whiptail --inputbox "\nSet the maximum difference between LMI and LSMI before the resync starts and a new database/snapshot is initialized" 10 65 $beeShimmerMaxMilestones --title "Watchdog - Bee-Shimmer Sync" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ "$exitStatus" != "1" ]; then
+                                        if [ $beeShimmerMaxMilestones -eq $beeShimmerMaxMilestones ] && [ $beeShimmerMaxMilestones -gt 0 ] 2>/dev/null; then
+                                            sudo sed -i 's/^beeShimmerMaxMilestones=.*/beeShimmerMaxMilestones='$beeShimmerMaxMilestones'/' $swarmConfigs/swarm.cfg
+                                            whiptail --title "Watchdog - Bee-Shimmer Sync" --msgbox "Max milestones for Bee set to $beeShimmerMaxMilestones milestones!" 8 65
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                    "2)")
+                        if [ "$beeShimmerAutoUpdate" = "true" ]; then
+                            beeShimmerAutoUpdate=false
+                            beeShimmerAutoUpdateMenu="disabled"
+                        else
+                            beeShimmerAutoUpdate=true
+                            beeShimmerAutoUpdateMenu="enabled"
+                        fi
+                        sudo sed -i 's/^beeShimmerAutoUpdate=.*/beeShimmerAutoUpdate='$beeShimmerAutoUpdate'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "Watchdog - Bee-Shimmer" --msgbox "Bee-Shimmer AutoUpdater $beeShimmerAutoUpdateMenu!" 8 65
+                    ;;
+                    "3)")
+                        if [ "$beeShimmerAllowDbReset" = "true" ]; then
+                            beeShimmerAllowDbReset=false
+                            beeShimmerAllowDbResetMenu="disabled"
+                        else
+                            beeShimmerAllowDbReset=true
+                            beeShimmerAllowDbResetMenu="enabled"
+                        fi
+                        sudo sed -i 's/^beeShimmerAllowDbReset=.*/beeShimmerAllowDbReset='$beeShimmerAllowDbReset'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - Bee-Shimmer" --msgbox "Delete Bee-Shimmer database $beeShimmerAllowDbResetMenu for Watchdog!" 8 65
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "5)")
+            while [ $exitCode -lt 1 ]; do
+                source $swarmConfigs/swarm.cfg
                 if [ "$goshimmerAutoUpdate" = "true" ]; then
                     goshimmerAutoUpdateMenu="Disable"
                 else
@@ -428,7 +524,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "5)")
+        "6)")
             while [ $exitCode -lt 1 ]; do
                 source $swarmConfigs/swarm.cfg
                 if [ "$waspAutoUpdate" = "true" ]; then
@@ -478,7 +574,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "6)")
+        "7)")
             while [ $exitCode -lt 1 ]; do
                 source $swarmConfigs/swarm.cfg
                 if [ "$telegramNotifications" = "true" ]; then

@@ -1,0 +1,29 @@
+#!/bin/bash
+source $swarmLogs/githubVersion
+
+if [ -z "$latestBeeShimmerVersion" ] || [ "$latestBeeShimmerVersion" = "null" ] || [ "$latestBeeShimmerVersion" = "\"\"" ]; then
+    latestBeeShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+    if [ ! -z "$latestBeeShimmerVersion" ] && [ "$latestBeeShimmerVersion" != "null" ] && [ "$latestBeeShimmerVersion" != "\"\"" ]; then
+        latestBeeShimmerVersion=$(echo $latestBeeShimmerVersion | tr -d 'v"')
+        sudo sed -i 's~^latestBeeShimmerVersion=.*~latestBeeShimmerVersion="'$latestBeeShimmerVersion'"~' $swarmLogs/githubVersion
+    fi
+fi
+
+# Bee version
+if [ -f "/usr/bin/bee-shimmer" ]; then
+    beeShimmerVersion=$(/usr/bin/bee-shimmer -v | tr -d 'v"')
+    if [[ $beeShimmerVersion = *rc[0-9]* ]]; then
+        beeShimmerVersion=$(echo $beeShimmerVersion | cut -f1,2 -d"-")
+    else
+        beeShimmerVersion=$(echo $beeShimmerVersion | cut -f1 -d"-")
+    fi
+fi
+
+# Replace var if empty
+if [ -z "$latestBeeShimmerVersion" ] || [ "$latestBeeShimmerVersion" = "null" ]; then
+    latestBeeShimmerVersion=$beeShimmerVersion
+fi
+
+if [ -z "$beeShimmerVersion" ]; then
+    beeShimmerVersion=$latestBeeShimmerVersion
+fi

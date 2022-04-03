@@ -8,7 +8,7 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
         sudo touch /etc/nginx/tb-lbs.conf
     fi
 
-    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyHornetShimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
+    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyHornetShimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeShimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
         if [ -d "/var/www/html/swarm-dashboard" ]; then
             sudo rm -rf /var/www/html/swarm-dashboard/*.*
         else
@@ -21,11 +21,11 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
         if [ -f "/etc/nginx/sites-available/default > /dev/null 2>&1" ]; then
             sudo rm -rf /etc/nginx/sites-available/default > /dev/null 2>&1
         fi
-        sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/hornet /etc/nginx/sites-enabled/bee /etc/nginx/sites-enabled/goshimmer /etc/nginx/sites-enabled/wasp* /etc/nginx/sites-enabled/swarm* /etc/nginx/sites-enabled/landing > /dev/null 2>&1
+        sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/hornet /etc/nginx/sites-enabled/bee /etc/nginx/sites-enabled/bee-shimmer /etc/nginx/sites-enabled/goshimmer /etc/nginx/sites-enabled/wasp* /etc/nginx/sites-enabled/swarm* /etc/nginx/sites-enabled/landing > /dev/null 2>&1
         sudo cp -rf $swarmTemplates/proxy/nginx_default.template /etc/nginx/sites-enabled/default
 
         #################################################################################################
-        if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/hornet-shimmer" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
+        if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/hornet-shimmer" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/bee-shimmer" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
             if [ -f "/etc/letsencrypt/live/$proxySwarmDashboardDomain/fullchain.pem" ]; then
                 if [ -z "$defaultDomain" ]; then
                     defaultDomain="$proxySwarmDashboardDomain"
@@ -96,6 +96,26 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
             else
                 sudo sed -i 's/bee\/dashboard/#/g' $proxySwarmDashboard
                 sudo sed -i 's~/img/bee.*id~/img/bee_logo_gray.svg" alt="Bee not installed" id~' $proxySwarmDashboard
+            fi
+        fi
+        if [ -f "/usr/bin/bee-shimmer" ] && [ -f "/etc/letsencrypt/live/$proxyBeeShimmerDomain/fullchain.pem" ] && [ ! -z "$proxyBeeShimmerDomain" ] && [ ! -z "$proxyBeeShimmerPort" ]; then
+            if [ -z "$defaultDomain" ]; then
+                defaultDomain="$proxyBeeShimmerDomain"
+            fi
+            sudo cp -rf $swarmTemplates/proxy/nginx_bee-shimmer.template /etc/nginx/sites-enabled/bee-shimmer
+            sudo sed -i 's/domain.tld/'$proxyBeeShimmerDomain'/g' /etc/nginx/sites-enabled/bee-shimmer
+            sudo sed -i 's/443/'$proxyBeeShimmerPort'/g' /etc/nginx/sites-enabled/bee-shimmer
+            sudo sed -i 's/"bee-shimmer\/dashboard"/"https:\/\/'$proxyBeeShimmerDomain':'$proxyBeeShimmerPort'\/dashboard" target="_blank"/g' $proxySwarmDashboard
+            if [ "$ufw" = "true" ]; then
+                sudo ufw allow $proxyBeeShimmerPort/tcp > /dev/null 2>&1
+            fi
+        else
+            if [ "$proxyBeeShimmerExternalDashboard" = "true" ] && [ ! -z "$proxyBeeShimmerDomain" ] && [ ! -z "$proxyBeeShimmerPort" ]; then
+            if [ -z "$defaultDomain" ]; then
+                sudo sed -i 's/"bee-shimmer\/dashboard"/"https:\/\/'$proxyBeeShimmerDomain':'$proxyBeeShimmerPort'\/dashboard" target="_blank"/g' $proxySwarmDashboard
+            else
+                sudo sed -i 's/bee-shimmer\/dashboard/#/g' $proxySwarmDashboard
+                sudo sed -i 's~/img/bee-shimmer.*id~/img/bee-shimmer_logo_gray.svg" alt="Bee not installed" id~' $proxySwarmDashboard
             fi
         fi
         if [ -f "/usr/bin/goshimmer" ] && [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] && [ ! -z "$proxyGoshimmerDomain" ] && [ ! -z "$proxyGoshimmerPort" ]; then
