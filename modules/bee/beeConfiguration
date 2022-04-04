@@ -5,16 +5,17 @@ while [ $exitCode -lt 1 ]; do
     CHOICE=$(
         whiptail --title "Bee - Configurations" --menu "\nChoose an option" 22 65 0 \
         "1)" "Bee Peers" \
-        "2)" "Dashboard" \
-        "3)" "Node Alias" \
-        "4)" "DB Pruning" \
-        "5)" "Proof of Work" \
-        "6)" "Local Snapshots" \
-        "7)" "Identity" \
-        "8)" "Autopeering" \
-        "9)" "Gossip Port" \
-        "10)" "Unknown Peers Limit" \
-        "11)" "IOTA Network" 3>&2 2>&1 1>&3
+        "2)" "API" \
+        "3)" "Dashboard" \
+        "4)" "Node Alias" \
+        "5)" "DB Pruning" \
+        "6)" "Proof of Work" \
+        "7)" "Local Snapshots" \
+        "8)" "Identity" \
+        "9)" "Autopeering" \
+        "10)" "Gossip Port" \
+        "11)" "Unknown Peers Limit" \
+        "12)" "IOTA Network" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -42,6 +43,48 @@ while [ $exitCode -lt 1 ]; do
             source $beeModules/beePeersConfiguration
         ;;
         "2)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $swarmConfigs/bee.cfg
+                CHOICE=$(
+                    whiptail --title "Bee - API" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "API Routes" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        source $swarmConfigs/bee.cfg
+                        beeApiRoutes="$beeApiProtectedRoutes"
+                        source $beeModules/beeApiRoutes
+                        beeApiRoutes=$(whiptail --title "Bee - API routes" --checklist "\nSelect (using the spacebar) the Bee API routes that you want to protect. All routes not selected will be public:" 28 65 11 \
+                            "/health" "" $beeApiRoutesHealth \
+                            "/api/v1/info" "" $beeApiRoutesInfo \
+                            "/api/v1/tips" "" $beeApiRoutesTips \
+                            "/api/v1/messages*" "" $beeApiRoutesMessages \
+                            "/api/v1/transactions*" "" $beeApiRoutesTransactions \
+                            "/api/v1/milestones*" "" $beeApiRoutesMilestones \
+                            "/api/v1/outputs*" "" $beeApiRoutesOutputs \
+                            "/api/v1/addresses*" "" $beeApiRoutesAddresses \
+                            "/api/v1/treasury" "" $beeApiRoutesTreasury \
+                            "/api/v1/receipts*" "" $beeApiRoutesReceipts 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        beeApiRoutes=$(echo $beeApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+                        if [ "$exitStatus" != "1" ]; then
+                            beeUpdateApiRoutes=true
+                            source $beeModules/beeApiRoutes
+                            source $beeConfigParsers/beeApiPublicRoutes
+                            unset beeUpdateApiRoutes
+                        fi
+                        unset beeApiRoutes
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/bee.cfg
@@ -81,7 +124,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "3)")
+        "4)")
             beeAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $beeAlias --title "Bee - Alias" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
@@ -97,7 +140,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
             fi
         ;;
-        "4)")
+        "5)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/bee.cfg
@@ -154,7 +197,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "5)")
+        "6)")
             source $swarmConfigs/bee.cfg
             if [ "$beePowEnabled" = "true" ]; then
                 beePowEnabledStatus=enabled
@@ -181,7 +224,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
-        "6)")
+        "7)")
             source $swarmConfigs/bee.cfg
             beeSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $beeSnapshotInterval --title "Bee - Snapshots" 3>&1 1>&2 2>&3)
             exitStatus=$?
@@ -198,7 +241,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
             fi
         ;;
-        "7)")
+        "8)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/bee.cfg
@@ -238,7 +281,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "8)")
+        "9)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/bee.cfg
@@ -312,7 +355,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "9)")
+        "10)")
             source $swarmConfigs/bee.cfg
             currentBeeGossipPort=$beeGossipPort
             beeGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $beeGossipPort --title "Bee - Gossip" 3>&1 1>&2 2>&3)
@@ -329,7 +372,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
             fi
         ;;
-        "10)")
+        "11)")
             source $swarmConfigs/bee.cfg
             currentBeeMaxUnknownPeers=$beeMaxUnknownPeers
             beeMaxUnknownPeers=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentBeeMaxUnknownPeers --title "Bee - Gossip" 3>&1 1>&2 2>&3)
@@ -342,7 +385,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
             fi
         ;;
-        "11)")
+        "12)")
             source $swarmConfigs/bee.cfg
             # Bee Networks
             CHOICE=$(
