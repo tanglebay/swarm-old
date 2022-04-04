@@ -13,12 +13,13 @@ while [ $exitCode -lt 1 ]; do
     fi
 
     CHOICE=$(
-        whiptail --title "SWARM Menu" --menu "\nWachtdog: $watchdogStatus\n\nChoose an option" 26 65 0 \
+        whiptail --title "Watchdog - Configuration" --menu "\nWachtdog: $watchdogStatus\n\nChoose an option" 26 65 0 \
         "1)" "Hornet [Watchdog]" \
         "2)" "Bee [Watchdog]" \
         "3)" "GoShimmer [Watchdog]" \
         "4)" "WASP [Watchdog]" \
-        "5)" "Telegram Notifications [Watchdog]" 3>&2 2>&1 1>&3
+        "5)" "Telegram Notifications [Watchdog]" \
+        "6)" "Update Watchdog" 3>&2 2>&1 1>&3
     )
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
@@ -691,6 +692,12 @@ while [ $exitCode -lt 1 ]; do
                 esac
             done
             exitCode=0
+        ;;
+        "6)")
+            if (whiptail --title "Watchdog" --yesno --defaultno "Do you really want to update Watchdog?" 8 65); then
+                ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
+                ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
+            fi
         ;;
     esac
 done
