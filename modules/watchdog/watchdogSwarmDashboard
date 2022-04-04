@@ -69,6 +69,28 @@ if [ -f "$swarmDashboardHtml" ]; then
         fi
     fi
 
+    # Bee-Shimmer
+    if [ -f "/usr/bin/bee-shimmer" ]; then
+        beeShimmerStatus="$(systemctl show -p ActiveState --value bee-shimmer)"
+        beeShimmerSyncStatus="$(curl --max-time 5 -s -X GET "http://localhost:14268/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+        if [ "$beeShimmerStatus" = "active" ] && [ "$beeShimmerSyncStatus" = "true" ]; then
+            sudo sed -i 's~/img/bee-shimmer.*id~/img/bee-shimmer_logo_green.svg" alt="Bee-Shimmer is healthy" id~' $swarmDashboardHtml
+        else
+            sudo sed -i 's~/img/bee-shimmer.*id~/img/bee-shimmer_logo_red.svg" alt="Bee-Shimmer is not healthy" id~' $swarmDashboardHtml
+        fi
+    else
+        if [ "$proxyBeeShimmerExternalDashboard" = "true" ] && [ ! -z "$proxyBeeShimmerUrl" ]; then
+            beeShimmerSyncStatus="$(curl --max-time 5 -s -X GET "https://$proxyBeeShimmerUrl/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+            if [ "$beeShimmerSyncStatus" = "true" ]; then
+                sudo sed -i 's~/img/bee-shimmer.*id~/img/bee-shimmer_logo_green.svg" alt="Bee-Shimmer is healthy" id~' $swarmDashboardHtml
+            else
+                sudo sed -i 's~/img/bee-shimmer.*id~/img/bee_logo_red.svg" alt="Bee-Shimmer is not healthy" id~' $swarmDashboardHtml
+            fi
+        else
+            sudo sed -i 's~/img/bee-shimmer.*id~/img/bee-shimmer_logo_gray.svg" alt="Bee-Shimmer not installed" id~' $swarmDashboardHtml
+        fi
+    fi
+
     # GoShimmer
     if [ -f "/usr/bin/goshimmer" ]; then
         goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"

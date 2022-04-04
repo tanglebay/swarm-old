@@ -52,17 +52,21 @@ if [ "$timeFrame" = "00" ] || [ "$timeFrame" = "30" ]; then
     sudo sed -i 's~^latestHornetShimmerVersion=.*~latestHornetShimmerVersion="'$latestHornetShimmerVersion'"~' $swarmLogs/githubVersion
 
     # Latest Bee version
-    latestBeeVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-    latestBeeVersion=$(echo $latestBeeVersion | tr -d 'v')
-
+    if [ "$beeRelease" = "stable" ]; then
+        latestBeeVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestBeeShimmerVersion=$(echo $latestBeeShimmerVersion | tr -d 'v')
+    fi
+    if [ "$beeRelease" = "beta" ]; then
+        latestBeeVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestBeeVersion=$(echo $latestBeeVersion | tr -d 'v')
+    fi
+    if [ "$beeRelease" = "alpha" ]; then
+        latestBeeVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeReleaseVersion | head -n 1)
+        latestBeeVersion=$(echo $latestBeeVersion | tr -d 'v')
+    fi
     if [ "$latestBeeVersion" = "\"\"" ] || [ -z "$latestBeeVersion" ] || [ "$latestBeeVersion" = "null" ]; then
-        if [ -f "/usr/bin/bee" ]; then
-            latestBeeVersion=$(/usr/bin/bee -v | tr -d 'v"')
-            if [[ $latestBeeVersion = *rc[0-9]* ]]; then
-                latestBeeVersion=$(echo $latestBeeVersion | cut -f1,2 -d"-")
-            else
-                latestBeeVersion=$(echo $latestBeeVersion | cut -f1 -d"-")
-            fi
+        if [ -f "/usr/bin/bee-shimmer" ]; then
+            latestBeeVersion=$(/usr/bin/bee -v | awk '{ print $2 }')
         fi
     fi
     sudo sed -i 's~^latestBeeVersion=.*~latestBeeVersion="'$latestBeeVersion'"~' $swarmLogs/githubVersion
@@ -72,6 +76,26 @@ if [ "$timeFrame" = "15" ] || [ "$timeFrame" = "45" ]; then
     # Latest SWARM version
     latestSwarmVersion=$(curl --max-time 5 -s https://api.github.com/repos/TangleBay/swarm/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
     latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
+
+    # Latest Bee-Shimmer version
+    if [ "$beeShimmerRelease" = "stable" ]; then
+        latestBeeShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeShimmerReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestBeeShimmerVersion=$(echo $latestBeeShimmerVersion | tr -d 'v')
+    fi
+    if [ "$beeShimmerRelease" = "beta" ]; then
+        latestBeeShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeShimmerReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestBeeShimmerVersion=$(echo $latestBeeShimmerVersion | tr -d 'v')
+    fi
+    if [ "$beeShimmerRelease" = "alpha" ]; then
+        latestBeeShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeShimmerReleaseVersion | head -n 1)
+        latestBeeShimmerVersion=$(echo $latestBeeShimmerVersion | tr -d 'v')
+    fi
+    if [ "$latestBeeShimmerVersion" = "\"\"" ] || [ -z "$latestBeeShimmerVersion" ] || [ "$latestBeeShimmerVersion" = "null" ]; then
+        if [ -f "/usr/bin/bee-shimmer" ]; then
+            latestBeeShimmerVersion=$(/usr/bin/bee-shimmer -v | awk '{ print $2 }')
+        fi
+    fi
+    sudo sed -i 's~^latestBeeShimmerVersion=.*~latestBeeShimmerVersion="'$latestBeeShimmerVersion'"~' $swarmLogs/githubVersion
 
     # Latest GoShimmer version
     latestGoshimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/goshimmer/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
