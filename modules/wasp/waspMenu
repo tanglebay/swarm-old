@@ -247,60 +247,70 @@ while [ $exitCode -lt 1 ]; do
                             fi
                         ;;
                         "2)")
-                            waspDisableInstallation=false
-                            if [ "$waspDisableInstallation" = "true" ]; then
-                                whiptail --title "WASP - Installer" --msgbox "\nDue to the current incomptability between WASP and GoShimmer the installation has been disabled." 10 65
+                            if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/hornet-shimmer" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/bee-shimmer" ] || [ -f "/usr/bin/goshimmer" ]; then
+                                if (whiptail --title "WASP - Installer" --yesno --defaultno "Already installed nodes found on the system!\nIt is not recommended to run multiple nodes on one host.\n\nDo you still want to continue?" 12 65); then
+                                    waspSkipInstallation=false
+                                else
+                                    waspSkipInstallation=true
+                                fi
                             else
-                                # INSTALL WASP
-                                if [ ! -f "/usr/bin/wasp" ]; then
+                                waspSkipInstallation=false
+                            fi
+                            # INSTALL WASP
+                            if [ ! -f "/usr/bin/wasp" ] && [ "$waspSkipInstallation" = "false" ]; then
+                                {
+                                    echo 0
+                                    echo 10
+                                    source $swarmConfigs/wasp.cfg
+                                    echo 30
+                                    source $waspModules/waspVersion
+                                    echo 40
+                                    source $waspModules/waspInstaller
+                                    echo 50
+                                    # CALL MODULE CONFIGPARSER
+                                    if [ -f "/usr/bin/wasp" ] && [ -f "$waspHome/config.json" ]; then
+                                        if ! [ -x "$(command -v apache2-utils)" ]; then
+                                            sudo apt -qq install apache2-utils -y > /dev/null 2>&1
+                                        fi
+                                        source $swarmConfigs/wasp.cfg
+                                        echo 60
+                                        source $waspModules/waspParser
+                                        echo 70
+                                        if [ "$ufw" = "true" ]; then
+                                            sudo ufw allow $waspPeeringPort/tcp > /dev/null 2>&1
+                                        fi
+                                        sudo systemctl start wasp > /dev/null 2>&1
+                                        echo 80
+                                        sleep 2
+                                        waspStatus="$(systemctl show -p ActiveState --value wasp)"
+                                        if [ "$waspStatus" != "active" ]; then
+                                            sudo systemctl restart wasp > /dev/null 2>&1
+                                        fi
+                                        echo 100
+                                        sleep 0.2
+                                    fi
+                                } | whiptail --gauge "Please wait while installing WASP..." 8 65 0
+                                if [ -f "/usr/bin/wasp" ] && [ -f "$waspHome/config.json" ]; then
+                                    whiptail --title "WASP - Installer" --msgbox "WASP installation finished!\n\nYou need to open the following ports for peering\n\nPeering: $waspPeeringPort/tcp\nNanomsg: $waspNanomsgPort/tcp" 15 65
+                                else
                                     {
                                         echo 0
-                                        echo 10
+                                        echo 25
                                         source $swarmConfigs/wasp.cfg
-                                        echo 30
-                                        source $waspModules/waspVersion
-                                        echo 40
-                                        source $waspModules/waspInstaller
                                         echo 50
-                                        # CALL MODULE CONFIGPARSER
-                                        if [ -f "/usr/bin/wasp" ] && [ -f "$waspHome/config.json" ]; then
-                                            if ! [ -x "$(command -v apache2-utils)" ]; then
-                                                sudo apt -qq install apache2-utils -y > /dev/null 2>&1
-                                            fi
-                                            source $swarmConfigs/wasp.cfg
-                                            echo 60
-                                            source $waspModules/waspParser
-                                            echo 70
-                                            if [ "$ufw" = "true" ]; then
-                                                sudo ufw allow $waspPeeringPort/tcp > /dev/null 2>&1
-                                            fi
-                                            sudo systemctl start wasp > /dev/null 2>&1
-                                            echo 80
-                                            sleep 2
-                                            waspStatus="$(systemctl show -p ActiveState --value wasp)"
-                                            if [ "$waspStatus" != "active" ]; then
-                                                sudo systemctl restart wasp > /dev/null 2>&1
-                                            fi
-                                            echo 100
-                                            sleep 0.2
-                                        fi
-                                    } | whiptail --gauge "Please wait while installing WASP..." 8 65 0
-                                    if [ -f "/usr/bin/wasp" ] && [ -f "$waspHome/config.json" ]; then
-                                        whiptail --title "WASP - Installer" --msgbox "WASP installation finished!\n\nYou need to open the following ports for peering\n\nPeering: $waspPeeringPort/tcp\nNanomsg: $waspNanomsgPort/tcp" 15 65
-                                    else
-                                        {
-                                            echo 0
-                                            echo 25
-                                            source $swarmConfigs/wasp.cfg
-                                            echo 50
-                                            source $waspModules/waspRemoval
-                                            echo 75
-                                            echo 100
-                                        } | whiptail --gauge "Please wait while the WASP files are removed...." 8 65 0
-                                        whiptail --title "WASP - Installer" --msgbox "Error while installing WASP. Please try again later." 8 65
-                                    fi
-                                else
+                                        source $waspModules/waspRemoval
+                                        echo 75
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while the WASP files are removed...." 8 65 0
+                                    whiptail --title "WASP - Installer" --msgbox "Error while installing WASP. Please try again later." 8 65
+                                fi
+                            else
+                                if [ -f "/usr/bin/wasp" ]; then
                                     whiptail --title "WASP - Installer" --msgbox "WASP already installed." 8 65
+                                else
+                                    if [ "$waspSkipInstallation" = "true" ]; then
+                                        whiptail --title "WASP - Installer" --msgbox "Installation of WASP aborted." 8 65
+                                    fi
                                 fi
                             fi
                         ;;

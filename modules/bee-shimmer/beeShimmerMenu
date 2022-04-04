@@ -267,8 +267,17 @@ while [ $exitCode -lt 1 ]; do
                             fi
                         ;;
                         "2)")
-                            # INSTALL Bee
-                            if [ ! -f "/usr/bin/bee-shimmer" ]; then
+                            if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/hornet-shimmer" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
+                                if (whiptail --title "Hornet - Installer" --yesno --defaultno "Already installed nodes found on the system!\nIt is not recommended to run multiple nodes on one host.\n\nDo you still want to continue?" 12 65); then
+                                    beeShimmerSkipInstallation=false
+                                else
+                                    beeShimmerSkipInstallation=true
+                                fi
+                            else
+                                beeShimmerSkipInstallation=false
+                            fi
+                            # INSTALL Bee-Shimmer
+                            if [ ! -f "/usr/bin/bee-shimmer" ] && [ "$beeShimmerSkipInstallation" = "false" ]; then
                                 {
                                     echo 0
                                     echo 10
@@ -286,6 +295,9 @@ while [ $exitCode -lt 1 ]; do
                                         echo 70
                                         if [ "$ufw" = "true" ]; then
                                             sudo ufw allow $beeShimmerGossipPort/tcp > /dev/null 2>&1
+                                            if [ "$beeShimmerAutopeeringEnabled" = "true" ]; then
+                                                sudo ufw allow $beeShimmerAutopeeringPort/udp > /dev/null 2>&1
+                                            fi
                                         fi
                                         sudo systemctl start bee-shimmer > /dev/null 2>&1
                                         echo 80
@@ -312,8 +324,15 @@ while [ $exitCode -lt 1 ]; do
                                     whiptail --title "Bee-Shimmer - Installer" --msgbox "Error while installing Bee! Please try again later." 8 65
                                 fi
                             else
-                                whiptail --title "Bee-Shimmer - Installer" --msgbox "Bee-Shimmer already installed!" 8 65
+                                if [ -f "/usr/bin/bee-shimmer" ]; then
+                                    whiptail --title "Bee-Shimmer - Installer" --msgbox "Bee-Shimmer already installed." 8 65
+                                else
+                                    if [ "$beeShimmerSkipInstallation" = "true" ]; then
+                                        whiptail --title "Bee-Shimmer - Installer" --msgbox "Installation of Bee-Shimmer aborted." 8 65
+                                    fi
+                                fi
                             fi
+                            unset beeShimmerSkipInstallation
                         ;;
                         "3)")
                             if (whiptail --title "Bee-Shimmer - Installer" --yesno --defaultno "Do you really want to remove Bee-Shimmer?" 8 65); then

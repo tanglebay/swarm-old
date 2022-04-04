@@ -264,9 +264,18 @@ while [ $exitCode -lt 1 ]; do
                             fi
                         ;;
                         "2)")
-                            source $goshimmerModules/goshimmerVersion
+                            if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/hornet-shimmer" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/bee-shimmer" ] || [ -f "/usr/bin/wasp" ]; then
+                                if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Already installed nodes found on the system!\nIt is not recommended to run multiple nodes on one host.\n\nDo you still want to continue?" 12 65); then
+                                    goshimmerSkipInstallation=false
+                                else
+                                    goshimmerSkipInstallation=true
+                                fi
+                            else
+                                goshimmerSkipInstallation=false
+                            fi
                             # INSTALL GoShimmer
-                            if [ ! -f "/usr/bin/goshimmer" ]; then
+                            if [ ! -f "/usr/bin/goshimmer" ] && [ "$goshimmerSkipInstallation" = "false" ]; then
+                                source $goshimmerModules/goshimmerVersion
                                 if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Are you sure you want to install Goshimmer v$latestGoshimmerVersion?" 8 65); then
                                     if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Do you want to download the latest database backup from IOTA Foundation?" 8 65); then
                                         goshimmerNoInstallerDbDownload=false
@@ -322,9 +331,15 @@ while [ $exitCode -lt 1 ]; do
                                     sudo rm -rf /tmp/goshimmer.lock > /dev/null 2>&1
                                 fi
                             else
-                                whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer already installed." 8 65
+                                if [ -f "/usr/bin/goshimmer" ]; then
+                                    whiptail --title "GoShimmer - Installer" --msgbox "GoShimmer already installed." 8 65
+                                else
+                                    if [ "$goshimmerSkipInstallation" = "true" ]; then
+                                        whiptail --title "GoShimmer - Installer" --msgbox "Installation of GoShimmer aborted." 8 65
+                                    fi
+                                fi
                             fi
-                            unset goshimmerNoInstallerDbDownload
+                            unset goshimmerSkipInstallation goshimmerNoInstallerDbDownload
                         ;;
                         "3)")
                             if (whiptail --title "GoShimmer - Installer" --yesno --defaultno "Do you really want to remove GoShimmer?" 8 65); then

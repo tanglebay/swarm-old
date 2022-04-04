@@ -350,7 +350,72 @@ while [ $exitCode -lt 1 ]; do
                         fi
                     ;;
                     "2)")
-                        source $hornetShimmerModules/hornetShimmerInstaller
+                        if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/bee-shimmer" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
+                            if (whiptail --title "Hornet Shimmer - Installer" --yesno --defaultno "Already installed nodes found on the system!\nIt is not recommended to run multiple nodes on one host.\n\nDo you still want to continue?" 12 65); then
+                                hornetShimmerSkipInstallation=false
+                            else
+                                hornetShimmerSkipInstallation=true
+                            fi
+                        else
+                            hornetShimmerSkipInstallation=false
+                        fi
+                        # INSTALL Hornet-Shimmer
+                        if [ ! -f "/usr/bin/hornet-shimmer" ] && [ "$hornetShimmerSkipInstallation" = "false" ]; then
+                            {
+                                echo 0
+                                echo 10
+                                source $swarmConfigs/hornet-shimmer.cfg
+                                echo 30
+                                source $hornetShimmerModules/hornetShimmerVersion
+                                echo 40
+                                source $hornetShimmerModules/hornetShimmerInstaller
+                                echo 50
+                                if [ -f "/usr/bin/hornet-shimmer" ] && [ -f "$hornetShimmerHome/config.json" ]; then
+                                    source $swarmConfigs/hornet-shimmer.cfg
+                                    echo 60
+                                    # CALL MODULE CONFIGPARSER
+                                    source $hornetShimmerModules/hornetShimmerParser
+                                    echo 70
+                                    if [ "$ufw" = "true" ]; then
+                                        sudo ufw allow $hornetShimmerGossipPort/tcp > /dev/null 2>&1
+                                        if [[ $hornetShimmerEnablePlugins = *autopeering* ]]; then
+                                            sudo ufw allow $hornetShimmerAutopeeringPort/udp > /dev/null 2>&1
+                                        fi
+                                    fi
+                                    sudo systemctl start hornet-shimmer > /dev/null 2>&1
+                                    echo 80
+                                    sleep 2
+                                    hornetShimmerStatus="$(systemctl show -p ActiveState --value hornet-shimmer)"
+                                    if [ "$hornetShimmerStatus" != "active" ]; then
+                                        sudo systemctl restart hornet-shimmer > /dev/null 2>&1
+                                    fi
+                                    echo 100
+                                fi
+                            } | whiptail --gauge "Please wait while installing Hornet-Shimmer..." 8 65 0
+                            if [ -f "/usr/bin/hornet-shimmer" ] && [ -f "$hornetShimmerHome/config.json" ]; then
+                                whiptail --title "Hornet-Shimmer - Installer" --msgbox "Hornet-Shimmer installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $hornetShimmerGossipPort/tcp\nAutopeering: $hornetShimmerAutopeeringPort/udp" 15 65
+                            else
+                                {
+                                    echo 0
+                                    echo 25
+                                    source $swarmConfigs/hornet-shimmer.cfg
+                                    echo 50
+                                    source $hornetShimmerModules/hornetShimmerRemoval
+                                    echo 75
+                                    echo 100
+                                } | whiptail --gauge "Please wait while the Hornet-Shimmer files are removed...." 8 65 0
+                                whiptail --title "Hornet-Shimmer - Installer" --msgbox "Error while installing Hornet-Shimmer! Please try again later." 8 65
+                            fi
+                        else
+                            if [ -f "/usr/bin/hornet-shimmer" ]; then
+                                whiptail --title "Hornet-Shimmer - Installer" --msgbox "Hornet-Shimmer already installed." 8 65
+                            else
+                                if [ "$hornetShimmerSkipInstallation" = "true" ]; then
+                                    whiptail --title "Hornet-Shimmer - Installer" --msgbox "Installation of Hornet-Shimmer aborted." 8 65
+                                fi
+                            fi
+                        fi
+                        unset hornetShimmerSkipInstallation
                     ;;
                     "3)")
                         if (whiptail --title "Hornet Shimmer - Installer" --yesno --defaultno "Do you really want to remove Hornet?" 8 65); then
