@@ -2,12 +2,17 @@
 if [ -f "/usr/bin/hornet-shimmer" ]; then
 
     source $swarmConfigs/hornet-shimmer.cfg
+    source $swarmLogs/githubVersion
 
     hornetShimmerStatus=$(systemctl show -p ActiveState --value hornet-shimmer)
 
     hornetShimmerVersion=$(/usr/bin/hornet-shimmer -v | awk '{ print $2 }')
     if [ -z "$hornetShimmerVersion" ]; then
-        hornetVersion="N/A"
+        hornetShimmerVersion="N/A"
+    else
+        if [ "$hornetShimmerVersion" != "$latestHornetShimmerVersion" ] && [ ! -z "$latestHornetShimmerVersion" ]; then
+            hornetShimmerVersion="$hornetShimmerVersion (new version \"v$latestHornetShimmerVersion\" available!)"
+        fi
     fi
 
     if [ "$hornetShimmerStatus" = "active" ]; then
