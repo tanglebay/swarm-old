@@ -1,0 +1,43 @@
+#!/bin/bash
+
+hornetShimmerVersion=$(/usr/bin/hornet-shimmer -v | awk '{ print $2 }')
+hornetShimmerDashboardPassword=$(whiptail --passwordbox "\nPlease enter a secure password for your dashboard login:" 8 65 --title "Hornet Shimmer - Dashboard" 3>&1 1>&2 2>&3)
+exitstatus=$?
+if [ "$exitstatus" != "1" ]; then
+    hornetShimmerDashboardPassword2=$(whiptail --passwordbox "\nPlease re-enter the password for your dashboard login:" 8 65 --title "Hornet Shimmer - Dashboard" 3>&1 1>&2 2>&3)
+    exitstatus=$?
+    if [ "$exitstatus" != "1" ]; then
+        if [ ! -z "$hornetShimmerDashboardPassword" ] && [ ! -z "$hornetShimmerDashboardPassword2" ] && [ "$hornetShimmerDashboardPassword" = "$hornetShimmerDashboardPassword2" ] && [ -f "/usr/bin/hornet" ]; then
+            {
+                echo 0
+                export HORNET_TOOL_PASSWORD="$hornetShimmerDashboardPassword"
+                echo 10
+                hornetShimmerPwdHash=$(/usr/bin/hornet-shimmer tools pwd-hash)
+                echo 20
+                hornetShimmerPasswordHash=$(echo $hornetShimmerPwdHash | grep -o "Your hash:.*" | awk '{print $3}')
+                echo 30
+                hornetShimmerPasswordSalt=$(echo $hornetShimmerPwdHash | grep -o "Your salt:.*" | awk '{print $3}')
+                echo 40
+                sudo sed -i 's/^hornetShimmerPasswordHash=.*/hornetShimmerPasswordHash="'$hornetShimmerPasswordHash'"/' $swarmConfigs/hornet-shimmer.cfg
+                echo 50
+                sudo sed -i 's/^hornetShimmerPasswordSalt=.*/hornetShimmerPasswordSalt="'$hornetShimmerPasswordSalt'"/' $swarmConfigs/hornet-shimmer.cfg
+                echo 60
+                source $hornetShimmerConfigParsers/hornetShimmerDashboardPasswordHash
+                echo 70
+                source $hornetShimmerConfigParsers/hornetShimmerDashboardPasswordSalt
+                echo 80
+                export HORNET_TOOL_PASSWORD=""
+                unset hornetShimmerDashboardPassword
+                unset hornetShimmerDashboardPassword2
+                echo 100
+                sleep 0.25
+            } | whiptail --gauge "Please wait while generating Dashboard login..." 8 65 0
+            whiptail --title "Hornet Shimmer - Dashboard" --msgbox "New password created successfully!" 8 65
+            restartHornetShimmer=true
+        else
+            whiptail --title "Hornet Shimmer - Dashboard" --msgbox "Aborted - Passwords do not match!" 8 65
+        fi
+    fi
+fi
+
+unset exitstatus

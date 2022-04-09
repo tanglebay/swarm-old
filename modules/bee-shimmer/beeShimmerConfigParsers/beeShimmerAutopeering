@@ -1,0 +1,23 @@
+#!/bin/bash
+
+parser="$(jq '.autopeering.enabled' $beeShimmerHome/config.chrysalis-$beeShimmerNetwork.json)"
+if [ "$parser" != "$beeShimmerAutopeeringEnabled" ] && [ ! -z "$beeShimmerAutopeeringEnabled" ]; then
+    sudo jq '.autopeering.enabled = '$beeShimmerAutopeeringEnabled'' $beeShimmerHome/config.chrysalis-$beeShimmerNetwork.json|sponge $beeShimmerHome/config.chrysalis-$beeShimmerNetwork.json
+    restartBeeShimmer=true
+    echo "beeShimmerAutopeering1" >> /tmp/beeShimmerParsing
+fi
+parser="$(jq '.autopeering.bindAddress' $beeShimmerHome/config.chrysalis-$beeShimmerNetwork.json)"
+parser=$(echo $parser | tr -d '"')
+if [ "$parser" != "0.0.0.0:$beeShimmerAutopeeringPort" ]; then
+    sudo jq '.autopeering.bindAddress = "0.0.0.0:'$beeShimmerAutopeeringPort'"' $beeShimmerHome/config.chrysalis-$beeShimmerNetwork.json|sponge $beeShimmerHome/config.chrysalis-$beeShimmerNetwork.json
+    restartBeeShimmer=true
+    echo "beeShimmerAutopeering2" >> /tmp/beeShimmerParsing
+fi
+
+if [ "$beeShimmerAutopeeringEnabled" = "true" ] && [ "$ufw" = "true" ]; then
+    sudo ufw allow $beeShimmerAutopeeringPort/udp > /dev/null 2>&1
+else
+    sudo ufw delete allow $beeShimmerAutopeeringPort/udp > /dev/null 2>&1
+fi
+
+unset parser

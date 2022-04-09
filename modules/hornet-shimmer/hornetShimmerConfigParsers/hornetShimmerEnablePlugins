@@ -1,0 +1,22 @@
+#!/bin/bash
+
+useHornetShimmerEnablePlugins=true
+source $hornetShimmerModules/hornetShimmerPlugins
+
+IFS=', ' read -r -a ARRAYhornetShimmerEnablePlugins <<< "$hornetShimmerEnablePlugins"
+
+parser="$(jq '.node.enablePlugins' $hornetShimmerHome/$hornetShimmerConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$hornetShimmerEnablePlugins" ]; then
+    sudo jq '.node.enablePlugins |= []' $hornetShimmerHome/$hornetShimmerConfig.json|sponge $hornetShimmerHome/$hornetShimmerConfig.json
+    for hornetShimmerEnablePlugin in "${ARRAYhornetShimmerEnablePlugins[@]}"
+    do
+        if [ ! -z "$hornetShimmerEnablePlugin" ]; then
+            sudo jq '.node.enablePlugins |= .+ ["'$hornetShimmerEnablePlugin'"]' $hornetShimmerHome/$hornetShimmerConfig.json|sponge $hornetShimmerHome/$hornetShimmerConfig.json
+        fi
+    done
+    restartHornetShimmer=true
+    echo "hornetShimmerEnablePlugins" >> /tmp/hornetShimmerParsing
+fi
+
+unset ARRAYhornetShimmerEnablePlugins hornetShimmerEnablePlugin useHornetShimmerEnablePlugins

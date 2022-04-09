@@ -7,6 +7,13 @@ if [ -f "/usr/bin/goshimmer" ]; then
     goshimmerStatus=$(systemctl show -p ActiveState --value goshimmer)
 
     goshimmerVersion=$(cd $goshimmerHome ; /usr/bin/goshimmer -v | awk '{print $2}' | tr -d 'v')
+    if [ -z "$goshimmerVersion" ]; then
+        goshimmerVersion="N/A"
+    else
+        if [ "$goshimmerVersion" != "$latestGoshimmerVersion" ] && [ ! -z "$latestGoshimmerVersion" ]; then
+            goshimmerVersion="$goshimmerVersion (new version \"v$latestGoshimmerVersion\" available!"
+        fi
+    fi
 
     if [ "$goshimmerStatus" = "active" ]; then
         goshimmerSyncedStatus="$(curl --max-time 2 -s -X GET "http://localhost:8080/info" -H  "accept: application/json"|jq -r '.tangleTime.synced' 2> /dev/null)"

@@ -1,6 +1,7 @@
 #!/bin/bash
 source $swarmConfigs/watchdog.cfg
 
+# Hornet
 if [ -n "$hornetStatusCounter" ]; then
     if [ $hornetStatusCounter -ne $hornetStatusCounter ] 2>/dev/null; then
         hornetStatusCounter=0
@@ -11,6 +12,18 @@ else
     sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
+# Hornet-Shimmer
+if [ -n "$hornetShimmerStatusCounter" ]; then
+    if [ $hornetShimmerStatusCounter -ne $hornetShimmerStatusCounter ] 2>/dev/null; then
+        hornetShimmerStatusCounter=0
+        sudo sed -i 's/^hornetShimmerStatusCounter=.*/hornetShimmerStatusCounter='$hornetShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+else
+    hornetShimmerStatusCounter=0
+    sudo sed -i 's/^hornetShimmerStatusCounter=.*/hornetShimmerStatusCounter='$hornetShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
+fi
+
+# Bee
 if [ -n "$beeStatusCounter" ]; then
     if [ $beeStatusCounter -ne $beeStatusCounter ] 2>/dev/null; then
         beeStatusCounter=0
@@ -21,6 +34,18 @@ else
     sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
+# Bee-Shimmer
+if [ -n "$beeShimmerStatusCounter" ]; then
+    if [ $beeShimmerStatusCounter -ne $beeShimmerStatusCounter ] 2>/dev/null; then
+        beeShimmerStatusCounter=0
+        sudo sed -i 's/^beeShimmerStatusCounter=.*/beeShimmerStatusCounter='$beeShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+else
+    beeShimmerStatusCounter=0
+    sudo sed -i 's/^beeShimmerStatusCounter=.*/beeShimmerStatusCounter='$beeShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
+fi
+
+# GoShimmer
 if [ -n "$goshimmerStatusCounter" ]; then
     if [ $goshimmerStatusCounter -ne $goshimmerStatusCounter ] 2>/dev/null; then
         goshimmerStatusCounter=0
@@ -31,6 +56,7 @@ else
     sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter='$goshimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
+# Wasp
 if [ -n "$waspStatusCounter" ]; then
     if [ $waspStatusCounter -ne $waspStatusCounter ] 2>/dev/null; then
         waspStatusCounter=0
@@ -41,6 +67,8 @@ else
     sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter='$waspStatusCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
+################################################################################################################################################
+
 # Hornet Status Check
 if [ "$hornetStatus" != "active" ] && [ -f "/usr/bin/hornet" ] && [ "$hornetServiceStatusCheck" = "true" ]; then
     sudo systemctl stop hornet
@@ -50,7 +78,9 @@ if [ "$hornetStatus" != "active" ] && [ -f "/usr/bin/hornet" ] && [ "$hornetServ
     fi
     if [ $hornetStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$hornetAllowDbReset" = "true" ]; then
-            sudo killall -s SIGKILL hornet
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL hornet
+            fi
             sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots/${hornetNetwork}/*.bin
             echo "$restartDate [WACHTDOG] HORNET ${hornetNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
             telegramText="[$HOSTNAME] HORNET ${hornetNetwork}DB deleted because the maximum number of attempted restarts was reached."
@@ -72,13 +102,48 @@ else
     fi
 fi
 
+# Hornet-Shimmer Status Check
+if [ "$hornetShimmerStatus" != "active" ] && [ -f "/usr/bin/hornet-shimmer" ] && [ "$hornetShimmerServiceStatusCheck" = "true" ]; then
+    sudo systemctl stop hornet-shimmer
+    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+    if [[ $hornetShimmerPlugins = *participation* ]] && [ $hornetShimmerStatusCounter -ge 1 ] 2>/dev/null; then
+        sudo rm -rf $hornetShimmerHome/${hornetShimmerNetwork}db/participation 2>/dev/null
+    fi
+    if [ $hornetShimmerStatusCounter -ge 2 ] 2>/dev/null; then
+        if [ "$hornetShimmerAllowDbReset" = "true" ]; then
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL hornet-shimmer
+            fi
+            sudo rm -rf $hornetShimmerHome/${hornetShimmerNetwork}db $hornetShimmerHome/snapshots/${hornetShimmerNetwork}/*.bin
+            echo "$restartDate [WACHTDOG] HORNET-Shimmer ${hornetShimmerNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
+            telegramText="[$HOSTNAME] HORNET-Shimmer ${hornetShimmerNetwork}DB deleted because the maximum number of attempted restarts was reached."
+            source $watchdogModules/watchdogTelegram
+        fi
+        hornetShimmerStatusCounter=0
+    else
+        let hornetShimmerStatusCounter=$hornetShimmerStatusCounter+1
+    fi
+    sudo systemctl start hornet-shimmer
+    sudo sed -i 's/^hornetShimmerStatusCounter=.*/hornetShimmerStatusCounter='$hornetShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    echo "$restartDate [WACHTDOG] HORNET-Shimmer node was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$HOSTNAME] HORNET-Shimmer node was restarted because the service is not active."
+    source $watchdogModules/watchdogTelegram
+else
+    if [ $hornetShimmerStatusCounter -gt 0 ] 2>/dev/null; then
+        let hornetShimmerStatusCounter=$hornetShimmerStatusCounter-1
+        sudo sed -i 's/^hornetShimmerStatusCounter=.*/hornetShimmerStatusCounter='$hornetShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+fi
+
 # Bee Status Check
 if [ "$beeStatus" != "active" ] && [ -f "/usr/bin/bee" ]; then
     sudo systemctl stop bee
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
     if [ $beeStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$beeAllowDbReset" = "true" ]; then
-            sudo killall -s SIGKILL bee
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL bee 2>/dev/null
+            fi
             sudo rm -rf $beeHome/storage/$beeNetwork $beeHome/snapshots/$beeNetwork
             echo "$restartDate [WACHTDOG] BEE ${beeNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
             telegramText="[$HOSTNAME] BEE ${beeNetwork}DB deleted because the maximum number of attempted restarts was reached."
@@ -100,13 +165,45 @@ else
     fi
 fi
 
+# Bee-Shimmer Status Check
+if [ "$beeShimmerStatus" != "active" ] && [ -f "/usr/bin/bee-shimmer" ]; then
+    sudo systemctl stop bee-shimmer
+    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+    if [ $beeShimmerStatusCounter -ge 2 ] 2>/dev/null; then
+        if [ "$beeShimmerAllowDbReset" = "true" ]; then
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL bee-shimmer 2>/dev/null
+            fi
+            sudo rm -rf $beeShimmerHome/storage/$beeShimmerNetwork $beeShimmerHome/snapshots/$beeShimmerNetwork
+            echo "$restartDate [WACHTDOG] BEE-SHIMMER ${beeShimmerNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
+            telegramText="[$HOSTNAME] BEE-SHIMMER ${beeShimmerNetwork}DB deleted because the maximum number of attempted restarts was reached."
+            source $watchdogModules/watchdogTelegram
+        fi
+        beeShimmerStatusCounter=0
+    else
+        let beeShimmerStatusCounter=$beeShimmerStatusCounter+1
+    fi
+    sudo systemctl start bee-shimmer
+    sudo sed -i 's/^beeShimmerStatusCounter=.*/beeShimmerStatusCounter='$beeShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    echo "$restartDate [WACHTDOG] BEE-SHIMMER node was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$HOSTNAME] BEE-SHIMMER node was restarted because the service is not active."
+    source $watchdogModules/watchdogTelegram
+else
+    if [ $beeShimmerStatusCounter -gt 0 ] 2>/dev/null; then
+        let beeShimmerStatusCounter=$beeShimmerStatusCounter-1
+        sudo sed -i 's/^beeShimmerStatusCounter=.*/beeShimmerStatusCounter='$beeShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+fi
+
 # GoShimmer Status Check
 if [ "$goshimmerStatus" != "active" ] && [ -f "/usr/bin/goshimmer" ] && [ ! -f "/tmp/goshimmer.lock" ]; then
     sudo systemctl stop goshimmer
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
     if [ $goshimmerStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$goshimmerAllowDbReset" = "true" ]; then
-            sudo killall -s SIGKILL goshimmer
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL goshimmer
+            fi
             sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb > /dev/null 2>&1
             source $goshimmerModules/goshimmerDbDownload
             echo "$restartDate [WACHTDOG] GOSHIMMER database deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
@@ -135,7 +232,9 @@ if [ "$waspStatus" != "active" ] && [ -f "/usr/bin/wasp" ]; then
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
     if [ $waspStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$waspAllowDbReset" = "true" ]; then
-            sudo killall -s SIGKILL wasp
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL wasp
+            fi
             sudo rm -rf $waspHome/waspdb
             echo "$restartDate [WACHTDOG] WASP database deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
             telegramText="[$HOSTNAME] WASP database deleted because the maximum number of attempted restarts was reached."

@@ -1,0 +1,12 @@
+#!/bin/bash
+if [ "$hornetShimmerConfig" = "mainnet" ]; then
+    hornetShimmerFullSnapshot="https://cdn.tanglebay.com/snapshots/shimmernet/full_snapshot.bin"
+    hornetShimmerDeltaSnapshot="https://cdn.tanglebay.com/snapshots/shimmernet/delta_snapshot.bin"
+    parser="$(jq '.snapshots.downloadURLs' $hornetShimmerHome/config.json)"
+    if [[ $parser != *$hornetShimmerFullSnapshot* ]] && [[ $parser != *$hornetShimmerDeltaSnapshot* ]]; then
+        sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . + {"full": "'$hornetShimmerFullSnapshot'","delta": "'$hornetShimmerDeltaSnapshot'"}' $hornetShimmerHome/config.json|sponge $hornetShimmerHome/config.json
+        restartHornetShimmer=true
+        echo "hornetShimmerSnapshotUrl" >> /tmp/hornetShimmerParsing
+    fi
+    unset parser hornetShimmerFullSnapshot
+fi

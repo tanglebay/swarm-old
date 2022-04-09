@@ -2,6 +2,7 @@
 
 source $swarmConfigs/watchdog.cfg
 
+# Hornet
 if [ -n "$hornetSyncCounter" ]; then
     if [ $hornetSyncCounter -ne $hornetSyncCounter ] 2>/dev/null; then
         hornetSyncCounter=0
@@ -12,6 +13,18 @@ else
     sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
+# Hornet-Shimmer
+if [ -n "$hornetShimmerSyncCounter" ]; then
+    if [ $hornetShimmerSyncCounter -ne $hornetShimmerSyncCounter ] 2>/dev/null; then
+        hornetShimmerSyncCounter=0
+        sudo sed -i 's/^hornetShimmerSyncCounter=.*/hornetShimmerSyncCounter='$hornetShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+else
+    hornetShimmerSyncCounter=0
+    sudo sed -i 's/^hornetShimmerSyncCounter=.*/hornetShimmerSyncCounter='$hornetShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
+fi
+
+# Bee
 if [ -n "$beeSyncCounter" ]; then
     if [ $beeSyncCounter -ne $beeSyncCounter ] 2>/dev/null; then
         beeSyncCounter=0
@@ -22,6 +35,18 @@ else
     sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
+# Bee-Shimmer
+if [ -n "$beeShimmerSyncCounter" ]; then
+    if [ $beeShimmerSyncCounter -ne $beeShimmerSyncCounter ] 2>/dev/null; then
+        beeShimmerSyncCounter=0
+        sudo sed -i 's/^beeShimmerSyncCounter=.*/beeShimmerSyncCounter='$beeShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+else
+    beeShimmerSyncCounter=0
+    sudo sed -i 's/^beeShimmerSyncCounter=.*/beeShimmerSyncCounter='$beeShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
+fi
+
+# GoShimmer
 if [ -n "$goshimmerSyncCounter" ]; then
     if [ $goshimmerSyncCounter -ne $goshimmerSyncCounter ] 2>/dev/null; then
         goshimmerSyncCounter=0
@@ -31,6 +56,8 @@ else
     goshimmerSyncCounter=0
     sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
 fi
+
+#################################################################################################################################################################
 
 if [ -f "/usr/bin/hornet" ] && [ "$hornetRunAsEntryNode" = "false" ] && [ "$hornetStatus" = "active" ]; then
     # Hornet Sync Check
@@ -82,6 +109,62 @@ if [ -f "/usr/bin/hornet" ] && [ "$hornetRunAsEntryNode" = "false" ] && [ "$horn
     fi
 fi
 
+if [ -f "/usr/bin/hornet-shimmer" ] && [ "$hornetShimmerRunAsEntryNode" = "false" ] && [ "$hornetShimmerStatus" = "active" ]; then
+    # Hornet Sync Check
+    hornetShimmerSyncStatus="$(curl --max-time 5 -s -X GET "http://localhost:14267/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetShimmerJwtToken}"|jq '.data.isHealthy')"
+    if [ -z "$hornetShimmerSyncStatus" ]; then
+        hornetShimmerSyncStatus=false
+    fi
+    if [ "$hornetShimmerCheckSync" = "true" ] && [ "$hornetShimmerSyncStatus" = "false" ]; then
+        latestHornetShimmerLatestMilestoneIndex="$(curl --max-time 5 -s -X GET "http://localhost:14267/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetShimmerJwtToken}"|jq '.data.latestMilestoneIndex')"
+        latestHornetShimmerConfirmedMilestoneIndex="$(curl --max-time 5 -s -X GET "http://localhost:14267/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetShimmerJwtToken}"|jq '.data.confirmedMilestoneIndex')"
+        if [ -z "$latestHornetShimmerLatestMilestoneIndex" ] && [ -z "$latestHornetShimmerConfirmedMilestoneIndex" ]; then
+            hornetShimmerMilestoneDifferenceIndex=9999999999
+            latestHornetShimmerConfirmedMilestoneIndex=0
+            hornetShimmerConfirmedMilestoneIndex=0
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL hornet-shimmer
+            else
+                sudo systemctl stop hornet-shimmer
+            fi
+        else
+            let hornetShimmerMilestoneDifferenceIndex=$latestHornetShimmerLatestMilestoneIndex-$latestHornetShimmerConfirmedMilestoneIndex
+        fi
+        if [ $hornetShimmerMilestoneDifferenceIndex -gt $hornetShimmerMaxMilestones ] && [ $latestHornetShimmerConfirmedMilestoneIndex -eq $hornetShimmerConfirmedMilestoneIndex ] 2>/dev/null; then
+            restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+            sudo systemctl stop hornet-shimmer
+            if [ $hornetShimmerSyncCounter -gt 5 ]; then
+                if [ "$hornetShimmerAllowDbReset" = "true" ]; then
+                    if [ "$killall" = "true" ]; then
+                        sudo killall -s SIGKILL hornet-shimmer
+                    else
+                        sudo systemctl stop hornet-shimmer
+                    fi
+                    sudo rm -rf $hornetShimmerHome/${hornetShimmerNetwork}db $hornetShimmerHome/snapshots/${hornetShimmerNetwork}/*.bin
+                    echo "$restartDate [WACHTDOG] HORNET-Shimmer ${hornetShimmerNetwork}DB was deleted because too many milestones behind." >> $swarmLogs/swarm.log
+                    telegramText="[$HOSTNAME] HORNET-Shimmer ${hornetShimmerNetwork}DB was deleted because too many milestones behind."
+                    source $watchdogModules/watchdogTelegram
+                fi
+                hornetShimmerSyncCounter=0
+            else
+                let hornetShimmerSyncCounter=$hornetShimmerSyncCounter+1
+            fi
+            sudo systemctl start hornet-shimmer
+            echo "$restartDate [WACHTDOG] HORNET-Shimmer node restarted because max milestones difference reached." >> $swarmLogs/swarm.log
+            telegramText="[$HOSTNAME] HORNET-Shimmer node restarted because max milestones difference reached."
+            source $watchdogModules/watchdogTelegram
+            sudo sed -i 's/^hornetShimmerSyncCounter=.*/hornetShimmerSyncCounter='$hornetShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
+        else
+            sudo sed -i 's/^hornetShimmerConfirmedMilestoneIndex=.*/hornetShimmerConfirmedMilestoneIndex='$latestHornetShimmerConfirmedMilestoneIndex'/' $swarmConfigs/watchdog.cfg
+        fi
+    else
+        if [ "$hornetShimmerSyncCounter" -gt "0" ]; then
+            let hornetShimmerSyncCounter=$hornetShimmerSyncCounter-1
+            sudo sed -i 's/^hornetShimmerSyncCounter=.*/hornetShimmerSyncCounter='$hornetShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
+        fi
+    fi
+fi
+
 if [ -f "/usr/bin/bee" ] && [ "$beeRunAsEntryNode" = "false" ] && [ "$beeStatus" = "active" ]; then
     # Bee Sync Check
     beeSyncStatus="$(curl --max-time 5 -s -X GET "http://localhost:14266/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
@@ -128,6 +211,58 @@ if [ -f "/usr/bin/bee" ] && [ "$beeRunAsEntryNode" = "false" ] && [ "$beeStatus"
         if [ $beeSyncCounter -gt 0 ] 2>/dev/null; then
             let beeSyncCounter=$beeSyncCounter-1
             sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $swarmConfigs/watchdog.cfg
+        fi
+    fi
+fi
+
+if [ -f "/usr/bin/bee-shimmer" ] && [ "$beeRunAsEntryNode" = "false" ] && [ "$beeStatus" = "active" ]; then
+    # Bee-Shimmer Sync Check
+    beeShimmerSyncStatus="$(curl --max-time 5 -s -X GET "http://localhost:14268/api/v1/info" -H  "accept: application/json"|jq '.data.isHealthy')"
+    if [ -z "$beeShimmerSyncStatus" ]; then
+        beeShimmerSyncStatus=false
+    fi
+    if [ "$beeShimmerCheckSync" = "true" ] && [ "$beeShimmerSyncStatus" = "false" ]; then
+        latestBeeShimmerLatestMilestoneIndex="$(curl --max-time 5 -s -X GET "http://localhost:14268/api/v1/info" -H  "accept: application/json"|jq '.data.latestMilestoneIndex')"
+        latestBeeShimmerConfirmedMilestoneIndex="$(curl --max-time 5 -s -X GET "http://localhost:14268/api/v1/info" -H  "accept: application/json"|jq '.data.confirmedMilestoneIndex')"
+        if [ -z "$latestBeeShimmerLatestMilestoneIndex" ] && [ -z "$latestBeeShimmerConfirmedMilestoneIndex" ]; then
+            beeShimmerMilestoneDifferenceIndex=9999999999
+            latestBeeShimmerConfirmedMilestoneIndex=0
+            beeShimmerConfirmedMilestoneIndex=0
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL bee-shimmer
+            fi
+        else
+            let beeShimmerMilestoneDifferenceIndex=$latestBeeShimmerLatestMilestoneIndex-$latestBeeShimmerConfirmedMilestoneIndex
+        fi
+        if [ $beeShimmerMilestoneDifferenceIndex -gt $beeShimmerMaxMilestones ] && [ $latestBeeShimmerConfirmedMilestoneIndex -eq $beeShimmerConfirmedMilestoneIndex ] 2>/dev/null; then
+            restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+            sudo systemctl stop bee-shimmer
+            if [ $beeShimmerSyncCounter -gt 5 ] 2>/dev/null; then
+                if [ "$beeShimmerAllowDbReset" = "true" ]; then
+                    if [ "$killall" = "true" ]; then
+                        sudo killall -s SIGKILL bee-shimmer
+                    fi
+                    sudo rm -rf $beeShimmerHome/storage/$beeShimmerNetwork $beeShimmerHome/snapshots/$beeShimmerNetwork
+                    echo "$restartDate [WACHTDOG] BEE-SHIMMER database deleted because too many milestones behind." >> $swarmLogs/swarm.log
+                    telegramText="[$HOSTNAME] BEE-SHIMMER database deleted because too many milestones behind."
+                    source $watchdogModules/watchdogTelegram
+                fi
+                beeShimmerSyncCounter=0
+            else
+                let beeShimmerSyncCounter=$beeShimmerSyncCounter+1
+            fi
+            sudo systemctl start bee-shimmer
+            echo "$restartDate [WACHTDOG] BEE-SHIMMER node restarted because max milestones difference reached." >> $swarmLogs/swarm.log
+            telegramText="[$HOSTNAME] BEE-SHIMMER node restarted because max milestones difference reached."
+            source $watchdogModules/watchdogTelegram
+            sudo sed -i 's/^beeShimmerSyncCounter=.*/beeShimmerSyncCounter='$beeShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
+        else
+            sudo sed -i 's/^beeShimmerConfirmedMilestoneIndex=.*/beeShimmerConfirmedMilestoneIndex='$latestBeeShimmerConfirmedMilestoneIndex'/' $swarmConfigs/watchdog.cfg
+        fi
+    else
+        if [ $beeShimmerSyncCounter -gt 0 ] 2>/dev/null; then
+            let beeShimmerSyncCounter=$beeShimmerSyncCounter-1
+            sudo sed -i 's/^beeShimmerSyncCounter=.*/beeShimmerSyncCounter='$beeShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
         fi
     fi
 fi

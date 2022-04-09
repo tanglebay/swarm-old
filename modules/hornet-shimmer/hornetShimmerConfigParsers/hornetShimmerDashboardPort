@@ -1,0 +1,13 @@
+#!/bin/bash
+
+parser=$(jq '.dashboard.bindAddress' $hornetShimmerHome/$hornetShimmerConfig.json)
+parser=$(echo $parser | tr -d '"')
+if [ "$parser" != "localhost:8084" ]; then
+    sudo jq '.dashboard.bindAddress = "localhost:8084"' $hornetShimmerHome/$hornetShimmerConfig.json|sponge $hornetShimmerHome/$hornetShimmerConfig.json
+    if [ -f "/etc/nginx/sites-enabled/hornet-shimmer" ]; then
+        sudo find /etc/nginx/sites-enabled/hornet-shimmer -type f -exec sed -i 's/8081/8084/g' {} \;
+        sudo systemctl reload nginx
+    fi
+    restartHornetShimmer=true
+    echo "hornetShimmerDashboardPort" >> /tmp/hornetShimmerParsing
+fi

@@ -109,26 +109,27 @@ while [ $exitCode -lt 1 ]; do
                             source $hornetModules/hornetApiRoutes
                             hornetApiRoutes=$(whiptail --title "Hornet - API routes" --checklist "\nSelect (using the spacebar) the Hornet API routes that you want to protect. All routes not selected will be public:" 28 65 11 \
                                 "/health" "" $hornetApiRoutesHealth \
-                                "/mqtt" "" $hornetApiRoutesMqtt \
-                                "/api/v1/info" "" $hornetApiRoutesInfo \
-                                "/api/v1/tips" "" $hornetApiRoutesTips \
-                                "/api/v1/messages*" "" $hornetApiRoutesMessages \
-                                "/api/v1/transactions*" "" $hornetApiRoutesTransactions \
-                                "/api/v1/milestones*" "" $hornetApiRoutesMilestones \
-                                "/api/v1/outputs*" "" $hornetApiRoutesOutputs \
-                                "/api/v1/addresses*" "" $hornetApiRoutesAddresses \
-                                "/api/v1/treasury" "" $hornetApiRoutesTreasury \
-                                "/api/v1/receipts*" "" $hornetApiRoutesReceipts \
-                                "/api/plugins/participation/events*" "" $hornetApiRoutesParticipationEvents \
-                                "/api/plugins/participation/outputs*" "" $hornetApiRoutesParticipationOutputs \
-                                "/api/plugins/participation/addresses*" "" $hornetApiRoutesParticipationAddresses 3>&1 1>&2 2>&3)
+                                "/api/v2/info" "" $hornetApiRoutesInfo \
+                                "/api/v2/tips" "" $hornetApiRoutesTips \
+                                "/api/v2/messages*" "" $hornetApiRoutesMessages \
+                                "/api/v2/transactions*" "" $hornetApiRoutesTransactions \
+                                "/api/v2/milestones*" "" $hornetApiRoutesMilestones \
+                                "/api/v2/outputs*" "" $hornetApiRoutesOutputs \
+                                "/api/v2/addresses*" "" $hornetApiRoutesAddresses \
+                                "/api/v2/treasury" "" $hornetApiRoutesTreasury \
+                                "/api/v2/receipts*" "" $hornetApiRoutesReceipts \
+                                "/api/plugins/debug/v1/*" "" $hornetApiRoutesDebug \
+                                "/api/plugins/indexer/v1/*" "" $hornetApiRoutesIndexer \
+                                "/api/plugins/mqtt/v1" "" $hornetApiRoutesMqtt \
+                                "/api/plugins/participation/v1/events*" "" $hornetApiRoutesParticipationEvents \
+                                "/api/plugins/participation/v1/outputs*" "" $hornetApiRoutesParticipationOutputs \
+                                "/api/plugins/participation/v1/addresses*" "" $hornetApiRoutesParticipationAddresses 3>&1 1>&2 2>&3)
                             exitStatus=$?
                             hornetApiRoutes=$(echo $hornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
                             if [ "$exitStatus" != "1" ]; then
                                 hornetUpdateApiRoutes=true
                                 source $hornetModules/hornetApiRoutes
                                 source $hornetConfigParsers/hornetApiPublicRoutes
-                                source $hornetConfigParsers/hornetApiProtectedRoutes
                                 unset hornetUpdateApiRoutes
                             fi
                             unset hornetApiRoutes
@@ -557,13 +558,14 @@ while [ $exitCode -lt 1 ]; do
             source $swarmConfigs/hornet.cfg
             # Hornet release channel
             CHOICE=$(
-                whiptail --title "Hornet - Release" --menu "\nSet \"stable\" for official release or \"testing\" for releases under development\n\nChoose an option" 16 65 0 \
-                "1)" "Stable Channel (default)" \
-                "2)" "Testing Channel (dev)" 3>&2 2>&1 1>&3
+                whiptail --title "Hornet - Release" --menu "\nSet \"stable\" for official release or \"beta\"/\"alpha\" for releases under development\n\nChoose an option" 16 65 0 \
+                "1)" "Stable Release Channel (default)" \
+                "2)" "Beta Release Channel" \
+                "3)" "Alpha Release Channel" 3>&2 2>&1 1>&3
             )
             case $CHOICE in
                 "1)")
-                    if (whiptail --title "Hornet - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"stable\" (hornet will be reinstalled)?" 8 65); then
+                    if (whiptail --title "Hornet - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"stable\" (Hornet will be reinstalled)?" 8 65); then
                         currentHornetRelease=$hornetRelease
                         hornetRelease=stable
                         sudo sed -i 's/^hornetRelease=.*/hornetRelease='$hornetRelease'/' $swarmConfigs/hornet.cfg
@@ -572,9 +574,18 @@ while [ $exitCode -lt 1 ]; do
                     fi
                 ;;
                 "2)")
-                    if (whiptail --title "Hornet - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"testing\" (hornet will be reinstalled)?" 8 65); then
+                    if (whiptail --title "Hornet - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"beta\" (Hornet will be reinstalled)?" 8 65); then
                         currentHornetRelease=$hornetRelease
-                        hornetRelease=testing
+                        hornetRelease=beta
+                        sudo sed -i 's/^hornetRelease=.*/hornetRelease='$hornetRelease'/' $swarmConfigs/hornet.cfg
+                        source $hornetModules/hornetReleaseChannel
+                        source $hornetModules/hornetParser
+                    fi
+                ;;
+                "3)")
+                    if (whiptail --title "Hornet - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"alpha\" (Hornet will be reinstalled)?" 8 65); then
+                        currentHornetRelease=$hornetRelease
+                        hornetRelease=alpha
                         sudo sed -i 's/^hornetRelease=.*/hornetRelease='$hornetRelease'/' $swarmConfigs/hornet.cfg
                         source $hornetModules/hornetReleaseChannel
                         source $hornetModules/hornetParser

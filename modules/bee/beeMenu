@@ -283,8 +283,17 @@ while [ $exitCode -lt 1 ]; do
                             fi
                         ;;
                         "2)")
+                            if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/hornet-shimmer" ] || [ -f "/usr/bin/bee-shimmer" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
+                                if (whiptail --title "Bee - Installer" --yesno --defaultno "Already installed nodes found on the system!\nIt is not recommended to run multiple nodes on one host.\n\nDo you still want to continue?" 12 65); then
+                                    beeSkipInstallation=false
+                                else
+                                    beeSkipInstallation=true
+                                fi
+                            else
+                                beeSkipInstallation=false
+                            fi
                             # INSTALL Bee
-                            if [ ! -f "/usr/bin/bee" ]; then
+                            if [ ! -f "/usr/bin/bee" ] && [ "$beeSkipInstallation" = "false" ]; then
                                 {
                                     echo 0
                                     echo 10
@@ -302,6 +311,9 @@ while [ $exitCode -lt 1 ]; do
                                         echo 70
                                         if [ "$ufw" = "true" ]; then
                                             sudo ufw allow $beeGossipPort/tcp > /dev/null 2>&1
+                                            if [ "$beeAutopeeringEnabled" = "true" ]; then
+                                                sudo ufw allow $beeAutopeeringPort/udp > /dev/null 2>&1
+                                            fi
                                         fi
                                         sudo systemctl start bee > /dev/null 2>&1
                                         echo 80
@@ -328,8 +340,15 @@ while [ $exitCode -lt 1 ]; do
                                     whiptail --title "Bee - Installer" --msgbox "Error while installing Bee! Please try again later." 8 65
                                 fi
                             else
-                                whiptail --title "Bee - Installer" --msgbox "Bee already installed!" 8 65
+                                if [ -f "/usr/bin/bee" ]; then
+                                    whiptail --title "Bee - Installer" --msgbox "Bee already installed." 8 65
+                                else
+                                    if [ "$beeSkipInstallation" = "true" ]; then
+                                        whiptail --title "Bee - Installer" --msgbox "Installation of Bee aborted." 8 65
+                                    fi
+                                fi
                             fi
+                            unset beeSkipInstallation
                         ;;
                         "3)")
                             if (whiptail --title "Bee - Installer" --yesno --defaultno "Do you really want to remove Bee?" 8 65); then

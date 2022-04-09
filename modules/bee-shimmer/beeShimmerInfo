@@ -1,0 +1,84 @@
+#!/bin/bash
+
+if [ -f "/usr/bin/bee-shimmer" ]; then
+
+    source $swarmConfigs/bee-shimmer.cfg
+
+    beeShimmerStatus=$(systemctl show -p ActiveState --value bee-shimmer)
+
+    # Bee version
+    if [ -f "/usr/bin/bee-shimmer" ]; then
+        beeShimmerVersion=$(/usr/bin/bee-shimmer -v | tr -d 'v"')
+        if [[ $beeShimmerVersion = *rc[0-9]* ]]; then
+            beeVersion=$(echo $beeShimmerVersion | cut -f1,2 -d"-")
+        else
+            beeShimmerVersion=$(echo $beeShimmerVersion | cut -f1 -d"-")
+        fi
+    fi
+    if [ -z "$beeShimmerVersion" ]; then
+        beeShimmerVersion="N/A"
+    else
+        if [ "$beeShimmerVersion" != "$latestBeeShimmerVersion" ] && [ ! -z "$latestBeeShimmerVersion" ]; then
+            beeShimmerVersion="$beeShimmerVersion (new version \"v$latestBeeShimmerVersion\" available!"
+        fi
+    fi
+
+    if [ "$beeShimmerStatus" = "active" ]; then
+        beeShimmerHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14268/api/v1/info" -H  "accept: application/json"|jq -r '.data.isHealthy' 2> /dev/null)"
+        if [ -z "$beeShimmerHealthy" ]; then
+            beeShimmerHealthy="N/A"
+        else
+            if [ "$beeShimmerHealthy" = "true" ]; then
+                beeShimmerHealthy="Yes"
+            else
+                beeShimmerHealthy="No"
+            fi
+        fi
+    else
+        beeShimmerHealthy="N/A"
+    fi
+
+    # DB size
+    if [ -d "$beeShimmerHome/storage" ]; then
+        getCurrentDbSize="$(du -sb $beeShimmerHome/storage | cut -f1)"
+        let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+        if [ $getCurrentDbSizeInMb -gt 999 ]; then
+            let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+            currentBeeShimmerDbSize="${getCurrentDbSizeInGb} GB"
+        else
+            currentBeeShimmerDbSize="${getCurrentDbSizeInMb} MB"
+        fi
+    else
+        currentBeeShimmerDbSize="N/A"
+    fi
+
+    if [ "$beeShimmerPruningEnabled" = "true" ]; then
+        beeShimmerPruningEnabledStatus=enabled
+    else
+        beeShimmerPruningEnabledStatus=disabled
+    fi
+
+    if [ "$beeShimmerPowEnabled" = "true" ]; then
+        beeShimmerPowEnabledStatus=enabled
+    else
+        beeShimmerPowEnabledStatus=disabled
+    fi
+
+    if [ -f "/etc/nginx/sites-enabled/bee-shimmer" ]; then
+        beeShimmerProxyStatus=active
+    else
+        beeShimmerProxyStatus=inactive
+    fi
+
+    if [ "$beeShimmerAutopeeringEnabled" = "true" ]; then
+        beeShimmerAutopeeringEnabledMenu=enabled
+    else
+        beeShimmerAutopeeringEnabledMenu=disabled
+    fi
+
+    # OUTPUT
+    whiptail --title "Bee-Shimmer - Info" --msgbox "Bee: $beeShimmerStatus\nVersion: v$beeShimmerVersion\nHealthy: $beeShimmerHealthy\nDB size: $currentBeeShimmerDbSize\nProxy: $beeShimmerProxyStatus\n\nAlias: $beeShimmerAlias\nPoW: $beeShimmerPowEnabledStatus\nLS Interval: $beeShimmerSnapshotInterval milestones\n\nAutopeering: $beeShimmerAutopeeringEnabledMenu\nMax unknown Peers: $beeShimmerMaxUnknownPeers\nGossip Port: ${beeShimmerGossipPort}/tcp\nAutopeering Port: $beeShimmerAutopeeringPort/udp\n\nPruning: $beeShimmerPruningEnabledStatus\nPruning Delay: $beeShimmerPruningDelay milestones" 27 68
+else
+    # OUTPUT
+    whiptail --title "Bee-Shimmer - Info" --msgbox "Bee-Shimmer not installed!" 8 65
+fi

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYbeeApiPublicRoutes <<< "$beeApiPublicRoutes"
+validateHornetApiPublicRoutes=$(echo "${beeApiPublicRoutes: -1}")
+if [ "$validateHornetApiPublicRoutes" = "," ]; then
+    beeApiPublicRoutes="${beeApiPublicRoutes%?}"
+    sudo sed -i 's~^beeApiPublicRoutes=.*~beeApiPublicRoutes="'$beeApiPublicRoutes'"~' $swarmConfigs/bee.cfg
+    beeForceApiPublicRoutes=true
+fi
+
+parser="$(jq '.restAPI.publicRoutes' $beeHome/$beeConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+
+if [ "$parser" != "$beeApiPublicRoutes" ] || [ "$beeForceApiPublicRoutes" = "true" ]; then
+    sudo jq '.restAPI.publicRoutes |= []' $beeHome/$beeConfig.json|sponge $beeHome/$beeConfig.json
+    for beeApiPublicRoute in "${ARRAYbeeApiPublicRoutes[@]}"
+    do
+        sudo jq '.restAPI.publicRoutes |= .+ ["'$beeApiPublicRoute'"]' $beeHome/$beeConfig.json|sponge $beeHome/$beeConfig.json
+    done
+    restartBee=true
+    echo "beeApiPublicRoutes" >> /tmp/beeParsing
+fi
+unset ARRAYbeeApiPublicRoutes beeApiPublicRoute beeForceApiPublicRoutes
