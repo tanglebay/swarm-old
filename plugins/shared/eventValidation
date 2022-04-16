@@ -1,38 +1,49 @@
 #!/bin/bash
 
 eventList=$(cat $swarmTemplates/events/officialEvents)
+eventDataLog="/tmp/eventValidiation.log"
+eventLogFile="$swarmLogs/officialEvent.log"
 
 if [ "$nodeId" = "Hornet" ]; then
 nodeApiPort=14265
 nodeJwtToken="$hornetApiJwtToken"
 fi
+
 if [ "$nodeId" = "Hornet-Shimmer" ]; then
 nodeApiPort=14267
 nodeJwtToken="$hornetShimmerApiJwtToken"
 fi
+
 if [ "$nodeId" = "Bee" ]; then
 nodeApiPort=14266
 nodeJwtToken="$beeApiJwtToken"
 fi
+
 if [ "$nodeId" = "Bee-Shimmer" ]; then
 nodeApiPort=14268
 nodeJwtToken="$beeShimmerApiJwtToken"
+fi
+
+##################################################################################################################################
 
 if [ ! -z "$nodeJwtToken" ] && [[ $eventList = *$eventId* ]]; then
     eventStatus=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 --http1.1 -s -X GET -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
 
     if [[ $eventStatus = *ended* ]]; then
-        eventData=$(curl http://localhost:$nodeApiPort/api/plugins/participation/admin/events/${eventId}/rewards --max-time 5 --http1.1 -s -X GET -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data')
+        sudo curl http://localhost:$nodeApiPort/api/plugins/participation/admin/events/${eventId}/rewards --max-time 5 --http1.1 -s -X GET -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
 
-        eventSymbol=$(printf "Symbol:          %s\n" "$(jq '.symbol' ${eventData})")
-        eventMilestone=$(printf "Milestone index: %s\n" "$(jq '.milestoneIndex' ${eventData})")
-        eventTotalRewards=$(printf "Total rewards:   %s\n" "$(jq '.totalRewards' ${eventData})")
-        eventChecksum=$(printf "Checksum:        %s\n" "$(jq '.checksum' ${eventData})")
-        echo $eventSymbol > $swarmLogs/officialEvent.log
-        echo $eventMilestone >> $swarmLogs/officialEvent.log
-        echo $eventTotalRewards >> $swarmLogs/officialEvent.log
-        echo $eventChecksum >> $swarmLogs/officialEvent.log
-        whiptail --title "$nodeId - Event Validation" --msgbox "$eventSymbol\n$eventMilestone\n$eventTotalRewards\n$eventChecksum" 16 65
+        eventSymbol=$(printf "Symbol:          %s\n" "$(jq '.symbol' ${eventDataLog})")
+        eventMilestone=$(printf "Milestone index: %s\n" "$(jq '.milestoneIndex' ${eventDataLog})")
+        eventTotalRewards=$(printf "Total rewards:   %s\n" "$(jq '.totalRewards' ${eventDataLog})")
+        eventChecksum=$(printf "Checksum:        %s\n" "$(jq '.checksum' ${eventDataLog})")
+        echo $eventSymbol > $eventLogFile
+        echo $eventMilestone >> $eventLogFile
+        echo $eventTotalRewards >> $eventLogFile
+        echo $eventChecksum >> $eventLogFile
+        if [ -f "$eventDataLog" ]; then
+            sudo rm -rf $eventDataLog 2>/dev/null
+        fi
+        whiptail --title "$nodeId - Event Validation" --msgbox "$eventSymbol\n$eventMilestone\n$eventTotalRewards\n\n$eventChecksum" 16 65
     fi
 fi
 
