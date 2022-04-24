@@ -58,25 +58,33 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        hornetShimmerUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $hornetShimmerUsername --title "Hornet-Shimmer - Dashboard" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ $exitStatus != 1 ]; then
-                            if [ ! -z "$hornetShimmerUsername" ]; then
-                                source $hornetShimmerConfigParsers/hornetShimmerDashboardUsername
-                                if [ "$newHornetShimmerUsername" = "true" ]; then
-                                    sudo sed -i 's/^hornetShimmerUsername=.*/hornetShimmerUsername="'$hornetShimmerUsername'"/' $swarmConfigs/hornet-shimmer.cfg
-                                    whiptail --title "Hornet-Shimmer - Dashboard" --msgbox "New username \"$hornetShimmerUsername\" applied!" 8 65
-                                    unset newHornetShimmerUsername
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            hornetShimmerUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $hornetShimmerUsername --title "Hornet-Shimmer - Dashboard" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$hornetShimmerUsername" ]; then
+                                    source $hornetShimmerConfigParsers/hornetShimmerDashboardUsername
+                                    if [ "$newHornetShimmerUsername" = "true" ]; then
+                                        sudo sed -i 's/^hornetShimmerUsername=.*/hornetShimmerUsername="'$hornetShimmerUsername'"/' $swarmConfigs/hornet-shimmer.cfg
+                                        whiptail --title "Hornet-Shimmer - Dashboard" --msgbox "New username \"$hornetShimmerUsername\" applied!" 8 65
+                                        unset newHornetShimmerUsername
+                                    else
+                                        whiptail --title "Hornet-Shimmer - Dashboard" --msgbox "No username change detected." 8 65
+                                    fi
                                 else
-                                    whiptail --title "Hornet-Shimmer - Dashboard" --msgbox "No username change detected!" 8 65
+                                    whiptail --title "Hornet-Shimmer - Dashboard" --msgbox "No valid username, please try again." 8 65
                                 fi
-                            else
-                                whiptail --title "Hornet-Shimmer - Dashboardn" --msgbox "No valid username, please try again!" 8 65
                             fi
+                        else
+                            whiptail --title "Hornet-Shimmer - Dashboard" --msgbox "Please install Hornet (Shimmer) first." 8 65
                         fi
                     ;;
                     "2)")
-                        source $hornetShimmerModules/hornetShimmerDashboardPwdGen
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            source $hornetShimmerModules/hornetShimmerDashboardPwdGen
+                        else
+                            whiptail --title "Hornet-Shimmer - Dashboard" --msgbox "Please install Hornet (Shimmer) first." 8 65
+                        fi
                     ;;
                 esac
             done
@@ -125,54 +133,64 @@ while [ $exitCode -lt 1 ]; do
                         if [ "$exitStatus" != "1" ]; then
                             hornetShimmerUpdateApiRoutes=true
                             source $hornetShimmerModules/hornetShimmerApiRoutes
-                            source $hornetShimmerConfigParsers/hornetShimmerApiPublicRoutes
+                            if [ -f "/usr/bin/hornet-shimmer" ]; then
+                                source $hornetShimmerConfigParsers/hornetShimmerApiPublicRoutes
+                            fi
                             unset hornetShimmerUpdateApiRoutes
                         fi
                         unset hornetShimmerApiRoutes
                     ;;
                     "2)")
-                        if (whiptail --title "Hornet-Shimmer - API & JWT" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
-                            sudo systemctl stop hornet-shimmer
-                            hornetShimmerApiJwtToken=$( cd $hornetShimmerHome/$hornetShimmerNetwork ; /usr/bin/hornet-shimmer tools jwt-api | awk '{ print $5 }')
-                            if [ ! -z "$hornetShimmerApiJwtToken" ]; then
-                                sudo sed -i 's~^hornetShimmerApiJwtToken=.*~hornetShimmerApiJwtToken="'$hornetShimmerApiJwtToken'"~' $swarmConfigs/hornet-shimmer.cfg
-                                echo $hornetShimmerApiJwtToken >> $swarmLogs/hornetShimmerJwtToken.log
-                                clear
-                                echo ""
-                                echo $hornetShimmerApiJwtToken
-                                echo ""
-                                sudo systemctl start hornet-shimmer
-                                read -n 1 -s -r -p "Press any key to continue"
-                            else
-                                sudo systemctl start hornet-shimmer
-                                whiptail --title "Hornet-Shimmer - API & JWT" --msgbox "Error generating JWT token, please try again later." 8 65
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            if (whiptail --title "Hornet-Shimmer - API & JWT" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
+                                sudo systemctl stop hornet-shimmer
+                                hornetShimmerApiJwtToken=$( cd $hornetShimmerHome/$hornetShimmerNetwork ; /usr/bin/hornet-shimmer tools jwt-api | awk '{ print $5 }')
+                                if [ ! -z "$hornetShimmerApiJwtToken" ]; then
+                                    sudo sed -i 's~^hornetShimmerApiJwtToken=.*~hornetShimmerApiJwtToken="'$hornetShimmerApiJwtToken'"~' $swarmConfigs/hornet-shimmer.cfg
+                                    echo $hornetShimmerApiJwtToken >> $swarmLogs/hornetShimmerJwtToken.log
+                                    clear
+                                    echo ""
+                                    echo $hornetShimmerApiJwtToken
+                                    echo ""
+                                    sudo systemctl start hornet-shimmer
+                                    read -n 1 -s -r -p "Press any key to continue"
+                                else
+                                    sudo systemctl start hornet-shimmer
+                                    whiptail --title "Hornet-Shimmer - API & JWT" --msgbox "Error generating JWT token, please try again later." 8 65
+                                fi
                             fi
+                        else
+                            whiptail --title "Hornet-Shimmer - API & JWT" --msgbox "Please install Hornet (Shimmer) first." 8 65
                         fi
                     ;;
                     "3)")
                         if [ -f "$swarmLogs/hornetShimmerJwtToken.log" ]; then
                             sudo $swarmCLEditor $swarmLogs/hornetShimmerJwtToken.log
                         else
-                            whiptail --title "Hornet-Shimmer - API & JWT" --msgbox "No JWT token log found, please generate one first!" 8 65
+                            whiptail --title "Hornet-Shimmer - API & JWT" --msgbox "No JWT token log found, please generate one first." 8 65
                         fi
                     ;;
                     "4)")
-                        if (whiptail --title "Hornet-Shimmer - API & JWT" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
-                            hornetShimmerApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
-                            sudo sed -i 's~^hornetShimmerApiJwtSalt=.*~hornetShimmerApiJwtSalt="'$hornetShimmerApiJwtSalt'"~' $swarmConfigs/hornet-shimmer.cfg
-                            {
-                                echo 0
-                                echo 25
-                                source $hornetShimmerConfigParsers/hornetShimmerApiJwtSalt
-                                sudo rm -rf $swarmLogs/hornetShimmerJwt.log
-                                echo 50
-                                source $hornetShimmerConfigParsers/hornetShimmerIdentity
-                                echo 75
-                                sudo sed -i 's~^hornetShimmerApiJwtToken=.*~hornetShimmerApiJwtToken=""~' $swarmConfigs/hornet-shimmer.cfg
-                                echo 100
-                            } | whiptail --gauge "Please wait while all JWT tokens will be revoked..." 8 65 0
-                            restartHornetShimmer=true
-                            unset hornetShimmerApiJwtToken
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            if (whiptail --title "Hornet-Shimmer - API & JWT" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
+                                hornetShimmerApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
+                                sudo sed -i 's~^hornetShimmerApiJwtSalt=.*~hornetShimmerApiJwtSalt="'$hornetShimmerApiJwtSalt'"~' $swarmConfigs/hornet-shimmer.cfg
+                                {
+                                    echo 0
+                                    echo 25
+                                    source $hornetShimmerConfigParsers/hornetShimmerApiJwtSalt
+                                    sudo rm -rf $swarmLogs/hornetShimmerJwt.log
+                                    echo 50
+                                    source $hornetShimmerConfigParsers/hornetShimmerIdentity
+                                    echo 75
+                                    sudo sed -i 's~^hornetShimmerApiJwtToken=.*~hornetShimmerApiJwtToken=""~' $swarmConfigs/hornet-shimmer.cfg
+                                    echo 100
+                                } | whiptail --gauge "Please wait while all JWT tokens will be revoked..." 8 65 0
+                                restartHornetShimmer=true
+                                unset hornetShimmerApiJwtToken
+                            fi
+                        else
+                            whiptail --title "Hornet-Shimmer - API & JWT" --msgbox "Please install Hornet (Shimmer) first." 8 65
                         fi
                     ;;
                 esac
@@ -180,16 +198,20 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "3)")
-            hornetShimmerAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $hornetShimmerAlias --title "Hornet-Shimmer - Alias" 3>&1 1>&2 2>&3)
-            if [ ! -z "$hornetShimmerAlias" ]; then
-                source $hornetShimmerConfigParsers/hornetShimmerAlias
-                if [ "$newHornetShimmerAlias" = "true" ]; then
-                    sudo sed -i 's~^hornetShimmerAlias=.*~hornetShimmerAlias="'$hornetShimmerAlias'"~' $swarmConfigs/hornet-shimmer.cfg
-                    whiptail --title "Hornet-Shimmer - Alias" --msgbox "New alias \"$hornetShimmerAlias\" applied!" 8 65
-                    unset newHornetShimmerAlias
-                else
-                    whiptail --title "Hornet-Shimmer - Alias" --msgbox "No node alias change detected!" 8 65
+            if [ -f "/usr/bin/hornet-shimmer" ]; then
+                hornetShimmerAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $hornetShimmerAlias --title "Hornet-Shimmer - Alias" 3>&1 1>&2 2>&3)
+                if [ ! -z "$hornetShimmerAlias" ]; then
+                    source $hornetShimmerConfigParsers/hornetShimmerAlias
+                    if [ "$newHornetShimmerAlias" = "true" ]; then
+                        sudo sed -i 's~^hornetShimmerAlias=.*~hornetShimmerAlias="'$hornetShimmerAlias'"~' $swarmConfigs/hornet-shimmer.cfg
+                        whiptail --title "Hornet-Shimmer - Alias" --msgbox "New alias \"$hornetShimmerAlias\" applied!" 8 65
+                        unset newHornetShimmerAlias
+                    else
+                        whiptail --title "Hornet-Shimmer - Alias" --msgbox "No node alias change detected!" 8 65
+                    fi
                 fi
+            else
+                whiptail --title "Hornet-Shimmer - Alias" --msgbox "Please install Hornet (Shimmer) first." 8 65
             fi
         ;;
         "4)")
@@ -228,13 +250,17 @@ while [ $exitCode -lt 1 ]; do
                         case $CHOICE in
                             "1)")
                                 hornetShimmerPruningEnabled=true
-                                source $hornetShimmerConfigParsers/hornetShimmerPruningEnabled
+                                if [ -f "/usr/bin/hornet-shimmer" ]; then
+                                    source $hornetShimmerConfigParsers/hornetShimmerPruningEnabled
+                                fi
                                 sudo sed -i 's/^hornetShimmerPruningEnabeld=.*/hornetShimmerPruningEnabled='$hornetShimmerPruningEnabled'/' $swarmConfigs/hornet-shimmer.cfg
                                 whiptail --title "Hornet-Shimmer - Pruning" --msgbox "Pruning was successfully activated!" 8 65
                             ;;
                             "2)")
                                 hornetShimmerPruningEnabled=false
-                                source $hornetShimmerConfigParsers/hornetShimmerPruningEnabled
+                                if [ -f "/usr/bin/hornet-shimmer" ]; then
+                                    source $hornetShimmerConfigParsers/hornetShimmerPruningEnabled
+                                fi
                                 sudo sed -i 's/^hornetShimmerPruningEnabled=.*/hornetShimmerPruningEnabled='$hornetShimmerPruningEnabled'/' $swarmConfigs/hornet-shimmer.cfg
                                 whiptail --title "Hornet-Shimmer - Pruning" --msgbox "Pruning was successfully deactivated!" 8 65
                             ;;
@@ -246,7 +272,9 @@ while [ $exitCode -lt 1 ]; do
                         if [ $exitStatus != 1 ]; then
                             hornetShimmerPruningDatabaseSize=${hornetShimmerPruningDatabaseSize//[!0-9]/}
                             if [ ! -z "$hornetShimmerPruningDatabaseSize" ] && [ $hornetShimmerPruningDatabaseSize -eq $hornetShimmerPruningDatabaseSize ] 2>/dev/null; then
-                                source $hornetShimmerConfigParsers/hornetShimmerPruningDatabaseSize
+                                if [ -f "/usr/bin/hornet-shimmer" ]; then
+                                    source $hornetShimmerConfigParsers/hornetShimmerPruningDatabaseSize
+                                fi
                                 sudo sed -i 's/^hornetShimmerPruningDatabaseSize=.*/hornetShimmerPruningDatabaseSize='$hornetShimmerPruningDatabaseSize'/' $swarmConfigs/hornet-shimmer.cfg
                                 whiptail --title "Hornet-Shimmer - Pruning" --msgbox "Pruning of the database set to ${hornetShimmerPruningDatabaseSize}GB!" 8 65
                             fi
@@ -259,7 +287,9 @@ while [ $exitCode -lt 1 ]; do
                         if [ $exitStatus != 1 ]; then
                             hornetShimmerPruningCooldownTime=${hornetShimmerPruningCooldownTime//[!0-9]/}
                             if [ $hornetShimmerPruningCooldownTime -gt 0 ] && [ $hornetShimmerPruningCooldownTime -lt 60 ]; then
-                                source $hornetShimmerConfigParsers/hornetShimmerPruningCooldownTime
+                                if [ -f "/usr/bin/hornet-shimmer" ]; then
+                                    source $hornetShimmerConfigParsers/hornetShimmerPruningCooldownTime
+                                fi
                                 sudo sed -i 's/^hornetShimmerPruningCooldownTime=.*/hornetShimmerPruningCooldownTime='$hornetShimmerPruningCooldownTime'/' $swarmConfigs/hornet-shimmer.cfg
                                 whiptail --title "Hornet-Shimmer - Pruning" --msgbox "Pruning cooldown time set to ${hornetShimmerPruningCooldownTime} minutes!" 8 65
                             fi
@@ -270,7 +300,9 @@ while [ $exitCode -lt 1 ]; do
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
                             if [ ! -z "$hornetShimmerPruningPercentage" ] && [ $hornetShimmerPruningPercentage -eq $hornetShimmerPruningPercentage ]; then
-                                source $hornetShimmerConfigParsers/hornetShimmerPruningPercentage
+                                if [ -f "/usr/bin/hornet-shimmer" ]; then
+                                    source $hornetShimmerConfigParsers/hornetShimmerPruningPercentage
+                                fi
                                 sudo sed -i 's/^hornetShimmerPruningPercentage=.*/hornetShimmerPruningPercentage='$hornetShimmerPruningPercentage'/' $swarmConfigs/hornet-shimmer.cfg
                                 whiptail --title "Hornet-Shimmer - Pruning" --msgbox "Pruning percentage set to ${hornetShimmerPruningPercentage}%!" 8 65
                             fi
@@ -295,31 +327,38 @@ while [ $exitCode -lt 1 ]; do
             case $CHOICE in
                 "1)")
                     hornetShimmerPowEnabled=true
-                    source $hornetShimmerConfigParsers/hornetShimmerPowEnabled
-                    source $hornetShimmerConfigParsers/hornetShimmerPowWorkerCount
+                    if [ -f "/usr/bin/hornet-shimmer" ]; then
+                        source $hornetShimmerConfigParsers/hornetShimmerPowEnabled
+                        source $hornetShimmerConfigParsers/hornetShimmerPowWorkerCount
+                        sudo sed -i 's/^hornetShimmerPowWorkerCount=.*/hornetShimmerPowWorkerCount='$hornetShimmerPowWorkerCount'/' $swarmConfigs/hornet-shimmer.cfg
+                    fi
                     sudo sed -i 's/^hornetShimmerPowEnabled=.*/hornetShimmerPowEnabled='$hornetShimmerPowEnabled'/' $swarmConfigs/hornet-shimmer.cfg
-                    sudo sed -i 's/^hornetShimmerPowWorkerCount=.*/hornetShimmerPowWorkerCount='$hornetShimmerPowWorkerCount'/' $swarmConfigs/hornet-shimmer.cfg
                     whiptail --title "Hornet-Shimmer - PoW" --msgbox "PoW has been enabled!" 8 65
                 ;;
                 "2)")
                     hornetShimmerPowEnabled=false
-                    source $hornetShimmerConfigParsers/hornetShimmerPowEnabled
-                    source $hornetShimmerConfigParsers/hornetShimmerPowWorkerCount
+                    if [ -f "/usr/bin/hornet-shimmer" ]; then
+                        source $hornetShimmerConfigParsers/hornetShimmerPowEnabled
+                        source $hornetShimmerConfigParsers/hornetShimmerPowWorkerCount
+                        sudo sed -i 's/^hornetShimmerPowWorkerCount=.*/hornetShimmerPowWorkerCount='$hornetShimmerPowWorkerCount'/' $swarmConfigs/hornet-shimmer.cfg
+                    fi
                     sudo sed -i 's/^hornetShimmerPowEnabled=.*/hornetShimmerPowEnabled='$hornetShimmerPowEnabled'/' $swarmConfigs/hornet-shimmer.cfg
-                    sudo sed -i 's/^hornetShimmerPowWorkerCount=.*/hornetShimmerPowWorkerCount='$hornetShimmerPowWorkerCount'/' $swarmConfigs/hornet-shimmer.cfg
                     whiptail --title "Hornet-Shimmer - PoW" --msgbox "PoW has been disabeld!!" 8 65
                 ;;
             esac
         ;;
         "6)")
             source $swarmConfigs/hornet-shimmer.cfg
+            currentHornetShimmerSnapshotInterval=$hornetShimmerSnapshotInterval
             hornetShimmerSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $hornetShimmerSnapshotInterval --title "Hornet-Shimmer - Snapshots" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
                 if [ ! -z "$hornetShimmerSnapshotInterval" ] && [ $hornetShimmerSnapshotInterval -eq $hornetShimmerSnapshotInterval ] 2>/dev/null; then
-                    source $hornetShimmerConfigParsers/hornetShimmerSnapshotInterval
-                    sudo sed -i 's/^hornetShimmerSnapshotInterval=.*/hornetShimmerSnapshotInterval='$hornetShimmerSnapshotInterval'/' $swarmConfigs/hornet-shimmer.cfg
-                    if [ "$newHornetShimmerSnapshotInterval" = "true" ]; then
+                    if [ -f "/usr/bin/hornet-shimmer" ]; then
+                        source $hornetShimmerConfigParsers/hornetShimmerSnapshotInterval
+                    fi
+                    if [ "$currentHornetShimmerSnapshotInterval" != "$hornetShimmerSnapshotInterval" ]; then
+                        sudo sed -i 's/^hornetShimmerSnapshotInterval=.*/hornetShimmerSnapshotInterval='$hornetShimmerSnapshotInterval'/' $swarmConfigs/hornet-shimmer.cfg
                         whiptail --title "Hornet-Shimmer - Snapshots" --msgbox "Snapshot interval changed to $hornetShimmerSnapshotInterval milestones!" 8 65
                     else
                         whiptail --title "Hornet-Shimmer - Snapshots" --msgbox "No new snapshot interval detected!" 8 65
@@ -341,7 +380,9 @@ while [ $exitCode -lt 1 ]; do
             hornetShimmerEnablePlugins=$(echo $hornetShimmerEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
             if [ -z "$hornetShimmerEnablePlugins" ] || [[ $hornetShimmerEnablePlugins = *autopeering* ]] || [[ $hornetShimmerEnablePlugins = *participation* ]] || [[ $hornetShimmerEnablePlugins = *mqtt* ]] || [[ $hornetShimmerEnablePlugins = *prometheus* ]]; then
                 if [ "$hornetShimmerEnablePlugins" != "$currentHornetShimmerEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    source $hornetShimmerConfigParsers/hornetShimmerEnablePlugins
+                    if [ -f "/usr/bin/hornet-shimmer" ]; then
+                        source $hornetShimmerConfigParsers/hornetShimmerEnablePlugins
+                    fi
                     sudo sed -i 's/^hornetShimmerEnablePlugins=.*/hornetShimmerEnablePlugins="'$hornetShimmerEnablePlugins'"/' $swarmConfigs/hornet-shimmer.cfg
                     if [ ! -z "$hornetShimmerEnablePlugins" ]; then
                         whiptail --title "Hornet-Shimmer - Plugins" --msgbox "The following plugins are enabled:\n$hornetShimmerEnablePlugins" 14 65
@@ -364,7 +405,9 @@ while [ $exitCode -lt 1 ]; do
             hornetShimmerDisablePlugins=$(echo $hornetShimmerDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
             if [ -z "$hornetShimmerDisablePlugins" ] || [[ $hornetShimmerDisablePlugins = *warpsync* ]]; then
                 if [ "$hornetShimmerDisablePlugins" != "$currentHornetShimmerDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    source $hornetShimmerConfigParsers/hornetShimmerDisablePlugins
+                    if [ -f "/usr/bin/hornet-shimmer" ]; then
+                        source $hornetShimmerConfigParsers/hornetShimmerDisablePlugins
+                    fi
                     sudo sed -i 's/^hornetShimmerDisablePlugins=.*/hornetShimmerDisablePlugins="'$hornetShimmerDisablePlugins'"/' $swarmConfigs/hornet-shimmer.cfg
                     if [ ! -z "$hornetShimmerDisablePlugins" ]; then
                         whiptail --title "Hornet-Shimmer - Plugins" --msgbox "The following plugins are disabled:\n$hornetShimmerDisablePlugins" 14 65
@@ -400,19 +443,25 @@ while [ $exitCode -lt 1 ]; do
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
                             if [ "$hornetShimmerIdentity" != "$currentHornetShimmerIdentity" ] && [ ! -z "$hornetShimmerIdentity" ]; then
-                                source $hornetShimmerConfigParsers/hornetShimmerIdentity
+                                if [ -f "/usr/bin/hornet-shimmer" ]; then
+                                    source $hornetShimmerConfigParsers/hornetShimmerIdentity
+                                fi
                                 sudo sed -i 's~^hornetShimmerIdentity=.*~hornetShimmerIdentity="'$hornetShimmerIdentity'"~' $swarmConfigs/hornet-shimmer.cfg
                                 whiptail --title "Hornet-Shimmer - Identity" --msgbox "The following Identity key was set: \n$hornetShimmerIdentity!" 10 65
                             fi
                         fi
                     ;;
                     "2)")
-                        if (whiptail --title "Hornet-Shimmer - Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
-                            unset hornetShimmerIdentity
-                            sudo rm -rf $hornetShimmerHome/$hornetShimmerNetwork/p2pstore/identity.key 2>/dev/null
-                            source $hornetShimmerConfigParsers/hornetShimmerIdentity
-                            whiptail --title "Hornet-Shimmer - Identity" --msgbox "The following p2pIdentity key was set: \n$hornetShimmerIdentity" 12 65
-                            source $swarmConfigs/hornet-shimmer.cfg
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            if (whiptail --title "Hornet-Shimmer - Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
+                                unset hornetShimmerIdentity
+                                sudo rm -rf $hornetShimmerHome/$hornetShimmerNetwork/p2pstore/identity.key 2>/dev/null
+                                source $hornetShimmerConfigParsers/hornetShimmerIdentity
+                                whiptail --title "Hornet-Shimmer - Identity" --msgbox "The following p2pIdentity key was set: \n$hornetShimmerIdentity" 12 65
+                                source $swarmConfigs/hornet-shimmer.cfg
+                            fi
+                        else
+                            whiptail --title "Hornet-Shimmer - Identity" --msgbox "Please install Hornet (Shimmer) first." 12 65
                         fi
                     ;;
                 esac
@@ -435,13 +484,17 @@ while [ $exitCode -lt 1 ]; do
                 "1)")
                     hornetShimmerAutoRevalidation=true
                     sudo sed -i 's/^hornetShimmerAutoRevalidation=.*/hornetShimmerAutoRevalidation=true/' $swarmConfigs/hornet-shimmer.cfg
-                    source $hornetShimmerConfigParsers/hornetShimmerAutoRevalidation
+                    if [ -f "/usr/bin/hornet-shimmer" ]; then
+                        source $hornetShimmerConfigParsers/hornetShimmerAutoRevalidation
+                    fi
                     whiptail --title "Hornet-Shimmer - DB Revalidation" --msgbox "Hornet DB Revalidation enabled!" 8 65
                 ;;
                 "2)")
                     hornetShimmerAutoRevalidation=false
                     sudo sed -i 's/^hornetShimmerAutoRevalidation=.*/hornetShimmerAutoRevalidation=false/' $swarmConfigs/hornet-shimmer.cfg
-                    source $hornetShimmerConfigParsers/hornetShimmerAutoRevalidation
+                    if [ -f "/usr/bin/hornet-shimmer" ]; then
+                        source $hornetShimmerConfigParsers/hornetShimmerAutoRevalidation
+                    fi
                     whiptail --title "Hornet-Shimmer - DB Revalidation" --msgbox "Hornet DB Revalidation disabled!" 8 65
                 ;;
             esac
@@ -453,11 +506,13 @@ while [ $exitCode -lt 1 ]; do
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
                 if [ ! -z "$hornetShimmerGossipPort" ] && [ "$currentHornetShimmerGossipPort" != "$hornetShimmerGossipPort" ] && [ $hornetShimmerGossipPort -eq $hornetShimmerGossipPort ] 2>/dev/null; then
-                    if [ "$ufw" = "true" ]; then
-                        sudo ufw delete allow $currentHornetShimmerGossipPort/tcp > /dev/null 2>&1
-                        sudo ufw allow $hornetShimmerGossipPort/tcp > /dev/null 2>&1
+                    if [ -f "/usr/bin/hornet-shimmer" ]; then
+                        if [ "$ufw" = "true" ]; then
+                            sudo ufw delete allow $currentHornetShimmerGossipPort/tcp > /dev/null 2>&1
+                            sudo ufw allow $hornetShimmerGossipPort/tcp > /dev/null 2>&1
+                        fi
+                        source $hornetShimmerConfigParsers/hornetShimmerGossipPort
                     fi
-                    source $hornetShimmerConfigParsers/hornetShimmerGossipPort
                     sudo sed -i 's/^hornetShimmerGossipPort=.*/hornetShimmerGossipPort='$hornetShimmerGossipPort'/' $swarmConfigs/hornet-shimmer.cfg
                     whiptail --title "Hornet-Shimmer - Gossip" --msgbox "Gossip port set to \"$hornetShimmerGossipPort/tcp\"!" 8 65
                     restartHornetShimmer=true
@@ -471,11 +526,13 @@ while [ $exitCode -lt 1 ]; do
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
                 if [ ! -z "$hornetShimmerAutopeeringPort" ] && [ "$currentHornetShimmerAutopeeringPort" != "$hornetShimmerAutopeeringPort" ] && [ $hornetShimmerAutopeeringPort -eq $hornetShimmerAutopeeringPort ] 2>/dev/null; then
-                    if [ "$ufw" = "true" ]; then
-                        sudo ufw delete allow $currentHornetShimmerAutopeeringPort/udp > /dev/null 2>&1
-                        sudo ufw allow $hornetShimmerAutopeeringPort/udp > /dev/null 2>&1
+                    if [ -f "/usr/bin/hornet-shimmer" ]; then
+                        if [ "$ufw" = "true" ]; then
+                            sudo ufw delete allow $currentHornetShimmerAutopeeringPort/udp > /dev/null 2>&1
+                            sudo ufw allow $hornetShimmerAutopeeringPort/udp > /dev/null 2>&1
+                        fi
+                        source $hornetShimmerConfigParsers/hornetShimmerAutopeeringPort
                     fi
-                    source $hornetShimmerConfigParsers/hornetShimmerAutopeeringPort
                     sudo sed -i 's/^hornetShimmerAutopeeringPort=.*/hornetShimmerAutopeeringPort='$hornetShimmerAutopeeringPort'/' $swarmConfigs/hornet-shimmer.cfg
                     whiptail --title "Hornet-Shimmer - Autopeering" --msgbox "Autopeering port set to \"$hornetShimmerAutopeeringPort/udp\"!" 8 65
                 fi
@@ -488,7 +545,9 @@ while [ $exitCode -lt 1 ]; do
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
                 if [ "$currentHornetShimmerUnknownPeersLimit" != "$hornetShimmerUnknownPeersLimit" ] && [ $hornetShimmerUnknownPeersLimit -eq $hornetShimmerUnknownPeersLimit ] && [ ! -z "$hornetShimmerUnknownPeersLimit" ] 2>/dev/null; then
-                    source $hornetShimmerConfigParsers/hornetShimmerGossipUnknownPeersLimit
+                    if [ -f "/usr/bin/hornet-shimmer" ]; then
+                        source $hornetShimmerConfigParsers/hornetShimmerGossipUnknownPeersLimit
+                    fi
                     sudo sed -i 's/^hornetShimmerUnknownPeersLimit=.*/hornetShimmerUnknownPeersLimit='$hornetShimmerUnknownPeersLimit'/' $swarmConfigs/hornet-shimmer.cfg
                     whiptail --title "Hornet-Shimmer - Gossip" --msgbox "Maximum of unknown neighbors set to \"$hornetShimmerUnknownPeersLimit\"." 8 65
                 fi
@@ -509,7 +568,9 @@ while [ $exitCode -lt 1 ]; do
                         currentHornetShimmerNetwork=$hornetShimmerNetwork
                         hornetShimmerNetwork=mainnet
                         sudo sed -i 's/^hornetShimmerNetwork=.*/hornetShimmerNetwork='$hornetShimmerNetwork'/' $swarmConfigs/hornet-shimmer.cfg
-                        source $hornetShimmerModules/hornetShimmerNetwork
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            source $hornetShimmerModules/hornetShimmerNetwork
+                        fi
                     fi
                 ;;
                 "2)")
@@ -518,7 +579,9 @@ while [ $exitCode -lt 1 ]; do
                             currentHornetShimmerNetwork=$hornetShimmerNetwork
                             hornetShimmerNetwork=comnet
                             sudo sed -i 's/^hornetShimmerNetwork=.*/hornetShimmerNetwork='$hornetShimmerNetwork'/' $swarmConfigs/hornet-shimmer.cfg
-                            source $hornetShimmerModules/hornetShimmerNetwork
+                            if [ -f "/usr/bin/hornet-shimmer" ]; then
+                                source $hornetShimmerModules/hornetShimmerNetwork
+                            fi
                         fi
                     else
                         whiptail --title "Hornet-Shimmer - Network" --msgbox "The Comnet is currently unavailable, please try again later." 8 65
@@ -529,7 +592,9 @@ while [ $exitCode -lt 1 ]; do
                         currentHornetShimmerNetwork=$hornetShimmerNetwork
                         hornetShimmerNetwork=testnet
                         sudo sed -i 's/^hornetShimmerNetwork=.*/hornetShimmerNetwork='$hornetShimmerNetwork'/' $swarmConfigs/hornet-shimmer.cfg
-                        source $hornetShimmerModules/hornetShimmerNetwork
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            source $hornetShimmerModules/hornetShimmerNetwork
+                        fi
                     fi
                 ;;
             esac
@@ -549,8 +614,10 @@ while [ $exitCode -lt 1 ]; do
                         currentHornetShimmerRelease=$hornetShimmerRelease
                         hornetShimmerRelease=stable
                         sudo sed -i 's/^hornetShimmerRelease=.*/hornetShimmerRelease='$hornetShimmerRelease'/' $swarmConfigs/hornet-shimmer.cfg
-                        source $hornetShimmerModules/hornetShimmerReleaseChannel
-                        source $hornetShimmerModules/hornetShimmerParser
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            source $hornetShimmerModules/hornetShimmerReleaseChannel
+                            source $hornetShimmerModules/hornetShimmerParser
+                        fi
                     fi
                 ;;
                 "2)")
@@ -558,8 +625,10 @@ while [ $exitCode -lt 1 ]; do
                         currentHornetShimmerRelease=$hornetShimmerRelease
                         hornetShimmerRelease=beta
                         sudo sed -i 's/^hornetShimmerRelease=.*/hornetShimmerRelease='$hornetShimmerRelease'/' $swarmConfigs/hornet-shimmer.cfg
-                        source $hornetShimmerModules/hornetShimmerReleaseChannel
-                        source $hornetShimmerModules/hornetShimmerParser
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            source $hornetShimmerModules/hornetShimmerReleaseChannel
+                            source $hornetShimmerModules/hornetShimmerParser
+                        fi
                     fi
                 ;;
                 "3)")
@@ -567,8 +636,10 @@ while [ $exitCode -lt 1 ]; do
                         currentHornetShimmerRelease=$hornetShimmerRelease
                         hornetShimmerRelease=alpha
                         sudo sed -i 's/^hornetShimmerRelease=.*/hornetShimmerRelease='$hornetShimmerRelease'/' $swarmConfigs/hornet-shimmer.cfg
-                        source $hornetShimmerModules/hornetShimmerReleaseChannel
-                        source $hornetShimmerModules/hornetShimmerParser
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            source $hornetShimmerModules/hornetShimmerReleaseChannel
+                            source $hornetShimmerModules/hornetShimmerParser
+                        fi
                     fi
                 ;;
             esac

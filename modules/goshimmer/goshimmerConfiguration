@@ -190,7 +190,9 @@ while [ $exitCode -lt 1 ]; do
             exitStatus=$?
             goshimmerEnablePlugins=$(echo $goshimmerEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
             if [ "$goshimmerEnablePlugins" != "$currentGoshimmerEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                source $goshimmerConfigParsers/goshimmerEnablePlugins
+                if [ -f "/usr/bin/goshimmer" ]; then
+                    source $goshimmerConfigParsers/goshimmerEnablePlugins
+                fi
                 sudo sed -i 's/^goshimmerEnablePlugins=.*/goshimmerEnablePlugins="'$goshimmerEnablePlugins'"/' $swarmConfigs/goshimmer.cfg
                 if [ ! -z "$goshimmerEnablePlugins" ]; then
                     whiptail --title "GoShimmer - Plugins" --msgbox "The following plugins are enabled: $goshimmerEnablePlugins!" 8 65
@@ -212,7 +214,9 @@ while [ $exitCode -lt 1 ]; do
             exitStatus=$?
             goshimmerDisablePlugins=$(echo $goshimmerDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
             if [ "$goshimmerDisablePlugins" != "$currentGoshimmerDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                source $goshimmerConfigParsers/goshimmerDisablePlugins
+                if [ -f "/usr/bin/goshimmer" ]; then
+                    source $goshimmerConfigParsers/goshimmerDisablePlugins
+                fi
                 sudo sed -i 's/^goshimmerDisablePlugins=.*/goshimmerDisablePlugins="'$goshimmerDisablePlugins'"/' $swarmConfigs/goshimmer.cfg
                 if [ ! -z "$goshimmerDisablePlugins" ]; then
                     whiptail --title "GoShimmer Plugins" --msgbox "The following plugins are disabled: $goshimmerDisablePlugins!" 8 65
@@ -245,19 +249,25 @@ while [ $exitCode -lt 1 ]; do
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
                             if [ "$goshimmerSeed" != "$currentGoshimmerSeed" ] && [ ! -z "$goshimmerSeed" ]; then
-                                source $goshimmerConfigParsers/goshimmerSeed
+                                if [ -f "/usr/bin/goshimmer" ]; then
+                                    source $goshimmerConfigParsers/goshimmerSeed
+                                fi
                                 sudo sed -i 's~^goshimmerSeed=.*~goshimmerSeed="'$goshimmerSeed'"~g' $swarmConfigs/goshimmer.cfg
                                 whiptail --title "GoShimmer - Node ID" --msgbox "The following Seed was set: \n$goshimmerSeed!" 10 65
                             fi
                         fi
                     ;;
                     "2)")
-                        if (whiptail --title "GoShimmer - Database" --yesno --defaultno "Are you sure you want to generate a new Seed (the existing one will be deleted)?" 8 65); then
-                            goshimmerSeedReset=true
-                            source $goshimmerConfigParsers/goshimmerSeed
-                            whiptail --title "goshimmer - Node ID" --msgbox "The following Seed was set:\n\n$goshimmerSeed" 10 65
-                            source $swarmConfigs/goshimmer.cfg
-                            unset goshimmerSeedReset
+                        if [ -f "/usr/bin/goshimmer" ]; then
+                            if (whiptail --title "GoShimmer - Database" --yesno --defaultno "Are you sure you want to generate a new Seed (the existing one will be deleted)?" 8 65); then
+                                goshimmerSeedReset=true
+                                source $goshimmerConfigParsers/goshimmerSeed
+                                whiptail --title "GoShimmer - Node ID" --msgbox "The following Seed was set:\n\n$goshimmerSeed" 10 65
+                                source $swarmConfigs/goshimmer.cfg
+                                unset goshimmerSeedReset
+                            fi
+                        else
+                            whiptail --title "GoShimmer - Node ID" --msgbox "Please install GoShimmer first." 10 65
                         fi
                     ;;
                 esac
@@ -271,11 +281,13 @@ while [ $exitCode -lt 1 ]; do
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
                 if [ ! -z "$goshimmerGossipPort" ] && [ $currentGoshimmerGossipPort -ne $goshimmerGossipPort ] && [ $goshimmerGossipPort -eq $goshimmerGossipPort ] 2>/dev/null; then
-                    if [ "$ufw" = "true" ]; then
-                        sudo ufw delete allow $currentGoshimmerGossipPort/tcp > /dev/null 2>&1
-                        sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
+                    if [ -f "/usr/bin/goshimmer" ]; then
+                        if [ "$ufw" = "true" ]; then
+                            sudo ufw delete allow $currentGoshimmerGossipPort/tcp > /dev/null 2>&1
+                            sudo ufw allow $goshimmerGossipPort/tcp > /dev/null 2>&1
+                        fi
+                        source $goshimmerConfigParsers/goshimmerGossipPort
                     fi
-                    source $goshimmerConfigParsers/goshimmerGossipPort
                     sudo sed -i 's/^goshimmerGossipPort=.*/goshimmerGossipPort='$goshimmerGossipPort'/' $swarmConfigs/goshimmer.cfg
                     whiptail --title "GoShimmer - Gossip" --msgbox "Gossip port was set to \"$goshimmerGossipPort/tcp\"!" 8 65
                 fi
@@ -288,11 +300,13 @@ while [ $exitCode -lt 1 ]; do
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
                 if [ ! -z "$goshimmerAutopeeringPort" ] && [ $currentGoshimmerAutopeeringPort -ne $goshimmerAutopeeringPort ] && [ $goshimmerAutopeeringPort -eq $goshimmerAutopeeringPort ] 2>/dev/null; then
-                    if [ "$ufw" = "true" ]; then
-                        sudo ufw delete allow $currentGoshimmerAutopeeringPort/udp > /dev/null 2>&1
-                        sudo ufw allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
+                    if [ -f "/usr/bin/goshimmer" ]; then
+                        if [ "$ufw" = "true" ]; then
+                            sudo ufw delete allow $currentGoshimmerAutopeeringPort/udp > /dev/null 2>&1
+                            sudo ufw allow $goshimmerAutopeeringPort/udp > /dev/null 2>&1
+                        fi
+                        source $goshimmerConfigParsers/goshimmerAutopeeringPort
                     fi
-                    source $goshimmerConfigParsers/goshimmerAutopeeringPort
                     sudo sed -i 's/^goshimmerAutopeeringPort=.*/goshimmerAutopeeringPort='$goshimmerAutopeeringPort'/' $swarmConfigs/goshimmer.cfg
                     whiptail --title "GoShimmer - Autopeering" --msgbox "Autopeering port was set to \"$goshimmerAutopeeringPort/udp\"!" 8 65
                 fi
