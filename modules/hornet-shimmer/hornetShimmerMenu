@@ -133,7 +133,7 @@ while [ $exitCode -lt 1 ]; do
                 while [ $exitCode -lt 1 ]; do
                     clear
                     CHOICE=$(
-                        whiptail --title "Hornet Shimmer - Debugging" --menu "\nChoose your option" 18 65 0 \
+                        whiptail --title "Hornet Shimmer - Management" --menu "\nChoose your option" 18 65 0 \
                         "1)" "Show Hornet-Shimmer log" \
                         "2)" "Start/Stop Hornet-Shimmer" \
                         "3)" "Event Validation" \
@@ -153,7 +153,7 @@ while [ $exitCode -lt 1 ]; do
                         ;;
                         "2)")
                             CHOICE=$(
-                                whiptail --title "Hornet Shimmer - Debugging" --menu "\nChoose your option" 20 65 0 \
+                                whiptail --title "Hornet Shimmer - Management" --menu "\nChoose your option" 20 65 0 \
                                 "1)" "Restart Hornet" \
                                 "2)" "Start Hornet" \
                                 "3)" "Stop Hornet" \
@@ -168,7 +168,7 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
-                                    whiptail --title "Hornet Shimmer - Debugging" --msgbox "Hornet successfully restarted" 8 65
+                                    whiptail --title "Hornet Shimmer - Management" --msgbox "Hornet successfully restarted" 8 65
                                 ;;
                                 "2)")
                                     {
@@ -178,7 +178,7 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while Hornet is starting..." 8 65 0
-                                    whiptail --title "Hornet Shimmer - Debugging" --msgbox "Hornet successfully started" 8 65
+                                    whiptail --title "Hornet Shimmer - Management" --msgbox "Hornet successfully started" 8 65
                                 ;;
                                 "3)")
                                     {
@@ -188,11 +188,11 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while Hornet is stopping..." 8 65 0
-                                    whiptail --title "Hornet Shimmer - Debugging" --msgbox "Hornet successfully stopped." 8 65
+                                    whiptail --title "Hornet Shimmer - Management" --msgbox "Hornet successfully stopped." 8 65
                                 ;;
                                 "4)")
                                     hornetShimmerStatus="$(sudo systemctl status hornet-shimmer)"
-                                    whiptail --title "Hornet Shimmer - Debugging" --msgbox "$hornetShimmerStatus" 15 65
+                                    whiptail --title "Hornet Shimmer - Management" --msgbox "$hornetShimmerStatus" 15 65
                                 ;;
                             esac
                         ;;
@@ -232,7 +232,7 @@ while [ $exitCode -lt 1 ]; do
                             exitCode=0
                         ;;
                         "4)")
-                            if (whiptail --title "Hornet Shimmer - Debugging" --yesno --defaultno "Are you sure you want to delete the hornet event database?" 8 65); then
+                            if (whiptail --title "Hornet Shimmer - Management" --yesno --defaultno "Are you sure you want to delete the hornet event database?" 8 65); then
                                 source $swarmConfigs/hornet-shimmer.cfg
                                 {
                                     echo 0
@@ -245,11 +245,14 @@ while [ $exitCode -lt 1 ]; do
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
-                                whiptail --title "Hornet Shimmer - Debugging" --msgbox "Event database successfully reset." 8 65
+                                whiptail --title "Hornet Shimmer - Management" --msgbox "Event database successfully reset." 8 65
                             fi
                         ;;
                         "5)")
-                            if (whiptail --title "Hornet Shimmer - Debugging" --yesno --defaultno "Are you sure you want to delete the hornet database?" 8 65); then
+                            if (whiptail --title "Hornet Shimmer - Management" --yesno --defaultno "Are you sure you want to delete the hornet database?" 8 65); then
+                                if (whiptail --title "Hornet Shimmer - Management" --yesno --defaultno "Do you want to use an alternative source for the snapshot?" 8 65); then
+                                    hornetShimmerSnapshotSource=$(whiptail --inputbox "\nPlease specify the download url for the full snapshot" 10 65 --title "Hornet-Shimmer - Management" 3>&1 1>&2 2>&3)
+                                fi
                                 source $swarmConfigs/hornet-shimmer.cfg
                                 {
                                     echo 0
@@ -261,6 +264,9 @@ while [ $exitCode -lt 1 ]; do
                                     fi
                                     echo 50
                                     sudo rm -rf $hornetShimmerHome/${hornetShimmerNetwork}/database $hornetShimmerHome/${hornetShimmerNetwork}/snapshots/*.bin
+                                    if [ ! -z "$hornetShimmerSnapshotSource" ]; then
+                                        sudo -u hornet wget -q -O $hornetShimmerHome/${hornetShimmerNetwork}/snapshots/full_snapshot.bin $hornetShimmerSnapshotSource
+                                    fi
                                     sudo sed -i 's/^hornetShimmerStatusCounter=.*/hornetShimmerStatusCounter=0/' $swarmConfigs/watchdog.cfg
                                     sudo sed -i 's/^hornetShimmerSyncCounter=.*/hornetShimmerSyncCounter=0/' $swarmConfigs/watchdog.cfg
                                     echo 75
@@ -268,11 +274,11 @@ while [ $exitCode -lt 1 ]; do
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
-                                whiptail --title "Hornet Shimmer - Debugging" --msgbox "${hornetShimmerNetwork}DB successfully reset." 8 65
+                                whiptail --title "Hornet Shimmer - Management" --msgbox "${hornetShimmerNetwork}DB successfully reset." 8 65
                             fi
                         ;;
                         "6)")
-                            if (whiptail --title "Hornet Shimmer - Debugging" --yesno --defaultno "Are you sure you want to reset the hornet config file?" 8 65); then
+                            if (whiptail --title "Hornet Shimmer - Management" --yesno --defaultno "Are you sure you want to reset the hornet config file?" 8 65); then
                                 source $swarmConfigs/hornet-shimmer.cfg
                                 {
                                     echo 0

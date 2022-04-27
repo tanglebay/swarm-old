@@ -244,11 +244,14 @@ while [ $exitCode -lt 1 ]; do
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
-                                whiptail --title "Hornet (IOTA) - Control" --msgbox "Event database successfully reset." 8 65
+                                whiptail --title "Hornet (IOTA) - Management" --msgbox "Event database successfully reset." 8 65
                             fi
                         ;;
                         "5)")
-                            if (whiptail --title "Hornet (IOTA) - Control" --yesno --defaultno "Are you sure you want to delete the hornet database?" 8 65); then
+                            if (whiptail --title "Hornet (IOTA) - Management" --yesno --defaultno "Are you sure you want to delete the hornet database?" 8 65); then
+                                if (whiptail --title "Hornet (IOTA) - Management" --yesno --defaultno "Do you want to use an alternative source for the snapshot?" 8 65); then
+                                    hornetSnapshotSource=$(whiptail --inputbox "\nPlease specify the download url for the full snapshot" 10 65 --title "Hornet (IOTA) - Management" 3>&1 1>&2 2>&3)
+                                fi
                                 source $swarmConfigs/hornet.cfg
                                 {
                                     echo 0
@@ -260,6 +263,9 @@ while [ $exitCode -lt 1 ]; do
                                     fi
                                     echo 50
                                     sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots/${hornetNetwork}/*.bin
+                                    if [ ! -z "$hornetSnapshotSource" ]; then
+                                        sudo -u hornet wget -q -O $hornetHome/snapshots/${hornetShimmerNetwork}/full_snapshot.bin $hornetSnapshotSource
+                                    fi
                                     sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter=0/' $swarmConfigs/watchdog.cfg
                                     sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter=0/' $swarmConfigs/watchdog.cfg
                                     echo 75
