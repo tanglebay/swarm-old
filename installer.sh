@@ -2,7 +2,7 @@
 TEXT_RESET='\e[0m'
 TEXT_RED_B='\e[1;31m'
 clear
-if [ "$1" = "-reinstall" ]; then
+if [ "$1" = "reinstall" ]; then
     if [ -d "/var/lib/swarm" ]; then
         sudo rm -rf /var/lib/swarm > /dev/null 2>&1
     fi
@@ -24,7 +24,6 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
         echo -e $TEXT_RED_B && echo "-> Please run SWARM installer with sudo or as root" && echo -e $TEXT_RESET
         echo ""
         read -n 1 -s -r -p "Press any key to continue"
-        echo ""
         exit 0
     else
         echo ""
@@ -82,12 +81,12 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
             fi
             echo ""
             echo ""
-            read -n 1 -s -r -p "Press any key to exit"
+            read -n 1 -s -r -p "Press any key to exit."
             clear
         else
             echo -e $TEXT_RED_B && echo "-> SWARM installation canceled." && echo -e $TEXT_RESET
             echo ""
-            read -n 1 -s -r -p "Press any key to continue"
+            read -n 1 -s -r -p "Press any key to exit."
             clear
         fi
     fi
