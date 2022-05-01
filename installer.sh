@@ -28,17 +28,17 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
         exit 0
     else
         echo ""
-        echo "    _______          __     _____  __  __ "
+        echo "     _______          __     _____  __  __ "
         echo "    / ____\ \        / /\   |  __ \|  \/  |"
-        echo "    | (___  \ \  /\  / /  \  | |__) | \  / |"
+        echo "   | (___  \ \  /\  / /  \  | |__) | \  / |"
         echo "    \___ \  \ \/  \/ / /\ \ |  _  /| |\/| |"
         echo "    ____) |  \  /\  / ____ \| | \ \| |  | |"
-        echo "    |_____/    \/  \/_/    \_\_|  \_\_|  |_|"
+        echo "   |_____/    \/  \/_/    \_\_|  \_\_|  |_|"
         echo ""                                            
         echo ""                                            
         echo "###################################################"
         echo ""
-        read -p "Do you want to install SWARM now?(Y/n) " keyboardInput
+        read -e -p "Do you want to install SWARM now?(Y/n) " keyboardInput
         keyboardInput=$(echo $keyboardInput | tr '[:upper:]' '[:lower:]')
         if [ "$keyboardInput" = "y" ] || [ "$keyboardInput" = "yes" ] || [ -z "$keyboardInput" ]; then
             echo ""
