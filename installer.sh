@@ -23,7 +23,7 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
         echo ""
         echo -e $TEXT_RED_B && echo "-> Please run SWARM installer with sudo or as root" && echo -e $TEXT_RESET
         echo ""
-        read -n 1 -s -r -p "Press any key to continue"
+        read -rsn1 -p"Press any key to exit.";echo
         exit 0
     else
         echo ""
@@ -81,12 +81,12 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
             fi
             echo ""
             echo ""
-            read -n 1 -s -r -p "Press any key to exit."
+            read -rsn1 -p"Press any key to exit.";echo
             clear
         else
             echo -e $TEXT_RED_B && echo "-> SWARM installation canceled." && echo -e $TEXT_RESET
             echo ""
-            read -n 1 -s -r -p "Press any key to exit."
+            read -rsn1 -p"Press any key to exit.";echo
             clear
         fi
     fi
