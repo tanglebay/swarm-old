@@ -21,7 +21,7 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
         echo ""                                            
         echo "###################################################"
         echo ""
-        echo "Please run SWARM installer with sudo or as root." 8 65
+        echo -e $TEXT_RED_B && echo "-> Please run SWARM installer with sudo or as root" && echo -e $TEXT_RESET
         echo ""
         read -n 1 -s -r -p "Press any key to continue"
         echo ""
@@ -42,7 +42,7 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
         keyboardInput=$(echo $keyboardInput | tr '[:upper:]' '[:lower:]')
         if [ "$keyboardInput" = "y" ] || [ "$keyboardInput" = "yes" ] || [ -z "$keyboardInput" ]; then
             echo ""
-            echo -e $TEXT_RED_B && echo "SWARM will first make sure that your server is up to date..." && echo -e $TEXT_RESET
+            echo -e $TEXT_RED_B && echo "-> Updating OS..." && echo -e $TEXT_RESET
             echo ""
             sudo apt update
             sudo apt dist-upgrade -y
@@ -50,34 +50,44 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
             sudo apt autoremove -y
 
             if [ ! -x "$(command -v git)" ]; then
+                echo -e $TEXT_RED_B && echo "-> Installing GIT..." && echo -e $TEXT_RESET
                 sudo apt install git -y
             fi
-
+            echo -e $TEXT_RED_B && echo "-> Cloning SWARM..." && echo -e $TEXT_RESET
             sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm
             if [ "$1" = "develop" ]; then
                 ( cd /var/lib/swarm ; sudo git checkout $1 )
             fi
 
             if [ -f "/var/lib/swarm/swarm" ]; then
+                echo -e $TEXT_RED_B && echo "-> Loading env..." && echo -e $TEXT_RESET
                 source /var/lib/swarm/environment
                 sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog
+                echo -e $TEXT_RED_B && echo "-> Installing watchdog..." && echo -e $TEXT_RESET
                 ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab -
             fi
 
             if [ -f "/var/lib/swarm/swarm" ]; then
                 source /var/lib/swarm/environment
+                echo -e $TEXT_RED_B && echo "-> Installing aliases..." && echo -e $TEXT_RESET
                 source $swarmModules/swarmAlias
                 if [ "$swarmAliasExists" = "true" ]; then
+                    echo -e $TEXT_RED_B && echo "-> Starting SWARM..." && echo -e $TEXT_RESET
                     source $swarmHome/swarm
                 fi
             else
                 echo ""
-                echo -e $TEXT_RED_B && echo "SWARM could not be successfully cloned from GitHub." && echo -e $TEXT_RESET
+                echo -e $TEXT_RED_B && echo "-> SWARM could not be successfully cloned from GitHub." && echo -e $TEXT_RESET
                 echo ""
             fi
             echo ""
             echo ""
             read -n 1 -s -r -p "Press any key to exit"
+            clear
+        else
+            echo -e $TEXT_RED_B && echo "-> SWARM installation canceled." && echo -e $TEXT_RESET
+            echo ""
+            read -n 1 -s -r -p "Press any key to continue"
             clear
         fi
     fi
