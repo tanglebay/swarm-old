@@ -26,7 +26,7 @@ SWARM is a script that allows you to easily install and manage an IOTA node. The
 
 1. Install SWARM with the Installer
 ```shell
-curl -sL https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh | sudo bash -
+${SHELL:-sh} -c "$(curl -Ls https://raw.githubusercontent.com/tanglebay/swarm/master/installer.sh)"
 ```
 2. After installting SWARM you can execute it with typing `swarm`
 
@@ -42,14 +42,19 @@ The configuration of the node should always be done via the configuration point 
 ---
 
 ## Ports
-### Hornet
+### Hornet (IOTA)
 - Gossip port (peering): 15600/tcp (customizable)
 - Autopeering port (peering): 14626/udp (customizable)
 - Prometheus: 9311/tcp (if the plugin is activated)
-- Mqtt: 1833/tcp (if the plugin is activated)
-### Bee
+### Hornet (Shimmer)
+- Gossip port (peering): 15602/tcp (customizable)
+- Autopeering port (peering): 14656/udp (customizable)
+### Bee (IOTA)
 - Gossip port (peering): 15601/tcp (customizable)
 - Autopeering port (peering): 14636/udp (customizable)
+### Bee (Shimmer)
+- Gossip port (peering): 15603/tcp (customizable)
+- Autopeering port (peering): 14676/udp (customizable)
 ### GoShimmer
 - Gossip port (peering): 14666/tcp (customizable)
 - Autopeering port (peering): 14646/udp
