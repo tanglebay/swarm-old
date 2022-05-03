@@ -4,54 +4,60 @@ source $swarmLogs/githubVersion
 if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
     if [ "$hornetAutoUpdate" = "true" ] && [ -f "/usr/bin/hornet" ]; then
         source $hornetModules/hornetVersion
+        currentHornetVersion="$hornetVersion"
         if [ "$latestHornetVersion" != "$hornetVersion" ]; then
             source $hornetModules/hornetInstaller
-            newHornetVersion=$(/usr/bin/hornet -v | awk '{ print $2 }')
-            if [ $newHornetVersion -gt $hornetVersion ]; then
+            source $hornetModules/hornetVersion
+            if [ "$currentHornetVersion" != "$hornetVersion" ] || [ "$hornetUpdated" = "true" ]; then
                 restartDate=`date '+%d-%m-%Y %H-%M-%S'`
                 # CALL MODULE CONFIGPARSER
                 source $hornetModules/hornetParser
-                sudo systemctl restart hornet
+                if [ "$restartHornet" = "true" ]; then
+                    sudo systemctl restart hornet > /dev/null 2>&1
+                    sleep 5
+                fi
                 echo "$restartDate [AUTOUPDATE] New Version ($latestHornetVersion) of Hornet installed and Hornet restarted." >> $swarmLogs/swarm.log
                 telegramText="[$HOSTNAME] New Version ($latestHornetVersion) of Hornet installed and Hornet restarted."
                 source $watchdogModules/watchdogTelegram
             fi
-            sleep 5
         fi
+        unset currentHornetVersion
     fi
 
     if [ "$hornetShimmerAutoUpdate" = "true" ] && [ -f "/usr/bin/hornet-shimmer" ]; then
         source $hornetShimmerModules/hornetShimmerVersion
         if [ "$latestHornetShimmerVersion" != "$hornetShimmerVersion" ]; then
             source $hornetShimmerModules/hornetShimmerInstaller
-
             newHornetShimmerVersion=$(/usr/bin/hornet-shimmer -v | awk '{ print $2 }')
-            if [ $newHornetShimmerVersion -gt $hornetShimmerVersion ]; then
+            if [ "$newHornetShimmerVersion" != "$hornetShimmerVersion" ] || [ "$hornetShimmerUpdated" = "true" ]; then
                 restartDate=`date '+%d-%m-%Y %H-%M-%S'`
                 # CALL MODULE CONFIGPARSER
                 source $hornetShimmerModules/hornetShimmerParser
-                sudo systemctl restart hornet-shimmer
+                if [ "$restartHornetShimmer" = "true" ]; then
+                    sudo systemctl restart hornet-shimmer > /dev/null 2>&1
+                    sleep 5
+                fi
                 echo "$restartDate [AUTOUPDATE] New Version ($latestHornetShimmerVersion) of Hornet-Shimmer installed and node restarted." >> $swarmLogs/swarm.log
                 telegramText="[$HOSTNAME] New Version ($latestHornetShimmerVersion) of Hornet-Shimmer installed and node restarted."
                 source $watchdogModules/watchdogTelegram
             fi
-            sleep 5
         fi
     fi
 
     # Bee AutoUpdater
     if [ "$beeAutoUpdate" = "true" ] && [ -f "/usr/bin/bee" ]; then
         source $beeModules/beeVersion
-        if [ $latestBeeVersion -gt $beeVersion ]; then
+        currentBeeVersion="$beeVersion"
+        if [ "$latestBeeVersion" != "$beeVersion" ]; then
             source $beeModules/beeInstaller
-            source $beeModules/beeParser
-            if [ "$restartBee" = "true" ]; then
-                sudo systemctl restart bee
-                sleep 5
-                unset restartBee
-            fi
-            if [ "$beeUpdated" = "true" ]; then
-                source $beeModules/beeVersion
+            source $beeModules/beeVersion
+            if [ "$currentBeeVersion" != "$beeVersion" ] || [ "$beeUpdated" = "true" ]; then
+                source $beeModules/beeParser
+                if [ "$restartBee" = "true" ]; then
+                    sudo systemctl restart bee > /dev/null 2>&1
+                    sleep 5
+                    unset restartBee
+                fi
                 if [ "$beeAutopeeringEnabled" = "true" ]; then
                     if [ "$ufw" = "true" ]; then
                         sudo ufw allow $beeAutopeeringPort/udp > /dev/null 2>&1
@@ -68,23 +74,24 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 source $watchdogModules/watchdogTelegram
                 unset beeUpdated
             fi
-            sleep 5
         fi
+        unset currentBeeVersion
     fi
 
     # Bee-Shimmer AutoUpdater
     if [ "$beeShimmerAutoUpdate" = "true" ] && [ -f "/usr/bin/bee-shimmer" ]; then
         source $beeShimmerModules/beeShimmerVersion
+        currentBeeShimmerVersion="$beeShimmerVersion"
         if [ "$latestBeeShimmerVersion" != "$beeShimmerVersion" ]; then
             source $beeShimmerModules/beeShimmerInstaller
-            source $beeShimmerModules/beeShimmerParser
-            if [ "$restartBeeShimmer" = "true" ]; then
-                sudo systemctl restart bee-shimmer
-                sleep 5
-                unset restartBeeShimmer
-            fi
-            if [ "$beeShimmerUpdated" = "true" ]; then
-                source $beeShimmerModules/beeShimmerVersion
+            source $beeShimmerModules/beeShimmerVersion
+            if [ "currentBeeShimmerVersion" != "$beeShimmerVersion" ] || [ "$beeShimmerUpdated" = "true" ]; then
+                source $beeShimmerModules/beeShimmerParser
+                if [ "$restartBeeShimmer" = "true" ]; then
+                    sudo systemctl restart bee-shimmer > /dev/null 2>&1
+                    sleep 5
+                    unset restartBeeShimmer
+                fi
                 if [ "$beeShimmerAutopeeringEnabled" = "true" ]; then
                     if [ "$ufw" = "true" ]; then
                         sudo ufw allow $beeShimmerAutopeeringPort/udp > /dev/null 2>&1
@@ -101,52 +108,57 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 source $watchdogModules/watchdogTelegram
                 unset beeUpdated
             fi
-            sleep 5
         fi
+        unset currentBeeShimmerVersion
     fi
 
     # GoShimmer AutoUpdater
     if [ "$goshimmerAutoUpdate" = "true" ] && [ -f "/usr/bin/goshimmer" ] && [ ! -f "/tmp/goshimmer.lock" ]; then
         source $goshimmerModules/goshimmerVersion
+        currentGoshimmerVersion="$goshimmerVersion"
         if [ "$latestGoshimmerVersion" != "$goshimmerVersion" ]; then
             goshimmerAllowDbDownload=false
             sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb
             source $goshimmerModules/goshimmerInstaller
-            source $goshimmerModules/goshimmerParser
-            if [ "$restartGoshimmer" = "true" ]; then
-                sudo systemctl restart goshimmer
-                unset restartGoshimmer
-            fi
-            if [ "$goshimmerUpdated" = "true" ]; then
+            source $goshimmerModules/goshimmerVersion
+            if [ "$currentGoshimmerVersion" != "$goshimmerVersion" ] || [ "$goshimmerUpdated" = "true" ]; then
+                source $goshimmerModules/goshimmerParser
+                if [ "$restartGoshimmer" = "true" ]; then
+                    sudo systemctl restart goshimmer > /dev/null 2>&1
+                    unset restartGoshimmer
+                    sleep 5
+                fi
                 restartDate=`date '+%d-%m-%Y %H-%M-%S'`
                 echo "$restartDate [AUTOUPDATE] New version ($latestGoshimmerVersion) of GoShimmer installed and GoShimmer restarted." >> $swarmLogs/swarm.log
                 telegramText="[$HOSTNAME] New version ($latestGoshimmerVersion) of GoShimmer installed and GoShimmer restarted."
                 source $watchdogModules/watchdogTelegram
-                unset goshimmerUpdated
+                unset goshimmerUpdated goshimmerAllowDbDownload
             fi
-            unset goshimmerAllowDbDownload
-            sleep 5
         fi
+        unset currentGoshimmerVersion
     fi
 
     # WASP AutoUpdater
     if [ "$waspAutoUpdate" = "true" ] && [ -f "/usr/bin/wasp" ]; then
         source $waspModules/waspVersion
+        currentWaspVersion="$waspVersion"
         if [ "$latestWaspVersion" != "$waspVersion" ]; then
             source $waspModules/waspInstaller
-            source $waspModules/waspParser
-            if [ "$restartWasp" = "true" ]; then
-                sudo systemctl restart wasp
-                unset restartWasp
-            fi
-            if [ "$waspUpdated" = "true" ]; then
+            source $waspModules/waspVersion
+            if [ "$currentWaspVersion" != "$waspVersion" ] || [ "$waspUpdated" = "true" ]; then
+                source $waspModules/waspParser
+                if [ "$restartWasp" = "true" ]; then
+                    sudo systemctl restart wasp > /dev/null 2>&1
+                    unset restartWasp
+                    sleep 5
+                fi
                 restartDate=`date '+%d-%m-%Y %H-%M-%S'`
                 echo "$restartDate [AUTOUPDATE] New version ($latestWaspVersion) of WASP installed and WASP restarted." >> $swarmLogs/swarm.log
                 telegramText="[$HOSTNAME] New version ($latestWaspVersion) of WASP installed and WASP restarted."
                 source $watchdogModules/watchdogTelegram
                 unset waspUpdated
             fi
-            sleep 5
         fi
+        unset currentWaspVersion
     fi
 fi
