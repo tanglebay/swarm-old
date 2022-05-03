@@ -1,0 +1,495 @@
+#!/bin/bash
+
+while [ $exitCode -lt 1 ]; do
+    clear
+    source $swarmConfigs/bee-shimmer.cfg
+    # BEE Peers
+    CHOICE=$(
+        whiptail --title "Bee-Shimmer - Peers" --menu "\nChoose an option" 20 65 0 \
+        "1)" "Peers Info" \
+        "2)" "Peer 1 [$beeShimmerPeerAlias1]" \
+        "3)" "Peer 2 [$beeShimmerPeerAlias2]" \
+        "4)" "Peer 3 [$beeShimmerPeerAlias3]" \
+        "5)" "Peer 4 [$beeShimmerPeerAlias4]" \
+        "6)" "Peer 5 [$beeShimmerPeerAlias5]" \
+        "7)" "Peer 6 [$beeShimmerPeerAlias6]" 3>&2 2>&1 1>&3
+    )
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+    fi
+    case $CHOICE in
+        "1)")
+            whiptail --title "Bee-Shimmer - Peers" --msgbox "\nPeer1: $beeShimmerPeerAlias1\n\"$beeShimmerPeer1\"\n\nPeer2: $beeShimmerPeerAlias2\n\"$beeShimmerPeer2\"\n\nPeer3: $beeShimmerPeerAlias3\n\"$beeShimmerPeer3\"\n\nPeer4: $beeShimmerPeerAlias4\n\"$beeShimmerPeer4\"\n\nPeer5: $beeShimmerPeerAlias5\n\"$beeShimmerPeer5\"\n\nPeer6: $beeShimmerPeerAlias6\n\"$beeShimmerPeer6\"" 30 68
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                beeShimmerPeerNumber=1
+                currentBeeShimmerPeer="$beeShimmerPeer1"
+                CHOICE=$(
+                    whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beeShimmerPeerNumber address" \
+                    "2)" "Edit Peer$beeShimmerPeerNumber alias" \
+                    "3)" "Delete Peer$beeShimmerPeerNumber" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        beeShimmerPeerAddress=$(echo $currentBeeShimmerPeer | cut -c 6- | cut -f1 -d "/")
+                        beeShimmerPeerAddress=$(whiptail --inputbox "\nPlease enter the domain or IPv4/IPv6 for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerAddress --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Address" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ ! -z "$beeShimmerPeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                            if [[ $beeShimmerPeerAddress =~ .*:.* ]]; then
+                                beeShimmerPeerNetProto="ip6"
+                            else
+                                beeShimmerPeerIp4=$(echo $beeShimmerPeerAddress | tr -d '.')
+                                if [ $beeShimmerPeerIp4 -eq $beeShimmerPeerIp4 ] 2>/dev/null; then
+                                    beeShimmerPeerNetProto="ip4"
+                                else
+                                    if grep -oP '^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}$' <<< "$beeShimmerPeerAddress" >/dev/null 2>&1;then
+                                        beeShimmerPeerNetProto="dns"
+                                    fi
+                                fi
+                            fi
+                            if [ "$beeShimmerPeerNetProto" = "dns" ] || [ "$beeShimmerPeerNetProto" = "ip4" ] || [ "$beeShimmerPeerNetProto" = "ip6" ]; then
+                                beeShimmerPeerPort=$(echo $currentBeeShimmerPeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                beeShimmerPeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerPort --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Port" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beeShimmerPeerPort" ] && [ $beeShimmerPeerPort -eq $beeShimmerPeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                    beeShimmerPeerId=$(echo $currentBeeShimmerPeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                    beeShimmerPeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerId --title "Bee-Shimmer - Peer$beeShimmerPeerNumber ID" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beeShimmerPeerId" ] && [ "$exitStatus" != "1" ]; then
+                                        beeShimmerPeer="/$beeShimmerPeerNetProto/$beeShimmerPeerAddress/tcp/$beeShimmerPeerPort/p2p/$beeShimmerPeerId"
+                                        if [ "$currentBeeShimmerPeer" != "$beeShimmerPeer" ]; then
+                                            sudo sed -i 's~^beeShimmerPeer'$beeShimmerPeerNumber'=.*~beeShimmerPeer'$beeShimmerPeerNumber'="'$beeShimmerPeer'"~g' $swarmConfigs/bee-shimmer.cfg
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "Changes applied to peer $beeShimmerPeerNumber." 8 65
+                                            restartBeeShimmer=true
+                                        else
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "No changes applied for peer $beeShimmerPeerNumber." 8 65
+                                        fi
+                                    fi
+                                fi
+                            else
+                                whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "No valid address for peer $beeShimmerPeerNumber." 8 65
+                            fi
+                        fi
+                        unset beeShimmerPeerNumber currentBeeShimmerPeer beeShimmerPeerAddress beeShimmerPeerNetProto beeShimmerPeerPort beeShimmerPeerId
+                    ;;
+                    "2)")
+                        currentBeeShimmerPeerAlias="$beeShimmerPeerAlias1"
+                        beeShimmerPeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $currentBeeShimmerPeerAlias --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeeShimmerPeerAlias" != "$beeShimmerPeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'="'$beeShimmerPeerAlias'"/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                        unset currentBeeShimmerPeerAlias beeShimmerPeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beeShimmerPeerNumber?" 8 65); then
+                            sudo sed -i 's/^beeShimmerPeer'$beeShimmerPeerNumber'=.*/beeShimmerPeer'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            while [ $exitCode -lt 1 ]; do
+                beeShimmerPeerNumber=2
+                currentBeeShimmerPeer="$beeShimmerPeer2"
+                CHOICE=$(
+                    whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beeShimmerPeerNumber address" \
+                    "2)" "Edit Peer$beeShimmerPeerNumber alias" \
+                    "3)" "Delete Peer$beeShimmerPeerNumber" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        beeShimmerPeerAddress=$(echo $currentBeeShimmerPeer | cut -c 6- | cut -f1 -d "/")
+                        beeShimmerPeerAddress=$(whiptail --inputbox "\nPlease enter the domain or IPv4/IPv6 for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerAddress --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Address" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ ! -z "$beeShimmerPeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                            if [[ $beeShimmerPeerAddress =~ .*:.* ]]; then
+                                beeShimmerPeerNetProto="ip6"
+                            else
+                                beeShimmerPeerIp4=$(echo $beeShimmerPeerAddress | tr -d '.')
+                                if [ $beeShimmerPeerIp4 -eq $beeShimmerPeerIp4 ] 2>/dev/null; then
+                                    beeShimmerPeerNetProto="ip4"
+                                else
+                                    if grep -oP '^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}$' <<< "$beeShimmerPeerAddress" >/dev/null 2>&1;then
+                                        beeShimmerPeerNetProto="dns"
+                                    fi
+                                fi
+                            fi
+                            if [ "$beeShimmerPeerNetProto" = "dns" ] || [ "$beeShimmerPeerNetProto" = "ip4" ] || [ "$beeShimmerPeerNetProto" = "ip6" ]; then
+                                beeShimmerPeerPort=$(echo $currentBeeShimmerPeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                beeShimmerPeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerPort --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Port" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beeShimmerPeerPort" ] && [ $beeShimmerPeerPort -eq $beeShimmerPeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                    beeShimmerPeerId=$(echo $currentBeeShimmerPeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                    beeShimmerPeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerId --title "Bee-Shimmer - Peer$beeShimmerPeerNumber ID" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beeShimmerPeerId" ] && [ "$exitStatus" != "1" ]; then
+                                        beeShimmerPeer="/$beeShimmerPeerNetProto/$beeShimmerPeerAddress/tcp/$beeShimmerPeerPort/p2p/$beeShimmerPeerId"
+                                        if [ "$currentBeeShimmerPeer" != "$beeShimmerPeer" ]; then
+                                            sudo sed -i 's~^beeShimmerPeer'$beeShimmerPeerNumber'=.*~beeShimmerPeer'$beeShimmerPeerNumber'="'$beeShimmerPeer'"~g' $swarmConfigs/bee-shimmer.cfg
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "Changes applied to peer $beeShimmerPeerNumber." 8 65
+                                            restartBeeShimmer=true
+                                        else
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "No changes applied for peer $beeShimmerPeerNumber." 8 65
+                                        fi
+                                    fi
+                                fi
+                            else
+                                whiptail --title "Bee - Peer $beeShimmerPeerNumber" --msgbox "No valid address for peer $beeShimmerPeerNumber." 8 65
+                            fi
+                        fi
+                        unset beeShimmerPeerNumber currentBeeShimmerPeer beeShimmerPeerAddress beeShimmerPeerNetProto beeShimmerPeerPort beeShimmerPeerId
+                    ;;
+                    "2)")
+                        currentBeeShimmerPeerAlias="$beeShimmerPeerAlias2"
+                        beeShimmerPeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $currentBeeShimmerPeerAlias --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeeShimmerPeerAlias" != "$beeShimmerPeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'="'$beeShimmerPeerAlias'"/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                        unset currentBeePeerAlias beePeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beeShimmerPeerNumber?" 8 65); then
+                            sudo sed -i 's/^beeShimmerPeer'$beeShimmerPeerNumber'=.*/beeShimmerPeer'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "4)")
+            while [ $exitCode -lt 1 ]; do
+                beeShimmerPeerNumber=3
+                currentBeeShimmerPeer="$beeShimmerPeer3"
+                CHOICE=$(
+                    whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beeShimmerPeerNumber address" \
+                    "2)" "Edit Peer$beeShimmerPeerNumber alias" \
+                    "3)" "Delete Peer$beeShimmerPeerNumber" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        beeShimmerPeerAddress=$(echo $currentBeeShimmerPeer | cut -c 6- | cut -f1 -d "/")
+                        beeShimmerPeerAddress=$(whiptail --inputbox "\nPlease enter the domain or IPv4/IPv6 for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerAddress --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Address" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ ! -z "$beeShimmerPeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                            if [[ $beeShimmerPeerAddress =~ .*:.* ]]; then
+                                beeShimmerPeerNetProto="ip6"
+                            else
+                                beeShimmerPeerIp4=$(echo $beeShimmerPeerAddress | tr -d '.')
+                                if [ $beeShimmerPeerIp4 -eq $beeShimmerPeerIp4 ] 2>/dev/null; then
+                                    beeShimmerPeerNetProto="ip4"
+                                else
+                                    if grep -oP '^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}$' <<< "$beeShimmerPeerAddress" >/dev/null 2>&1;then
+                                        beeShimmerPeerNetProto="dns"
+                                    fi
+                                fi
+                            fi
+                            if [ "$beeShimmerPeerNetProto" = "dns" ] || [ "$beeShimmerPeerNetProto" = "ip4" ] || [ "$beeShimmerPeerNetProto" = "ip6" ]; then
+                                beeShimmerPeerPort=$(echo $currentBeeShimmerPeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                beeShimmerPeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerPort --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Port" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beeShimmerPeerPort" ] && [ $beeShimmerPeerPort -eq $beeShimmerPeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                    beeShimmerPeerId=$(echo $currentBeeShimmerPeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                    beeShimmerPeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerId --title "Bee-Shimmer - Peer$beeShimmerPeerNumber ID" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beeShimmerPeerId" ] && [ "$exitStatus" != "1" ]; then
+                                        beeShimmerPeer="/$beeShimmerPeerNetProto/$beeShimmerPeerAddress/tcp/$beeShimmerPeerPort/p2p/$beeShimmerPeerId"
+                                        if [ "$currentBeeShimmerPeer" != "$beeShimmerPeer" ]; then
+                                            sudo sed -i 's~^beeShimmerPeer'$beeShimmerPeerNumber'=.*~beeShimmerPeer'$beeShimmerPeerNumber'="'$beeShimmerPeer'"~g' $swarmConfigs/bee-shimmer.cfg
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "Changes applied to peer $beeShimmerPeerNumber." 8 65
+                                            restartBeeShimmer=true
+                                        else
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "No changes applied for peer $beeShimmerPeerNumber." 8 65
+                                        fi
+                                    fi
+                                fi
+                            else
+                                whiptail --title "Bee - Peer $beeShimmerPeerNumber" --msgbox "No valid address for peer $beeShimmerPeerNumber." 8 65
+                            fi
+                        fi
+                        unset beeShimmerPeerNumber currentBeeShimmerPeer beeShimmerPeerAddress beeShimmerPeerNetProto beeShimmerPeerPort beeShimmerPeerId
+                    ;;
+                    "2)")
+                        currentBeeShimmerPeerAlias="$beeShimmerPeerAlias2"
+                        beeShimmerPeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $currentBeeShimmerPeerAlias --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeeShimmerPeerAlias" != "$beeShimmerPeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'="'$beeShimmerPeerAlias'"/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                        unset currentBeePeerAlias beePeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beeShimmerPeerNumber?" 8 65); then
+                            sudo sed -i 's/^beeShimmerPeer'$beeShimmerPeerNumber'=.*/beeShimmerPeer'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "5)")
+            while [ $exitCode -lt 1 ]; do
+                beePeerNumber=4
+                currentBeePeer="$beePeer4"
+                CHOICE=$(
+                    whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beeShimmerPeerNumber address" \
+                    "2)" "Edit Peer$beeShimmerPeerNumber alias" \
+                    "3)" "Delete Peer$beeShimmerPeerNumber" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        beeShimmerPeerAddress=$(echo $currentBeeShimmerPeer | cut -c 6- | cut -f1 -d "/")
+                        beeShimmerPeerAddress=$(whiptail --inputbox "\nPlease enter the domain or IPv4/IPv6 for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerAddress --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Address" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ ! -z "$beeShimmerPeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                            if [[ $beeShimmerPeerAddress =~ .*:.* ]]; then
+                                beeShimmerPeerNetProto="ip6"
+                            else
+                                beeShimmerPeerIp4=$(echo $beeShimmerPeerAddress | tr -d '.')
+                                if [ $beeShimmerPeerIp4 -eq $beeShimmerPeerIp4 ] 2>/dev/null; then
+                                    beeShimmerPeerNetProto="ip4"
+                                else
+                                    if grep -oP '^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}$' <<< "$beeShimmerPeerAddress" >/dev/null 2>&1;then
+                                        beeShimmerPeerNetProto="dns"
+                                    fi
+                                fi
+                            fi
+                            if [ "$beeShimmerPeerNetProto" = "dns" ] || [ "$beeShimmerPeerNetProto" = "ip4" ] || [ "$beeShimmerPeerNetProto" = "ip6" ]; then
+                                beeShimmerPeerPort=$(echo $currentBeeShimmerPeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                beeShimmerPeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerPort --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Port" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beeShimmerPeerPort" ] && [ $beeShimmerPeerPort -eq $beeShimmerPeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                    beeShimmerPeerId=$(echo $currentBeeShimmerPeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                    beeShimmerPeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerId --title "Bee-Shimmer - Peer$beeShimmerPeerNumber ID" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beeShimmerPeerId" ] && [ "$exitStatus" != "1" ]; then
+                                        beeShimmerPeer="/$beeShimmerPeerNetProto/$beeShimmerPeerAddress/tcp/$beeShimmerPeerPort/p2p/$beeShimmerPeerId"
+                                        if [ "$currentBeeShimmerPeer" != "$beeShimmerPeer" ]; then
+                                            sudo sed -i 's~^beeShimmerPeer'$beeShimmerPeerNumber'=.*~beeShimmerPeer'$beeShimmerPeerNumber'="'$beeShimmerPeer'"~g' $swarmConfigs/bee-shimmer.cfg
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "Changes applied to peer $beeShimmerPeerNumber." 8 65
+                                            restartBeeShimmer=true
+                                        else
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "No changes applied for peer $beeShimmerPeerNumber." 8 65
+                                        fi
+                                    fi
+                                fi
+                            else
+                                whiptail --title "Bee - Peer $beeShimmerPeerNumber" --msgbox "No valid address for peer $beeShimmerPeerNumber." 8 65
+                            fi
+                        fi
+                        unset beeShimmerPeerNumber currentBeeShimmerPeer beeShimmerPeerAddress beeShimmerPeerNetProto beeShimmerPeerPort beeShimmerPeerId
+                    ;;
+                    "2)")
+                        currentBeeShimmerPeerAlias="$beeShimmerPeerAlias2"
+                        beeShimmerPeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $currentBeeShimmerPeerAlias --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeeShimmerPeerAlias" != "$beeShimmerPeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'="'$beeShimmerPeerAlias'"/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                        unset currentBeePeerAlias beePeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beeShimmerPeerNumber?" 8 65); then
+                            sudo sed -i 's/^beeShimmerPeer'$beeShimmerPeerNumber'=.*/beeShimmerPeer'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "6)")
+            while [ $exitCode -lt 1 ]; do
+                beePeerNumber=5
+                currentBeePeer="$beePeer5"
+                CHOICE=$(
+                    whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beeShimmerPeerNumber address" \
+                    "2)" "Edit Peer$beeShimmerPeerNumber alias" \
+                    "3)" "Delete Peer$beeShimmerPeerNumber" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        beeShimmerPeerAddress=$(echo $currentBeeShimmerPeer | cut -c 6- | cut -f1 -d "/")
+                        beeShimmerPeerAddress=$(whiptail --inputbox "\nPlease enter the domain or IPv4/IPv6 for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerAddress --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Address" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ ! -z "$beeShimmerPeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                            if [[ $beeShimmerPeerAddress =~ .*:.* ]]; then
+                                beeShimmerPeerNetProto="ip6"
+                            else
+                                beeShimmerPeerIp4=$(echo $beeShimmerPeerAddress | tr -d '.')
+                                if [ $beeShimmerPeerIp4 -eq $beeShimmerPeerIp4 ] 2>/dev/null; then
+                                    beeShimmerPeerNetProto="ip4"
+                                else
+                                    if grep -oP '^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}$' <<< "$beeShimmerPeerAddress" >/dev/null 2>&1;then
+                                        beeShimmerPeerNetProto="dns"
+                                    fi
+                                fi
+                            fi
+                            if [ "$beeShimmerPeerNetProto" = "dns" ] || [ "$beeShimmerPeerNetProto" = "ip4" ] || [ "$beeShimmerPeerNetProto" = "ip6" ]; then
+                                beeShimmerPeerPort=$(echo $currentBeeShimmerPeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                beeShimmerPeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerPort --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Port" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beeShimmerPeerPort" ] && [ $beeShimmerPeerPort -eq $beeShimmerPeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                    beeShimmerPeerId=$(echo $currentBeeShimmerPeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                    beeShimmerPeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerId --title "Bee-Shimmer - Peer$beeShimmerPeerNumber ID" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beeShimmerPeerId" ] && [ "$exitStatus" != "1" ]; then
+                                        beeShimmerPeer="/$beeShimmerPeerNetProto/$beeShimmerPeerAddress/tcp/$beeShimmerPeerPort/p2p/$beeShimmerPeerId"
+                                        if [ "$currentBeeShimmerPeer" != "$beeShimmerPeer" ]; then
+                                            sudo sed -i 's~^beeShimmerPeer'$beeShimmerPeerNumber'=.*~beeShimmerPeer'$beeShimmerPeerNumber'="'$beeShimmerPeer'"~g' $swarmConfigs/bee-shimmer.cfg
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "Changes applied to peer $beeShimmerPeerNumber." 8 65
+                                            restartBeeShimmer=true
+                                        else
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "No changes applied for peer $beeShimmerPeerNumber." 8 65
+                                        fi
+                                    fi
+                                fi
+                            else
+                                whiptail --title "Bee - Peer $beeShimmerPeerNumber" --msgbox "No valid address for peer $beeShimmerPeerNumber." 8 65
+                            fi
+                        fi
+                        unset beeShimmerPeerNumber currentBeeShimmerPeer beeShimmerPeerAddress beeShimmerPeerNetProto beeShimmerPeerPort beeShimmerPeerId
+                    ;;
+                    "2)")
+                        currentBeeShimmerPeerAlias="$beeShimmerPeerAlias2"
+                        beeShimmerPeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $currentBeeShimmerPeerAlias --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeeShimmerPeerAlias" != "$beeShimmerPeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'="'$beeShimmerPeerAlias'"/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                        unset currentBeePeerAlias beePeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beeShimmerPeerNumber?" 8 65); then
+                            sudo sed -i 's/^beeShimmerPeer'$beeShimmerPeerNumber'=.*/beeShimmerPeer'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "7)")
+            while [ $exitCode -lt 1 ]; do
+                beePeerNumber=6
+                currentBeePeer="$beePeer6"
+                CHOICE=$(
+                    whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Edit Peer$beeShimmerPeerNumber address" \
+                    "2)" "Edit Peer$beeShimmerPeerNumber alias" \
+                    "3)" "Delete Peer$beeShimmerPeerNumber" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        beeShimmerPeerAddress=$(echo $currentBeeShimmerPeer | cut -c 6- | cut -f1 -d "/")
+                        beeShimmerPeerAddress=$(whiptail --inputbox "\nPlease enter the domain or IPv4/IPv6 for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerAddress --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Address" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ ! -z "$beeShimmerPeerAddress" ] && [ "$exitStatus" != "1" ]; then
+                            if [[ $beeShimmerPeerAddress =~ .*:.* ]]; then
+                                beeShimmerPeerNetProto="ip6"
+                            else
+                                beeShimmerPeerIp4=$(echo $beeShimmerPeerAddress | tr -d '.')
+                                if [ $beeShimmerPeerIp4 -eq $beeShimmerPeerIp4 ] 2>/dev/null; then
+                                    beeShimmerPeerNetProto="ip4"
+                                else
+                                    if grep -oP '^((?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)+[A-Za-z]{2,6}$' <<< "$beeShimmerPeerAddress" >/dev/null 2>&1;then
+                                        beeShimmerPeerNetProto="dns"
+                                    fi
+                                fi
+                            fi
+                            if [ "$beeShimmerPeerNetProto" = "dns" ] || [ "$beeShimmerPeerNetProto" = "ip4" ] || [ "$beeShimmerPeerNetProto" = "ip6" ]; then
+                                beeShimmerPeerPort=$(echo $currentBeeShimmerPeer | sed 's~^.*tcp~tcp~' | cut -c 5- | cut -f1 -d "/")
+                                beeShimmerPeerPort=$(whiptail --inputbox "\nPlease enter the port for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerPort --title "Bee-Shimmer - Peer$beeShimmerPeerNumber Port" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ ! -z "$beeShimmerPeerPort" ] && [ $beeShimmerPeerPort -eq $beeShimmerPeerPort ] && [ "$exitStatus" != "1" ] > /dev/null 2>&1; then
+                                    beeShimmerPeerId=$(echo $currentBeeShimmerPeer | sed 's~^.*p2p~p2p~' | cut -c 5- | cut -f1 -d "/")
+                                    beeShimmerPeerId=$(whiptail --inputbox "\nPlease enter the ID for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $beeShimmerPeerId --title "Bee-Shimmer - Peer$beeShimmerPeerNumber ID" 3>&1 1>&2 2>&3)
+                                    exitStatus=$?
+                                    if [ ! -z "$beeShimmerPeerId" ] && [ "$exitStatus" != "1" ]; then
+                                        beeShimmerPeer="/$beeShimmerPeerNetProto/$beeShimmerPeerAddress/tcp/$beeShimmerPeerPort/p2p/$beeShimmerPeerId"
+                                        if [ "$currentBeeShimmerPeer" != "$beeShimmerPeer" ]; then
+                                            sudo sed -i 's~^beeShimmerPeer'$beeShimmerPeerNumber'=.*~beeShimmerPeer'$beeShimmerPeerNumber'="'$beeShimmerPeer'"~g' $swarmConfigs/bee-shimmer.cfg
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "Changes applied to peer $beeShimmerPeerNumber." 8 65
+                                            restartBeeShimmer=true
+                                        else
+                                            whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --msgbox "No changes applied for peer $beeShimmerPeerNumber." 8 65
+                                        fi
+                                    fi
+                                fi
+                            else
+                                whiptail --title "Bee - Peer $beeShimmerPeerNumber" --msgbox "No valid address for peer $beeShimmerPeerNumber." 8 65
+                            fi
+                        fi
+                        unset beeShimmerPeerNumber currentBeeShimmerPeer beeShimmerPeerAddress beeShimmerPeerNetProto beeShimmerPeerPort beeShimmerPeerId
+                    ;;
+                    "2)")
+                        currentBeeShimmerPeerAlias="$beeShimmerPeerAlias2"
+                        beeShimmerPeerAlias=$(whiptail --inputbox "\nPlease enter a alias for \"peer $beeShimmerPeerNumber\" or select cancel" 10 65 $currentBeeShimmerPeerAlias --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$currentBeeShimmerPeerAlias" != "$beeShimmerPeerAlias" ] && [ "$exitStatus" != "1" ]; then
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'="'$beeShimmerPeerAlias'"/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                        unset currentBeePeerAlias beePeerAlias
+                    ;;
+                    "3)")
+                        if (whiptail --title "Bee-Shimmer - Peer $beeShimmerPeerNumber" --yesno --defaultno "Are you sure you want to delete the peer $beeShimmerPeerNumber?" 8 65); then
+                            sudo sed -i 's/^beeShimmerPeer'$beeShimmerPeerNumber'=.*/beeShimmerPeer'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            sudo sed -i 's/^beeShimmerPeerAlias'$beeShimmerPeerNumber'=.*/beeShimmerPeerAlias'$beeShimmerPeerNumber'=""/' $swarmConfigs/bee-shimmer.cfg
+                            restartBeeShimmer=true
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+    esac
+done
+exitCode=0

@@ -5,29 +5,31 @@ while [ $exitCode -lt 1 ]; do
     CHOICE=$(
         whiptail --title "Bee - Configurations" --menu "\nChoose an option" 22 65 0 \
         "1)" "Bee Peers" \
-        "2)" "Dashboard" \
-        "3)" "Node Alias" \
-        "4)" "DB Pruning" \
-        "5)" "Proof of Work" \
-        "6)" "Local Snapshots" \
-        "7)" "Identity" \
-        "8)" "Autopeering" \
-        "9)" "Gossip Port" \
-        "10)" "Unknown Peers Limit" \
-        "11)" "IOTA Network" 3>&2 2>&1 1>&3
+        "2)" "API" \
+        "3)" "Dashboard" \
+        "4)" "Node Alias" \
+        "5)" "DB Pruning" \
+        "6)" "Proof of Work" \
+        "7)" "Local Snapshots" \
+        "8)" "Identity" \
+        "9)" "Autopeering" \
+        "10)" "Gossip Port" \
+        "11)" "Unknown Peers Limit" \
+        "12)" "IOTA Network" \
+        "13)" "Bee Release Channel" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
-        if [ "$restartBee" = "true" ]; then
+        if [ "$restartBee" = "true" ] && [ -f "/usr/bin/bee" ]; then
             if (whiptail --title "Bee Menu" --yesno "Would you like to apply the changes and restart Bee?" 8 65); then
                 {
                     echo 0
                     echo 33
                     source $beeParser
                     echo 50
-                    sudo systemctl restart bee
+                    sudo systemctl restart bee > /dev/null 2>&1
                     sleep 0.25
                     echo 100
                     sleep 0.25
@@ -45,6 +47,50 @@ while [ $exitCode -lt 1 ]; do
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/bee.cfg
+                CHOICE=$(
+                    whiptail --title "Bee - API" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "API Routes" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        source $swarmConfigs/bee.cfg
+                        beeApiRoutes="$beeApiProtectedRoutes"
+                        source $beeModules/beeApiRoutes
+                        beeApiRoutes=$(whiptail --title "Bee - API routes" --checklist "\nSelect (using the spacebar) the Bee API routes that you want to protect. All routes not selected will be public:" 28 65 11 \
+                            "/health" "" $beeApiRoutesHealth \
+                            "/api/v1/info" "" $beeApiRoutesInfo \
+                            "/api/v1/tips" "" $beeApiRoutesTips \
+                            "/api/v1/messages*" "" $beeApiRoutesMessages \
+                            "/api/v1/transactions*" "" $beeApiRoutesTransactions \
+                            "/api/v1/milestones*" "" $beeApiRoutesMilestones \
+                            "/api/v1/outputs*" "" $beeApiRoutesOutputs \
+                            "/api/v1/addresses*" "" $beeApiRoutesAddresses \
+                            "/api/v1/treasury" "" $beeApiRoutesTreasury \
+                            "/api/v1/receipts*" "" $beeApiRoutesReceipts 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        beeApiRoutes=$(echo $beeApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+                        if [ "$exitStatus" != "1" ]; then
+                            beeUpdateApiRoutes=true
+                            source $beeModules/beeApiRoutes
+                            if [ -f "/usr/bin/bee" ]; then
+                                source $beeConfigParsers/beeApiPublicRoutes
+                            fi
+                            unset beeUpdateApiRoutes
+                        fi
+                        unset beeApiRoutes
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $swarmConfigs/bee.cfg
                 # Hornet Dashboard
                 CHOICE=$(
                     whiptail --title "Bee - Dashboard" --menu "\nChoose an option" 14 65 0 \
@@ -57,47 +103,59 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        beeUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $beeUsername --title "Bee - Dashboard" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ $exitStatus != 1 ]; then
-                            if [ ! -z "$beeUsername" ]; then
-                                source $beeConfigParsers/beeUsername
-                                if [ "$newBeeUsername" = "true" ]; then
-                                    sudo sed -i 's/^beeUsername=.*/beeUsername="'$beeUsername'"/' $swarmConfigs/bee.cfg
-                                    whiptail --title "Bee - Dashboard" --msgbox "New username \"$beeUsername\" applied!" 8 65
-                                    unset newBeeUsername
+                        if [ -f "/usr/bin/bee" ]; then
+                            beeUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $beeUsername --title "Bee - Dashboard" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$beeUsername" ]; then
+                                    source $beeConfigParsers/beeUsername
+                                    if [ "$newBeeUsername" = "true" ]; then
+                                        sudo sed -i 's/^beeUsername=.*/beeUsername="'$beeUsername'"/' $swarmConfigs/bee.cfg
+                                        whiptail --title "Bee - Dashboard" --msgbox "New username \"$beeUsername\" applied!" 8 65
+                                        unset newBeeUsername
+                                    else
+                                        whiptail --title "Bee - Dashboard" --msgbox "No username change detected." 8 65
+                                    fi
                                 else
-                                    whiptail --title "Bee - Dashboard" --msgbox "No username change detected!" 8 65
+                                    whiptail --title "Bee - Dashboardn" --msgbox "No valid username, please try again." 8 65
                                 fi
-                            else
-                                whiptail --title "Bee - Dashboardn" --msgbox "No valid username, please try again!" 8 65
                             fi
+                        else
+                            whiptail --title "Bee - Dashboardn" --msgbox "Please install Bee first." 8 65
                         fi
                     ;;
                     "2)")
-                        source $beeModules/beeDashboardPwdGen
+                        if [ -f "/usr/bin/bee" ]; then
+                            source $beeModules/beeDashboardPwdGen
+                        else
+                            whiptail --title "Bee - Dashboardn" --msgbox "Please install Bee first." 8 65
+                        fi
                     ;;
                 esac
             done
             exitCode=0
         ;;
-        "3)")
-            beeAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $beeAlias --title "Bee - Alias" 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            if [ $exitStatus != 1 ]; then
-                if [ ! -z "$beeAlias" ]; then
-                    source $beeConfigParsers/beeAlias
-                    if [ "$newBeeAlias" = "true" ]; then
-                        sudo sed -i "s~^beeAlias=.*~beeAlias=\"$beeAlias\"~g" $swarmConfigs/bee.cfg
-                        whiptail --title "Bee Configuration" --msgbox "New alias \"$beeAlias\" applied!" 8 65
-                        unset newBeeAlias
-                    else
-                        whiptail --title "Bee - Configuration" --msgbox "No node alias change detected!" 8 65
+        "4)")
+            if [ -f "/usr/bin/bee" ]; then
+                beeAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $beeAlias --title "Bee - Alias" 3>&1 1>&2 2>&3)
+                exitStatus=$?
+                if [ $exitStatus != 1 ]; then
+                    if [ ! -z "$beeAlias" ]; then
+                        source $beeConfigParsers/beeAlias
+                        if [ "$newBeeAlias" = "true" ]; then
+                            sudo sed -i "s~^beeAlias=.*~beeAlias=\"$beeAlias\"~g" $swarmConfigs/bee.cfg
+                            whiptail --title "Bee Configuration" --msgbox "New alias \"$beeAlias\" applied!" 8 65
+                            unset newBeeAlias
+                        else
+                            whiptail --title "Bee - Configuration" --msgbox "No node alias change detected!" 8 65
+                        fi
                     fi
                 fi
+            else
+                whiptail --title "Bee - Dashboardn" --msgbox "Please install Bee first." 8 65
             fi
         ;;
-        "4)")
+        "5)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/bee.cfg
@@ -126,13 +184,17 @@ while [ $exitCode -lt 1 ]; do
                         case $CHOICE in
                             "1)")
                                 beePruningEnabled=true
-                                source $beeConfigParsers/beePruningEnabled
+                                if [ -f "/usr/bin/bee" ]; then
+                                    source $beeConfigParsers/beePruningEnabled
+                                fi
                                 sudo sed -i 's/^beePruningEnabled=.*/beePruningEnabled='$beePruningEnabled'/' $swarmConfigs/bee.cfg
                                 whiptail --title "Bee - Pruning" --msgbox "Pruning was successfully activated!" 8 65
                             ;;
                             "2)")
                                 beePruningEnabled=false
-                                source $beeConfigParsers/beePruningEnabled
+                                if [ -f "/usr/bin/bee" ]; then
+                                    source $beeConfigParsers/beePruningEnabled
+                                fi
                                 sudo sed -i 's/^beePruningEnabled=.*/beePruningEnabled='$beePruningEnabled'/' $swarmConfigs/bee.cfg
                                 whiptail --title "Bee - Pruning" --msgbox "Pruning was successfully deactivated!" 8 65
                             ;;
@@ -144,7 +206,9 @@ while [ $exitCode -lt 1 ]; do
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
                             if [ $beePruningDelay -gt 0 ] && [ $beePruningDelay -eq $beePruningDelay ] && [ $currentBeePruningDelay -ne $beePruningDelay ]> /dev/null 2>&1; then
-                                source $beeConfigParsers/beePruningDelay
+                                if [ -f "/usr/bin/bee" ]; then
+                                    source $beeConfigParsers/beePruningDelay
+                                fi
                                 sudo sed -i 's/^beePruningDelay=.*/beePruningDelay='$beePruningDelay'/' $swarmConfigs/bee.cfg
                                 whiptail --title "Bee - Pruning" --msgbox "Pruning delay set to ${beePruningDelay} milestones!" 8 65
                             fi
@@ -154,7 +218,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "5)")
+        "6)")
             source $swarmConfigs/bee.cfg
             if [ "$beePowEnabled" = "true" ]; then
                 beePowEnabledStatus=enabled
@@ -169,27 +233,34 @@ while [ $exitCode -lt 1 ]; do
             case $CHOICE in
                 "1)")
                     beePowEnabled=true
-                    source $beeConfigParsers/beePowEnabled
+                    if [ -f "/usr/bin/bee" ]; then
+                        source $beeConfigParsers/beePowEnabled
+                    fi
                     sudo sed -i 's/^beePowEnabled=.*/beePowEnabled='$beePowEnabled'/' $swarmConfigs/bee.cfg
                     whiptail --title "Bee - PoW" --msgbox "PoW has been enabled!" 8 65
                 ;;
                 "2)")
                     beePowEnabled=false
-                    source $beeConfigParsers/beePowEnabled
+                    if [ -f "/usr/bin/bee" ]; then
+                        source $beeConfigParsers/beePowEnabled
+                    fi
                     sudo sed -i 's/^beePowEnabled=.*/beePowEnabled='$beePowEnabled'/' $swarmConfigs/bee.cfg
                     whiptail --title "Bee - PoW" --msgbox "PoW has been disabeld!!" 8 65
                 ;;
             esac
         ;;
-        "6)")
+        "7)")
             source $swarmConfigs/bee.cfg
+            currentBeeSnapshotInterval=$beeSnapshotInterval
             beeSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $beeSnapshotInterval --title "Bee - Snapshots" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
                 if [ ! -z "$beeSnapshotInterval" ] && [ $beeSnapshotInterval -eq $beeSnapshotInterval ] 2>/dev/null; then
-                    source $beeConfigParsers/beeSnapshotInterval
-                    sudo sed -i 's/^beeSnapshotInterval=.*/beeSnapshotInterval='$beeSnapshotInterval'/' $swarmConfigs/bee.cfg
-                    if [ "$newBeeSnapshotInterval" = "true" ]; then
+                    if [ -f "/usr/bin/bee" ]; then
+                        source $beeConfigParsers/beeSnapshotInterval
+                    fi
+                    if [ "$currentBeeSnapshotInterval" != "$beeSnapshotInterval" ]; then
+                        sudo sed -i 's/^beeSnapshotInterval=.*/beeSnapshotInterval='$beeSnapshotInterval'/' $swarmConfigs/bee.cfg
                         whiptail --title "Bee - Snapshots" --msgbox "Snapshot interval changed to $beeSnapshotInterval milestones!" 8 65
                     else
                         whiptail --title "Bee - Snapshots" --msgbox "No new snapshot interval detected!" 8 65
@@ -198,7 +269,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
             fi
         ;;
-        "7)")
+        "8)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/bee.cfg
@@ -219,26 +290,32 @@ while [ $exitCode -lt 1 ]; do
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
                             if [ "$beeIdentity" != "$currentBeeIdentity" ] && [ ! -z "$beeIdentity" ]; then
-                                source $beeConfigParsers/beeIdentity
+                                if [ -f "/usr/bin/bee" ]; then
+                                    source $beeConfigParsers/beeIdentity
+                                fi
                                 sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
                                 whiptail --title "Bee - p2pIdentity" --msgbox "The following Identity key was set: \n$beeIdentity!" 10 65
                             fi
                         fi
                     ;;
                     "2)")
-                        if (whiptail --title "Bee - Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
-                            beeResetIdentity=true
-                            source $beeConfigParsers/beeIdentity
-                            whiptail --title "Bee - Identity" --msgbox "The following Identity key was set: \n$beeIdentity" 12 65
-                            source $swarmConfigs/bee.cfg
-                            unset beeResetIdentity
+                        if [ -f "/usr/bin/bee" ]; then
+                            if (whiptail --title "Bee - Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
+                                beeResetIdentity=true
+                                source $beeConfigParsers/beeIdentity
+                                whiptail --title "Bee - Identity" --msgbox "The following Identity key was set: \n$beeIdentity" 12 65
+                                source $swarmConfigs/bee.cfg
+                                unset beeResetIdentity
+                            fi
+                        else
+                            whiptail --title "Bee - Identity" --msgbox "Please install Bee first." 10 65
                         fi
                     ;;
                 esac
             done
             exitCode=0
         ;;
-        "8)")
+        "9)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/bee.cfg
@@ -268,12 +345,16 @@ while [ $exitCode -lt 1 ]; do
                             if [ "$beeAutopeeringEnabled" = "true" ]; then
                                 beeAutopeeringEnabled=false
                                 sudo sed -i 's/^beeAutopeeringEnabled=.*/beeAutopeeringEnabled='$beeAutopeeringEnabled'/' $swarmConfigs/bee.cfg
-                                source $beeConfigParsers/beeAutopeering
+                                if [ -f "/usr/bin/bee" ]; then
+                                    source $beeConfigParsers/beeAutopeering
+                                fi
                                 whiptail --title "Bee - Autopeering" --msgbox "Autopeering has been disabled." 8 65
                             else
                                 beeAutopeeringEnabled=true
                                 sudo sed -i 's/^beeAutopeeringEnabled=.*/beeAutopeeringEnabled='$beeAutopeeringEnabled'/' $swarmConfigs/bee.cfg
-                                source $beeConfigParsers/beeAutopeering
+                                if [ -f "/usr/bin/bee" ]; then
+                                    source $beeConfigParsers/beeAutopeering
+                                fi
                                 whiptail --title "Bee - Autopeering" --msgbox "Autopeering has been enabled." 8 65
                             fi
                         fi
@@ -285,7 +366,9 @@ while [ $exitCode -lt 1 ]; do
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
                             if [ ! -z "$beeMaxDiscoveredPeers" ] && [ $currentBeeMaxDiscoveredPeers -ne $beeMaxDiscoveredPeers ] && [ $beeMaxDiscoveredPeers -eq $beeMaxDiscoveredPeers ] 2>/dev/null; then
-                                source $beeConfigParsers/beeMaxDiscoveredPeers
+                                if [ -f "/usr/bin/bee" ]; then
+                                    source $beeConfigParsers/beeMaxDiscoveredPeers
+                                fi
                                 sudo sed -i 's/^beeMaxDiscoveredPeers=.*/beeMaxDiscoveredPeers='$beeMaxDiscoveredPeers'/' $swarmConfigs/bee.cfg
                                 whiptail --title "Bee - Autopeering" --msgbox "Max amount of autodiscovered peeers set to $beeMaxDiscoveredPeers." 8 65
                             fi
@@ -298,11 +381,13 @@ while [ $exitCode -lt 1 ]; do
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
                             if [ ! -z "$beeAutopeeringPort" ] && [ $currentBeeAutopeeringPort -ne $beeAutopeeringPort ] && [ $beeAutopeeringPort -eq $beeAutopeeringPort ] 2>/dev/null; then
-                                if [ "$ufw" = "true" ]; then
-                                    sudo ufw delete allow $currentBeeAutopeeringPort/udp > /dev/null 2>&1
-                                    sudo ufw allow $beeAutopeeringPort/udp > /dev/null 2>&1
+                                if [ -f "/usr/bin/bee" ]; then
+                                    if [ "$ufw" = "true" ]; then
+                                        sudo ufw delete allow $currentBeeAutopeeringPort/udp > /dev/null 2>&1
+                                        sudo ufw allow $beeAutopeeringPort/udp > /dev/null 2>&1
+                                    fi
+                                    source $beeConfigParsers/beeAutopeering
                                 fi
-                                source $beeConfigParsers/beeAutopeering
                                 sudo sed -i 's/^beeAutopeeringPort=.*/beeAutopeeringPort='$beeAutopeeringPort'/' $swarmConfigs/bee.cfg
                                 whiptail --title "Bee - Autopeering" --msgbox "Autopeering port set to \"$beeAutopeeringPort/udp\"!" 8 65
                             fi
@@ -312,60 +397,68 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "9)")
+        "10)")
             source $swarmConfigs/bee.cfg
             currentBeeGossipPort=$beeGossipPort
             beeGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $beeGossipPort --title "Bee - Gossip" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
                 if [ ! -z "$beeGossipPort" ] && [ $currentBeeGossipPort -ne $beeGossipPort ] && [ $beeGossipPort -eq $beeGossipPort ] 2>/dev/null; then
-                    if [ "$ufw" = "true" ]; then
-                        sudo ufw delete allow $currentBeeGossipPort/tcp > /dev/null 2>&1
-                        sudo ufw allow $beeGossipPort/tcp > /dev/null 2>&1
+                    if [ -f "/usr/bin/bee" ]; then
+                        if [ "$ufw" = "true" ]; then
+                            sudo ufw delete allow $currentBeeGossipPort/tcp > /dev/null 2>&1
+                            sudo ufw allow $beeGossipPort/tcp > /dev/null 2>&1
+                        fi
+                        source $beeConfigParsers/beeGossipPort
                     fi
-                    source $beeConfigParsers/beeGossipPort
                     sudo sed -i 's/^beeGossipPort=.*/beeGossipPort='$beeGossipPort'/' $swarmConfigs/bee.cfg
                     whiptail --title "Bee - Gossip" --msgbox "Gossip port set to \"$beeGossipPort/tcp\"!" 8 65
                 fi
             fi
         ;;
-        "10)")
+        "11)")
             source $swarmConfigs/bee.cfg
             currentBeeMaxUnknownPeers=$beeMaxUnknownPeers
             beeMaxUnknownPeers=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentBeeMaxUnknownPeers --title "Bee - Gossip" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
                 if [ $currentBeeMaxUnknownPeers -ne $beeMaxUnknownPeers ] && [ $beeMaxUnknownPeers -eq $beeMaxUnknownPeers ] 2>/dev/null; then
-                    source $beeConfigParsers/beeMaxUnknownPeers
+                    if [ -f "/usr/bin/bee" ]; then
+                        source $beeConfigParsers/beeMaxUnknownPeers
+                    fi
                     sudo sed -i 's/^beeMaxUnknownPeers=.*/beeMaxUnknownPeers='$beeMaxUnknownPeers'/' $swarmConfigs/bee.cfg
                     whiptail --title "Bee - Gossip" --msgbox "Maximum of unknown neighbors set to \"$beeMaxUnknownPeers\"!" 8 65
                 fi
             fi
         ;;
-        "11)")
+        "12)")
             source $swarmConfigs/bee.cfg
             # Bee Networks
             CHOICE=$(
                 whiptail --title "Bee - Network" --menu "\nCurrent network: $beeNetwork\n\nChoose an option" 16 65 0 \
                 "1)" "Mainnet (default)" \
-                "2)" "Comnet (dev)" 3>&2 2>&1 1>&3
+                "2)" "Devnet (dev)" 3>&2 2>&1 1>&3
             )
             case $CHOICE in
                 "1)")
-                    if (whiptail --title "Bee - Network" --yesno --defaultno "Are you sure you want to change the network to mainnet (the old database will be deleted)?" 8 65); then
+                    if (whiptail --title "Bee - Network" --yesno --defaultno "Are you sure you want to change the network to \"mainnet\" (the old database will be deleted)?" 8 65); then
                         currentBeeNetwork=$beeNetwork
                         beeNetwork=mainnet
                         sudo sed -i 's/^beeNetwork=.*/beeNetwork='$beeNetwork'/' $swarmConfigs/bee.cfg
-                        source $beeModules/beeNetwork
+                        if [ -f "/usr/bin/bee" ]; then
+                            source $beeModules/beeNetwork
+                        fi
                     fi
                 ;;
                 "2)")
                     if [ "comnetOnline" = "true" ]; then
-                        if (whiptail --title "Bee - Network" --yesno --defaultno "Are you sure you want to change the network to comnet (the old database will be deleted)?" 8 65); then
+                        if (whiptail --title "Bee - Network" --yesno --defaultno "Are you sure you want to change the network to \"devnet\" (the old database will be deleted)?" 8 65); then
                             currentBeeNetwork=$beeNetwork
-                            beeNetwork=comnet
+                            beeNetwork=devnet
                             sudo sed -i 's/^beeNetwork=.*/beeNetwork='$beeNetwork'/' $swarmConfigs/bee.cfg
-                            source $beeModules/beeNetwork
+                            if [ -f "/usr/bin/bee" ]; then
+                                source $beeModules/beeNetwork
+                            fi
                         fi
                     else
                         whiptail --title "Bee - Network" --msgbox "The Comnet is currently unavailable, please try again later." 8 65
@@ -373,7 +466,52 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
+        "13)")
+            source $swarmConfigs/bee.cfg
+            # Bee release channel
+            CHOICE=$(
+                whiptail --title "Bee - Release" --menu "\nSet \"stable\" for official release or \"beta\"/\"alpha\" for releases under development\n\nChoose an option" 16 65 0 \
+                "1)" "Stable Release Channel (default)" \
+                "2)" "Beta Release Channel" \
+                "3)" "Alpha Release Channel" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    if (whiptail --title "Bee - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"stable\" (Bee will be reinstalled)?" 8 65); then
+                        currentBeeRelease=$beeRelease
+                        beeRelease=stable
+                        sudo sed -i 's/^beeRelease=.*/beeRelease='$beeRelease'/' $swarmConfigs/bee.cfg
+                        if [ -f "/usr/bin/bee" ]; then
+                            source $beeModules/beeReleaseChannel
+                            source $beeModules/beeParser
+                        fi
+                    fi
+                ;;
+                "2)")
+                    if (whiptail --title "Bee - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"beta\" (Bee will be reinstalled)?" 8 65); then
+                        currentBeeRelease=$beeRelease
+                        beeRelease=beta
+                        sudo sed -i 's/^beeRelease=.*/beeRelease='$beeRelease'/' $swarmConfigs/bee.cfg
+                        if [ -f "/usr/bin/bee" ]; then
+                            source $beeModules/beeReleaseChannel
+                            source $beeModules/beeParser
+                        fi
+                    fi
+                ;;
+                "3)")
+                    if (whiptail --title "Bee - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"alpha\" (Bee will be reinstalled)?" 8 65); then
+                        currentBeeRelease=$beeRelease
+                        beeRelease=alpha
+                        sudo sed -i 's/^beeRelease=.*/beeRelease='$beeRelease'/' $swarmConfigs/bee.cfg
+                        if [ -f "/usr/bin/bee" ]; then
+                            source $beeModules/beeReleaseChannel
+                            source $beeModules/beeParser
+                        fi
+                    fi
+                ;;
+            esac
+        ;;
     esac
 done
-sudo chown -R bee:bee $beeDir/config*.toml
+sudo chown -R bee:bee $beeHome/config*.json
 exitCode=0

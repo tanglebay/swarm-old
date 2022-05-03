@@ -14,7 +14,14 @@ if [ -x "$(command -v killall)" ] > /dev/null 2>&1; then
     killall=true
 fi
 
-if [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v nano)" ] || [ ! -x "$(command -v sponge)" ] | [ ! -x "$(command -v snap)" ] > /dev/null 2>&1; then
+if [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    goVersion=$(snap info go | grep tracking | awk '{print $2}')
+    if [ "$getGoVersion" != "latest/stable" ]; then
+        sudo snap refresh --channel=latest/stable go > /dev/null 2>&1
+    fi
+fi
+
+if [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(command -v nano)" ] || [ ! -x "$(command -v sponge)" ] || [ ! -x "$(command -v snap)" ] || [ ! -x "$(command -v whiptail)" ] > /dev/null 2>&1; then
     {
         echo 0
         echo 10
@@ -37,6 +44,10 @@ if [ ! -x "$(command -v curl)" ] || [ ! -x "$(command -v jq)" ] || [ ! -x "$(com
         echo 80
         if ! [ -x "$(command -v snap)" ] > /dev/null 2>&1; then
             sudo apt -qq install snapd -y > /dev/null 2>&1
+        fi
+        echo 90
+        if ! [ -x "$(command -v whiptail)" ] > /dev/null 2>&1; then
+            sudo apt -qq install whiptail -y > /dev/null 2>&1
         fi
         echo 100
     } | whiptail --gauge "Please wait while SWARM is installing all packages..." 6 65 0

@@ -6,7 +6,9 @@ if [ ! -f "/tmp/watchdog.lock" ]; then
 
     source /var/lib/swarm/environment
     source $swarmConfigs/hornet.cfg
+    source $swarmConfigs/hornet-shimmer.cfg
     source $swarmConfigs/bee.cfg
+    source $swarmConfigs/bee-shimmer.cfg
     source $swarmConfigs/goshimmer.cfg
     source $swarmConfigs/wasp.cfg
     source $swarmConfigs/swarm.cfg
@@ -14,10 +16,24 @@ if [ ! -f "/tmp/watchdog.lock" ]; then
     source $swarmConfigs/watchdog.cfg
 
     # Get Service Status
-    hornetStatus="$(systemctl show -p ActiveState --value hornet)"
-    beeStatus="$(systemctl show -p ActiveState --value bee)"
-    goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
-    waspStatus="$(systemctl show -p ActiveState --value wasp)"
+    if [ -f "/usr/bin/hornet" ]; then
+        hornetStatus="$(systemctl show -p ActiveState --value hornet)"
+    fi
+    if [ -f "/usr/bin/hornet-shimmer" ]; then
+        hornetShimmerStatus="$(systemctl show -p ActiveState --value hornet-shimmer)"
+    fi
+    if [ -f "/usr/bin/bee" ]; then
+        beeStatus="$(systemctl show -p ActiveState --value bee)"
+    fi
+    if [ -f "/usr/bin/bee-shimmer" ]; then
+        beeShimmerStatus="$(systemctl show -p ActiveState --value bee-shimmer)"
+    fi
+    if [ -f "/usr/bin/goshimmer" ]; then
+        goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+    fi
+    if [ -f "/usr/bin/wasp" ]; then
+        waspStatus="$(systemctl show -p ActiveState --value wasp)"
+    fi
 
     # Set time frame
     timeFrame=`date '+%M'`
@@ -55,7 +71,10 @@ if [ ! -f "/tmp/watchdog.lock" ]; then
     source $watchdogModules/watchdogLogPruning
 
     # WebpageMonitor
-    source $watchdogModules/watchdogSwarmDashboard
+    # source $watchdogModules/watchdogSwarmDashboard
+
+    # Used disk space check
+    source $watchdogModules/watchdogUdsCheck
 
     # Remove LOCK file
     sudo rm -rf /tmp/watchdog.lock

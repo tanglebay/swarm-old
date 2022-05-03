@@ -22,14 +22,31 @@ if [ "$swarmManualUpdate" = "true" ]; then
 
         source $swarmModules/swarmParser
 
+        echo 45
+        ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
+        ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
+
         echo 50
 
         if [ -f "/usr/bin/hornet" ]; then
+            if [ -f "/etc/apt/sources.list.d/hornet.list" ]; then
+                sudo rm -rf /etc/apt/sources.list.d/hornet.list > /dev/null 2>&1
+                sudo apt-get -qq update > /dev/null 2>&1
+            fi
             # source $swarmConfigs/hornet.cfg
             source $hornetModules/hornetParser
             if [ "$restartHornet" = "true" ]; then
-                sudo systemctl restart hornet
+                sudo systemctl restart hornet > /dev/null 2>&1
                 unset restartHornet
+            fi
+        fi
+        echo 55
+        if [ -f "/usr/bin/hornet-shimmer" ]; then
+            # source $swarmConfigs/hornet.cfg
+            source $hornetShimmerModules/hornetShimmerParser
+            if [ "$restartHornetShimmer" = "true" ]; then
+                sudo systemctl restart hornet-shimmer > /dev/null 2>&1
+                unset restartHornetShimmer
             fi
         fi
         echo 60
@@ -37,11 +54,18 @@ if [ "$swarmManualUpdate" = "true" ]; then
             beeIgnorePeersUpdate=true
             source $beeModules/beeParser
             if [ "$restartBee" = "true" ]; then
-                sudo systemctl restart bee
-                unset restartBee
-                touch /tmp/beeRestart
+                sudo systemctl restart bee > /dev/null 2>&1
             fi
             unset beeIgnorePeersUpdate
+        fi
+        echo 65
+        if [ -f "/usr/bin/bee-shimmer" ]; then
+            beeShimmerIgnorePeersUpdate=true
+            source $beeShimmerModules/beeShimmerParser
+            if [ "$restartBeeShimmer" = "true" ]; then
+                sudo systemctl restart bee-shimmer > /dev/null 2>&1
+            fi
+            unset beeShimmerIgnorePeersUpdate
         fi
         echo 70
         if [ -f "/usr/bin/goshimmer" ]; then

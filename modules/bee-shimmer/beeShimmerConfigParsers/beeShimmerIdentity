@@ -1,0 +1,64 @@
+#!/bin/bash
+
+if [[ ${#beeIdentity} -gt 70 ]]; then
+    sudo systemctl stop bee-shimmer
+    sudo rm -rf $beeShimmerHome/identity.key 2>/dev/null
+    sudo systemctl start bee-shimmer
+    sleep 3
+    beeShimmerIdentity=$(cat $beeShimmerHome/identity.key | sed -n '2 p')
+    sudo sed -i 's~^beeShimmerIdentity=.*~beeShimmerIdentity="'$beeShimmerIdentity'"~' $swarmConfigs/bee-shimmer.cfg
+    echo "beeShimmerAlias - Identity has more than 70 chars" >> /tmp/beeShimmerParsing
+fi
+
+if [ "$beeShimmerResetIdentity" != "true" ]; then
+    if [ -f "$beeShimmerHome/identity.key" ]; then
+        parser=$(cat $beeShimmerHome/identity.key | sed -n '2 p')
+    fi
+    if [ "$parser" != "$beeShimmerIdentity" ]; then
+        if [ ! -z "$beeShimmerIdentity" ]; then
+            sudo systemctl stop bee-shimmer
+            sudo -u bee echo "-----BEGIN PRIVATE KEY-----" > $beeShimmerHome/identity.key
+            sudo -u bee echo "$beeShimmerIdentity" >> $beeShimmerHome/identity.key
+            sudo -u bee echo "-----END PRIVATE KEY-----" >> $beeShimmerHome/identity.key
+            sudo systemctl start bee-shimmer
+            echo "beeShimmerIdentity - Identity not equal using from var now" >> /tmp/beeShimmerParsing
+        else
+            if [ -f "$beeShimmerHome/identity.key" ]; then
+                beeShimmerIdentity=$(cat $beeShimmerHome/identity.key | sed -n '2 p')
+            fi
+            if [ ! -z "$beeShimmerIdentity" ]; then
+                sudo sed -i 's~^beeShimmerIdentity=.*~beeShimmerIdentity="'$beeShimmerIdentity'"~' $swarmConfigs/bee-shimmer.cfg
+            else
+                sudo systemctl stop bee-shimmer
+                sudo rm -rf $beeShimmerHome/identity.key 2>/dev/null
+                sudo systemctl start bee-shimmer
+                sleep 3
+                beeShimmerIdentity=$(cat $beeShimmerHome/identity.key | sed -n '2 p')
+                sudo sed -i 's~^beeShimmerIdentity=.*~beeShimmerIdentity="'$beeShimmerIdentity'"~' $swarmConfigs/bee-shimmer.cfg
+                echo "beeShimmerIdentity - Identity not equal using new identity" >> /tmp/beeShimmerParsing
+            fi
+        fi
+    fi
+else
+    {
+        echo 0
+        echo 20
+        sudo systemctl stop bee-shimmer
+        echo 40
+        sudo rm -rf $beeShimmerHome/identity.key 2>/dev/null
+        echo 60
+        sudo systemctl start bee-shimmer
+        echo 80
+        beeShimmerIdentity=$(cat $beeShimmerHome/identity.key | sed -n '2 p')
+        echo 100
+        if [ ! -z "$beeShimmerIdentity" ]; then
+            sudo sed -i 's~^beeShimmerIdentity=.*~beeShimmerIdentity="'$beeShimmerIdentity'"~' $swarmConfigs/bee-shimmer.cfg
+        else
+            sudo sed -i 's~^beeShimmerIdentity=.*~beeShimmerIdentity=""~' $swarmConfigs/bee-shimmer.cfg
+        fi
+        sleep 1
+    } | whiptail --gauge "Generate new identity for Bee-Shimmer..." 8 65 0
+    echo "beeShimmerIdentity - Reset Identity" >> /tmp/beeShimmerParsing
+fi
+
+unset beeShimmerResetIdentity

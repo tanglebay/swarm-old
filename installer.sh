@@ -1,13 +1,10 @@
 #!/bin/bash
+
+TEXT_RESET='\e[0m'
+TEXT_RED_B='\e[1;31m'
+
 clear
-export NEWT_COLORS="
-root=blue,blue
-window=white
-border=black
-textbox=white
-button=black,red
-"
-if [ "$1" = "-reinstall" ]; then
+if [ "$1" = "reinstall" ]; then
     if [ -d "/var/lib/swarm" ]; then
         sudo rm -rf /var/lib/swarm > /dev/null 2>&1
     fi
@@ -15,49 +12,90 @@ fi
 
 if [ ! -f "/var/lib/swarm/swarm" ]; then
     if [ $(id -u) -ne 0 ]; then
-        whiptail --title "SWARM" --msgbox "Please run SWARM installer with sudo or as root!" 8 65
+        echo ""
+        echo "     _______          __     _____  __  __ "
+        echo "    / ____\ \        / /\   |  __ \|  \/  |"
+        echo "   | (___  \ \  /\  / /  \  | |__) | \  / |"
+        echo "    \___ \  \ \/  \/ / /\ \ |  _  /| |\/| |"
+        echo "    ____) |  \  /\  / ____ \| | \ \| |  | |"
+        echo "   |_____/    \/  \/_/    \_\_|  \_\_|  |_|"
+        echo ""                                            
+        echo ""                                            
+        echo "###################################################"
+        echo ""
+        echo -e $TEXT_RED_B && echo "-> Please run SWARM installer with sudo or as root" && echo -e $TEXT_RESET
+        echo ""
+        read -rsn1 -p "Press any key to exit."
         exit 0
     else
-        if (whiptail --title "SWARM" --yesno "Do you want to install SWARM now?" 10 65); then
-            whiptail --title "SWARM" --msgbox "SWARM will first make sure that your server is up to date..." 8 65
+        echo ""
+        echo "     _______          __     _____  __  __ "
+        echo "    / ____\ \        / /\   |  __ \|  \/  |"
+        echo "   | (___  \ \  /\  / /  \  | |__) | \  / |"
+        echo "    \___ \  \ \/  \/ / /\ \ |  _  /| |\/| |"
+        echo "    ____) |  \  /\  / ____ \| | \ \| |  | |"
+        echo "   |_____/    \/  \/_/    \_\_|  \_\_|  |_|"
+        echo ""                                            
+        echo ""                                            
+        echo "###################################################"
+        echo ""
+        read -p "Do you want to install SWARM now?(Y/n) " keyboardInput </dev/tty
+        keyboardInput=$(echo $keyboardInput | tr '[:upper:]' '[:lower:]')
+        if [ "$keyboardInput" = "y" ] || [ "$keyboardInput" = "yes" ] || [ -z "$keyboardInput" ]; then
+            echo ""
+            echo -e $TEXT_RED_B && echo "-> Updating OS..." && echo -e $TEXT_RESET
+            echo ""
             sudo apt update
             sudo apt dist-upgrade -y
             sudo apt upgrade -y
             sudo apt autoremove -y
-            {
-                echo 0
-                echo 10
-                if [ ! -x "$(command -v git)" ]; then
-                    sudo apt -qq install git -y > /dev/null 2>&1
-                fi
-                echo 30
-                sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm > /dev/null 2>&1
-                if [ "$1" = "develop" ]; then
-                    ( cd /var/lib/swarm ; sudo git checkout $1 > /dev/null 2>&1 )
-                fi
-                echo 50
-                if [ -f "/var/lib/swarm/swarm" ]; then
-                    source /var/lib/swarm/environment
-                    sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog
-                    echo 70
-                    ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
-                    echo 100
-                    clear
-                fi
-            } | whiptail --gauge "Please wait while SWARM is installed..." 8 65 0
+
+            if [ ! -x "$(command -v git)" ]; then
+                echo -e $TEXT_RED_B && echo "-> Installing GIT..." && echo -e $TEXT_RESET
+                sudo apt install git -y
+            fi
+            echo -e $TEXT_RED_B && echo "-> Cloning SWARM..." && echo -e $TEXT_RESET
+            sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm
+            if [ "$1" = "develop" ]; then
+                ( cd /var/lib/swarm ; sudo git checkout $1 )
+            fi
+
+            if [ -f "/var/lib/swarm/swarm" ]; then
+                echo -e $TEXT_RED_B && echo "-> Loading env..." && echo -e $TEXT_RESET
+                source /var/lib/swarm/environment
+                sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog
+                echo -e $TEXT_RED_B && echo "-> Installing watchdog..." && echo -e $TEXT_RESET
+                ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab -
+            fi
+
             if [ -f "/var/lib/swarm/swarm" ]; then
                 source /var/lib/swarm/environment
+                echo -e $TEXT_RED_B && echo "-> Installing aliases..." && echo -e $TEXT_RESET
                 source $swarmModules/swarmAlias
-                clear
                 if [ "$swarmAliasExists" = "true" ]; then
+                    echo -e $TEXT_RED_B && echo "-> Starting SWARM..." && echo -e $TEXT_RESET
                     source $swarmHome/swarm
                 fi
             else
-                whiptail --title "SWARM" --msgbox "SWARM could not be successfully cloned from GitHub!" 8 65
+                echo ""
+                echo -e $TEXT_RED_B && echo "-> SWARM could not be successfully cloned from GitHub." && echo -e $TEXT_RESET
+                echo ""
             fi
+            echo ""
+            echo ""
+            read -rsn1 -p "Press any key to exit."
+        else
+            echo -e $TEXT_RED_B && echo "-> SWARM installation canceled." && echo -e $TEXT_RESET
+            echo ""
+            read -rsn1 -p "Press any key to exit."
         fi
     fi
 else
-    whiptail --title "SWARM" --msgbox "SWARM is already installed on your system!" 8 65
+    echo ""
+    echo -e $TEXT_RED_B && echo "-> SWARM is already installed on your system." && echo -e $TEXT_RESET
+    echo ""
+    read -rsn1 -p"Press any key to exit."
 fi
+
+clear
 exit 0

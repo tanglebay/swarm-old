@@ -1,0 +1,43 @@
+#!/bin/bash
+
+source $beeShimmerModules/beeShimmerVersion
+beeShimmerDashboardPassword=$(whiptail --passwordbox "\nPlease enter a secure password for your dashboard login:" 8 65 --title "Bee-Shimmer - Dashboard" 3>&1 1>&2 2>&3)
+exitstatus=$?
+if [ "$exitstatus" != "1" ]; then
+    beeShimmerDashboardPassword2=$(whiptail --passwordbox "\nPlease re-enter the password for your dashboard login:" 8 65 --title "Bee-Shimmer - Dashboard" 3>&1 1>&2 2>&3)
+    exitstatus=$?
+    if [ "$exitstatus" != "1" ]; then
+        if [ ! -z "$beeShimmerDashboardPassword" ] && [ ! -z "$beeShimmerDashboardPassword2" ] && [ "$beeShimmerDashboardPassword" = "$beeShimmerDashboardPassword2" ] && [ -f "/usr/bin/bee-shimmer" ]; then
+            {
+                echo 0
+                export BEE_TOOL_PASSWORD="$beeShimmerDashboardPassword"
+                echo 10
+                beeShimmerPwdHash=$(/usr/bin/bee-shimmer password)
+                echo 20
+                beeShimmerPasswordHash=$(echo $beeShimmerPwdHash | grep -o "Password hash:.*" | awk '{print $3}')
+                echo 30
+                beeShimmerPasswordSalt=$(echo $beeShimmerPwdHash | grep -o "Password salt:.*" | awk '{print $3}')
+                echo 40
+                sudo sed -i 's/^beeShimmerPasswordHash=.*/beeShimmerPasswordHash="'$beeShimmerPasswordHash'"/' $swarmConfigs/bee-shimmer.cfg
+                echo 50
+                sudo sed -i 's/^beeShimmerPasswordSalt=.*/beeShimmerPasswordSalt="'$beeShimmerPasswordSalt'"/' $swarmConfigs/bee-shimmer.cfg
+                echo 60
+                source $beeShimmerModules/beeConfigParsers/beePasswordHash
+                echo 70
+                source $beeShimmerModules/beeConfigParsers/beePasswordSalt
+                echo 80
+                export BEE_TOOL_PASSWORD=""
+                unset beeShimmerDashboardPassword
+                unset beeShimmerDashboardPassword2
+                echo 100
+                sleep 0.25
+            } | whiptail --gauge "Please wait while generating Dashboard login..." 6 65 0
+            whiptail --title "Bee-Shimmer - Dashboard" --msgbox "New password created successfully!" 8 65
+            restartBeeShimmer=true
+        else
+            whiptail --title "Bee-Shimmer - Dashboard" --msgbox "Aborted - Passwords do not match!" 8 65
+        fi
+    fi
+fi
+
+unset exitstatus

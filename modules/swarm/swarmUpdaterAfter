@@ -7,33 +7,56 @@ sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
 
 source $swarmModules/swarmParser
 
+( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
+( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
+
 if [ -f "/usr/bin/hornet" ]; then
+    if [ -f "/etc/apt/sources.list.d/hornet.list" ]; then
+        sudo rm -rf /etc/apt/sources.list.d/hornet.list > /dev/null 2>&1
+        sudo apt-get -qq update > /dev/null 2>&1
+    fi
     source $hornetModules/hornetParser
     if [ "$restartHornet" = "true" ]; then
-        sudo systemctl restart hornet
+        sudo systemctl restart hornet > /dev/null 2>&1
         unset restartHornet
+    fi
+fi
+if [ -f "/usr/bin/hornet-shimmer" ]; then
+    source $hornetShimmerModules/hornetShimmerParser
+    if [ "$restartHornetShimmer" = "true" ]; then
+        sudo systemctl restart hornet-shimmer > /dev/null 2>&1
+        unset restartHornetShimmer
     fi
 fi
 if [ -f "/usr/bin/bee" ]; then
     beeIgnorePeersUpdate=true
     source $beeModules/beeParser
     if [ "$restartBee" = "true" ]; then
-        sudo systemctl restart bee
+        sudo systemctl restart bee > /dev/null 2>&1
         unset restartBee
     fi
     unset beeIgnorePeersUpdate
 fi
+if [ -f "/usr/bin/bee-shimmer" ]; then
+    beeShimmerIgnorePeersUpdate=true
+    source $beeShimmerModules/beeShimmerParser
+    if [ "$restartBeeShimmer" = "true" ]; then
+        sudo systemctl restart bee-shimmer > /dev/null 2>&1
+        unset restartBeeShimmer
+    fi
+    unset beeShimmerIgnorePeersUpdate
+fi
 if [ -f "/usr/bin/goshimmer" ]; then
     source $goshimmerModules/goshimmerParser
     if [ "$restartGoshimmer" = "true" ]; then
-        sudo systemctl restart goshimmer
+        sudo systemctl restart goshimmer > /dev/null 2>&1
         unset restartGoshimmer
     fi
 fi
 if [ -f "/usr/bin/wasp" ]; then
     source $waspModules/waspParser
     if [ "$restartWasp" = "true" ]; then
-        sudo systemctl restart wasp
+        sudo systemctl restart wasp > /dev/null 2>&1
         unset restartWasp
     fi
 fi

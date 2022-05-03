@@ -1,0 +1,12 @@
+#!/bin/bash
+if [ "$hornetShimmerPruning" = "true" ]; then
+    hornetShimmerPruningCooldownTime=${hornetShimmerPruningCooldownTime//[!0-9]/}
+
+    parser="$(jq '.pruning.size.cooldownTime' $hornetShimmerHome/$hornetShimmerConfig.json)"
+    parser=$(echo $parser | tr -d '"')
+    if [ "$parser" != "${hornetShimmerPruningCooldownTime}m" ]; then
+        sudo jq '.pruning.size.cooldownTime = "'$hornetShimmerPruningCooldownTime'm"' $hornetShimmerHome/$hornetShimmerConfig.json|sponge $hornetShimmerHome/$hornetShimmerConfig.json
+        restartHornetShimmer=true
+        echo "hornetShimmerPruningCooldownTime" >> /tmp/hornetShimmerParsing
+    fi
+fi

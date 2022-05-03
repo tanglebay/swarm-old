@@ -1,74 +1,122 @@
 #!/bin/bash
-# INSTALL HORNET
-{
-    echo 0
-    echo 10
-    source $swarmConfigs/hornet.cfg
-    echo 20
+
+# General
+if ! id hornet >/dev/null 2>&1; then
+    useradd --no-create-home --system hornet >/dev/null
+fi
+
+if [ ! -d "$hornetHome" ]; then
+    sudo mkdir -p $hornetHome > /dev/null 2>&1
+    sudo chown -R hornet:hornet $hornetHome > /dev/null 2>&1
+fi
+
+# Install GO
+if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
     sudo snap install go --classic > /dev/null 2>&1
-    echo 30
-    wget -qO - https://ppa.hornet.zone/pubkey.txt | sudo apt-key add - > /dev/null 2>&1
-    if [ "$hornetRelease" = "stable" ]; then
-    sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/hornet.service" ]; then
+    sudo cp -rf $swarmHome/templates/hornet/hornet.service /lib/systemd/system/hornet.service
+    if [ ! -f "/etc/default/hornet" ]; then
+        if [ "$hornetNetwork" = "mainnet" ]; then 
+            echo "OPTIONS=\"--config config.json\"" > /etc/default/hornet
+        fi
+        if [ "$hornetNetwork" = "comnet" ]; then 
+            echo "OPTIONS=\"--config config-comnet.json\"" > /etc/default/hornet
+        fi
+        if [ "$hornetNetwork" = "devnet" ]; then 
+            echo "OPTIONS=\"--config config-devnet.json\"" > /etc/default/hornet
+        fi
     fi
-    if [ "$hornetRelease" = "testing" ]; then
-        sudo sh -c 'echo "deb http://ppa.hornet.zone stable main" > /etc/apt/sources.list.d/hornet.list'
-        sudo sh -c 'echo "deb http://ppa.hornet.zone testing main" >> /etc/apt/sources.list.d/hornet.list'
-        sudo sh -c 'echo "deb http://ppa.hornet.zone alpha main" >> /etc/apt/sources.list.d/hornet.list'
-    fi
-    echo 40
-    sudo apt-get -qq update > /dev/null 2>&1
-    echo 50
-    sudo apt-get -qq install hornet -y > /dev/null 2>&1
-    echo 60
-    # Check which network
-    if [ "$hornetNetwork" = "mainnet" ]; then
-        echo "" > /etc/default/hornet
-    fi
-    if [ "$hornetNetwork" = "devnet" ]; then
-        echo "OPTIONS=\"--config config_devnet.json\"" > /etc/default/hornet
-    fi
-    if [ "$hornetNetwork" = "comnet" ]; then
-        echo "OPTIONS=\"--config config_comnet.json\"" > /etc/default/hornet
-    fi
-    echo 70
     if [ ! -f "/etc/systemd/system/multi-user.target.wants/hornet.service" ]; then
         sudo systemctl enable hornet > /dev/null 2>&1
     fi
-    echo 80
-    if [ ! -d "$hornetHome" ]; then
-        sudo mkdir -p $hornetHome
-        if [ ! -s "$hornetHome/peering.json" ]; then
-            sudo wget -q -O $hornetHome/peering.json https://raw.githubusercontent.com/gohornet/hornet/main/peering.json
-        fi
-        chown -R hornet:hornet $hornetHome
-    fi
-    echo 100
-    sleep 0.5
-} | whiptail --gauge "Please wait while installing Hornet..." 6 65 0
-if [ -f "/usr/bin/hornet" ]; then
-    source $swarmConfigs/hornet.cfg
-    {
-        echo 0
-        echo 20
-        # CALL MODULE CONFIGPARSER
-        echo 40
-        source $hornetModules/hornetParser
-        echo 60
-        if [ "$ufw" = "true" ]; then
-            sudo ufw allow $hornetGossipPort/tcp > /dev/null 2>&1
-            sudo ufw allow $hornetAutopeeringPort/udp > /dev/null 2>&1
-        fi
-        echo 80
-        sudo systemctl start hornet > /dev/null 2>&1
-        sleep 2
-        hornetStatus="$(systemctl show -p ActiveState --value hornet)"
-        if [ "$hornetStatus" != "active" ]; then
-            sudo systemctl restart hornet > /dev/null 2>&1
-        fi
-        echo 100
-    } | whiptail --gauge "Please wait while Hornet will be prepared..." 6 65 0
-    whiptail --title "Hornet Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $hornetGossipPort/tcp\nAutopeering: $hornetAutopeeringPort/udp" 15 65
-else
-    whiptail --title "Hornet Installer" --msgbox "Error while installing Hornet. Please check hornet.cfg and try again!" 8 65
+    sudo systemctl daemon-reload
 fi
+
+##############################################################################################################################################
+
+# Create dir if not exist
+sudo mkdir -p /tmp/hornet > /dev/null 2>&1
+
+if [ "$osArchitecture" = "amd64" ]; then
+    hornetArchitecture="x86_64"
+fi
+if [ "$osArchitecture" = "arm64" ]; then
+    hornetArchitecture="ARM64"
+fi
+
+if [ ! -z "$hornetArchitecture" ]; then
+    # Download latest hornet
+    sudo wget -q -O /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz https://github.com/gohornet/hornet/releases/download/v${latestHornetVersion}/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz
+
+    # Unzip archive
+    if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz" ]; then
+        ( cd /tmp/hornet ; sudo tar -xzf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz ) > /dev/null 2>&1
+    fi
+
+    # Copy binary
+    if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/hornet" ]; then
+        hornetStatus="$(systemctl show -p ActiveState --value hornet)"
+        if [ "$hornetStatus" = "active" ]; then
+            sudo systemctl stop hornet
+        fi
+
+        sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/hornet /usr/bin/hornet > /dev/null 2>&1
+        sudo chmod +x /usr/bin/hornet > /dev/null 2>&1
+        newHornetBinary=true
+    fi
+fi
+
+
+##############################################################################################################################################
+
+if [ "$newHornetBinary" = "true" ]; then
+    ### Mainnet Config
+    if [ "$hornetNetwork" = "mainnet" ]; then
+        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config.json" ]; then
+            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config.json /var/lib/hornet/config.json > /dev/null 2>&1
+        fi
+        if [ -s "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config.json" ]; then
+            newHornetConfig=true
+        fi
+    fi
+
+    ### Comnet Config
+    if [ "$hornetNetwork" = "comnet" ]; then
+        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-comnet.json" ]; then
+            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-comnet.json /var/lib/hornet/config-comnet.json > /dev/null 2>&1
+        fi
+        if [ -s "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-comnet.json" ]; then
+            newHornetConfig=true
+        fi
+    fi
+
+    ### Devnet Config
+    if [ "$hornetNetwork" = "devnet" ]; then
+        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-devnet.json" ]; then
+            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-devnet.json /var/lib/hornet/config-devnet.json > /dev/null 2>&1
+        fi
+        if [ -s "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-devnet.json" ]; then
+            newHornetConfig=true
+        fi
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newHornetConfig" = "true" ]; then
+    # Run installer modules
+    sudo chown -R hornet:hornet $hornetHome > /dev/null 2>&1
+
+    restartHornet=true
+    hornetUpdated=true
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/hornet > /dev/null 2>&1
+
+
+unset newHornetBinary
+unset newHornetConfig

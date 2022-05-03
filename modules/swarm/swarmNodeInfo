@@ -1,0 +1,211 @@
+#!/bin/bash
+
+source $swarmLogs/githubVersion
+
+# Get Service Status
+if [ -f "/usr/bin/hornet" ]; then
+    hornetStatus="$(systemctl show -p ActiveState --value hornet)"
+else
+    hornetStatus="- Not installed -"
+fi
+if [ -f "/usr/bin/hornet-shimmer" ]; then
+    hornetShimmerStatus="$(systemctl show -p ActiveState --value hornet-shimmer)"
+else
+    hornetShimmerStatus="- Not installed -"
+fi
+if [ -f "/usr/bin/bee" ]; then
+    beeStatus="$(systemctl show -p ActiveState --value bee)"
+else
+    beeStatus="- Not installed -"
+fi
+if [ -f "/usr/bin/bee-shimmer" ]; then
+    beeShimmerStatus="$(systemctl show -p ActiveState --value bee-shimmer)"
+else
+    beeShimmerStatus="- Not installed -"
+fi
+if [ -f "/usr/bin/goshimmer" ]; then
+    goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+else
+    goshimmerStatus="- Not installed -"
+fi
+if [ -f "/usr/bin/wasp" ]; then
+    waspStatus="$(systemctl show -p ActiveState --value wasp)"
+else
+    waspStatus="- Not installed -"
+fi
+
+# Hornet Version
+if [ -f "/usr/bin/hornet" ]; then
+    hornetVersion=$(/usr/bin/hornet -v | awk '{ print $2 }')
+    if [ -z "$hornetVersion" ]; then
+        hornetVersion="N/A"
+    else
+        if [ "$hornetVersion" != "$latestHornetVersion" ] && [ ! -z "$latestHornetVersion" ]; then
+            hornetVersion="$hornetVersion (new version \"v$latestHornetVersion\" available!)"
+        fi
+    fi
+else
+    hornetVersion="N/A"
+fi
+
+# Hornet Shimmer Version
+if [ -f "/usr/bin/hornet-shimmer" ]; then
+    hornetShimmerVersion=$(/usr/bin/hornet-shimmer -v | awk '{ print $2 }')
+    if [ -z "$hornetShimmerVersion" ]; then
+        hornetShimmerVersion="N/A"
+    else
+        if [ "$hornetShimmerVersion" != "$latestHornetShimmerVersion" ] && [ ! -z "$latestHornetShimmerVersion" ]; then
+            hornetShimmerVersion="$hornetShimmerVersion (new version \"v$latestHornetShimmerVersion\" available!)"
+        fi
+    fi
+else
+    hornetShimmerVersion="N/A"
+fi
+
+# Bee version
+if [ -f "/usr/bin/bee" ]; then
+    beeVersion=$(/usr/bin/bee -v | tr -d 'v"')
+    if [[ $beeVersion = *rc[0-9]* ]]; then
+        beeVersion=$(echo $beeVersion | cut -f1,2 -d"-")
+    else
+        beeVersion=$(echo $beeVersion | cut -f1 -d"-")
+    fi
+    if [ -z "$beeVersion" ]; then
+        beeVersion="N/A"
+    else
+        if [ "$beeVersion" != "$latestBeeVersion" ] && [ ! -z "$latestBeeVersion" ]; then
+            beeVersion="$beeVersion (new version \"v$latestBeeVersion\" available!"
+        fi
+    fi
+else
+    beeVersion="N/A"
+fi
+
+# Bee Shimmer version
+if [ -f "/usr/bin/bee-shimmer" ]; then
+    beeShimmerVersion=$(/usr/bin/bee-shimmer -v | tr -d 'v"')
+    if [[ $beeShimmerVersion = *rc[0-9]* ]]; then
+        beeShimmerVersion=$(echo $beeShimmerVersion | cut -f1,2 -d"-")
+    else
+        beeShimmerVersion=$(echo $beeShimmerVersion | cut -f1 -d"-")
+    fi
+    if [ -z "$beeShimmerVersion" ]; then
+        beeShimmerVersion="N/A"
+    else
+        if [ "$beeShimmerVersion" != "$latestBeeShimmerVersion" ] && [ ! -z "$latestBeeShimmerVersion" ]; then
+            beeShimmerVersion="$beeShimmerVersion (new version \"v$latestBeeShimmerVersion\" available!"
+        fi
+    fi
+else
+    beeShimmerVersion="N/A"
+fi
+
+if [ -f "/usr/bin/goshimmer" ]; then
+    goshimmerVersion=$(cd $goshimmerHome ; /usr/bin/goshimmer -v | awk '{print $2}' | tr -d 'v')
+    if [ -z "$goshimmerVersion" ]; then
+        goshimmerVersion="N/A"
+    else
+        if [ "$goshimmerVersion" != "$latestGoshimmerVersion" ] && [ ! -z "$latestGoshimmerVersion" ]; then
+            goshimmerVersion="$goshimmerVersion (new version \"v$latestGoshimmerVersion\" available!"
+        fi
+    fi
+else
+    goshimmerVersion="N/A"
+fi
+
+if [ -f "/usr/bin/wasp" ]; then
+    waspVersion=$(cd $waspHome ; /usr/bin/wasp -v | awk '{print $2}' | tr -d 'v')
+    if [ -z "$waspVersion" ]; then
+        waspVersion="N/A"
+    fi
+else
+    waspVersion="N/A"
+fi
+
+# Hornet DB size
+if [ -d "$hornetHome/${hornetNetwork}db" ]; then
+    getCurrentDbSize="$(du -sb $hornetHome/${hornetNetwork}db | cut -f1)"
+    let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+    if [ $getCurrentDbSizeInMb -gt 999 ]; then
+        let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+        currentHornetDbSize="${getCurrentDbSizeInGb} GB"
+    else
+        currentHornetDbSize="${getCurrentDbSizeInMb} MB"
+    fi
+else
+    currentHornetDbSize="N/A"
+fi
+
+# Hornet Shimmer DB size
+if [ -d "$hornetShimmerHome/$hornetShimmerNetwork/database" ]; then
+    getCurrentDbSize="$(du -sb $hornetShimmerHome/$hornetShimmerNetwork/database | cut -f1)"
+    let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+    if [ $getCurrentDbSizeInMb -gt 999 ]; then
+        let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+        currentHornetShimmerDbSize="${getCurrentDbSizeInGb} GB"
+    else
+        currentHornetShimmerDbSize="${getCurrentDbSizeInMb} MB"
+    fi
+else
+    currentHornetShimmerDbSize="N/A"
+fi
+
+# Bee DB size
+if [ -d "$beeHome/storage" ]; then
+    getCurrentDbSize="$(du -sb $beeHome/storage | cut -f1)"
+    let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+    if [ $getCurrentDbSizeInMb -gt 999 ]; then
+        let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+        currentBeeDbSize="${getCurrentDbSizeInGb} GB"
+    else
+        currentBeeDbSize="${getCurrentDbSizeInMb} MB"
+    fi
+else
+    currentBeeDbSize="N/A"
+fi
+
+# Bee Shimmer DB size
+if [ -d "$beeShimmerHome/storage" ]; then
+    getCurrentDbSize="$(du -sb $beeShimmerHome/storage | cut -f1)"
+    let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+    if [ $getCurrentDbSizeInMb -gt 999 ]; then
+        let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+        currentBeeShimmerDbSize="${getCurrentDbSizeInGb} GB"
+    else
+        currentBeeShimmerDbSize="${getCurrentDbSizeInMb} MB"
+    fi
+else
+    currentBeeShimmerDbSize="N/A"
+fi
+
+# Goshimmer DB size
+if [ -d "$goshimmerHome/mainnetdb" ]; then
+    getCurrentDbSize="$(du -sb $goshimmerHome/mainnetdb | cut -f1)"
+    let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+    if [ $getCurrentDbSizeInMb -gt 999 ]; then
+        let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+        currentGoshimmerDbSize="${getCurrentDbSizeInGb} GB"
+    else
+        currentGoshimmerDbSize="${getCurrentDbSizeInMb} MB"
+    fi
+else
+    currentGoshimmerDbSize="N/A"
+fi
+
+# WASP DB size
+if [ -d "$waspHome/waspdb" ]; then
+    getCurrentDbSize="$(du -sb $waspHome/waspdb | cut -f1)"
+    let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+    if [ $getCurrentDbSizeInMb -gt 999 ]; then
+        let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+        currentWaspDbSize="${getCurrentDbSizeInGb} GB"
+    else
+        currentWaspDbSize="${getCurrentDbSizeInMb} MB"
+    fi
+else
+    currentWaspDbSize="N/A"
+fi
+
+
+# OUTPUT
+whiptail --title "SWARM - Node Info" --msgbox "\nHornet (IOTA)\nStatus: $hornetStatus\nVersion: $hornetVersion\nDatabase: $currentHornetDbSize\n\nHornet (Shimmer)\nStatus: $hornetShimmerStatus\nVersion: $hornetShimmerVersion\nDatabase: $currentHornetShimmerDbSize\n\nBee (IOTA)\nStatus: $beeStatus\nVersion: $beeVersion\nDatabase: $currentBeeDbSize\n\nBee (Shimmer)\nStatus: $beeShimmerStatus\nVersion: $beeShimmerVersion\nDatabase: $currentBeeShimmerDbSize\n\nGoShimmer\nStatus: $goshimmerStatus\nVersion: $goshimmerVersion\nDatabase: $currentGoshimmerDbSize\n\nWASP\nStatus: $waspStatus\nVersion: $waspVersion\nDatabase: $currentWaspDbSize" 36 65

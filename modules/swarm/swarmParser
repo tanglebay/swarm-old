@@ -14,6 +14,9 @@ if [ -f "$swarmTmp/hornet.cfg" ]; then
         hornetRelease="$release"
     fi
     ####
+    if [ "$hornetRelease" = "testing" ]; then
+        hornetRelease="beta"
+    fi
     if [ -z "$hornetRelease" ]; then
         sudo sed -i 's/^hornetRelease=.*/hornetRelease="stable"/' $swarmConfigs/hornet.cfg
     else
@@ -47,22 +50,9 @@ if [ -f "$swarmTmp/hornet.cfg" ]; then
         sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins="'$hornetDisablePlugins'"/' $swarmConfigs/hornet.cfg
     fi
     ####
-    if [ ! -z "$enablePlugins" ]; then
-        hornetEnablePlugins="$enablePlugins"
-    fi
     if [ -z "$hornetEnablePlugins" ]; then
-        hornetAutopeeringDisabled=$(echo $hornetDisablePlugins | grep -o autopeering)
-        if [ -z "$hornetAutopeeringDisabled" ]; then
-            sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="autopeering"/' $swarmConfigs/hornet.cfg
-        else
-            sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins=""/' $swarmConfigs/hornet.cfg
-        fi
+        sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins=""/' $swarmConfigs/hornet.cfg
     else
-        hornetAutopeeringEnabled=$(echo $hornetEnablePlugins | grep -o autopeering)
-        hornetAutopeeringDisabled=$(echo $hornetDisablePlugins | grep -o autopeering)
-        if [ -z "$hornetAutopeeringEnabled" ] && [ -z "$hornetAutopeeringDisabled" ]; then
-            hornetEnablePlugins="autopeering,$hornetEnablePlugins"
-        fi
         sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="'$hornetEnablePlugins'"/' $swarmConfigs/hornet.cfg
     fi
     ####
@@ -219,11 +209,157 @@ if [ -f "$swarmTmp/hornet.cfg" ]; then
     else
         sudo sed -i 's~^hornetApiPublicRoutes=.*~hornetApiPublicRoutes="'$hornetApiPublicRoutes'"~' $swarmConfigs/hornet.cfg
     fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmp/hornet-shimmer.cfg" ]; then
+    source $swarmTmp/hornet-shimmer.cfg
+
     ####
-    if [ -z "$hornetApiProtectedRoutes" ]; then
-        sudo sed -i 's~^hornetApiProtectedRoutes=.*~hornetApiProtectedRoutes="/api/v1/*,/api/plugins/*"~' $swarmConfigs/hornet.cfg
+    if [ -z "$hornetShimmerRelease" ]; then
+        sudo sed -i 's/^hornetShimmerRelease=.*/hornetShimmerRelease="alpha"/' $swarmConfigs/hornet-shimmer.cfg
     else
-        sudo sed -i 's~^hornetApiProtectedRoutes=.*~hornetApiProtectedRoutes="'$hornetApiProtectedRoutes'"~' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^hornetShimmerRelease=.*/hornetShimmerRelease="'$hornetShimmerRelease'"/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerNetwork" ]; then
+        sudo sed -i 's/^hornetShimmerNetwork=.*/hornetShimmerNetwork="alphanet"/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerNetwork=.*/hornetShimmerNetwork="'$hornetShimmerNetwork'"/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerAlias" ]; then
+        sudo sed -i 's/^hornetShimmerAlias=.*/hornetShimmerAlias="Hornet-Shimmer"/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i "s~^hornetShimmerAlias=.*~hornetShimmerAlias=\"$hornetShimmerAlias\"~g" $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerDisablePlugins" ]; then
+        sudo sed -i 's/^hornetShimmerDisablePlugins=.*/hornetShimmerDisablePlugins=""/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerDisablePlugins=.*/hornetShimmerDisablePlugins="'$hornetShimmerDisablePlugins'"/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerEnablePlugins" ]; then
+        sudo sed -i 's/^hornetShimmerEnablePlugins=.*/hornetShimmerEnablePlugins=""/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerEnablePlugins=.*/hornetShimmerEnablePlugins="'$hornetShimmerEnablePlugins'"/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerUnknownPeersLimit" ]; then
+        sudo sed -i 's/^hornetShimmerUnknownPeersLimit=.*/hornetShimmerUnknownPeersLimit=2/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerUnknownPeersLimit=.*/hornetShimmerUnknownPeersLimit='$hornetShimmerUnknownPeersLimit'/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerSnapshotInterval" ]; then
+        sudo sed -i 's/^hornetShimmerSnapshotInterval=.*/hornetShimmerSnapshotInterval=360/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerSnapshotInterval=.*/hornetShimmerSnapshotInterval='$hornetShimmerSnapshotInterval'/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerGossipPort" ]; then
+        sudo sed -i 's/^hornetShimmerGossipPort=.*/hornetShimmerGossipPort=15600/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerGossipPort=.*/hornetShimmerGossipPort='$hornetShimmerGossipPort'/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerAutopeeringPort" ]; then
+        sudo sed -i 's/^hornetShimmerAutopeeringPort=.*/hornetShimmerAutopeeringPort=14626/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerAutopeeringPort=.*/hornetShimmerAutopeeringPort='$hornetShimmerAutopeeringPort'/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerPowEnabled" ]; then
+        sudo sed -i 's/^hornetShimmerPowEnabled=.*/hornetShimmerPowEnabled=false/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerPowEnabled=.*/hornetShimmerPowEnabled='$hornetShimmerPowEnabled'/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ###
+    if [ -z "$hornetShimmerPowWorkerCount" ]; then
+        sudo sed -i 's/^hornetShimmerPowWorkerCount=.*/hornetShimmerPowWorkerCount=1/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerPowWorkerCount=.*/hornetShimmerPowWorkerCount='$hornetShimmerPowWorkerCount'/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerAutoRevalidation" ]; then
+        sudo sed -i 's/^hornetShimmerAutoRevalidation=.*/hornetShimmerAutoRevalidation=false/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerAutoRevalidation=.*/hornetShimmerAutoRevalidation='$hornetShimmerAutoRevalidation'/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerPruningEnabled" ]; then
+        sudo sed -i 's/^hornetShimmerPruningEnabled=.*/hornetShimmerPruningEnabled=true/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerPruningEnabled=.*/hornetShimmerPruningEnabled='$hornetShimmerPruningEnabled'/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerPruningDatabaseSize" ]; then
+        sudo sed -i 's/^hornetShimmerPruningDatabaseSize=.*/hornetShimmerPruningDatabaseSize=/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerPruningDatabaseSize=.*/hornetShimmerPruningDatabaseSize='$hornetShimmerPruningDatabaseSize'/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerPruningPercentage" ]; then
+        sudo sed -i 's/^hornetShimmerPruningPercentage=.*/hornetShimmerPruningPercentage=5/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        hornetShimmerPruningPercentage=$(echo $hornetShimmerPruningPercentage | tr -d '%')
+        sudo sed -i 's/^hornetShimmerPruningPercentage=.*/hornetShimmerPruningPercentage='$hornetShimmerPruningPercentage'/' $swarmConfigs/hornet-shimmer.cfg   
+    fi
+    ####
+    if [ -z "$hornetShimmerPruningCooldownTime" ]; then
+        sudo sed -i 's/^hornetShimmerPruningCooldownTime=.*/hornetShimmerPruningCooldownTime=5/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerPruningCooldownTime=.*/hornetShimmerPruningCooldownTime='$hornetShimmerPruningCooldownTime'/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerUsername" ]; then
+        sudo sed -i 's/^hornetShimmerUsername=.*/hornetShimmerUsername=""/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerUsername=.*/hornetShimmerUsername="'$hornetShimmerUsername'"/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerPasswordHash" ]; then
+        sudo sed -i 's/^hornetShimmerPasswordHash=.*/hornetShimmerPasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerPasswordHash=.*/hornetShimmerPasswordHash="'$hornetShimmerPasswordHash'"/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerPasswordSalt" ]; then
+        sudo sed -i 's/^hornetShimmerPasswordSalt=.*/hornetShimmerPasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerPasswordSalt=.*/hornetShimmerPasswordSalt="'$hornetShimmerPasswordSalt'"/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerIdentity" ]; then
+        sudo sed -i 's~^hornetShimmerIdentity=.*~hornetShimmerIdentity=""~' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's~^hornetShimmerIdentity=.*~hornetShimmerIdentity="'$hornetShimmerIdentity'"~' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerRunAsEntryNode" ]; then
+        sudo sed -i 's/^hornetShimmerRunAsEntryNode=.*/hornetShimmerRunAsEntryNode=false/' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's/^hornetShimmerRunAsEntryNode=.*/hornetShimmerRunAsEntryNode='$hornetShimmerRunAsEntryNode'/' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerApiJwtSalt" ]; then
+        sudo sed -i 's~^hornetShimmerApiJwtSalt=.*~hornetShimmerApiJwtSalt="HORNET"~' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's~^hornetShimmerApiJwtSalt=.*~hornetShimmerApiJwtSalt="'$hornetShimmerApiJwtSalt'"~' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerApiJwtToken" ]; then
+        sudo sed -i 's~^hornetShimmerApiJwtToken=.*~hornetShimmerApiJwtToken=""~' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's~^hornetShimmerApiJwtToken=.*~hornetShimmerApiJwtToken="'$hornetShimmerApiJwtToken'"~' $swarmConfigs/hornet-shimmer.cfg
+    fi
+    ####
+    if [ -z "$hornetShimmerApiPublicRoutes" ]; then
+        sudo sed -i 's~^hornetShimmerApiPublicRoutes=.*~hornetShimmerApiPublicRoutes="/health,/api/v2/info,/api/v2/tips,/api/v2/messages*,/api/v2/transactions*,/api/v2/milestones*,/api/v2/outputs*,/api/v2/addresses*,/api/v2/treasury,/api/v2/receipts*,/api/plugins/debug/v1/*,/api/plugins/indexer/v1/*,/api/plugins/mqtt/v1,/api/plugins/participation/v1/events*,/api/plugins/participation/v1/outputs*,/api/plugins/participation/v1/addresses*"~' $swarmConfigs/hornet-shimmer.cfg
+    else
+        sudo sed -i 's~^hornetShimmerApiPublicRoutes=.*~hornetShimmerApiPublicRoutes="'$hornetShimmerApiPublicRoutes'"~' $swarmConfigs/hornet-shimmer.cfg
     fi
 fi
 
@@ -232,6 +368,12 @@ fi
 if [ -f "$swarmTmp/bee.cfg" ]; then
     source $swarmTmp/bee.cfg
 
+    if [ -z "$beeRelease" ]; then
+        sudo sed -i 's/^beeRelease=.*/beeRelease="stable"/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeRelease=.*/beeRelease="'$beeRelease'"/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
     if [ -z "$beeNetwork" ]; then
         sudo sed -i 's/^beeNetwork=.*/beeNetwork="mainnet"/' $swarmConfigs/bee.cfg
     else
@@ -275,7 +417,7 @@ if [ -f "$swarmTmp/bee.cfg" ]; then
     fi
     ####
     if [ -z "$beePowEnabled" ]; then
-        sudo sed -i 's/^beePowEnabled=.*/beePowEnabled=true/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^beePowEnabled=.*/beePowEnabled=false/' $swarmConfigs/bee.cfg
     else
         sudo sed -i 's/^beePowEnabled=.*/beePowEnabled='$beePowEnabled'/' $swarmConfigs/bee.cfg
     fi
@@ -305,7 +447,7 @@ if [ -f "$swarmTmp/bee.cfg" ]; then
     fi
     ####
     if [ -z "$beeAutopeeringEnabled" ]; then
-        sudo sed -i 's/^beeAutopeeringEnabled=.*/beeAutopeeringEnabled=true/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^beeAutopeeringEnabled=.*/beeAutopeeringEnabled=false/' $swarmConfigs/bee.cfg
     else
         sudo sed -i 's/^beeAutopeeringEnabled=.*/beeAutopeeringEnabled='$beeAutopeeringEnabled'/' $swarmConfigs/bee.cfg
     fi
@@ -326,6 +468,12 @@ if [ -f "$swarmTmp/bee.cfg" ]; then
         sudo sed -i 's/^beeMaxDiscoveredPeers=.*/beeMaxDiscoveredPeers=6/' $swarmConfigs/bee.cfg
     else
         sudo sed -i 's/^beeMaxDiscoveredPeers=.*/beeMaxDiscoveredPeers='$beeMaxDiscoveredPeers'/' $swarmConfigs/bee.cfg
+    fi
+    ####
+    if [ -z "$beeApiPublicRoutes" ]; then
+        sudo sed -i 's~^beeApiPublicRoutes=.*~beeApiPublicRoutes="/health,/api/v1/info,/api/v1/tips,/api/v1/messages,/api/v1/messages/:messageId,/api/v1/messages/:messageId/metadata,/api/v1/messages/:messageId/raw,/api/v1/messages/:messageId/children,/api/v1/outputs/:outputId,/api/v1/addresses/:address,/api/v1/addresses/ed25519/:address,/api/v1/addresses/:address/outputs,/api/v1/addresses/d25519/:address/outputs,/api/v1/receipts,/api/v1/receipts/:milestoneIndex,/api/v1/treasury,/api/v1/transactions/:transactionId/included-message,/api/v1/milestones/:milestoneIndex,/api/v1/milestones/:milestoneIndex/utxo-changes"~g' $swarmConfigs/bee.cfg
+    else
+        sudo sed -i 's~^beeApiPublicRoutes=.*~beeApiPublicRoutes="'$beeApiPublicRoutes'"~g' $swarmConfigs/bee.cfg
     fi
 
     ####
@@ -394,6 +542,189 @@ if [ -f "$swarmTmp/bee.cfg" ]; then
         sudo sed -i 's/^beePeerAlias6=.*/beePeerAlias6=""/' $swarmConfigs/bee.cfg
     else
         sudo sed -i 's/^beePeerAlias6=.*/beePeerAlias6="'$beePeerAlias6'"/' $swarmConfigs/bee.cfg
+    fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmp/bee-shimmer.cfg" ]; then
+    source $swarmTmp/bee-shimmer.cfg
+
+
+    if [ -z "$beeShimmerRelease" ]; then
+        sudo sed -i 's/^beeShimmerRelease=.*/beeShimmerRelease="alpha"/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerRelease=.*/beeShimmerRelease="'$beeShimmerRelease'"/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerNetwork" ]; then
+        sudo sed -i 's/^beeShimmerNetwork=.*/beeShimmerNetwork="alphanet"/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerNetwork=.*/beeShimmerNetwork="'$beeShimmerNetwork'"/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerAlias" ]; then
+        sudo sed -i 's~^beeShimmerAlias=.*~beeShimmerAlias="Bee"~' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i "s~^beeShimmerAlias=.*~beeShimmerAlias=\"$beeShimmerAlias\"~g" $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerGossipPort" ]; then
+        sudo sed -i 's/^beeShimmerGossipPort=.*/beeShimmerGossipPort=15601/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerGossipPort=.*/beeShimmerGossipPort='$beeShimmerGossipPort'/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerIdentity" ]; then
+        sudo sed -i 's~beeShimmerIdentity=.*~beeShimmerIdentity=""~' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's~^beeShimmerIdentity=.*~beeShimmerIdentity="'$beeShimmerIdentity'"~' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerMaxUnknownPeers" ]; then
+        sudo sed -i 's/^beeShimmerMaxUnknownPeers=.*/beeShimmerMaxUnknownPeers=0/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerMaxUnknownPeers=.*/beeShimmerMaxUnknownPeers='$beeShimmerMaxUnknownPeers'/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerPasswordHash" ]; then
+        sudo sed -i 's/^beeShimmerPasswordHash=.*/beeShimmerPasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerPasswordHash=.*/beeShimmerPasswordHash="'$beeShimmerPasswordHash'"/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerPasswordSalt" ]; then
+        sudo sed -i 's/^beeShimmerPasswordSalt=.*/beeShimmerPasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerPasswordSalt=.*/beeShimmerPasswordSalt="'$beeShimmerPasswordSalt'"/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerPowEnabled" ]; then
+        sudo sed -i 's/^beeShimmerPowEnabled=.*/beeShimmerPowEnabled=false/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerPowEnabled=.*/beeShimmerPowEnabled='$beeShimmerPowEnabled'/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerPruningDelay" ]; then
+        sudo sed -i 's/^beeShimmerPruningDelay=.*/beeShimmerPruningDelay=60480/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerPruningDelay=.*/beeShimmerPruningDelay='$beeShimmerPruningDelay'/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerPruningEnabled" ]; then
+        sudo sed -i 's/^beeShimmerPruningEnabled=.*/beeShimmerPruningEnabled=true/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerPruningEnabled=.*/beeShimmerPruningEnabled='$beeShimmerPruningEnabled'/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerSnapshotInterval" ]; then
+        sudo sed -i 's/^beeShimmerSnapshotInterval=.*/beeShimmerSnapshotInterval=360/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerSnapshotInterval=.*/beeShimmerSnapshotInterval='$beeShimmerSnapshotInterval'/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerUsername" ]; then
+        sudo sed -i 's/^beeShimmerUsername=.*/beeShimmerUsername="admin"/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerUsername=.*/beeShimmerUsername="'$beeShimmerUsername'"/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beShimmereAutopeeringEnabled" ]; then
+        sudo sed -i 's/^beeShimmerAutopeeringEnabled=.*/beeShimmerAutopeeringEnabled=false/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerAutopeeringEnabled=.*/beeShimmerAutopeeringEnabled='$beeShimmerAutopeeringEnabled'/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerAutopeeringPort" ]; then
+        sudo sed -i 's/^beeShimmerAutopeeringPort=.*/beeShimmerAutopeeringPort=14676/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerAutopeeringPort=.*/beeShimmerAutopeeringPort='$beeShimmerAutopeeringPort'/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerRunAsEntryNode" ]; then
+        sudo sed -i 's/^beeShimmerRunAsEntryNode=.*/beeShimmerRunAsEntryNode=false/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerRunAsEntryNode=.*/beeShimmerRunAsEntryNode='$beeShimmerRunAsEntryNode'/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerMaxDiscoveredPeers" ]; then
+        sudo sed -i 's/^beeShimmerMaxDiscoveredPeers=.*/beeShimmerMaxDiscoveredPeers=6/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerMaxDiscoveredPeers=.*/beeShimmerMaxDiscoveredPeers='$beeShimmerMaxDiscoveredPeers'/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerApiPublicRoutes" ]; then
+        sudo sed -i 's~^beeShimmerApiPublicRoutes=.*~beeShimmerApiPublicRoutes="/health,/api/v2/info,/api/v2/tips,/api/v2/messages,/api/v2/messages/:messageId,/api/v2/messages/:messageId/metadata,/api/v2/messages/:messageId/raw,/api/v2/messages/:messageId/children,/api/v2/outputs/:outputId,/api/v2/addresses/:address,/api/v2/addresses/ed25519/:address,/api/v2/addresses/:address/outputs,/api/v2/addresses/ed25519/:address/outputs,/api/v2/receipts,/api/v2/receipts/:milestoneIndex,/api/v2/treasury,/api/v2/transactions/:transactionId/included-message,/api/v2/milestones/milestoneIndex,/api/v2/milestones/:milestoneIndex/utxo-changes"~g' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's~^beeShimmerApiPublicRoutes=.*~beeShimmerApiPublicRoutes="'$beeShimmerApiPublicRoutes'"~g' $swarmConfigs/bee-shimmer.cfg
+    fi
+
+    ####
+    # BEE PEERS
+    if [ -z "$beeShimmerPeer1" ]; then
+        sudo sed -i 's/^beeShimmerPeer1=.*/beeShimmerPeer1=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's~^beeShimmerPeer1=.*~beeShimmerPeer1="'$beeShimmerPeer1'"~g' $swarmConfigs/bee-shimmer.cfg
+    fi
+    if [ -z "$beeShimmerPeerAlias1" ]; then
+        sudo sed -i 's/^beeShimmerPeerAlias1=.*/beeShimmerPeerAlias1=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerPeerAlias1=.*/beeShimmerPeerAlias1="'$beeShimmerPeerAlias1'"/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerPeer2" ]; then
+        sudo sed -i 's/^beeShimmerPeer2=.*/beeShimmerPeer2=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's~^beeShimmerPeer2=.*~beeShimmerPeer2="'$beeShimmerPeer2'"~g' $swarmConfigs/bee-shimmer.cfg
+    fi
+    if [ -z "$beeShimmerPeerAlias2" ]; then
+        sudo sed -i 's/^beeShimmerPeerAlias2=.*/beeShimmerPeerAlias2=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerPeerAlias2=.*/beeShimmerPeerAlias2="'$beeShimmerPeerAlias2'"/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerPeer3" ]; then
+        sudo sed -i 's/^beeShimmerPeer3=.*/beeShimmerPeer3=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's~^beeShimmerPeer3=.*~beeShimmerPeer3="'$beeShimmerPeer3'"~g' $swarmConfigs/bee-shimmer.cfg
+    fi
+    if [ -z "$beeShimmerPeerAlias3" ]; then
+        sudo sed -i 's/^beeShimmerPeerAlias3=.*/beeShimmerPeerAlias3=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerPeerAlias3=.*/beeShimmerPeerAlias3="'$beeShimmerPeerAlias3'"/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerPeer4" ]; then
+        sudo sed -i 's/^beeShimmerPeer4=.*/beeShimmerPeer4=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's~^beeShimmerPeer4=.*~beeShimmerPeer4="'$beeShimmerPeer4'"~g' $swarmConfigs/bee-shimmer.cfg
+    fi
+    if [ -z "$beeShimmerPeerAlias4" ]; then
+        sudo sed -i 's/^beeShimmerPeerAlias4=.*/beeShimmerPeerAlias4=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerPeerAlias4=.*/beeShimmerPeerAlias4="'$beeShimmerPeerAlias4'"/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerPeer5" ]; then
+        sudo sed -i 's/^beeShimmerPeer5=.*/beeShimmerPeer5=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's~^beeShimmerPeer5=.*~beeShimmerPeer5="'$beeShimmerPeer5'"~g' $swarmConfigs/bee-shimmer.cfg
+    fi
+    if [ -z "$beeShimmerPeerAlias5" ]; then
+        sudo sed -i 's/^beeShimmerPeerAlias5=.*/beeShimmerPeerAlias5=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerPeerAlias5=.*/beeShimmerPeerAlias5="'$beeShimmerPeerAlias5'"/' $swarmConfigs/bee-shimmer.cfg
+    fi
+    ####
+    if [ -z "$beeShimmerPeer6" ]; then
+        sudo sed -i 's/^beeShimmerPeer6=.*/beeShimmerPeer6=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's~^beeShimmerPeer6=.*~beeShimmerPeer6="'$beeShimmerPeer6'"~g' $swarmConfigs/bee-shimmer.cfg
+    fi
+    if [ -z "$beeShimmerPeerAlias6" ]; then
+        sudo sed -i 's/^beeShimmerPeerAlias6=.*/beeShimmerPeerAlias6=""/' $swarmConfigs/bee-shimmer.cfg
+    else
+        sudo sed -i 's/^beeShimmerPeerAlias6=.*/beeShimmerPeerAlias6="'$beeShimmerPeerAlias6'"/' $swarmConfigs/bee-shimmer.cfg
     fi
 fi
 
@@ -543,10 +874,20 @@ if [ -f "$swarmTmp/proxy.cfg" ]; then
     else
         sudo sed -i 's/^proxyHornetExternalDashboard=.*/proxyHornetExternalDashboard='$proxyHornetExternalDashboard'/' $swarmConfigs/proxy.cfg
     fi
+    if [ -z "$proxyHornetShimmerExternalDashboard" ]; then
+        sudo sed -i 's/^proxyHornetShimmerExternalDashboard=.*/proxyHornetShimmerExternalDashboard=false/' $swarmConfigs/proxy.cfg
+    else
+        sudo sed -i 's/^proxyHornetShimmerExternalDashboard=.*/proxyHornetShimmerExternalDashboard='$proxyHornetShimmerExternalDashboard'/' $swarmConfigs/proxy.cfg
+    fi
     if [ -z "$proxyBeeExternalDashboard" ]; then
         sudo sed -i 's/^proxyBeeExternalDashboard=.*/proxyBeeExternalDashboard=false/' $swarmConfigs/proxy.cfg
     else
         sudo sed -i 's/^proxyBeeExternalDashboard=.*/proxyBeeExternalDashboard='$proxyBeeExternalDashboard'/' $swarmConfigs/proxy.cfg
+    fi
+    if [ -z "$proxyBeeShimmerExternalDashboard" ]; then
+        sudo sed -i 's/^proxyBeeShimmerExternalDashboard=.*/proxyBeeShimmerExternalDashboard=false/' $swarmConfigs/proxy.cfg
+    else
+        sudo sed -i 's/^proxyBeeShimmerExternalDashboard=.*/proxyBeeShimmerExternalDashboard='$proxyBeeShimmerExternalDashboard'/' $swarmConfigs/proxy.cfg
     fi
     if [ -z "$proxyGoshimmerExternalDashboard" ]; then
         sudo sed -i 's/^proxyGoshimmerExternalDashboard=.*/proxyGoshimmerExternalDashboard=false/' $swarmConfigs/proxy.cfg
@@ -574,6 +915,12 @@ if [ -f "$swarmTmp/proxy.cfg" ]; then
     else
         sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetUrl="'$proxyHornetUrl'"/' $swarmConfigs/proxy.cfg
     fi
+    ####
+    if [ -z "$proxyHornetShimmerUrl" ]; then
+        sudo sed -i 's/^proxyHornetShimmerUrl=.*/proxyHornetShimmerUrl=""/' $swarmConfigs/proxy.cfg
+    else
+        sudo sed -i 's/^proxyHornetShimmerUrl=.*/proxyHornetShimmerUrl="'$proxyHornetShimmerUrl'"/' $swarmConfigs/proxy.cfg
+    fi
     #####
     if [ ! -z "$proxyBeeDomain" ] && [ ! -z "$proxyBeePort" ]; then
         proxyBeeUrl="$proxyBeeDomain:$proxyBeePort"
@@ -582,6 +929,15 @@ if [ -f "$swarmTmp/proxy.cfg" ]; then
         sudo sed -i 's/^proxyBeeUrl=.*/proxyBeeUrl=""/' $swarmConfigs/proxy.cfg
     else
         sudo sed -i 's/^proxyBeeUrl=.*/proxyBeeUrl="'$proxyBeeUrl'"/' $swarmConfigs/proxy.cfg
+    fi
+    #####
+    if [ ! -z "$proxyBeeShimmerDomain" ] && [ ! -z "$proxyBeeShimmerPort" ]; then
+        proxyBeeUrl="$proxyBeeShimmerDomain:$proxyBeeShimmerPort"
+    fi
+    if [ -z "$proxyBeeShimmerUrl" ]; then
+        sudo sed -i 's/^proxyBeeShimmerUrl=.*/proxyBeeShimmerUrl=""/' $swarmConfigs/proxy.cfg
+    else
+        sudo sed -i 's/^proxyBeeShimmerUrl=.*/proxyBeeShimmerUrl="'$proxyBeeShimmerUrl'"/' $swarmConfigs/proxy.cfg
     fi
     #####
     if [ ! -z "$proxyGoshimmerDomain" ] && [ ! -z "$proxyGoshimmerPort" ]; then
@@ -655,10 +1011,22 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's/^hornetAutoUpdate=.*/hornetAutoUpdate='$hornetAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
+    if [ -z "$hornetShimmerAutoUpdate" ]; then
+        sudo sed -i 's/^hornetShimmerAutoUpdate=.*/hornetShimmerAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^hornetShimmerAutoUpdate=.*/hornetShimmerAutoUpdate='$hornetShimmerAutoUpdate'/' $swarmConfigs/swarm.cfg
+    fi
+
     if [ -z "$beeAutoUpdate" ]; then
         sudo sed -i 's/^beeAutoUpdate=.*/beeAutoUpdate=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^beeAutoUpdate=.*/beeAutoUpdate=true/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^beeAutoUpdate=.*/beeAutoUpdate='$beeAutoUpdate'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$beeShimmerAutoUpdate" ]; then
+        sudo sed -i 's/^beeShimmerAutoUpdate=.*/beeShimmerAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^beeShimmerAutoUpdate=.*/beeShimmerAutoUpdate='$beeShimmerAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
     if [ -z "$goshimmerAutoUpdate" ]; then
@@ -679,10 +1047,22 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's/^hornetAllowDbReset=.*/hornetAllowDbReset='$hornetAllowDbReset'/' $swarmConfigs/swarm.cfg
     fi
 
+    if [ -z "$hornetShimmerAllowDbReset" ]; then
+        sudo sed -i 's/^hornetShimmerAllowDbReset=.*/hornetShimmerAllowDbReset=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^hornetShimmerAllowDbReset=.*/hornetShimmerAllowDbReset='$hornetShimmerAllowDbReset'/' $swarmConfigs/swarm.cfg
+    fi
+
     if [ -z "$beeAllowDbReset" ]; then
         sudo sed -i 's/^beeAllowDbReset=.*/beeAllowDbReset=true/' $swarmConfigs/swarm.cfg
     else
         sudo sed -i 's/^beeAllowDbReset=.*/beeAllowDbReset='$beeAllowDbReset'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$beeShimmerAllowDbReset" ]; then
+        sudo sed -i 's/^beeShimmerAllowDbReset=.*/beeShimmerAllowDbReset=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^beeShimmerAllowDbReset=.*/beeShimmerAllowDbReset='$beeShimmerAllowDbReset'/' $swarmConfigs/swarm.cfg
     fi
 
     if [ -z "$goshimmerDbReset" ]; then
@@ -703,10 +1083,22 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's/^hornetCheckSync=.*/hornetCheckSync='$hornetCheckSync'/' $swarmConfigs/swarm.cfg
     fi
 
+    if [ -z "$hornetShimmerCheckSync" ]; then
+        sudo sed -i 's/^hornetShimmerCheckSync=.*/hornetShimmerCheckSync=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^hornetShimmerCheckSync=.*/hornetShimmerCheckSync='$hornetShimmerCheckSync'/' $swarmConfigs/swarm.cfg
+    fi
+
     if [ -z "$beeCheckSync" ]; then
         sudo sed -i 's/^beeCheckSync=.*/beeCheckSync=true/' $swarmConfigs/swarm.cfg
     else
         sudo sed -i 's/^beeCheckSync=.*/beeCheckSync='$beeCheckSync'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$beeShimmerCheckSync" ]; then
+        sudo sed -i 's/^beeShimmerCheckSync=.*/beeShimmerCheckSync=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^beeShimmerCheckSync=.*/beeShimmerCheckSync='$beeShimmerCheckSync'/' $swarmConfigs/swarm.cfg
     fi
 
     if [ -z "$goshimmerCheckSync" ]; then
@@ -721,10 +1113,22 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's/^hornetMaxMilestones=.*/hornetMaxMilestones='$hornetMaxMilestones'/' $swarmConfigs/swarm.cfg
     fi
 
+    if [ -z "$hornetShimmerMaxMilestones" ]; then
+        sudo sed -i 's/^hornetShimmerMaxMilestones=.*/hornetShimmerMaxMilestones=360/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^hornetShimmerMaxMilestones=.*/hornetShimmerMaxMilestones='$hornetShimmerMaxMilestones'/' $swarmConfigs/swarm.cfg
+    fi
+
     if [ -z "$beeMaxMilestones" ]; then
         sudo sed -i 's/^beeMaxMilestones=.*/beeMaxMilestones=360/' $swarmConfigs/swarm.cfg
     else
         sudo sed -i 's/^beeMaxMilestones=.*/beeMaxMilestones='$beeMaxMilestones'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$beeShimmerMaxMilestones" ]; then
+        sudo sed -i 's/^beeShimmerMaxMilestones=.*/beeShimmerMaxMilestones=360/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^beeShimmerMaxMilestones=.*/beeShimmerMaxMilestones='$beeShimmerMaxMilestones'/' $swarmConfigs/swarm.cfg
     fi
 
     if [ -z "$swarmLogRotation" ]; then
@@ -768,6 +1172,24 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
     else
         sudo sed -i 's/^hornetServiceStatusCheck=.*/hornetServiceStatusCheck='$hornetServiceStatusCheck'/' $swarmConfigs/swarm.cfg
     fi
+
+    if [ -z "$hornetShimmerServiceStatusCheck" ]; then
+        sudo sed -i 's/^hornetShimmerServiceStatusCheck=.*/hornetShimmerServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^hornetShimmerServiceStatusCheck=.*/hornetShimmerServiceStatusCheck='$hornetShimmerServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$beeServiceStatusCheck" ]; then
+        sudo sed -i 's/^beeServiceStatusCheck=.*/beeServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^beeServiceStatusCheck=.*/beeServiceStatusCheck='$beeServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$beeShimmerServiceStatusCheck" ]; then
+        sudo sed -i 's/^beeShimmerServiceStatusCheck=.*/beeShimmerServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^beeShimmerServiceStatusCheck=.*/beeShimmerServiceStatusCheck='$beeShimmerServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+    fi
 fi
 
 ####################################################################################################################################
@@ -778,8 +1200,12 @@ if [ -f "$swarmTmp/watchdog.cfg" ]; then
     # Updater for watchdog.log
     sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^hornetShimmerStatusCounter=.*/hornetShimmerStatusCounter='$hornetShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^hornetShimmerSyncCounter=.*/hornetShimmerSyncCounter='$hornetShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^beeShimmerStatusCounter=.*/beeShimmerStatusCounter='$beeShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^beeShimmerSyncCounter=.*/beeShimmerSyncCounter='$beeShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter='$goshimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter='$waspStatusCounter'/' $swarmConfigs/watchdog.cfg
@@ -793,7 +1219,9 @@ if [ -f "$swarmTmp/githubVersion" ]; then
     # Updater for githubVersion
     sudo sed -i 's~^latestSwarmVersion=.*~latestSwarmVersion="'$latestSwarmVersion'"~' $swarmLogs/githubVersion
     sudo sed -i 's~^latestHornetVersion=.*~latestHornetVersion="'$latestHornetVersion'"~' $swarmLogs/githubVersion
+    sudo sed -i 's~^latestHornetShimmerVersion=.*~latestHornetShimmerVersion="'$latestHornetShimmerVersion'"~' $swarmLogs/githubVersion
     sudo sed -i 's~^latestBeeVersion=.*~latestBeeVersion="'$latestBeeVersion'"~' $swarmLogs/githubVersion
+    sudo sed -i 's~^latestBeeShimmerVersion=.*~latestBeeShimmerVersion="'$latestBeeShimmerVersion'"~' $swarmLogs/githubVersion
     sudo sed -i 's~^latestGoshimmerVersion=.*~latestGoshimmerVersion="'$latestGoshimmerVersion'"~' $swarmLogs/githubVersion
     sudo sed -i 's~^latestWaspVersion=.*~latestWaspVersion="'$latestWaspVersion'"~' $swarmLogs/githubVersion
 fi

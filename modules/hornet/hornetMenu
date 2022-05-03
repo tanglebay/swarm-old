@@ -4,10 +4,10 @@
 while [ $exitCode -lt 1 ]; do
     clear
     CHOICE=$(
-        whiptail --title "Hornet - Menu" --menu "\nChoose an option" 20 65 0 \
+        whiptail --title "Hornet (IOTA) - Menu" --menu "\nChoose an option" 20 65 0 \
         "1)" "Hornet Info" \
         "2)" "Hornet Configurations" \
-        "3)" "Hornet Debugging" \
+        "3)" "Hornet Control" \
         "4)" "Hornet Installer" 3>&2 2>&1 1>&3
     )
     exitstatus=$?
@@ -20,129 +20,126 @@ while [ $exitCode -lt 1 ]; do
             source $hornetModules/hornetInfo
         ;;
         "2)")
-            if [ -f "/usr/bin/hornet" ]; then
-                while [ $exitCode -lt 1 ]; do
-                    clear
-                    CHOICE=$(
-                        whiptail --title "Hornet - Configuration" --menu "\nChoose an option" 16 65 0 \
-                        "1)" "Hornet configuration" \
-                        "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
-                    )
+            while [ $exitCode -lt 1 ]; do
+                clear
+                CHOICE=$(
+                    whiptail --title "Hornet (IOTA) - Configuration" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "Hornet configuration" \
+                    "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
+                )
 
-                    exitstatus=$?
-                    if [ "$exitstatus" = "1" ]; then
-                        exitCode=1
-                    fi
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
 
-                    case $CHOICE in
-                        "1)")
-                            source $hornetModules/hornetConfiguration
-                        ;;
-                        "2)")
-                            while [ $exitCode -lt 1 ]; do
-                                clear
-                                CHOICE=$(
-                                    whiptail --title "Hornet - Configuration" --menu "\nChoose an option" 22 65 0 \
-                                    "1)" "Peering.json" \
-                                    "2)" "Mainnet.json" \
-                                    "3)" "Comnet.json" \
-                                    "4)" "Devnet.json" \
-                                    "5)" "Event.json" \
-                                    "6)" "Hornet.cfg (SWARM)" 3>&2 2>&1 1>&3
-                                )
+                case $CHOICE in
+                    "1)")
+                        source $hornetModules/hornetConfiguration
+                    ;;
+                    "2)")
+                        while [ $exitCode -lt 1 ]; do
+                            clear
+                            CHOICE=$(
+                                whiptail --title "Hornet (IOTA) - Configuration" --menu "\nChoose an option" 22 65 0 \
+                                "1)" "Peering.json" \
+                                "2)" "Mainnet.json" \
+                                "3)" "Comnet.json" \
+                                "4)" "Devnet.json" \
+                                "5)" "Event.json" \
+                                "6)" "Hornet.cfg (SWARM)" 3>&2 2>&1 1>&3
+                            )
 
-                                exitstatus=$?
-                                if [ "$exitstatus" = "1" ]; then
-                                    exitCode=1
-                                fi
+                            exitstatus=$?
+                            if [ "$exitstatus" = "1" ]; then
+                                exitCode=1
+                            fi
 
-                                case $CHOICE in
-                                    "1)")
-                                        sudo $swarmCLEditor $hornetHome/peering.json
-                                        if (whiptail --title "Hornet - Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                                            {
-                                                echo 0
-                                                echo 50
-                                                sudo systemctl restart hornet
-                                                echo 100
-                                                sleep 0.25
-                                            } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
-                                        fi
-                                    ;;
-                                    "2)")
-                                        sudo $swarmCLEditor $hornetHome/config.json
-                                        if (whiptail --title "Hornet - Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                                            {
-                                                echo 0
-                                                echo 50
-                                                sudo systemctl restart hornet
-                                                echo 100
-                                                sleep 0.25
-                                            } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
-                                        fi
-                                    ;;
-                                    "3)")
-                                        sudo $swarmCLEditor $hornetHome/config_comnet.json
-                                        if (whiptail --title "Hornet - Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                                            {
-                                                echo 0
-                                                echo 50
-                                                sudo systemctl restart hornet
-                                                echo 100
-                                                sleep 0.25
-                                            } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
-                                        fi
-                                    ;;
-                                    "4)")
-                                        sudo $swarmCLEditor $hornetHome/config_devnet.json
-                                        if (whiptail --title "Hornet - Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                                            {
-                                                echo 0
-                                                echo 50
-                                                sudo systemctl restart hornet
-                                                echo 100
-                                                sleep 0.25
-                                            } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
-                                        fi
-                                    ;;
-                                    "5)")
-                                        sudo $swarmCLEditor $swarmConfigs/event.json
-                                    ;;
-                                    "6)")
-                                        sudo $swarmCLEditor $swarmConfigs/hornet.cfg
-                                        if (whiptail --title "Hornet - Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
-                                            {
-                                                echo 0
-                                                source $hornetModules/hornetParser
-                                                echo 50
-                                                sudo systemctl restart hornet
-                                                echo 100
-                                                sleep 0.25
-                                            } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
-                                        fi
-                                    ;;
-                                esac
-                            done
-                            exitCode=0
-                        ;;
-                    esac
-                done
-                exitCode=0
-            else
-                whiptail --title "Hornet - Configuration" --msgbox "Hornet installation not found, please install Hornet first!" 8 65
-            fi
+                            case $CHOICE in
+                                "1)")
+                                    sudo $swarmCLEditor $hornetHome/peering.json
+                                    if (whiptail --title "Hornet (IOTA) - Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl restart hornet > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
+                                    fi
+                                ;;
+                                "2)")
+                                    sudo $swarmCLEditor $hornetHome/config.json
+                                    if (whiptail --title "Hornet (IOTA) - Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl restart hornet > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
+                                    fi
+                                ;;
+                                "3)")
+                                    sudo $swarmCLEditor $hornetHome/config_comnet.json
+                                    if (whiptail --title "Hornet (IOTA) - Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl restart hornet > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
+                                    fi
+                                ;;
+                                "4)")
+                                    sudo $swarmCLEditor $hornetHome/config_devnet.json
+                                    if (whiptail --title "Hornet (IOTA) - Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl restart hornet > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
+                                    fi
+                                ;;
+                                "5)")
+                                    sudo $swarmCLEditor $swarmConfigs/event.json
+                                ;;
+                                "6)")
+                                    sudo $swarmCLEditor $swarmConfigs/hornet.cfg
+                                    if (whiptail --title "Hornet (IOTA) - Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                                        {
+                                            echo 0
+                                            source $hornetModules/hornetParser
+                                            echo 50
+                                            sudo systemctl restart hornet > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                esac
+            done
+            exitCode=0
         ;;
         "3)")
             if [ -f "/usr/bin/hornet" ]; then
                 while [ $exitCode -lt 1 ]; do
                     clear
                     CHOICE=$(
-                        whiptail --title "Hornet - Debugging" --menu "\nChoose your option" 18 65 0 \
+                        whiptail --title "Hornet (IOTA) - Control" --menu "\nChoose your option" 18 65 0 \
                         "1)" "Show Hornet log" \
                         "2)" "Start/Stop Hornet" \
-                        "3)" "Reset Hornet event database" \
-                        "4)" "Reset Hornet all databases" \
-                        "5)" "Reset Hornet config" 3>&2 2>&1 1>&3
+                        "3)" "Event Validation" \
+                        "4)" "Reset Hornet event database" \
+                        "5)" "Reset Hornet all databases" \
+                        "6)" "Reset Hornet config" 3>&2 2>&1 1>&3
                     )
                     exitstatus=$?
                     if [ "$exitstatus" = "1" ]; then
@@ -156,7 +153,7 @@ while [ $exitCode -lt 1 ]; do
                         ;;
                         "2)")
                             CHOICE=$(
-                                whiptail --title "Hornet - Debugging" --menu "\nChoose your option" 20 65 0 \
+                                whiptail --title "Hornet (IOTA) - Control" --menu "\nChoose your option" 20 65 0 \
                                 "1)" "Restart Hornet" \
                                 "2)" "Start Hornet" \
                                 "3)" "Stop Hornet" \
@@ -167,57 +164,94 @@ while [ $exitCode -lt 1 ]; do
                                     {
                                         echo 0
                                         echo 50
-                                        sudo systemctl restart hornet
+                                        sudo systemctl restart hornet > /dev/null 2>&1
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
-                                    whiptail --title "Hornet - Debugging" --msgbox "Hornet successfully restarted" 8 65
+                                    whiptail --title "Hornet (IOTA) - Control" --msgbox "Hornet successfully restarted" 8 65
                                 ;;
                                 "2)")
                                     {
                                         echo 0
                                         echo 50
-                                        sudo systemctl start hornet
+                                        sudo systemctl start hornet > /dev/null 2>&1
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while Hornet is starting..." 8 65 0
-                                    whiptail --title "Hornet - Debugging" --msgbox "Hornet successfully started" 8 65
+                                    whiptail --title "Hornet (IOTA) - Control" --msgbox "Hornet successfully started" 8 65
                                 ;;
                                 "3)")
                                     {
                                         echo 0
                                         echo 50
-                                        sudo systemctl stop hornet
+                                        sudo systemctl stop hornet > /dev/null 2>&1
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while Hornet is stopping..." 8 65 0
-                                    whiptail --title "Hornet - Debugging" --msgbox "Hornet successfully stopped." 8 65
+                                    whiptail --title "Hornet (IOTA) - Control" --msgbox "Hornet successfully stopped." 8 65
                                 ;;
                                 "4)")
                                     hornetStatus="$(sudo systemctl status hornet)"
-                                    whiptail --title "Hornet - Debugging" --msgbox "$hornetStatus" 15 65
+                                    whiptail --title "Hornet (IOTA) - Control" --msgbox "$hornetStatus" 15 65
                                 ;;
                             esac
                         ;;
                         "3)")
-                            if (whiptail --title "Hornet - Debugging" --yesno --defaultno "Are you sure you want to delete the hornet event database?" 8 65); then
+                            while [ $exitCode -lt 1 ]; do
+                                clear
+                                CHOICE=$(
+                                    whiptail --title "Hornet (IOTA) - Event Validation" --menu "\nChoose your option" 18 65 0 \
+                                    "1)" "Event Validator" \
+                                    "2)" "Show latest event results via console" 3>&2 2>&1 1>&3
+                                )
+                                exitstatus=$?
+                                if [ "$exitstatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        eventId=$(whiptail --inputbox "\nPlease enter the event id you want to validate" 10 65 --title "Hornet (IOTA) - Event Validation" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ $exitStatus != 1 ] && [ ! -z "$eventId" ]; then
+                                            nodeId="Hornet"
+                                            source $swarmPlugins/shared/eventValidation
+                                        fi
+                                    ;;
+                                    "2)")
+                                        if [ -f "$swarmLogs/officialEvent.log" ]; then
+                                            clear
+                                            cat $swarmLogs/officialEvent.log
+                                            echo ""
+                                            echo ""
+                                            read -n 1 -s -r -p "Press any key to continue"
+                                        fi
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
+                        ;;
+                        "4)")
+                            if (whiptail --title "Hornet (IOTA) - Control" --yesno --defaultno "Are you sure you want to delete the hornet event database?" 8 65); then
                                 source $swarmConfigs/hornet.cfg
                                 {
                                     echo 0
                                     echo 25
-                                    sudo systemctl stop hornet
+                                    sudo systemctl stop hornet > /dev/null 2>&1
                                     echo 50
                                     sudo rm -rf $hornetHome/${hornetNetwork}db/participation > /dev/null 2>&1
                                     echo 75
-                                    sudo systemctl start hornet
+                                    sudo systemctl start hornet > /dev/null 2>&1
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
-                                whiptail --title "Hornet - Debugging" --msgbox "Event database successfully reset." 8 65
+                                whiptail --title "Hornet (IOTA) - Management" --msgbox "Event database successfully reset." 8 65
                             fi
                         ;;
-                        "4)")
-                            if (whiptail --title "Hornet - Debugging" --yesno --defaultno "Are you sure you want to delete the hornet database?" 8 65); then
+                        "5)")
+                            if (whiptail --title "Hornet (IOTA) - Management" --yesno --defaultno "Are you sure you want to delete the hornet database?" 8 65); then
+                                if (whiptail --title "Hornet (IOTA) - Management" --yesno --defaultno "Do you want to use an alternative source for the snapshot?" 8 65); then
+                                    hornetSnapshotSource=$(whiptail --inputbox "\nPlease specify the download url for the full snapshot" 10 65 --title "Hornet (IOTA) - Management" 3>&1 1>&2 2>&3)
+                                fi
                                 source $swarmConfigs/hornet.cfg
                                 {
                                     echo 0
@@ -225,10 +259,13 @@ while [ $exitCode -lt 1 ]; do
                                     if [ "$killall" = "true" ]; then
                                         sudo killall -s SIGKILL hornet > /dev/null 2>&1
                                     else
-                                        sudo systemctl stop hornet
+                                        sudo systemctl stop hornet > /dev/null 2>&1
                                     fi
                                     echo 50
                                     sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots/${hornetNetwork}/*.bin
+                                    if [ ! -z "$hornetSnapshotSource" ]; then
+                                        sudo -u hornet wget -q -O $hornetHome/snapshots/${hornetShimmerNetwork}/full_snapshot.bin $hornetSnapshotSource
+                                    fi
                                     sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter=0/' $swarmConfigs/watchdog.cfg
                                     sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter=0/' $swarmConfigs/watchdog.cfg
                                     echo 75
@@ -236,16 +273,16 @@ while [ $exitCode -lt 1 ]; do
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
-                                whiptail --title "Hornet - Debugging" --msgbox "${hornetNetwork}DB successfully reset." 8 65
+                                whiptail --title "Hornet (IOTA) - Control" --msgbox "${hornetNetwork}DB successfully reset." 8 65
                             fi
                         ;;
-                        "5)")
-                            if (whiptail --title "Hornet - Debugging" --yesno --defaultno "Are you sure you want to reset the hornet config file?" 8 65); then
+                        "6)")
+                            if (whiptail --title "Hornet (IOTA) - Control" --yesno --defaultno "Are you sure you want to reset the hornet config file?" 8 65); then
                                 source $swarmConfigs/hornet.cfg
                                 {
                                     echo 0
                                     echo 20
-                                    sudo systemctl stop hornet
+                                    sudo systemctl stop hornet > /dev/null 2>&1
                                     echo 40
                                     if [ "$hornetNetwork" = "mainnet" ]; then
                                         sudo -u hornet wget -q -O $hornetHome/config.json https://raw.githubusercontent.com/gohornet/hornet/mainnet/$hornetConfig.json
@@ -255,24 +292,24 @@ while [ $exitCode -lt 1 ]; do
                                     echo 60
                                     source $hornetModules/hornetParser
                                     echo 80
-                                    sudo systemctl start hornet
+                                    sudo systemctl start hornet > /dev/null 2>&1
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the config reset is running (this may take a while)..." 8 65 0
-                                whiptail --title "Hornet - Debugging" --msgbox "${hornetNetwork} config successfully reset." 8 65
+                                whiptail --title "Hornet (IOTA) - Control" --msgbox "${hornetNetwork} config successfully reset." 8 65
                             fi
                         ;;
                     esac
                 done
                 exitCode=0
             else
-                whiptail --title "Hornet - Debugging" --msgbox "Hornet installation not found, please install Hornet first." 8 65
+                whiptail --title "Hornet (IOTA) - Control" --msgbox "Hornet installation not found, please install Hornet first." 8 65
             fi
         ;;
         "4)")
             while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
-                    whiptail --title "Hornet - Installer" --menu "\nChoose your option" 18 65 0 \
+                    whiptail --title "Hornet (IOTA) - Installer" --menu "\nChoose your option" 18 65 0 \
                     "1)" "Update Hornet" \
                     "2)" "Install Hornet" \
                     "3)" "Remove Hornet" 3>&2 2>&1 1>&3
@@ -286,37 +323,30 @@ while [ $exitCode -lt 1 ]; do
                 case $CHOICE in
                     "1)")
                         if [ -f "/usr/bin/hornet" ]; then
-                            if (whiptail --title "Hornet - Installer" --yesno --defaultno "Do you really want to update Hornet?" 8 65); then
+                            if (whiptail --title "Hornet (IOTA) - Installer" --yesno --defaultno "Do you really want to update Hornet?" 8 65); then
                                 # Update HORNET
                                 source $hornetModules/hornetVersion
-                                if [ "$hornetVersion" != "$latestHornetVersion" ]; then
+                                if [ "$latestHornetVersion" != "$hornetVersion" ]; then
                                     {
                                         echo 0
-                                        sudo apt-get update > /dev/null 2>&1
                                         echo 33
-                                        sudo apt-get -qq -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confnew install hornet > /dev/null 2>&1
+                                        source $hornetModules/hornetInstaller
                                         echo 66
-                                        IFS=', ' read -r -a ARRAYhornetConfigs <<< "$hornetConfigs"
-                                        for hornetConfig in "${ARRAYhornetConfigs[@]}"
-                                        do
-                                            if [ -f "$hornetHome/$hornetConfig.json.dpkg-dist" ]; then
-                                                sudo cp -r $hornetHome/$hornetConfig.json.dpkg-dist $hornetHome/$hornetConfig.json > /dev/null 2>&1
-                                                sudo rm -rf $hornetHome/$hornetConfig.json.dpkg* > /dev/null 2>&1
-                                            fi
-                                        done
-                                        unset ARRAYhornetConfigs
-                                        unset hornetConfig                                
+                                        source $hornetModules/hornetParser
                                         echo 100
                                         sleep 0.5
                                     } | whiptail --gauge "Please wait while Hornet is updated..." 8 65 0
                                     newHornetVersion=$(hornet -v | awk '{ print $2 }')
-                                    if [ "$hornetVersion" != "$newHornetVersion" ]; then
+                                    if [ "$newHornetVersion" != "$hornetVersion" ]; then
                                         {
-                                            # CALL MODULE CONFIGPARSER
-                                            source $hornetModules/hornetParser
+                                            echo 0
+                                            echo 33
                                             sudo systemctl restart hornet
-                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                            echo 66
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while restarting Hornet..." 8 65 0
                                     fi
+                                    unset newHornetVersion
                                     whiptail --title "Hornet - Installer" --msgbox "Hornet successfully updated." 8 65
                                 else
                                     whiptail --title "Hornet - Installer" --msgbox "Congratulations, you have already installed the latest version of Hornet." 8 65
@@ -327,7 +357,74 @@ while [ $exitCode -lt 1 ]; do
                         fi
                     ;;
                     "2)")
-                        source $hornetModules/hornetInstaller
+                        if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/bee-shimmer" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
+                            if (whiptail --title "Hornet - Installer" --yesno --defaultno "Already installed nodes found on the system!\nIt is not recommended to run multiple nodes on one host.\n\nDo you still want to continue?" 12 65); then
+                                hornetSkipInstallation=false
+                            else
+                                hornetSkipInstallation=true
+                            fi
+                        else
+                            hornetSkipInstallation=false
+                        fi
+                        # INSTALL Hornet
+                        if [ ! -f "/usr/bin/hornet" ] && [ "$hornetSkipInstallation" = "false" ]; then
+                            {
+                                echo 0
+                                echo 10
+                                source $swarmConfigs/hornet.cfg
+                                echo 30
+                                source $hornetModules/hornetVersion
+                                echo 40
+                                source $hornetModules/hornetInstaller
+                                echo 50
+                                if [ -f "/usr/bin/hornet" ]; then
+                                    source $swarmConfigs/hornet.cfg
+                                    echo 60
+                                    # CALL MODULE CONFIGPARSER
+                                    source $hornetModules/hornetParser
+                                    echo 70
+                                    if [ "$ufw" = "true" ]; then
+                                        if [ "$hornetRunAsEntryNode" != "true" ]; then
+                                            sudo ufw allow $hornetGossipPort/tcp > /dev/null 2>&1
+                                        fi
+                                        if [[ $hornetEnablePlugins = *autopeering* ]]; then
+                                            sudo ufw allow $hornetAutopeeringPort/udp > /dev/null 2>&1
+                                        fi
+                                    fi
+                                    sudo systemctl start hornet > /dev/null 2>&1
+                                    echo 80
+                                    sleep 2
+                                    hornetStatus="$(systemctl show -p ActiveState --value hornet)"
+                                    if [ "$hornetStatus" != "active" ]; then
+                                        sudo systemctl restart hornet > /dev/null 2>&1
+                                    fi
+                                    echo 100
+                                fi
+                            } | whiptail --gauge "Please wait while installing Hornet..." 8 65 0
+                            if [ -f "/usr/bin/hornet" ]; then
+                                whiptail --title "Hornet - Installer" --msgbox "Hornet installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $hornetGossipPort/tcp\nAutopeering: $hornetAutopeeringPort/udp" 15 65
+                            else
+                                {
+                                    echo 0
+                                    echo 25
+                                    source $swarmConfigs/hornet.cfg
+                                    echo 50
+                                    source $hornetModules/hornetRemoval
+                                    echo 75
+                                    echo 100
+                                } | whiptail --gauge "Please wait while the Hornet files are removed...." 8 65 0
+                                whiptail --title "Hornet - Installer" --msgbox "Error while installing Hornet! Please try again later." 8 65
+                            fi
+                        else
+                            if [ -f "/usr/bin/hornet" ]; then
+                                whiptail --title "Hornet - Installer" --msgbox "Hornet already installed." 8 65
+                            else
+                                if [ "$hornetSkipInstallation" = "true" ]; then
+                                    whiptail --title "Hornet - Installer" --msgbox "Installation of Hornet aborted." 8 65
+                                fi
+                            fi
+                        fi
+                        unset hornetSkipInstallation
                     ;;
                     "3)")
                         if (whiptail --title "Hornet - Installer" --yesno --defaultno "Do you really want to remove Hornet?" 8 65); then

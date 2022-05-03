@@ -1,0 +1,47 @@
+#!/bin/bash
+
+source $swarmConfigs/hornet-shimmer.cfg
+source $swarmConfigs/proxy.cfg
+source $proxyModules/proxyParser
+
+if [ "$killall" = "true" ]; then
+    sudo killall -s SIGKILL hornet-shimmer > /dev/null 2>&1
+else
+    sudo systemctl stop hornet-shimmer > /dev/null 2>&1
+fi
+
+if [ ! -f "/usr/bin/hornet" ]; then
+    if id hornet >/dev/null 2>&1; then
+        sudo deluser hornet >/dev/null
+    fi
+fi
+
+sudo systemctl disable hornet-shimmer > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/hornet-shimmer /var/lib/hornet-shimmer /lib/systemd/system/hornet-shimmer.service /etc/default/hornet-shimmer > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+if [ "$ufw" = "true" ]; then
+    sudo ufw delete allow $hornetShimmerGossipPort/tcp > /dev/null 2>&1
+    sudo ufw delete allow $hornetShimmerAutopeeringPort/udp > /dev/null 2>&1
+fi
+
+if [ ! -f "/usr/bin/hornet" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ]; then
+    sudo snap remove go > /dev/null 2>&1
+fi
+
+if [ -f "/etc/nginx/sites-enabled/hornet-shimmer" ]; then
+    if [ "$ufw" = "true" ]; then
+        if [ "$proxyHornetShimmerPort" != "$proxySwarmDashboardPort" ] && [ "$proxyHornetShimmerPort" != "$proxyHornetPort" ] && [ "$proxyHornetShimmerPort" != "$proxyBeePort" ] && [ "$proxyHornetShimmerPort" != "$proxyGoshimmerPort" ] && [ "$proxyHornetShimmerPort" != "$proxyWaspDashboardPort" ] && [ "$proxyHornetShimmerPort" != "$proxyWaspApiPort" ]; then
+            sudo ufw delete allow $proxyHornetShimmerPort/tcp > /dev/null 2>&1
+        fi
+    fi
+    sudo sed -i 's/^proxyHornetShimmerUrl=.*/proxyHornetShimmerUrl=""/' $swarmConfigs/proxy.cfg
+    sudo rm -rf /etc/nginx/sites-enabled/hornet-shimmer > /dev/null 2>&1
+    sudo systemctl reload nginx
+fi
+if [ -f "$proxyLandingPage" ]; then
+    sudo sed -i 's/https:\/\/'$proxyHornetShimmerDashboardDomain':'$proxyHornetShimmerDashboardPort'\/dashboard" target="_blank/#/g' $proxyLandingPage
+    sudo sed -i 's~/img/hornet-shimmer.*id~/img/hornet-shimmer_logo_gray.svg" alt="Hornet (Shimmer) not installed" id~' $proxyLandingPage
+fi

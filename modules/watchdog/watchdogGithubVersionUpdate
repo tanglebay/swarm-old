@@ -9,69 +9,127 @@ if [ "$timeFrame" = "00" ] || [ "$timeFrame" = "30" ]; then
     # Latest SWARM version
     latestSwarmVersion=$(curl --max-time 5 -s https://api.github.com/repos/TangleBay/swarm/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
     latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
+    sudo sed -i 's~^latestSwarmVersion=.*~latestSwarmVersion="'$latestSwarmVersion'"~' $swarmLogs/githubVersion
 
-    # Latest Hornet version
-    if [ "$hornetRelease" = "stable" ]; then
-        latestHornetVersion=$(curl --max-time 5 -s https://api.github.com/repos/gohornet/hornet/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-        latestHornetVersion=$(echo $latestHornetVersion | tr -d 'v')
-    fi
-    if [ "$hornetRelease" = "testing" ]; then
-        latestHornetVersion=$(curl --max-time 5 -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | head -n 1)
-        latestHornetVersion=$(echo $latestHornetVersion | tr -d 'v')
-    fi
-    # Latest Bee version
-    latestBeeVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-    latestBeeVersion=$(echo $latestBeeVersion | tr -d 'v')
-
-    if [ "$latestHornetVersion" = "\"\"" ] || [ -z "$latestHornetVersion" ] || [ "$latestHornetVersion" = "null" ]; then
-        if [ -f "/usr/bin/hornet" ]; then
-            latestHornetStableVersion=$(hornet -v | awk '{ print $2 }')
+    if [ -f "/usr/bin/hornet" ]; then
+        # Latest Hornet version
+        if [ "$hornetRelease" = "stable" ]; then
+            latestHornetVersion=$(curl --max-time 5 -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $hornetReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+            latestHornetVersion=$(echo $latestHornetVersion | tr -d 'v')
         fi
-    fi
-    if [ "$latestBeeVersion" = "\"\"" ] || [ -z "$latestBeeVersion" ] || [ "$latestBeeVersion" = "null" ]; then
-        if [ -f "/usr/bin/bee" ]; then
-            latestBeeVersion=$(/usr/bin/bee -v | tr -d 'v"')
-            if [[ $latestBeeVersion = *rc[0-9]* ]]; then
-                latestBeeVersion=$(echo $latestBeeVersion | cut -f1,2 -d"-")
-            else
-                latestBeeVersion=$(echo $latestBeeVersion | cut -f1 -d"-")
+        if [ "$hornetRelease" = "beta" ]; then
+            latestHornetVersion=$(curl --max-time 5 -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $hornetReleaseVersion | awk '!/-alpha/' | head -n 1)
+            latestHornetVersion=$(echo $latestHornetVersion | tr -d 'v')
+        fi
+        if [ "$hornetRelease" = "alpha" ]; then
+            latestHornetVersion=$(curl --max-time 5 -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $hornetReleaseVersion | head -n 1)
+            latestHornetVersion=$(echo $latestHornetVersion | tr -d 'v')
+        fi
+        if [ "$latestHornetVersion" = "\"\"" ] || [ -z "$latestHornetVersion" ] || [ "$latestHornetVersion" = "null" ]; then
+            if [ -f "/usr/bin/hornet" ]; then
+                latestHornetVersion=$(/usr/bin/hornet -v | awk '{ print $2 }')
             fi
         fi
+        sudo sed -i 's~^latestHornetVersion=.*~latestHornetVersion="'$latestHornetVersion'"~' $swarmLogs/githubVersion
     fi
 
-    sudo sed -i 's~^latestSwarmVersion=.*~latestSwarmVersion="'$latestSwarmVersion'"~' $swarmLogs/githubVersion
-    sudo sed -i 's~^latestHornetVersion=.*~latestHornetVersion="'$latestHornetVersion'"~' $swarmLogs/githubVersion
-    sudo sed -i 's~^latestBeeVersion=.*~latestBeeVersion="'$latestBeeVersion'"~' $swarmLogs/githubVersion
+    if [ -f "/usr/bin/hornet-shimmer" ]; then
+        # Latest Hornet-Shimmer version
+        if [ "$hornetShimmerRelease" = "stable" ]; then
+            latestHornetShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $hornetShimmerReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+            latestHornetShimmerVersion=$(echo $latestHornetShimmerVersion | tr -d 'v')
+        fi
+        if [ "$hornetShimmerRelease" = "beta" ]; then
+            latestHornetShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $hornetShimmerReleaseVersion | awk '!/-alpha/' | head -n 1)
+            latestHornetShimmerVersion=$(echo $latestHornetShimmerVersion | tr -d 'v')
+        fi
+        if [ "$hornetShimmerRelease" = "alpha" ]; then
+            latestHornetShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/gohornet/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $hornetShimmerReleaseVersion | head -n 1)
+            latestHornetShimmerVersion=$(echo $latestHornetShimmerVersion | tr -d 'v')
+        fi
+        if [ "$latestHornetShimmerVersion" = "\"\"" ] || [ -z "$latestHornetShimmerVersion" ] || [ "$latestHornetShimmerVersion" = "null" ]; then
+            if [ -f "/usr/bin/hornet-shimmer" ]; then
+                latestHornetShimmerVersion=$(/usr/bin/hornet-shimmer -v | awk '{ print $2 }')
+            fi
+        fi
+        sudo sed -i 's~^latestHornetShimmerVersion=.*~latestHornetShimmerVersion="'$latestHornetShimmerVersion'"~' $swarmLogs/githubVersion
+    fi
+
+    if [ -f "/usr/bin/bee" ]; then
+        # Latest Bee version
+        if [ "$beeRelease" = "stable" ]; then
+            latestBeeVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+            latestBeeVersion=$(echo $latestBeeVersion | tr -d 'v')
+        fi
+        if [ "$beeRelease" = "beta" ]; then
+            latestBeeVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeReleaseVersion | awk '!/-alpha/' | head -n 1)
+            latestBeeVersion=$(echo $latestBeeVersion | tr -d 'v')
+        fi
+        if [ "$beeRelease" = "alpha" ]; then
+            latestBeeVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeReleaseVersion | head -n 1)
+            latestBeeVersion=$(echo $latestBeeVersion | tr -d 'v')
+        fi
+        if [ "$latestBeeVersion" = "\"\"" ] || [ -z "$latestBeeVersion" ] || [ "$latestBeeVersion" = "null" ]; then
+            if [ -f "/usr/bin/bee-shimmer" ]; then
+                latestBeeVersion=$(/usr/bin/bee -v | awk '{ print $2 }')
+            fi
+        fi
+        sudo sed -i 's~^latestBeeVersion=.*~latestBeeVersion="'$latestBeeVersion'"~' $swarmLogs/githubVersion
+    fi
 fi
 
 if [ "$timeFrame" = "15" ] || [ "$timeFrame" = "45" ]; then
     # Latest SWARM version
     latestSwarmVersion=$(curl --max-time 5 -s https://api.github.com/repos/TangleBay/swarm/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
     latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
-
-    # Latest GoShimmer version
-    latestGoshimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/goshimmer/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-    latestGoshimmerVersion=$(echo $latestGoshimmerVersion | tr -d 'v')
-
-    # Latest WASP version
-    latestWaspVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/wasp/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-    latestWaspVersion=$(echo $latestWaspVersion | tr -d 'v')
-
     if [ "$latestSwarmVersion" = "\"\"" ] || [ -z "$latestSwarmVersion" ] || [ "$latestSwarmVersion" = "null" ]; then
         latestSwarmVersion=$version
     fi
-    if [ "$latestGoshimmerVersion" = "\"\"" ] || [ -z "$latestGoshimmerVersion" ] || [ "$latestGoshimmerVersion" = "null" ]; then
-        if [ -f "/usr/bin/goshimmer" ]; then
-            latestGoshimmerVersion=$(cd $goshimmerHome ; /usr/bin/goshimmer -v | awk '{print $2}' | tr -d 'v')
+    sudo sed -i 's~^latestSwarmVersion=.*~latestSwarmVersion="'$latestSwarmVersion'"~' $swarmLogs/githubVersion
+
+    if [ -f "/usr/bin/bee-shimmer" ]; then
+        # Latest Bee-Shimmer version
+        if [ "$beeShimmerRelease" = "stable" ]; then
+            latestBeeShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeShimmerReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+            latestBeeShimmerVersion=$(echo $latestBeeShimmerVersion | tr -d 'v')
         fi
-    fi
-    if [ "$latestWaspVersion" = "\"\"" ] || [ -z "$latestWaspVersion" ] || [ "$latestWaspVersion" = "null" ]; then
-        if [ -f "/usr/bin/wasp" ]; then
-            latestWaspVersion=$(cd $waspHome ; /usr/bin/wasp -v | awk '{print $2}' | tr -d 'v')
+        if [ "$beeShimmerRelease" = "beta" ]; then
+            latestBeeShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeShimmerReleaseVersion | awk '!/-alpha/' | head -n 1)
+            latestBeeShimmerVersion=$(echo $latestBeeShimmerVersion | tr -d 'v')
         fi
+        if [ "$beeShimmerRelease" = "alpha" ]; then
+            latestBeeShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeShimmerReleaseVersion | head -n 1)
+            latestBeeShimmerVersion=$(echo $latestBeeShimmerVersion | tr -d 'v')
+        fi
+        if [ "$latestBeeShimmerVersion" = "\"\"" ] || [ -z "$latestBeeShimmerVersion" ] || [ "$latestBeeShimmerVersion" = "null" ]; then
+            if [ -f "/usr/bin/bee-shimmer" ]; then
+                latestBeeShimmerVersion=$(/usr/bin/bee-shimmer -v | awk '{ print $2 }')
+            fi
+        fi
+        sudo sed -i 's~^latestBeeShimmerVersion=.*~latestBeeShimmerVersion="'$latestBeeShimmerVersion'"~' $swarmLogs/githubVersion
     fi
 
-    sudo sed -i 's~^latestSwarmVersion=.*~latestSwarmVersion="'$latestSwarmVersion'"~' $swarmLogs/githubVersion
-    sudo sed -i 's~^latestGoshimmerVersion=.*~latestGoshimmerVersion="'$latestGoshimmerVersion'"~' $swarmLogs/githubVersion
-    sudo sed -i 's~^latestWaspVersion=.*~latestWaspVersion="'$latestWaspVersion'"~' $swarmLogs/githubVersion
+    if [ -f "/usr/bin/goshimmer" ]; then
+        # Latest GoShimmer version
+        latestGoshimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/goshimmer/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+        latestGoshimmerVersion=$(echo $latestGoshimmerVersion | tr -d 'v')
+        if [ "$latestGoshimmerVersion" = "\"\"" ] || [ -z "$latestGoshimmerVersion" ] || [ "$latestGoshimmerVersion" = "null" ]; then
+            if [ -f "/usr/bin/goshimmer" ]; then
+                latestGoshimmerVersion=$(cd $goshimmerHome ; /usr/bin/goshimmer -v | awk '{print $2}' | tr -d 'v')
+            fi
+        fi
+        sudo sed -i 's~^latestGoshimmerVersion=.*~latestGoshimmerVersion="'$latestGoshimmerVersion'"~' $swarmLogs/githubVersion
+    fi
+
+    if [ -f "/usr/bin/wasp" ]; then
+        # Latest WASP version
+        latestWaspVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/wasp/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+        latestWaspVersion=$(echo $latestWaspVersion | tr -d 'v')
+        if [ "$latestWaspVersion" = "\"\"" ] || [ -z "$latestWaspVersion" ] || [ "$latestWaspVersion" = "null" ]; then
+            if [ -f "/usr/bin/wasp" ]; then
+                latestWaspVersion=$(cd $waspHome ; /usr/bin/wasp -v | awk '{print $2}' | tr -d 'v')
+            fi
+        fi
+        sudo sed -i 's~^latestWaspVersion=.*~latestWaspVersion="'$latestWaspVersion'"~' $swarmLogs/githubVersion
+    fi
 fi

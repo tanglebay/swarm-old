@@ -19,14 +19,14 @@ while [ $exitCode -lt 1 ]; do
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
-        if [ "$restartWasp" = "true" ]; then
+        if [ "$restartWasp" = "true" ] && [ -f "/usr/bin/wasp" ]; then
             if (whiptail --title "WASP Menu" --yesno "Would you like to apply the changes and restart WASP?" 8 65); then
                 {
                     echo 0
                     echo 33
                     source $waspModules/waspParser
                     echo 50
-                    sudo systemctl restart wasp
+                    sudo systemctl restart wasp > /dev/null 2>&1
                     sleep 0.25
                     echo 100
                     sleep 0.25
@@ -54,17 +54,23 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/wasp-cli" ]; then
                             waspPeeringId=$(cd /var/lib/wasp ; /usr/bin/wasp-cli peering info | head -n 1 | awk '{ print $2 }')
                             whiptail --title "WASP - CLI" --msgbox "$waspAlias Peering-ID: $waspPeeringId" 8 65
+                        else
+                            whiptail --title "WASP - CLI" --msgbox "Please install Wasp first." 8 65
                         fi
                     ;;
                     "2)")
-                        inputNeighborId=$(whiptail --inputbox "\nSet the wasp ID of the new neighbor:" 8 65 --title "WASP - CLI" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ "$exitStatus" != "1" ] && [ ! -z "$inputNeighborId" ]; then
-                            inputNeighborNetId=$(whiptail --inputbox "\nSet the wasp NetID of the new neighbor:" 8 65 --title "WASP - CLI" 3>&1 1>&2 2>&3)
+                        if [ -f "/usr/bin/wasp-cli" ]; then
+                            inputNeighborId=$(whiptail --inputbox "\nSet the wasp ID of the new neighbor:" 8 65 --title "WASP - CLI" 3>&1 1>&2 2>&3)
                             exitStatus=$?
-                            if [ "$exitStatus" != "1" ] && [ ! -z "$inputNeighborNetId" ]; then
-                                (cd /var/lib/wasp ; /usr/bin/wasp-cli peering trust $inputNeighborId $inputNeighborNetId)
+                            if [ "$exitStatus" != "1" ] && [ ! -z "$inputNeighborId" ]; then
+                                inputNeighborNetId=$(whiptail --inputbox "\nSet the wasp NetID of the new neighbor:" 8 65 --title "WASP - CLI" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ "$exitStatus" != "1" ] && [ ! -z "$inputNeighborNetId" ]; then
+                                    (cd /var/lib/wasp ; /usr/bin/wasp-cli peering trust $inputNeighborId $inputNeighborNetId)
+                                fi
                             fi
+                        else
+                            whiptail --title "WASP - CLI" --msgbox "Please install Wasp first." 8 65
                         fi
                     ;;
                 esac
@@ -89,7 +95,9 @@ while [ $exitCode -lt 1 ]; do
                         waspDashboardAuthUsername=$(whiptail --inputbox "\nPlease set a username for the dashboard login:" 8 65 $waspDashboardAuthUsername --title "WASP - Dashboard" 3>&1 1>&2 2>&3)
                         exitStatus=$?
                         if [ ! -z "$waspDashboardAuthUsername" ] && [ "$exitStatus" != "1" ]; then
-                            source $waspConfigParsers/waspDashboardAuthUsername
+                            if [ -f "/usr/bin/wasp" ]; then
+                                source $waspConfigParsers/waspDashboardAuthUsername
+                            fi
                             sudo sed -i 's/^waspDashboardAuthUsername=.*/waspDashboardAuthUsername="'$waspDashboardAuthUsername'"/' $swarmConfigs/wasp.cfg
                             whiptail --title "WASP - Dashboard" --msgbox "New Dashboard username for auth applied!" 8 65
                         fi
@@ -102,7 +110,9 @@ while [ $exitCode -lt 1 ]; do
                             exitStatus=$?
                             if [ "$exitStatus" != "1" ] && [ ! -z "$waspDashboardAuthPassword2" ]; then
                                 if [ "$waspDashboardAuthPassword" = "$waspDashboardAuthPassword2" ]; then
-                                    source $waspConfigParsers/waspDashboardAuthPassword
+                                    if [ -f "/usr/bin/wasp" ]; then
+                                        source $waspConfigParsers/waspDashboardAuthPassword
+                                    fi
                                     sudo sed -i 's/^waspDashboardAuthPassword=.*/waspDashboardAuthPassword="'$waspDashboardAuthPassword'"/' $swarmConfigs/wasp.cfg
                                     whiptail --title "WASP - Dashboard" --msgbox "New Dashboard credentials applied!" 8 65
                                 else
@@ -200,7 +210,9 @@ while [ $exitCode -lt 1 ]; do
             exitStatus=$?
             waspEnablePlugins=$(echo $waspEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
             if [ "$waspEnablePlugins" != "$currentWaspEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                source $waspConfigParsers/waspEnablePlugins
+                if [ -f "/usr/bin/wasp" ]; then
+                    source $waspConfigParsers/waspEnablePlugins
+                fi
                 sudo sed -i 's/^waspEnablePlugins=.*/waspEnablePlugins="'$waspEnablePlugins'"/' $swarmConfigs/wasp.cfg
                 if [ ! -z "$waspEnablePlugins" ]; then
                     whiptail --title "WASP - Plugins" --msgbox "The following plugins are enabled: $waspEnablePlugins!" 8 65
@@ -220,7 +232,9 @@ while [ $exitCode -lt 1 ]; do
             exitStatus=$?
             waspDisablePlugins=$(echo $waspDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
             if [ "$waspDisablePlugins" != "$currentWaspDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                source $waspConfigParsers/waspDisablePlugins
+                if [ -f "/usr/bin/wasp" ]; then
+                    source $waspConfigParsers/waspDisablePlugins
+                fi
                 sudo sed -i 's/^waspDisablePlugins=.*/waspDisablePlugins="'$waspDisablePlugins'"/' $swarmConfigs/wasp.cfg
                 if [ ! -z "$waspDisablePlugins" ]; then
                     whiptail --title "WASP Plugins" --msgbox "The following plugins are disabled: $waspDisablePlugins!" 8 65
@@ -237,7 +251,9 @@ while [ $exitCode -lt 1 ]; do
             exitStatus=$?
             if [ "$exitStatus" != "1" ]; then
                 if [ ! -z "$waspNodeconnAddress" ] && [ "$currentWaspNodeconnAddress" != "$waspNodeconnAddress" ]; then
-                    source $waspConfigParsers/waspNodeconnAddress
+                    if [ -f "/usr/bin/wasp" ]; then
+                        source $waspConfigParsers/waspNodeconnAddress
+                    fi
                     sudo sed -i 's/^waspNodeconnAddress=.*/waspNodeconnAddress="'$waspNodeconnAddress'"/' $swarmConfigs/wasp.cfg
                     whiptail --title "WASP - Nodeconn" --msgbox "New WASP to Goshimmer connection applied!" 8 65
                 fi
@@ -249,7 +265,9 @@ while [ $exitCode -lt 1 ]; do
             waspNetworkId=$(whiptail --inputbox "\nSet the network ID for the committee communication." 10 65 $waspNetworkId --title "WASP - NetID" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ "$exitStatus" != "1" ] && [ ! -z "$waspNetworkId" ] && [ "$currentWaspNetworkId" != "$waspNetworkId" ]; then
-                source $waspConfigParsers/waspNetworkId
+                if [ -f "/usr/bin/wasp" ]; then
+                    source $waspConfigParsers/waspNetworkId
+                fi
                 sudo sed -i 's/^waspNetworkId=.*/wasNetworkId="'$waspNetworkId'"/' $swarmConfigs/wasp.cfg
                 whiptail --title "WASP - NetID" --msgbox "Network ID was set to \"$waspNetworkId\"!" 8 65
             fi
@@ -260,11 +278,13 @@ while [ $exitCode -lt 1 ]; do
             waspPeeringPort=$(whiptail --inputbox "\nSet the peering (network) port for the committee communication." 10 65 $waspPeeringPort --title "WASP - Peering" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ "$exitStatus" != "1" ] && [ ! -z "$waspPeeringPort" ] && [ $currentWaspPeeringPort -ne $waspPeeringPort ] && [ $waspPeeringPort -eq $waspPeeringPort ] 2>/dev/null; then
-                if [ "$ufw" = "true" ]; then
-                    sudo ufw delete allow $currentWaspPeeringPort/tcp > /dev/null 2>&1
-                    sudo ufw allow $waspPeeringPort/tcp > /dev/null 2>&1
+                if [ -f "/usr/bin/wasp" ]; then
+                    if [ "$ufw" = "true" ]; then
+                        sudo ufw delete allow $currentWaspPeeringPort/tcp > /dev/null 2>&1
+                        sudo ufw allow $waspPeeringPort/tcp > /dev/null 2>&1
+                    fi
+                    source $waspConfigParsers/waspPeeringPort
                 fi
-                source $waspConfigParsers/waspPeeringPort
                 sudo sed -i 's/^waspPeeringPort=.*/waspPeeringPort='$waspPeeringPort'/' $swarmConfigs/wasp.cfg
                 whiptail --title "WASP - Peering" --msgbox "Peering port was set to \"$waspPeeringPort/tcp\"!" 8 65
             fi
@@ -275,11 +295,13 @@ while [ $exitCode -lt 1 ]; do
             waspNanomsgPort=$(whiptail --inputbox "\nSet the nanomsg port for the committee communication." 10 65 $waspNanomsgPort --title "WASP - Peering" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ "$exitStatus" != "1" ] && [ ! -z "$waspNanomsgPort" ] && [ $currentWaspNanomsgPort -ne $waspNanomsgPort ] && [ $waspNanomsgPort -eq $waspNanomsgPort ] 2>/dev/null; then
-                if [ "$ufw" = "true" ]; then
-                    sudo ufw delete allow $currentWaspNanomsgPort/tcp > /dev/null 2>&1
-                    sudo ufw allow $waspNanomsgPort/tcp > /dev/null 2>&1
+                if [ -f "/usr/bin/wasp" ]; then
+                    if [ "$ufw" = "true" ]; then
+                        sudo ufw delete allow $currentWaspNanomsgPort/tcp > /dev/null 2>&1
+                        sudo ufw allow $waspNanomsgPort/tcp > /dev/null 2>&1
+                    fi
+                    source $waspConfigParsers/waspNanomsgPort
                 fi
-                source $waspConfigParsers/waspNanomsgPort
                 sudo sed -i 's/^waspNanomsgPort=.*/waspNanomsgPort='$waspNanomsgPort'/' $swarmConfigs/wasp.cfg
                 whiptail --title "WASP - Nanomsg" --msgbox "Nanomsg port was set to \"$waspNanomsgPort/tcp\"!" 8 65
             fi
@@ -291,12 +313,14 @@ while [ $exitCode -lt 1 ]; do
             exitStatus=$?
             waspWebapiAdminWhitelist=$(echo $waspWebapiAdminWhitelist | tr -d ' ')
             if [ "$exitStatus" != "1" ] && [ ! -z "$waspWebapiAdminWhitelist" ] && [ "$currentWaspWebapiAdminWhitelist" != "$waspWebapiAdminWhitelist" ]; then
-                source $waspConfigParsers/waspWebapiAdminWhitelist
+                if [ -f "/usr/bin/wasp" ]; then
+                    source $waspConfigParsers/waspWebapiAdminWhitelist
+                fi
                 sudo sed -i 's/^waspWebapiAdminWhitelist=.*/waspWebapiAdminWhitelist="'$waspWebapiAdminWhitelist'"/' $swarmConfigs/wasp.cfg
                 whiptail --title "WASP - Admin Whitelist" --msgbox "\nFollowing addresses are admin \"$waspWebapiAdminWhitelist\"!" 10 65
             fi
         ;;
     esac
 done
-sudo chown -R wasp:wasp $waspDir/*.json
+sudo chown -R wasp:wasp $waspHome/*.json
 exitCode=0
