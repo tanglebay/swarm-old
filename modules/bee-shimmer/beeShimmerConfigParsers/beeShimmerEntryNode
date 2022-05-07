@@ -1,0 +1,34 @@
+#!/bin/bash
+if [ "$beeShimmerNetwork" = "mainnet" ] || [ "$beeShimmerNetwork" = "alphanet" ]; then
+    parser="$(jq '.autopeering.entryNodes' $beeShimmerHome/$beeShimmerConfig.json)"
+    beeShimmerEntryNodeOld="/dns/entry-0.shimmernet.tanglebay.com/udp/14636/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
+    if [[ $parser = *$beeShimmerEntryNodeOld* ]]; then
+        beeShimmerEntryNode="/dns/entry-0.shimmer-mainnet.tanglebay.com/udp/14636/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
+        sudo sudo sed -i 's~'$beeShimmerEntryNodeOld'~'$beeShimmerEntryNode'~g' $beeShimmerHome/$beeShimmerConfig.json
+        restartHornetShimmer=true
+        echo "beeShimmerEntrynodes" >> /tmp/beeShimmerParsing
+    fi
+    beeShimmerEntryNodeOld="/dns/entry-1.shimmernet.tanglebay.com/udp/14626/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
+    if [[ $parser = *$beeShimmerEntryNodeOld* ]]; then
+        beeShimmerEntryNode="/dns/entry-1.shimmer-mainnet.tanglebay.com/udp/14626/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
+        sudo sudo sed -i 's~'$beeShimmerEntryNodeOld'~'$beeShimmerEntryNode'~g' $beeShimmerHome/$beeShimmerConfig.json
+        restartHornetShimmer=true
+        echo "beeShimmerEntrynodes" >> /tmp/beeShimmerParsing
+    fi
+    unset beeShimmerEntryNodeOld
+    ####################################################################################################################################################
+    parser="$(jq '.autopeering.entryNodes' $beeShimmerHome/$beeShimmerConfig.json)"
+    beeShimmerEntryNode="/dns/entry-0.shimmer-mainnet.tanglebay.com/udp/14636/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
+    if [[ $parser != *$beeShimmerEntryNode* ]]; then
+        sudo jq '.autopeering.entryNodes |= .+ ["'$beeShimmerEntryNode'"]' $beeShimmerHome/$beeShimmerConfig.json|sponge $beeShimmerHome/$beeShimmerConfig.json
+        restartHornetShimmer=true
+        echo "beeShimmerEntrynodes" >> /tmp/beeShimmerParsing
+    fi
+    beeShimmerEntryNode="/dns/entry-1.shimmer-mainnet.tanglebay.com/udp/14626/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
+    if [[ $parser != *$beeShimmerEntryNode* ]]; then
+        sudo jq '.autopeering.entryNodes |= .+ ["'$beeShimmerEntryNode'"]' $beeShimmerHome/$beeShimmerConfig.json|sponge $beeShimmerHome/$beeShimmerConfig.json
+        restartHornetShimmer=true
+        echo "beeShimmerEntrynodes" >> /tmp/beeShimmerParsing
+    fi
+    unset parser beeShimmerEntryNode
+fi

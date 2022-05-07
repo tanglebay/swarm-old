@@ -1,0 +1,34 @@
+#!/bin/bash
+if [ "$beeNetwork" = "mainnet" ]; then
+    parser="$(jq '.autopeering.entryNodes' $beeHome/$beeConfig.json)"
+    beeEntryNodeOld="/dns/entry-0.shimmernet.tanglebay.com/udp/14636/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
+    if [[ $parser = *$beeEntryNodeOld* ]]; then
+        beeEntryNode="/dns/entry-0.shimmer-mainnet.tanglebay.com/udp/14636/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
+        sudo sudo sed -i 's~'$beeEntryNodeOld'~'$beeEntryNode'~g' $beeHome/$beeConfig.json
+        restartHornet=true
+        echo "beeEntrynodes" >> /tmp/beeParsing
+    fi
+    beeEntryNodeOld="/dns/entry-1.shimmernet.tanglebay.com/udp/14626/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
+    if [[ $parser = *$beeEntryNodeOld* ]]; then
+        beeEntryNode="/dns/entry-1.shimmer-mainnet.tanglebay.com/udp/14626/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
+        sudo sudo sed -i 's~'$beeEntryNodeOld'~'$beeEntryNode'~g' $beeHome/$beeConfig.json
+        restartHornet=true
+        echo "beeEntrynodes" >> /tmp/beeParsing
+    fi
+    unset beeEntryNodeOld
+    ####################################################################################################################################################
+    parser="$(jq '.autopeering.entryNodes' $beeHome/$beeConfig.json)"
+    beeEntryNode="/dns/entry-0.shimmer-mainnet.tanglebay.com/udp/14636/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
+    if [[ $parser != *$beeEntryNode* ]]; then
+        sudo jq '.autopeering.entryNodes |= .+ ["'$beeEntryNode'"]' $beeHome/$beeConfig.json|sponge $beeHome/$beeConfig.json
+        restartHornet=true
+        echo "beeEntrynodes" >> /tmp/beeParsing
+    fi
+    beeEntryNode="/dns/entry-1.shimmer-mainnet.tanglebay.com/udp/14626/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
+    if [[ $parser != *$beeEntryNode* ]]; then
+        sudo jq '.autopeering.entryNodes |= .+ ["'$beeEntryNode'"]' $beeHome/$beeConfig.json|sponge $beeHome/$beeConfig.json
+        restartHornet=true
+        echo "beeEntrynodes" >> /tmp/beeParsing
+    fi
+    unset parser beeEntryNode
+fi
