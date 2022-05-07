@@ -1,26 +1,20 @@
 #!/bin/bash
 if [ "$hornetNetwork" = "mainnet" ]; then
-    hornetFullSnapshot="https://cdn.tanglebay.com/snapshots/mainnet/full_snapshot.bin"
-    hornetDeltaSnapshot="https://cdn.tanglebay.com/snapshots/mainnet/delta_snapshot.bin"
+    hornetFullSnapshotOld="https://cdn.tanglebay.com/snapshots/mainnet/full_snapshot.bin"
+    hornetDeltaSnapshotOld="https://cdn.tanglebay.com/snapshots/mainnet/delta_snapshot.bin"
+    hornetFullSnapshot="https://cdn.tanglebay.com/snapshots/iota-mainnet/full_snapshot.bin"
+    hornetDeltaSnapshot="https://cdn.tanglebay.com/snapshots/iota-mainnet/delta_snapshot.bin"
     parser="$(jq '.snapshots.downloadURLs' $hornetHome/config.json)"
+    if [[ $parser = *$hornetFullSnapshotOld* ]] && [[ $parser = *$hornetDeltaSnapshotOld* ]]; then
+        sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . - {"full": "'$hornetFullSnapshot'","delta": "'$hornetDeltaSnapshot'"}' $hornetHome/config.json|sponge $hornetHome/config.json
+        restartHornet=true
+        echo "hornetSnapshotUrl" >> /tmp/hornetParsing
+    fi
     if [[ $parser != *$hornetFullSnapshot* ]] && [[ $parser != *$hornetDeltaSnapshot* ]]; then
         sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . + {"full": "'$hornetFullSnapshot'","delta": "'$hornetDeltaSnapshot'"}' $hornetHome/config.json|sponge $hornetHome/config.json
         restartHornet=true
         echo "hornetSnapshotUrl" >> /tmp/hornetParsing
     fi
     unset hornetFullSnapshot
-    unset parser
-fi
-if [ "$hornetNetwork" = "comnet" ]; then
-    hornetFullSnapshot="https://cdn.tanglebay.com/snapshots/comnet/full_snapshot.bin"
-    hornetDeltaSnapshot="https://cdn.tanglebay.com/snapshots/comnet/delta_snapshot.bin"
-    parser="$(jq '.snapshots.downloadURLs' $hornetHome/config_comnet.json)"
-    if [[ $parser != *$hornetFullSnapshot* ]] && [[ $parser != *$hornetDeltaSnapshot* ]]; then
-        sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . + {"full": "'$hornetFullSnapshot'","delta": "'$hornetDeltaSnapshot'"}' $hornetHome/config_comnet.json|sponge $hornetHome/config_comnet.json
-        restartHornet=true
-        echo "hornetSnapshotUrl" >> /tmp/hornetParsing
-    fi
-    unset hornetFullSnapshot
-    unset hornetDeltaSnapshot
     unset parser
 fi
