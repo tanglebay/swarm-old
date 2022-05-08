@@ -143,7 +143,6 @@ while [ $exitCode -lt 1 ]; do
                     "2)")
                         if [ -f "/usr/bin/hornet-shimmer" ]; then
                             if (whiptail --title "Hornet-Shimmer - API & JWT" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
-                                sudo systemctl stop hornet-shimmer
                                 hornetShimmerApiJwtToken=$( cd $hornetShimmerHome/$hornetShimmerNetwork ; /usr/bin/hornet-shimmer tools jwt-api | awk '{ print $5 }')
                                 if [ ! -z "$hornetShimmerApiJwtToken" ]; then
                                     sudo sed -i 's~^hornetShimmerApiJwtToken=.*~hornetShimmerApiJwtToken="'$hornetShimmerApiJwtToken'"~' $swarmConfigs/hornet-shimmer.cfg
@@ -152,10 +151,8 @@ while [ $exitCode -lt 1 ]; do
                                     echo ""
                                     echo $hornetShimmerApiJwtToken
                                     echo ""
-                                    sudo systemctl start hornet-shimmer
                                     read -n 1 -s -r -p "Press any key to continue"
                                 else
-                                    sudo systemctl start hornet-shimmer
                                     whiptail --title "Hornet-Shimmer - API & JWT" --msgbox "Error generating JWT token, please try again later." 8 65
                                 fi
                             fi
@@ -172,25 +169,30 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "4)")
                         if [ -f "/usr/bin/hornet-shimmer" ]; then
-                            if (whiptail --title "Hornet-Shimmer - API & JWT" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
-                                hornetShimmerApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
+                            if (whiptail --title "Hornet (Shimmer) - API & JWT" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
+                                hornetApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
                                 sudo sed -i 's~^hornetShimmerApiJwtSalt=.*~hornetShimmerApiJwtSalt="'$hornetShimmerApiJwtSalt'"~' $swarmConfigs/hornet-shimmer.cfg
                                 {
                                     echo 0
-                                    echo 25
+                                    echo 15
                                     source $hornetShimmerConfigParsers/hornetShimmerApiJwtSalt
+                                    echo 30
                                     sudo rm -rf $swarmLogs/hornetShimmerJwt.log
-                                    echo 50
+                                    echo 45
                                     source $hornetShimmerConfigParsers/hornetShimmerIdentity
+                                    echo 60
+                                    sudo systemctl restart hornet-shimmer 2>/dev/null
                                     echo 75
-                                    sudo sed -i 's~^hornetShimmerApiJwtToken=.*~hornetShimmerApiJwtToken=""~' $swarmConfigs/hornet-shimmer.cfg
+                                    hornetShimmerApiJwtToken=$( cd $hornetShimmerHome ; /usr/bin/hornet-shimmer tools jwt-api | awk '{ print $5 }')
+                                    echo 90
+                                    if [ ! -z "$hornetShimmerApiJwtToken" ]; then
+                                        sudo sed -i 's~^hornetShimmerApiJwtToken=.*~hornetShimmerApiJwtToken="'$hornetShimmerApiJwtToken'"~' $swarmConfigs/hornet-shimmer.cfg
+                                    fi
                                     echo 100
                                 } | whiptail --gauge "Please wait while all JWT tokens will be revoked..." 8 65 0
-                                restartHornetShimmer=true
-                                unset hornetShimmerApiJwtToken
                             fi
                         else
-                            whiptail --title "Hornet-Shimmer - API & JWT" --msgbox "Please install Hornet (Shimmer) first." 8 65
+                            whiptail --title "Hornet (Shimmer) - API & JWT" --msgbox "Please install Hornet (Shimmer) first." 8 65
                         fi
                     ;;
                 esac

@@ -140,8 +140,7 @@ while [ $exitCode -lt 1 ]; do
                     "2)")
                         if [ -f "/usr/bin/hornet" ]; then
                             if (whiptail --title "Hornet (IOTA) - API & JWT" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
-                                sudo systemctl stop hornet
-                                hornetApiJwtToken=$( cd $hornetHome ; hornet tools jwt-api | awk '{ print $5 }')
+                                hornetApiJwtToken=$( cd $hornetHome ; /usr/bin/hornet tools jwt-api | awk '{ print $5 }')
                                 if [ ! -z "$hornetApiJwtToken" ]; then
                                     sudo sed -i 's~^hornetApiJwtToken=.*~hornetApiJwtToken="'$hornetApiJwtToken'"~' $swarmConfigs/hornet.cfg
                                     echo $hornetApiJwtToken >> $swarmLogs/hornetJwtToken.log
@@ -149,10 +148,8 @@ while [ $exitCode -lt 1 ]; do
                                     echo ""
                                     echo $hornetApiJwtToken
                                     echo ""
-                                    sudo systemctl start hornet
                                     read -n 1 -s -r -p "Press any key to continue"
                                 else
-                                    sudo systemctl start hornet
                                     whiptail --title "Hornet (IOTA) - API & JWT" --msgbox "Error generating JWT token, please try again later." 8 65
                                 fi
                             fi
@@ -174,17 +171,22 @@ while [ $exitCode -lt 1 ]; do
                                 sudo sed -i 's~^hornetApiJwtSalt=.*~hornetApiJwtSalt="'$hornetApiJwtSalt'"~' $swarmConfigs/hornet.cfg
                                 {
                                     echo 0
-                                    echo 25
+                                    echo 15
                                     source $hornetConfigParsers/hornetApiJwtSalt
+                                    echo 30
                                     sudo rm -rf $swarmLogs/hornetJwt.log
-                                    echo 50
+                                    echo 45
                                     source $hornetConfigParsers/hornetIdentity
+                                    echo 60
+                                    sudo systemctl restart hornet 2>/dev/null
                                     echo 75
-                                    sudo sed -i 's~^hornetApiJwtToken=.*~hornetApiJwtToken=""~' $swarmConfigs/hornet.cfg
+                                    hornetApiJwtToken=$( cd $hornetHome ; /usr/bin/hornet tools jwt-api | awk '{ print $5 }')
+                                    echo 90
+                                    if [ ! -z "$hornetApiJwtToken" ]; then
+                                        sudo sed -i 's~^hornetApiJwtToken=.*~hornetApiJwtToken="'$hornetApiJwtToken'"~' $swarmConfigs/hornet.cfg
+                                    fi
                                     echo 100
                                 } | whiptail --gauge "Please wait while all JWT tokens will be revoked..." 8 65 0
-                                restartHornet=true
-                                unset hornetApiJwtToken
                             fi
                         else
                             whiptail --title "Hornet (IOTA) - API & JWT" --msgbox "Please install Hornet (IOTA) first." 8 65
