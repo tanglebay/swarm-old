@@ -39,53 +39,76 @@ if [ ! -f "/var/lib/swarm/swarm" ]; then
         echo ""                                            
         echo "###################################################"
         echo ""
-        read -p "Do you want to install SWARM now?(Y/n) " keyboardInput </dev/tty
-        keyboardInput=$(echo $keyboardInput | tr '[:upper:]' '[:lower:]')
-        if [ "$keyboardInput" = "y" ] || [ "$keyboardInput" = "yes" ] || [ -z "$keyboardInput" ]; then
-            echo ""
-            echo -e $TEXT_RED_B && echo "-> Updating OS..." && echo -e $TEXT_RESET
-            echo ""
-            sudo apt update
-            sudo apt dist-upgrade -y
-            sudo apt upgrade -y
-            sudo apt autoremove -y
+        latestSwarmVersion=$(curl --max-time 5 -s https://api.github.com/repos/TangleBay/swarm/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+        latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
+        checkSwarmUpdateAuth=$(curl -s -o /dev/null -w "%{http_code}" https://$1:$2@tanglebay.com/download/swarm/v$latestSwarmVersion/checksum.txt)
+        if [ "$checkSwarmUpdateAuth" = "200" ] && [ ! -z "$latestSwarmVersion" ]; then
+            read -p "Do you want to install SWARM now?(Y/n) " keyboardInput </dev/tty
+            keyboardInput=$(echo $keyboardInput | tr '[:upper:]' '[:lower:]')
+            if [ "$keyboardInput" = "y" ] || [ "$keyboardInput" = "yes" ] || [ -z "$keyboardInput" ]; then
+                swarmTmp="/tmp/swarm"
+                echo ""
+                echo -e $TEXT_RED_B && echo "-> Updating OS..." && echo -e $TEXT_RESET
+                echo ""
+                sudo apt update
+                sudo apt dist-upgrade -y
+                sudo apt upgrade -y
+                sudo apt autoremove -y
 
-            if [ ! -x "$(command -v git)" ]; then
-                echo -e $TEXT_RED_B && echo "-> Installing GIT..." && echo -e $TEXT_RESET
-                sudo apt install git -y
-            fi
-            echo -e $TEXT_RED_B && echo "-> Cloning SWARM..." && echo -e $TEXT_RESET
-            sudo git clone https://github.com/TangleBay/swarm.git /var/lib/swarm
-            if [ "$1" = "develop" ]; then
-                ( cd /var/lib/swarm ; sudo git checkout $1 )
-            fi
+                echo -e $TEXT_RED_B && echo "-> Downloading SWARM..." && echo -e $TEXT_RESET
+                if [ ! -d "$swarmTmp" ]; then
+                    sudo mkdir -p $swarmTmp > /dev/null 2>&1
+                fi
+                sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@tanglebay.com/download/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
+                echo ""
+                echo -e $TEXT_RED_B && echo "-> Verify checksum of SWARM..." && echo -e $TEXT_RESET
+                echo ""
+                swarmChkSum=$(curl -s https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@tanglebay.com/download/swarm/v$latestSwarmVersion/checksum.txt)
+                swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz)
+                if [ "$swarmChkSum" = "$swarmUpdateChkSum" ]; then
+                    ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
+                    if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/swarm" ]; then
+                        sudo cp -rf $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
 
-            if [ -f "/var/lib/swarm/swarm" ]; then
-                echo -e $TEXT_RED_B && echo "-> Loading env..." && echo -e $TEXT_RESET
-                source /var/lib/swarm/environment
-                sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog
-                echo -e $TEXT_RED_B && echo "-> Installing watchdog..." && echo -e $TEXT_RESET
-                ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab -
-            fi
+                        if [ -f "/var/lib/swarm/swarm" ]; then
+                            echo -e $TEXT_RED_B && echo "-> Loading env..." && echo -e $TEXT_RESET
+                            source /var/lib/swarm/environment
+                            sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog
+                            echo -e $TEXT_RED_B && echo "-> Installing watchdog..." && echo -e $TEXT_RESET
+                            ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab -
+                        fi
 
-            if [ -f "/var/lib/swarm/swarm" ]; then
-                source /var/lib/swarm/environment
-                echo -e $TEXT_RED_B && echo "-> Installing aliases..." && echo -e $TEXT_RESET
-                source $swarmModules/swarmAlias
-                if [ "$swarmAliasExists" = "true" ]; then
-                    echo -e $TEXT_RED_B && echo "-> Starting SWARM..." && echo -e $TEXT_RESET
-                    source $swarmHome/swarm
+                        if [ -f "/var/lib/swarm/swarm" ]; then
+                            source /var/lib/swarm/environment
+                            echo -e $TEXT_RED_B && echo "-> Installing aliases..." && echo -e $TEXT_RESET
+                            source $swarmModules/swarmAlias
+                            if [ "$swarmAliasExists" = "true" ]; then
+                                echo -e $TEXT_RED_B && echo "-> Starting SWARM..." && echo -e $TEXT_RESET
+                                source $swarmHome/swarm
+                            fi
+                        else
+                            echo ""
+                            echo -e $TEXT_RED_B && echo "-> SWARM could not be successfully cloned from GitHub." && echo -e $TEXT_RESET
+                            echo ""
+                        fi
+                        echo ""
+                        echo ""
+                        read -rsn1 -p "Press any key to exit."
+                    fi
+                else
+                    sudo rm -rf /tmp/swarm > /dev/null 2>&1
+                    echo ""
+                    echo -e $TEXT_RED_B && echo "-> SWARM installation canceled as the checksum does not match." && echo -e $TEXT_RESET
+                    echo ""
+                    read -rsn1 -p "Press any key to exit."
                 fi
             else
+                echo -e $TEXT_RED_B && echo "-> SWARM installation canceled." && echo -e $TEXT_RESET
                 echo ""
-                echo -e $TEXT_RED_B && echo "-> SWARM could not be successfully cloned from GitHub." && echo -e $TEXT_RESET
-                echo ""
+                read -rsn1 -p "Press any key to exit."
             fi
-            echo ""
-            echo ""
-            read -rsn1 -p "Press any key to exit."
         else
-            echo -e $TEXT_RED_B && echo "-> SWARM installation canceled." && echo -e $TEXT_RESET
+            echo -e $TEXT_RED_B && echo "-> SWARM installation canceled because authentication failed." && echo -e $TEXT_RESET
             echo ""
             read -rsn1 -p "Press any key to exit."
         fi
