@@ -20,7 +20,7 @@ if [ ! -d "/etc/letsencrypt" ]; then
         sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
         echo 60
         echo 70
-        sudo systemctl restart nginx
+        sudo systemctl restart nginx > /dev/null 2>&1
         echo 90
         if [ ! -f "/etc/nginx/nginx.conf" ]; then
             sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
@@ -30,41 +30,6 @@ if [ ! -d "/etc/letsencrypt" ]; then
     } | whiptail --gauge "Please wait while the proxy will be installed..." 6 65 0
 fi
 ###### Node certificates
-# if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/hornet-shimmer" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
-#     if [ ! -z "$proxySwarmDashboardUrl" ]; then
-#         if [ ! -d "/etc/letsencrypt/live/$proxySwarmDashboardDomain" ]; then
-#             if [ -z "$emailAddress" ]; then
-#                 emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-#                 exitStatus=$?
-#             fi
-#             if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
-#                 {
-#                     echo 0
-#                     echo 10
-#                     if [ ! -f "/etc/nginx/nginx.conf" ]; then
-#                         sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
-#                     fi
-#                     echo 25
-#                     proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-#                     if [ "$proxyStatus" != "active" ]; then
-#                         sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-#                         sudo systemctl restart nginx
-#                     fi
-#                     echo 50
-#                     sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxySwarmDashboardDomain -m $emailAddress > /dev/null 2>&1
-#                     unset emailaddress
-#                     echo 100
-#                 } | whiptail --gauge "Requesting SSL certificate for the SWARM dashboard..." 6 65 0  
-#                 # echo ""
-#                 # read -p "Press any key to continue..."
-#                 if [ ! -f "/etc/letsencrypt/live/$proxySwarmDashboardDomain/fullchain.pem" ]; then
-#                     whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for the SWARM dashboard not found!" 8 65
-#                 fi
-#             fi
-#         fi
-#     fi
-# fi
-####
 if [ -f "/usr/bin/hornet" ] && [ ! -z "$proxyHornetUrl" ]; then
     if [ ! -d "/etc/letsencrypt/live/$proxyHornetDomain" ]; then
         if [ -z "$emailAddress" ]; then
@@ -89,8 +54,6 @@ if [ -f "/usr/bin/hornet" ] && [ ! -z "$proxyHornetUrl" ]; then
                 unset emailaddress
                 echo 100
             } | whiptail --gauge "Requesting SSL certificate for Hornet..." 6 65 0  
-            # echo ""
-            # read -p "Press any key to continue..."
             if [ ! -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ]; then
                 whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Hornet not found!" 8 65
             fi
@@ -122,8 +85,6 @@ if [ -f "/usr/bin/hornet-shimmer" ] && [ ! -z "$proxyHornetShimmerUrl" ]; then
                 unset emailaddress
                 echo 100
             } | whiptail --gauge "Requesting SSL certificate for Hornet..." 6 65 0  
-            # echo ""
-            # read -p "Press any key to continue..."
             if [ ! -f "/etc/letsencrypt/live/$proxyHornetShimmerDomain/fullchain.pem" ]; then
                 whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Hornet-Shimmer not found!" 8 65
             fi
@@ -155,8 +116,6 @@ if [ -f "/usr/bin/bee" ] && [ ! -z "$proxyBeeDomain" ]; then
                 unset emailaddress
                 echo 100
             } | whiptail --gauge "Requesting SSL certificate for Bee..." 6 65 0
-            # echo ""
-            # read -p "Press any key to continue..."
             if [ ! -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ]; then
                 whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Bee not found!" 8 65
             fi
@@ -188,8 +147,6 @@ if [ -f "/usr/bin/bee-shimmer" ] && [ ! -z "$proxyBeeShimmerDomain" ]; then
                 unset emailaddress
                 echo 100
             } | whiptail --gauge "Requesting SSL certificate for Bee-Shimmer..." 6 65 0
-            # echo ""
-            # read -p "Press any key to continue..."
             if [ ! -f "/etc/letsencrypt/live/$proxyBeeShimmerDomain/fullchain.pem" ]; then
                 whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Bee-Shimmer not found!" 8 65
             fi
@@ -221,8 +178,6 @@ if [ -f "/usr/bin/goshimmer" ] && [ ! -z "$proxyGoshimmerUrl" ]; then
                 unset emailaddress
                 echo 100
             } | whiptail --gauge "Requesting SSL certificate for GoShimmer..." 6 65 0  
-            # echo ""
-            # read -p "Press any key to continue..."
             if [ ! -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
                 whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for GoShimmer not found!" 8 65
             fi
@@ -254,8 +209,6 @@ if [ -f "/usr/bin/wasp" ] && [ ! -z "$proxyWaspDashboardUrl" ]; then
                 unset emailaddress
                 echo 100
             } | whiptail --gauge "Requesting SSL certificate for WASP dashboard..." 6 65 0  
-            # echo ""
-            # read -p "Press any key to continue..."
             if [ ! -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ]; then
                 whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for the WASP dashboard not found!" 8 65
             fi
@@ -287,8 +240,6 @@ if [ -f "/usr/bin/wasp" ] && [ ! -z "$proxyWaspApiUrl" ]; then
                 unset emailaddress
                 echo 100
             } | whiptail --gauge "Requesting SSL certificate for WASP API..." 6 65 0  
-            # echo ""
-            # read -p "Press any key to continue..."
             if [ ! -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
                 whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for the WASP API not found!" 8 65
             fi
@@ -317,13 +268,10 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
     echo 10
     if [ -d "/var/www/html/swarm-dashboard" ]; then
         sudo rm -rf /var/www/html/swarm-dashboard
-    # else
-    #     sudo mkdir -p /var/www/html/swarm-dashboard
     fi
     if [ -d "/var/www/html/swarm-nodes" ]; then
         sudo rm -rf /var/www/html/swarm-nodes > /dev/null 2>&1
     fi
-    # sudo cp -rf $swarmTemplates/proxy/swarm-dashboard/{index.html,img,css} /var/www/html/swarm-dashboard/ > /dev/null 2>&1
     echo 20
     if [ -f "/etc/nginx/sites-available/default > /dev/null 2>&1" ]; then
         sudo rm -rf /etc/nginx/sites-available/default > /dev/null 2>&1
@@ -335,19 +283,6 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
     if [ -f "/etc/nginx/sites-enabled/swarm-dashboard" ]; then
         sudo rm -rf /etc/nginx/sites-enabled/swarm-dashboard > /dev/null 2>&1
     fi
-    # if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/hornet-shimmer" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/bee-shimmer" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
-    #     if [ -f "/etc/letsencrypt/live/$proxySwarmDashboardDomain/fullchain.pem" ]; then
-    #         if [ -z "$defaultDomain" ]; then
-    #             defaultDomain="$proxySwarmDashboardDomain"
-    #         fi
-    #         sudo cp -rf $swarmTemplates/proxy/nginx_swarm-dashboard.template /etc/nginx/sites-enabled/swarm-dashboard
-    #         sudo sed -i 's/domain.tld/'$proxySwarmDashboardDomain'/g' /etc/nginx/sites-enabled/swarm-dashboard
-    #         sudo sed -i 's/443/'$proxySwarmDashboardPort'/g' /etc/nginx/sites-enabled/swarm-dashboard
-    #         if [ "$ufw" = "true" ]; then
-    #             sudo ufw allow $proxySwarmDashboardPort/tcp > /dev/null 2>&1
-    #         fi
-    #     fi
-    # fi
     #################################################################################################
     echo 30
     if [ -f "/usr/bin/hornet" ] && [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] && [ ! -z "$proxyHornetDomain" ] && [ ! -z "$proxyHornetPort" ]; then
@@ -357,17 +292,9 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         sudo cp -rf $swarmTemplates/proxy/nginx_hornet.template /etc/nginx/sites-enabled/hornet
         sudo sed -i 's/domain.tld/'$proxyHornetDomain'/g' /etc/nginx/sites-enabled/hornet
         sudo sed -i 's/443/'$proxyHornetPort'/g' /etc/nginx/sites-enabled/hornet
-        # sudo sed -i 's~"hornet\/dashboard"~"https:\/\/'$proxyHornetDomain':'$proxyHornetPort'\/dashboard" target="_blank"~g' $proxySwarmDashboard
         if [ "$ufw" = "true" ]; then
             sudo ufw allow $proxyHornetPort/tcp > /dev/null 2>&1
         fi
-    # else
-    #     if [ "$proxyHornetExternalDashboard" = "true" ] && [ ! -z "$proxyHornetDomain" ] && [ ! -z "$proxyHornetPort" ]; then
-    #         sudo sed -i 's~"hornet\/dashboard"~"https:\/\/'$proxyHornetDomain':'$proxyHornetPort'\/dashboard" target="_blank"~g' $proxySwarmDashboard
-    #     else
-    #         sudo sed -i 's/hornet\/dashboard/#/g' $proxySwarmDashboard
-    #         sudo sed -i 's~/img/hornet.*id~/img/hornet_logo_gray.svg" alt="Hornet not installed" id~' $proxySwarmDashboard
-    #     fi
     fi
     echo 35
     if [ -f "/usr/bin/hornet-shimmer" ] && [ -f "/etc/letsencrypt/live/$proxyHornetShimmerDomain/fullchain.pem" ] && [ ! -z "$proxyHornetShimmerDomain" ] && [ ! -z "$proxyHornetShimmerPort" ]; then
@@ -377,17 +304,9 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         sudo cp -rf $swarmTemplates/proxy/nginx_hornet-shimmer.template /etc/nginx/sites-enabled/hornet-shimmer
         sudo sed -i 's/domain.tld/'$proxyHornetShimmerDomain'/g' /etc/nginx/sites-enabled/hornet-shimmer
         sudo sed -i 's/443/'$proxyHornetShimmerPort'/g' /etc/nginx/sites-enabled/hornet-shimmer
-        # sudo sed -i 's~"hornet-shimmer\/dashboard"~"https:\/\/'$proxyHornetShimmerDomain':'$proxyHornetShimmerPort'\/dashboard" target="_blank"~g' $proxySwarmDashboard
         if [ "$ufw" = "true" ]; then
             sudo ufw allow $proxyHornetShimmerPort/tcp > /dev/null 2>&1
         fi
-    # else
-    #     if [ "$proxyHornetShimmerExternalDashboard" = "true" ] && [ ! -z "$proxyHornetShimmerDomain" ] && [ ! -z "$proxyHornetShimmerPort" ]; then
-    #         sudo sed -i 's~"hornet-shimmer\/dashboard"~"https:\/\/'$proxyHornetShimmerDomain':'$proxyHornetShimmerPort'\/dashboard" target="_blank"~g' $proxySwarmDashboard
-    #     else
-    #         sudo sed -i 's/hornet-shimmer\/dashboard/#/g' $proxySwarmDashboard
-    #         sudo sed -i 's~/img/hornet-shimmer.*id~/img/hornet-shimmer_logo_gray.svg" alt="Hornet-Shimmer not installed" id~' $proxySwarmDashboard
-    #     fi
     fi
     echo 40
     if [ -f "/usr/bin/bee" ] && [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] && [ ! -z "$proxyBeeDomain" ] && [ ! -z "$proxyBeePort" ]; then
@@ -401,13 +320,6 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         if [ "$ufw" = "true" ]; then
             sudo ufw allow $proxyBeePort/tcp > /dev/null 2>&1
         fi
-    # else
-    #     if [ "$proxyBeeExternalDashboard" = "true" ] && [ ! -z "$proxyBeeDomain" ] && [ ! -z "$proxyBeePort" ]; then
-    #         sudo sed -i 's/"bee\/dashboard"/"https:\/\/'$proxyBeeDomain':'$proxyBeePort'\/dashboard" target="_blank"/g' $proxySwarmDashboard
-    #     else
-    #         sudo sed -i 's/bee\/dashboard/#/g' $proxySwarmDashboard
-    #         sudo sed -i 's~/img/bee.*id~/img/bee_logo_gray.svg" alt="Bee not installed" id~' $proxySwarmDashboard
-    #     fi
     fi
     echo 45
     if [ -f "/usr/bin/bee-shimmer" ] && [ -f "/etc/letsencrypt/live/$proxyBeeShimmerDomain/fullchain.pem" ] && [ ! -z "$proxyBeeShimmerDomain" ] && [ ! -z "$proxyBeeShimmerPort" ]; then
@@ -421,13 +333,6 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         if [ "$ufw" = "true" ]; then
             sudo ufw allow $proxyBeeShimmerPort/tcp > /dev/null 2>&1
         fi
-    # else
-    #     if [ "$proxyBeeShimmerExternalDashboard" = "true" ] && [ ! -z "$proxyBeeShimmerDomain" ] && [ ! -z "$proxyBeeShimmerPort" ]; then
-    #         sudo sed -i 's/"bee-shimmer\/dashboard"/"https:\/\/'$proxyBeeShimmerDomain':'$proxyBeeShimmerPort'\/dashboard" target="_blank"/g' $proxySwarmDashboard
-    #     else
-    #         sudo sed -i 's/bee-shimmer\/dashboard/#/g' $proxySwarmDashboard
-    #         sudo sed -i 's~/img/bee-shimmer.*id~/img/bee-shimmer_logo_gray.svg" alt="Bee-Shimmer not installed" id~' $proxySwarmDashboard
-    #     fi
     fi
     echo 50
     if [ -f "/usr/bin/goshimmer" ] && [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] && [ ! -z "$proxyGoshimmerDomain" ] && [ ! -z "$proxyGoshimmerPort" ]; then
@@ -447,17 +352,9 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         sudo cp -rf $swarmTemplates/proxy/nginx_goshimmer.template /etc/nginx/sites-enabled/goshimmer
         sudo sed -i 's/domain.tld/'$proxyGoshimmerDomain'/g' /etc/nginx/sites-enabled/goshimmer
         sudo sed -i 's/443/'$proxyGoshimmerPort'/g' /etc/nginx/sites-enabled/goshimmer
-        # sudo sed -i 's/"goshimmer\/dashboard"/"https:\/\/'$proxyGoshimmerDomain':'$proxyGoshimmerPort'\/dashboard" target="_blank"/g' $proxySwarmDashboard
         if [ "$ufw" = "true" ]; then
             sudo ufw allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
         fi
-    # else
-    #     if [ "$proxyGoshimmerExternalDashboard" = "true" ] && [ ! -z "$proxyGoshimmerDomain" ] && [ ! -z "$proxyGoshimmerPort" ]; then
-    #         sudo sed -i 's/"goshimmer\/dashboard"/"https:\/\/'$proxyGoshimmerDomain':'$proxyGoshimmerPort'\/dashboard" target="_blank"/g' $proxySwarmDashboard
-    #     else
-    #         sudo sed -i 's/goshimmer\/dashboard/#/g' $proxySwarmDashboard
-    #         sudo sed -i 's~/img/goshimmer.*id~/img/goshimmer_logo_gray.svg" alt="GoShimmer not installed" id~' $proxySwarmDashboard
-    #     fi
     fi
     echo 55
     if [ -f "/usr/bin/wasp" ] && [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyWaspDashboardDomain" ] && [ ! -z "$proxyWaspDashboardPort" ]; then
@@ -468,13 +365,9 @@ if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc
         sudo cp -rf $swarmTemplates/proxy/nginx_wasp-dashboard.template /etc/nginx/sites-enabled/wasp-dashboard
         sudo sed -i 's/domain.tld/'$proxyWaspDashboardDomain'/g' /etc/nginx/sites-enabled/wasp-dashboard
         sudo sed -i 's/443/'$proxyWaspDashboardPort'/g' /etc/nginx/sites-enabled/wasp-dashboard
-        # sudo sed -i 's/"wasp\/dashboard"/"https:\/\/'$proxyWaspDashboardDomain':'$proxyWaspDashboardPort'\/dashboard" target="_blank"/g' $proxySwarmDashboard
         if [ "$ufw" = "true" ]; then
             sudo ufw allow $proxyWaspDashboardPort/tcp > /dev/null 2>&1
         fi
-    # else
-    #     sudo sed -i 's/wasp\/dashboard/#/g' $proxySwarmDashboard
-    #     sudo sed -i 's~/img/wasp.*id~/img/wasp_logo_gray.svg" alt="WASP not installed" id~' $proxySwarmDashboard
     fi
     if [ -f "/usr/bin/wasp" ] && [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ] && [ ! -z "$proxyWaspApiDomain" ] && [ ! -z "$proxyWaspApiPort" ]; then
         source $swarmConfigs/wasp.cfg
