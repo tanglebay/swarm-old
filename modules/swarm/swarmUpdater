@@ -21,7 +21,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                     ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                     if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/swarm" ]; then
                         sudo rm -rf $swarmHome > /dev/null 2>&1
-                        sudo cp -rf $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
+                        sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
 
                         # currentBranch=$( cd $swarmHome ; git rev-parse --abbrev-ref HEAD )
                         # ( cd $swarmHome ; sudo git pull ) > /dev/null 2>&1
@@ -103,8 +103,9 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 echo 100
             } | whiptail --gauge "Updating SWARM..." 6 65 0
         fi
-        if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/swarm" ]; then
+        if [ -f "$swarmHome/update.lock" ]; then
             swarmUpdated=true
+            sudo rm -rf $swarmHome/update.lock > /dev/null 2>&1
         fi
         if [ "$swarmUpdated" = "true" ]; then
             whiptail --title "SWARM Menu" --msgbox "SWARM successfully updated." 8 65
