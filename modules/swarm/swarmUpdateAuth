@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ "$swarmUpdateAuthValid" != "200" ]; then
+    if [ -z "$latestSwarmVersion" ]; then
+        source $swarmLogs/githubVersion
+        if [ -z "$latestSwarmVersion" ]; then
+            latestSwarmVersion=$(curl --max-time 5 -s https://api.github.com/repos/TangleBay/swarm-releases/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
+            latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
+            sudo sed -i 's~^latestSwarmVersion=.*~latestSwarmVersion="'$latestSwarmVersion'"~' $swarmLogs/githubVersion
+        fi
+    fi
+    swarmUpdateAuthValid=$(curl -s -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@service.tanglebay.com/download/swarm/v$latestSwarmVersion/checksum.txt)
+fi
+
+if [ "$swarmUpdateAuthValid" = "200" ]; then
+    swarmUpdateAuthValidText="valid"
+else
+    swarmUpdateAuthValidText="valid"
+fi
