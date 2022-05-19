@@ -4,17 +4,20 @@ source $swarmLogs/githubVersion
 if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
     # STARTUP UPDATE CHECK
     source $swarmHome/version
-    currentBranch=$( cd $swarmHome ; git rev-parse --abbrev-ref HEAD )
+    # currentBranch=$( cd $swarmHome ; git rev-parse --abbrev-ref HEAD )
     source $swarmModules/swarmVersion
-    if [ "$swarmAutoUpdate" = "true" ] && [ "$currentBranch" = "master" ]; then
+    if [ "$swarmAutoUpdate" = "true" ]; then
         if [ ! -z "$latestSwarmVersion" ]; then
             if [ "$version" != "$latestSwarmVersion" ]; then
                 source $swarmModules/swarmUpdater
-                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                consoleLog="[$HOSTNAME] New version ($latestSwarmVersion) of SWARM installed."
-                echo "$restartDate $consoleLog" >> $swarmLogs/swarm.log
-                telegramText=$consoleLog
-                source $watchdogModules/watchdogTelegram
+                if [ -f "$swarmHome/update.lock" ]; then
+                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    consoleLog="[$HOSTNAME] New version ($latestSwarmVersion) of SWARM installed."
+                    echo "$restartDate $consoleLog" >> $swarmLogs/swarm.log
+                    telegramText=$consoleLog
+                    source $watchdogModules/watchdogTelegram
+                    sudo rm -rf $swarmHome/update.lock > /dev/null 2>&1
+                fi
             fi
         fi
     fi
