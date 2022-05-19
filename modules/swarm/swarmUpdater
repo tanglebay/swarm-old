@@ -20,7 +20,6 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 if [ "$swarmChkSum" = "$swarmUpdateChkSum" ]; then
                     ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                     if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/swarm" ]; then
-                        swarmUpdated=true
                         sudo rm -rf $swarmHome > /dev/null 2>&1
                         sudo cp -rf $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
 
@@ -85,7 +84,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                             # source $swarmConfigs/hornet.cfg
                             source $goshimmerModules/goshimmerParser
                             if [ "$restartGoshimmer" = "true" ]; then
-                                sudo systemctl restart goshimmer
+                                sudo systemctl restart goshimmer > /dev/null 2>&1
                                 unset restartGoshimmer
                             fi
                         fi
@@ -93,7 +92,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                         if [ -f "/usr/bin/wasp" ]; then
                             source $waspModules/waspParser
                             if [ "$restartWasp" = "true" ]; then
-                                sudo systemctl restart wasp
+                                sudo systemctl restart wasp > /dev/null 2>&1
                                 unset restartWasp
                             fi
                         fi
@@ -104,6 +103,9 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 echo 100
             } | whiptail --gauge "Updating SWARM..." 6 65 0
         fi
+        if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/swarm" ]; then
+            swarmUpdated=true
+        fi
         if [ "$swarmUpdated" = "true" ]; then
             whiptail --title "SWARM Menu" --msgbox "SWARM successfully updated." 8 65
             unset swarmUpdated
@@ -112,6 +114,9 @@ if [ "$swarmManualUpdate" = "true" ]; then
         else
             unset swarmUpdated
             whiptail --title "SWARM Menu" --msgbox "SWARM update failed." 8 65
+        fi
+        if [ -d "$swarmTmp" ]; then
+            sudo rm -rf $swarmTmp > /dev/null 2>&1
         fi
         unset checkSwarmUpdateAuth swarmChkSum swarmUpdateChkSum
     fi
