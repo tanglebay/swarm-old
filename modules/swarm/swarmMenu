@@ -3,12 +3,13 @@ while [ $exitCode -lt 1 ]; do
     clear
     CHOICE=$(
         whiptail --title "SWARM Menu" --menu "\nChoose an option" 22 65 0 \
-        "1)" "Node(s) Info" \
-        "2)" "SWARM Info" \
-        "3)" "SWARM Configuration" \
-        "4)" "Watchdog Configuration" \
-        "5)" "SWARM Tools" \
-        "6)" "Manage SWARM" 3>&2 2>&1 1>&3
+        "1)" "Swarm Auth" \
+        "2)" "Node(s) Info" \
+        "3)" "SWARM Info" \
+        "4)" "SWARM Configuration" \
+        "5)" "Watchdog Configuration" \
+        "6)" "SWARM Tools" \
+        "7)" "Manage SWARM" 3>&2 2>&1 1>&3
     )
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
@@ -16,111 +17,87 @@ while [ $exitCode -lt 1 ]; do
     fi
     case $CHOICE in
         "1)")
-            source $swarmModules/swarmNodeInfo
+            while [ $exitCode -lt 1 ]; do
+                source $swarmConfigs/swarm.cfg
+                source $swarmModules/swarmUpdateAuth
+                CHOICE=$(
+                    whiptail --title "SWARM - Update Auth" --menu "\nAuth Status: $swarmUpdateAuthValidText\n\nChoose an option" 18 65 0 \
+                    "1)" "Set Password" \
+                    "2)" "Set Username" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        inputSwarmUpdateAuthPwd=$(whiptail --passwordbox "\nPlease enter the password for the update access of SWARM:" 8 65 --title "SWARM - Update Auth" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ $exitStatus = 0 ] && [ "$swarmUpdateAuthPwd" != "$inputSwarmUpdateAuthPwd" ]; then
+                            swarmUpdateAuthPwd="$inputSwarmUpdateAuthPwd"
+                            sudo sed -i 's~^swarmUpdateAuthPwd=.*~swarmUpdateAuthPwd="'$swarmUpdateAuthPwd'"~g' $swarmConfigs/swarm.cfg
+                            unset swarmUpdateAuthValid
+                        fi
+                        unset inputSwarmUpdateAuthPwd
+                    ;;
+                    "2)")
+                        inputSwarmUpdateAuthUser=$(whiptail --inputbox "Type the username for the update access of SWARM:" 10 65 $swarmUpdateAuthUser --title "SWARM - Update Auth" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ $exitStatus = 0 ] && [ "$swarmUpdateAuthUser" != "$inputSwarmUpdateAuthUser" ]; then
+                            swarmUpdateAuthUser="$inputSwarmUpdateAuthUser"
+                            sudo sed -i 's~^swarmUpdateAuthUser=.*~swarmUpdateAuthUser="'$swarmUpdateAuthUser'"~g' $swarmConfigs/swarm.cfg
+                            unset swarmUpdateAuthValid
+                        fi
+                        unset inputSwarmUpdateAuthUser
+                    ;;
+                esac
+            done
+            exitCode=0
         ;;
         "2)")
+            source $swarmModules/swarmNodeInfo
+        ;;
+        "3)")
             swarmInfo=true
             source $swarmModules/swarmInfo
             unset swarmInfo
         ;;
-        "3)")
+        "4)")
             source $swarmModules/swarmConfiguration
         ;;
-        "4)")
+        "5)")
             source $swarmModules/swarmWatchdogConfiguration
         ;;
-        "5)")
+        "6)")
             source $swarmModules/swarmTools
         ;;
-        "6)")
+        "7)")
             CHOICE=$(
                 whiptail --title "SWARM Menu" --menu "\nChoose an option" 20 65 0 \
-                "1)" "SWARM Update Auth" \
-                "2)" "Update SWARM" \
-                "3)" "Remove SWARM" \
-                "4)" "Check SWARM.log" 3>&2 2>&1 1>&3
+                "1)" "Update SWARM" \
+                "2)" "Remove SWARM" \
+                "3)" "Check SWARM.log" 3>&2 2>&1 1>&3
             )
             case $CHOICE in
                 "1)")
-                    while [ $exitCode -lt 1 ]; do
-                        source $swarmConfigs/swarm.cfg
-                        source $swarmModules/swarmUpdateAuth
-                        CHOICE=$(
-                            whiptail --title "SWARM - Update Auth" --menu "\nAuth Status: $swarmUpdateAuthValidText\n\nChoose an option" 18 65 0 \
-                            "1)" "Set Username" \
-                            "2)" "Set Password" 3>&2 2>&1 1>&3
-                        )
-                        exitStatus=$?
-                        if [ "$exitStatus" = "1" ]; then
-                            exitCode=1
-                        fi
-                        case $CHOICE in
-                            "1)")
-                                inputSwarmUpdateAuthUser=$(whiptail --inputbox "Type the username for the update access of SWARM:" 10 65 $swarmUpdateAuthUser --title "SWARM - Update Auth" 3>&1 1>&2 2>&3)
-                                exitStatus=$?
-                                if [ $exitStatus = 0 ] && [ "$swarmUpdateAuthUser" != "$inputSwarmUpdateAuthUser" ]; then
-                                    swarmUpdateAuthUser="$inputSwarmUpdateAuthUser"
-                                    sudo sed -i 's~^swarmUpdateAuthUser=.*~swarmUpdateAuthUser="'$swarmUpdateAuthUser'"~g' $swarmConfigs/swarm.cfg
-                                    unset swarmUpdateAuthValid
-                                fi
-                                unset inputSwarmUpdateAuthUser
-                            ;;
-                            "2)")
-                                inputSwarmUpdateAuthPwd=$(whiptail --passwordbox "\nPlease enter the password for the update access of SWARM:" 8 65 --title "SWARM - Update Auth" 3>&1 1>&2 2>&3)
-                                exitStatus=$?
-                                if [ $exitStatus = 0 ] && [ "$swarmUpdateAuthPwd" != "$inputSwarmUpdateAuthPwd" ]; then
-                                    swarmUpdateAuthPwd="$inputSwarmUpdateAuthPwd"
-                                    sudo sed -i 's~^swarmUpdateAuthPwd=.*~swarmUpdateAuthPwd="'$swarmUpdateAuthPwd'"~g' $swarmConfigs/swarm.cfg
-                                    unset swarmUpdateAuthValid
-                                fi
-                                unset inputSwarmUpdateAuthPwd
-                            ;;
-                        esac
-                    done
-                    exitCode=0
-                ;;
-                "2)")
                     # Update SWARM
-                    if (whiptail --title "SWARM Menu" --yesno --defaultno "Do you really want to update SWARM?" 8 65); then
+                    if (whiptail --title "SWARM - Update" --yesno --defaultno "Do you really want to update SWARM?" 8 65); then
+                        inputLatestSwarmVersion=$(whiptail --inputbox "Type the username for the update access of SWARM:" 10 65 "latest" --title "SWARM - Update" 3>&1 1>&2 2>&3)
+                        if [ "$inputLatestSwarmVersion" != "latest" ]; then
+                            latestSwarmVersion="$inputLatestSwarmVersion"
+                        fi
                         swarmManualUpdate=true
                         source $swarmModules/swarmUpdater
-                        unset swarmManualUpdate
+                        unset swarmManualUpdate inputLatestSwarmVersion
                         exit 0
                     fi
                 ;;
-                "3)")
+                "2)")
                     source $swarmModules/swarmRemoval
                 ;;
-                "4)")
+                "3)")
                     sudo $swarmCLEditor $swarmLogs/swarm.log
                 ;;
-                # "4)")
-                #     inputBranch=$(whiptail --inputbox "In which branch you want so switch?\n\nCurrent Branch: $currentBranch" 10 65 master --title "SWARM Menu" 3>&1 1>&2 2>&3)
-                #     exitStatus=$?
-                #     if [ $exitStatus = 0 ]; then
-                #         if [ "$inputBranch" = "master" ] || [ "$inputBranch" = "develop" ]; then
-                #             # Check SWARM branch
-                #             if [ "$currentbranch" != "$inputBranch" ]; then
-                #                 if [ ! -d "$swarmTmp" ]; then
-                #                     sudo mkdir -p $swarmTmp > /dev/null 2>&1
-                #                 fi
-                #                 sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/
-                #                 ( cd $swarmHome ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
-                #                 ( cd $swarmHome ; sudo git checkout $inputBranch ) > /dev/null 2>&1
-                #                 ( cd $swarmHome ; sudo git pull ) > /dev/null 2>&1
-                #                 source /var/lib/swarm/environment
-                #                 sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
-
-                #                 source $swarmModules/swarmParser
-                #                 whiptail --title "SWARM Menu" --msgbox "SWARM branch change detected! Exit SWARM..." 8 65
-                #                 clear
-                #                 exit 0
-                #             fi
-                #         else
-                #             whiptail --title "SWARM Menu" --msgbox "No valid branch selected!" 8 65
-                #         fi
-                #     fi
-                # ;;
             esac
         ;;
     esac
