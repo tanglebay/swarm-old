@@ -252,6 +252,12 @@ while [ $exitCode -lt 1 ]; do
                             if (whiptail --title "Hornet Shimmer - Management" --yesno --defaultno "Are you sure you want to delete the hornet database?" 8 65); then
                                 if (whiptail --title "Hornet Shimmer - Management" --yesno --defaultno "Do you want to use an alternative source for the snapshot?" 8 65); then
                                     hornetShimmerSnapshotSource=$(whiptail --inputbox "\nPlease specify the download url for the full snapshot" 10 65 --title "Hornet-Shimmer - Management" 3>&1 1>&2 2>&3)
+                                    hornetShimmerSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" $hornetSnapshotSource)
+                                    if [ "$hornetShimmerSnapshotSourceValid" != "200" ]; then
+                                        whiptail --title "Hornet Shimmer - Management" --msgbox "Snapshot url not valid and will be skipped." 8 65
+                                        unset hornetShimmerSnapshotSource
+                                    fi
+                                    unset hornetShimmerSnapshotSourceValid
                                 fi
                                 source $swarmConfigs/hornet-shimmer.cfg
                                 {
