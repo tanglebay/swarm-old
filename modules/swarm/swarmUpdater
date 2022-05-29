@@ -108,17 +108,23 @@ if [ "$swarmManualUpdate" = "true" ]; then
             sudo rm -rf $swarmHome/update.lock > /dev/null 2>&1
         fi
         if [ "$swarmUpdated" = "true" ]; then
+            swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz)
+            echo "$swarmUpdateChkSum"
+            read -rsn1 -p "Press any key to exit."
             swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
             whiptail --title "SWARM Menu" --msgbox "\nSWARM successfully updated.\n\nChecksum: $swarmUpdateChkSum" 12 65
             unset swarmUpdated swarmUpdateChkSum
+            if [ -d "$swarmTmp" ]; then
+                sudo rm -rf $swarmTmp > /dev/null 2>&1
+            fi
             clear
             exit 0
         else
+            if [ -d "$swarmTmp" ]; then
+                sudo rm -rf $swarmTmp > /dev/null 2>&1
+            fi
             unset swarmUpdated
             whiptail --title "SWARM Menu" --msgbox "SWARM update failed." 8 65
-        fi
-        if [ -d "$swarmTmp" ]; then
-            sudo rm -rf $swarmTmp > /dev/null 2>&1
         fi
         unset checkSwarmUpdateAuth swarmChkSum swarmUpdateChkSum
     fi
