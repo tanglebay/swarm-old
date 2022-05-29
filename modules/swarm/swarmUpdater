@@ -23,9 +23,6 @@ if [ "$swarmManualUpdate" = "true" ]; then
                         sudo rm -rf $swarmHome > /dev/null 2>&1
                         sudo cp -rf $swarmTmp/v$latestSwarmVersion/swarm/ /var/lib > /dev/null 2>&1
 
-                        # currentBranch=$( cd $swarmHome ; git rev-parse --abbrev-ref HEAD )
-                        # ( cd $swarmHome ; sudo git pull ) > /dev/null 2>&1
-                        # ( cd $swarmHome ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
                         sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
                         echo 40
 
@@ -108,21 +105,18 @@ if [ "$swarmManualUpdate" = "true" ]; then
             sudo rm -rf $swarmHome/update.lock > /dev/null 2>&1
         fi
         if [ "$swarmUpdated" = "true" ]; then
-            swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz)
-            echo "$swarmUpdateChkSum"
-            read -rsn1 -p "Press any key to exit."
             swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
             whiptail --title "SWARM Menu" --msgbox "\nSWARM successfully updated.\n\nChecksum: $swarmUpdateChkSum" 12 65
             unset swarmUpdated swarmUpdateChkSum
-            # if [ -d "$swarmTmp" ]; then
-            #     sudo rm -rf $swarmTmp > /dev/null 2>&1
-            # fi
+            if [ -d "$swarmTmp" ]; then
+                sudo rm -rf $swarmTmp > /dev/null 2>&1
+            fi
             clear
             exit 0
         else
-            # if [ -d "$swarmTmp" ]; then
-            #     sudo rm -rf $swarmTmp > /dev/null 2>&1
-            # fi
+            if [ -d "$swarmTmp" ]; then
+                sudo rm -rf $swarmTmp > /dev/null 2>&1
+            fi
             unset swarmUpdated
             whiptail --title "SWARM Menu" --msgbox "SWARM update failed." 8 65
         fi
