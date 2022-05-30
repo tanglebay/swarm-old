@@ -19,13 +19,10 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
                 if [ "$swarmChkSum" = "$swarmUpdateChkSum" ]; then
                     ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
-                    if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/swarm" ]; then
+                    if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
                         sudo rm -rf $swarmHome > /dev/null 2>&1
                         sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
 
-                        # currentBranch=$( cd $swarmHome ; git rev-parse --abbrev-ref HEAD )
-                        # ( cd $swarmHome ; sudo git pull ) > /dev/null 2>&1
-                        # ( cd $swarmHome ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
                         sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
                         echo 40
 
@@ -39,12 +36,13 @@ if [ "$swarmManualUpdate" = "true" ]; then
                         ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
 
                         echo 50
-
+                        # Remove Hornet apt
+                        if [ -f "/etc/apt/sources.list.d/hornet.list" ] || [ -f "/etc/apt/sources.list.d/hornet.list.distUpgrade" ]; then
+                            sudo rm -rf /etc/apt/sources.list.d/hornet* > /dev/null 2>&1
+                            sudo apt-get -qq update > /dev/null 2>&1
+                        fi
+                        
                         if [ -f "/usr/bin/hornet" ]; then
-                            if [ -f "/etc/apt/sources.list.d/hornet.list" ]; then
-                                sudo rm -rf /etc/apt/sources.list.d/hornet.list > /dev/null 2>&1
-                                sudo apt-get -qq update > /dev/null 2>&1
-                            fi
                             # source $swarmConfigs/hornet.cfg
                             source $hornetModules/hornetParser
                             if [ "$restartHornet" = "true" ]; then
@@ -108,16 +106,20 @@ if [ "$swarmManualUpdate" = "true" ]; then
             sudo rm -rf $swarmHome/update.lock > /dev/null 2>&1
         fi
         if [ "$swarmUpdated" = "true" ]; then
-            whiptail --title "SWARM Menu" --msgbox "SWARM successfully updated." 8 65
-            unset swarmUpdated
+            swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
+            whiptail --title "SWARM Menu" --msgbox "\nSWARM successfully updated.\n\nChecksum: $swarmUpdateChkSum" 14 65
+            unset swarmUpdated swarmUpdateChkSum
+            if [ -d "$swarmTmp" ]; then
+                sudo rm -rf $swarmTmp > /dev/null 2>&1
+            fi
             clear
             exit 0
         else
+            if [ -d "$swarmTmp" ]; then
+                sudo rm -rf $swarmTmp > /dev/null 2>&1
+            fi
             unset swarmUpdated
             whiptail --title "SWARM Menu" --msgbox "SWARM update failed." 8 65
-        fi
-        if [ -d "$swarmTmp" ]; then
-            sudo rm -rf $swarmTmp > /dev/null 2>&1
         fi
         unset checkSwarmUpdateAuth swarmChkSum swarmUpdateChkSum
     fi
