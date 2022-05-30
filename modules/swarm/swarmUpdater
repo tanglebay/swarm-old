@@ -21,7 +21,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                     ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                     if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
                         sudo rm -rf $swarmHome > /dev/null 2>&1
-                        sudo cp -rf $swarmTmp/v$latestSwarmVersion/swarm/ /var/lib > /dev/null 2>&1
+                        sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
 
                         sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
                         echo 40
@@ -36,12 +36,13 @@ if [ "$swarmManualUpdate" = "true" ]; then
                         ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
 
                         echo 50
-
+                        # Remove Hornet apt
+                        if [ -f "/etc/apt/sources.list.d/hornet.list" ] || [ -f "/etc/apt/sources.list.d/hornet.list.distUpgrade" ]; then
+                            sudo rm -rf /etc/apt/sources.list.d/hornet* > /dev/null 2>&1
+                            sudo apt-get -qq update > /dev/null 2>&1
+                        fi
+                        
                         if [ -f "/usr/bin/hornet" ]; then
-                            if [ -f "/etc/apt/sources.list.d/hornet.list" ]; then
-                                sudo rm -rf /etc/apt/sources.list.d/hornet.list > /dev/null 2>&1
-                                sudo apt-get -qq update > /dev/null 2>&1
-                            fi
                             # source $swarmConfigs/hornet.cfg
                             source $hornetModules/hornetParser
                             if [ "$restartHornet" = "true" ]; then
