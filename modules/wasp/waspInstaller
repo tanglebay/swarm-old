@@ -32,32 +32,52 @@ fi
 sudo mkdir -p /tmp/wasp > /dev/null 2>&1
 
 if [ "$osArchitecture" = "amd64" ]; then
+    # Download latest Wasp
+    ( cd /tmp/wasp/ ; sudo wget -q https://github.com/iotaledger/wasp/releases/download/v${latestWaspVersion}/wasp_${latestWaspVersion}_Linux_x86_64.tar.gz )
+    if [ -f "/tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64.tar.gz" ]; then
+        waspDownloadChecksum=$(sudo shasum -a 256 /tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64.tar.gz | awk '{ print $1 }')
+    fi
+    # Download latest Wasp-Cli
+    ( cd /tmp/wasp/ ; sudo wget -q https://github.com/iotaledger/wasp/releases/download/v${latestWaspVersion}/wasp-cli_${latestWaspVersion}_Linux_x86_64.tar.gz )
+    if [ -f "/tmp/wasp/wasp-cli_${latestWaspVersion}_Linux_x86_64.tar.gz" ]; then
+        waspCliDownloadChecksum=$(sudo shasum -a 256 /tmp/wasp/wasp-cli_${latestWaspVersion}_Linux_x86_64.tar.gz | awk '{ print $1 }')
+    fi
+
+    # Download checksum
+    ( cd /tmp/wasp/ ; sudo wget -q https://github.com/iotaledger/wasp/releases/download/v${latestWaspVersion}/wasp_${latestWaspVersion}_checksum.txt )
+    if [ -f "/tmp/wasp/wasp_${latestWaspVersion}_checksum.txt" ]; then
+        waspChecksum=$(sudo grep "wasp_${latestWaspVersion}_Linux_x86_64.tar.gz" /tmp/wasp/wasp_${latestWaspVersion}_checksum.txt | awk '{ print $1 }')
+        waspCliChecksum=$(sudo grep "wasp-cli_${latestWaspVersion}_Linux_x86_64.tar.gz" /tmp/wasp/wasp_${latestWaspVersion}_checksum.txt | awk '{ print $1 }')
+    fi
+
 
     # Download latest wasp
     sudo wget -q -O /tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64.tar.gz https://github.com/iotaledger/wasp/releases/download/v${latestWaspVersion}/wasp_${latestWaspVersion}_Linux_x86_64.tar.gz
     sudo wget -q -O /tmp/wasp/wasp-cli_${latestWaspVersion}_Linux_x86_64.tar.gz https://github.com/iotaledger/wasp/releases/download/v${latestWaspVersion}/wasp-cli_${latestWaspVersion}_Linux_x86_64.tar.gz
 
-    # Unzip archive
-    ( cd /tmp/wasp ; sudo tar -xzf /tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64.tar.gz ) > /dev/null 2>&1
-    ( cd /tmp/wasp ; sudo tar -xzf /tmp/wasp/wasp-cli_${latestWaspVersion}_Linux_x86_64.tar.gz ) > /dev/null 2>&1
+    if [ "$waspDownloadChecksum" = "$waspChecksum" ] && [ "$waspCliDownloadChecksum" = "$waspCliChecksum" ] && [ ! -z "$waspDownloadChecksum" ] && [ ! -z "$waspChecksum" ] && [ ! -z "$waspCliDownloadChecksum" ] && [ ! -z "$waspCliChecksum" ]; then
+        # Unzip archive
+        ( cd /tmp/wasp ; sudo tar -xzf /tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64.tar.gz ) > /dev/null 2>&1
+        ( cd /tmp/wasp ; sudo tar -xzf /tmp/wasp/wasp-cli_${latestWaspVersion}_Linux_x86_64.tar.gz ) > /dev/null 2>&1
 
-    # Copy files for wasp
-    if [ -f "/tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64/wasp" ] && [ -f "/tmp/wasp/wasp-cli_${latestWaspVersion}_Linux_x86_64/wasp-cli" ]; then
-        waspStatus="$(systemctl show -p ActiveState --value wasp)"
-        if [ "$waspStatus" = "active" ]; then
-            sudo systemctl stop wasp
+        # Copy files for wasp
+        if [ -f "/tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64/wasp" ] && [ -f "/tmp/wasp/wasp-cli_${latestWaspVersion}_Linux_x86_64/wasp-cli" ]; then
+            waspStatus="$(systemctl show -p ActiveState --value wasp)"
+            if [ "$waspStatus" = "active" ]; then
+                sudo systemctl stop wasp > /dev/null 2>&1
+            fi
+            sudo cp -rf /tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64/wasp /usr/bin/wasp > /dev/null 2>&1
+            sudo cp -rf /tmp/wasp/wasp-cli_${latestWaspVersion}_Linux_x86_64/wasp-cli /usr/bin/wasp-cli > /dev/null 2>&1
+
+            if [ -f "/tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64/config.json" ]; then
+                sudo cp -rf /tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64/config.json $waspHome/config.json > /dev/null 2>&1
+            else
+                sudo wget -q -O /var/lib/wasp/config.json https://raw.githubusercontent.com/iotaledger/wasp/master/config.json
+            fi
+
+            restartWasp=true
+            waspUpdated=true
         fi
-        sudo cp -rf /tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64/wasp /usr/bin/wasp > /dev/null 2>&1
-        sudo cp -rf /tmp/wasp/wasp-cli_${latestWaspVersion}_Linux_x86_64/wasp-cli /usr/bin/wasp-cli > /dev/null 2>&1
-
-        if [ -f "/tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64/config.json" ]; then
-            sudo cp -rf /tmp/wasp/wasp_${latestWaspVersion}_Linux_x86_64/config.json $waspHome/config.json > /dev/null 2>&1
-        else
-            sudo wget -q -O /var/lib/wasp/config.json https://raw.githubusercontent.com/iotaledger/wasp/master/config.json
-        fi
-
-        restartWasp=true
-        waspUpdated=true
     fi
 fi
 
