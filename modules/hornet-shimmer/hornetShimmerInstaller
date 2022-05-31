@@ -51,25 +51,34 @@ if [ "$osArchitecture" = "arm64" ]; then
 fi
 
 if [ ! -z "$hornetShimmerArchitecture" ]; then
-    # Download latest hornet
-    sudo wget -q -O /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz https://github.com/iotaledger/hornet/releases/download/v${latestHornetShimmerVersion}/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz
+    # Download latest hornet-shimmer
+    ( cd /tmp/hornet-shimmer/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestHornetShimmerVersion}/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz )
+    if [ -f "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz" ]; then
+        hornetShimmerDownloadChecksum=$(sudo shasum -a 256 /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz | awk '{ print $1 }')
+    fi
+    # Download checksum
+    ( cd /tmp/hornet-shimmer/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestHornetShimmerVersion}/checksum.txt )
+    if [ -f "/tmp/hornet-shimmer/checksum.txt" ]; then
+        hornetShimmerChecksum=$(sudo grep "HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz" /tmp/hornet-shimmer/checksum.txt | awk '{ print $1 }')
+    fi
 
     # Unzip archive
-    if [ -f "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz" ]; then
+    if [ "$hornetShimmerDownloadChecksum" = "$hornetShimmerChecksum" ] && [ ! -z "$hornetShimmerDownloadChecksum" ] && [ ! -z "$hornetShimmerChecksum" ]; then
         ( cd /tmp/hornet-shimmer ; sudo tar -xzf /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz ) > /dev/null 2>&1
-    fi
+        
+        # Copy binary
+        if [ -f "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/hornet" ]; then
+            hornetShimmerStatus="$(systemctl show -p ActiveState --value hornet-shimmer)"
+            if [ "$hornetShimmerStatus" = "active" ]; then
+                sudo systemctl stop hornet-shimmer
+            fi
 
-    # Copy binary
-    if [ -f "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/hornet" ]; then
-        hornetShimmerStatus="$(systemctl show -p ActiveState --value hornet-shimmer)"
-        if [ "$hornetShimmerStatus" = "active" ]; then
-            sudo systemctl stop hornet-shimmer
+            sudo cp -rf /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/hornet /usr/bin/hornet-shimmer > /dev/null 2>&1
+            sudo chmod +x /usr/bin/hornet-shimmer > /dev/null 2>&1
+            newHornetShimmerBinary=true
         fi
-
-        sudo cp -rf /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/hornet /usr/bin/hornet-shimmer > /dev/null 2>&1
-        sudo chmod +x /usr/bin/hornet-shimmer > /dev/null 2>&1
-        newHornetShimmerBinary=true
     fi
+    unset hornetShimmerDownloadChecksum hornetShimmerChecksum
 fi
 
 
