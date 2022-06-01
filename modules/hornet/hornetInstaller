@@ -49,24 +49,33 @@ fi
 
 if [ ! -z "$hornetArchitecture" ]; then
     # Download latest hornet
-    sudo wget -q -O /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz https://github.com/iotaledger/hornet/releases/download/v${latestHornetVersion}/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz
+    ( cd /tmp/hornet/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestHornetVersion}/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz )
+    if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz" ]; then
+        hornetDownloadChecksum=$(sudo shasum -a 256 /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz | awk '{ print $1 }')
+    fi
+    # Download checksum
+    ( cd /tmp/hornet/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestHornetVersion}/checksums.txt )
+    if [ -f "/tmp/hornet/checksums.txt" ]; then
+        hornetChecksum=$(sudo grep "HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz" /tmp/hornet/checksums.txt | awk '{ print $1 }')
+    fi
 
     # Unzip archive
-    if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz" ]; then
+    if [ "$hornetDownloadChecksum" = "$hornetChecksum" ] && [ ! -z "$hornetDownloadChecksum" ] && [ ! -z "$hornetChecksum" ]; then
         ( cd /tmp/hornet ; sudo tar -xzf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz ) > /dev/null 2>&1
-    fi
 
-    # Copy binary
-    if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/hornet" ]; then
-        hornetStatus="$(systemctl show -p ActiveState --value hornet)"
-        if [ "$hornetStatus" = "active" ]; then
-            sudo systemctl stop hornet
+        # Copy binary
+        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/hornet" ]; then
+            hornetStatus="$(systemctl show -p ActiveState --value hornet)"
+            if [ "$hornetStatus" = "active" ]; then
+                sudo systemctl stop hornet > /dev/null 2>&1
+            fi
+
+            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/hornet /usr/bin/hornet > /dev/null 2>&1
+            sudo chmod +x /usr/bin/hornet > /dev/null 2>&1
+            newHornetBinary=true
         fi
-
-        sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/hornet /usr/bin/hornet > /dev/null 2>&1
-        sudo chmod +x /usr/bin/hornet > /dev/null 2>&1
-        newHornetBinary=true
     fi
+    unset hornetDownloadChecksum hornetChecksum
 fi
 
 

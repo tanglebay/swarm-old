@@ -2,7 +2,7 @@
 
 if [ "$swarmManualUpdate" = "true" ]; then
     if [ ! -z "$swarmUpdateAuthUser" ] && [ ! -z "$swarmUpdateAuthPwd" ]; then
-        checkSwarmUpdateAuth=$(curl -s -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/latest/checksum.txt)
+        checkSwarmUpdateAuth=$(curl --max-time 5 -Ls -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/latest/checksum.txt)
         if [ "$checkSwarmUpdateAuth" = "200" ]; then
             {
                 echo 0
@@ -14,7 +14,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
                 sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
                 echo 30
-                swarmChkSum=$(curl -s https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
+                swarmChkSum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
                 sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
                 swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
                 if [ "$swarmChkSum" = "$swarmUpdateChkSum" ]; then
@@ -125,7 +125,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
     fi
 else
     if [ ! -z "$swarmUpdateAuthUser" ] && [ ! -z "$swarmUpdateAuthPwd" ]; then
-        checkSwarmUpdateAuth=$(curl -s -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/latest/checksum.txt)
+        checkSwarmUpdateAuth=$(curl --max-time 5 -Ls -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/latest/checksum.txt)
         if [ "$checkSwarmUpdateAuth" = "200" ]; then
             if [ ! -d "$swarmTmp/v$latestSwarmVersion" ]; then
                 sudo mkdir -p $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
@@ -134,7 +134,7 @@ else
             sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
             sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
 
-            swarmChkSum=$(curl -s https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
+            swarmChkSum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
             sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
             swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
             if [ "$swarmChkSum" = "$swarmUpdateChkSum" ]; then

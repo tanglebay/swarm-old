@@ -33,29 +33,41 @@ sudo mkdir -p /tmp/goshimmer > /dev/null 2>&1
 
 if [ "$osArchitecture" = "amd64" ]; then
     # Download latest goshimmer
-    sudo wget -q -O /tmp/goshimmer/goshimmer-${latestGoshimmerVersion}_Linux_x86_64.tar.gz https://github.com/iotaledger/goshimmer/releases/download/v${latestGoshimmerVersion}/goshimmer-${latestGoshimmerVersion}_Linux_x86_64.tar.gz
-
-    # Unzip archive
-    ( cd /tmp/goshimmer ; sudo tar -xzf /tmp/goshimmer/goshimmer-${latestGoshimmerVersion}_Linux_x86_64.tar.gz ) > /dev/null 2>&1
-
-    # Copy files for goshimmer
-    if [ -f "/tmp/goshimmer/goshimmer" ]; then
-        if [ ! -f "/tmp/goshimmer/config.json" ]; then
-            sudo wget -q -O /tmp/goshimmer/config.json https://raw.githubusercontent.com/iotaledger/goshimmer/master/config.default.json
-        fi
-        goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
-        if [ "$goshimmerStatus" = "active" ]; then
-            sudo systemctl stop goshimmer
-        fi
-        sudo cp -rf /tmp/goshimmer/goshimmer /usr/bin/goshimmer > /dev/null 2>&1
-        sudo cp -rf /tmp/goshimmer/config.json $goshimmerHome/config.json > /dev/null 2>&1
-
-        # Download db/snapshot
-        source $goshimmerModules/goshimmerDbDownload
-
-        restartGoshimmer=true
-        goshimmerUpdated=true
+    ( cd /tmp/goshimmer/ ; sudo wget -q https://github.com/iotaledger/goshimmer/releases/download/v${latestGoshimmerVersion}/goshimmer-${latestGoshimmerVersion}_Linux_x86_64.tar.gz )
+    if [ -f "/tmp/goshimmer/goshimmer-${latestGoshimmerVersion}_Linux_x86_64.tar.gz" ]; then
+        goshimmerDownloadChecksum=$(sudo shasum -a 256 /tmp/goshimmer/goshimmer-${latestGoshimmerVersion}_Linux_x86_64.tar.gz | awk '{ print $1 }')
     fi
+
+    # Download checksum
+    ( cd /tmp/goshimmer/ ; sudo wget -q https://github.com/iotaledger/goshimmer/releases/download/v${latestGoshimmerVersion}/checksum.txt )
+    if [ -f "/tmp/goshimmer/checksum.txt" ]; then
+        goshimmerChecksum=$(sudo grep "goshimmer-${latestGoshimmerVersion}_Linux_x86_64.tar.gz" /tmp/goshimmer/checksum.txt | awk '{ print $1 }')
+    fi
+
+    if [ "$goshimmerDownloadChecksum" = "$goshimmerChecksum" ] && [ ! -z "$goshimmerDownloadChecksum" ] && [ ! -z "$goshimmerChecksum" ]; then
+        # Unzip archive
+        ( cd /tmp/goshimmer ; sudo tar -xzf /tmp/goshimmer/goshimmer-${latestGoshimmerVersion}_Linux_x86_64.tar.gz ) > /dev/null 2>&1
+
+        # Copy files for goshimmer
+        if [ -f "/tmp/goshimmer/goshimmer" ]; then
+            if [ ! -f "/tmp/goshimmer/config.json" ]; then
+                sudo wget -q -O /tmp/goshimmer/config.json https://raw.githubusercontent.com/iotaledger/goshimmer/master/config.default.json
+            fi
+            goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+            if [ "$goshimmerStatus" = "active" ]; then
+                sudo systemctl stop goshimmer > /dev/null 2>&1
+            fi
+            sudo cp -rf /tmp/goshimmer/goshimmer /usr/bin/goshimmer > /dev/null 2>&1
+            sudo cp -rf /tmp/goshimmer/config.json $goshimmerHome/config.json > /dev/null 2>&1
+
+            # Download db/snapshot
+            source $goshimmerModules/goshimmerDbDownload
+
+            restartGoshimmer=true
+            goshimmerUpdated=true
+        fi
+    fi
+    unset goshimmerDownloadChecksum goshimmerChecksum
 fi
 
 # Remove temporary files
