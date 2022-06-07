@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# General
+if ! id inx >/dev/null 2>&1; then
+    useradd --no-create-home --system inx >/dev/null
+fi
+
+if [ ! -d "$inxIndexerHome" ]; then
+    sudo mkdir -p $inxIndexerHome > /dev/null 2>&1
+    sudo chown -R inx:inx $inxIndexerHome > /dev/null 2>&1
+fi
+
+# Install GO
+if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    sudo snap install go --classic > /dev/null 2>&1
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/inx-indexer.service" ]; then
+    sudo cp -rf $swarmHome/templates/inx-indexer/inx-indexer.service /lib/systemd/system/inx-indexer.service
+    if [ ! -f "/etc/default/inx-indexer" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/inx-indexer
+    fi
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/inx-indexer.service" ]; then
+        sudo systemctl enable inx-indexer > /dev/null 2>&1
+    fi
+    sudo systemctl daemon-reload > /dev/null 2>&1
+fi
+
+##############################################################################################################################################
+
+# Create dir if not exist
+sudo mkdir -p /tmp/inx-indexer > /dev/null 2>&1
+
+checkSwarmAuth=$(curl --max-time 5 -Ls -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-indexer/latest/checksum.txt)
+if [ "$osArchitecture" = "amd64" ] && [ "$checkSwarmAuth" = "200" ]; then
+    # Download latest inx-indexer
+    ( cd /tmp/inx-indexer/ ; sudo wget -q https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-indexer/v${latestInxIndexerVersion}/inx-indexer-v${latestInxIndexerVersion}.tar.gz )
+    if [ -f "/tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}.tar.gz" ]; then
+        inxIndexerDownloadChecksum=$(sudo shasum -a 256 /tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}.tar.gz | awk '{ print $1 }')
+    fi
+    # Download checksum
+    inxIndexerChecksum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-indexer/v$latestInxIndexerVersion/checksum.txt)
+
+    # Unzip archive
+    if [ "$inxIndexerDownloadChecksum" = "$inxIndexerChecksum" ] && [ ! -z "$inxIndexerDownloadChecksum" ] && [ ! -z "$inxIndexerChecksum" ]; then
+        ( cd /tmp/inx-indexer ; sudo tar -xzf /tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}.tar.gz ) > /dev/null 2>&1
+
+        # Copy binary
+        if [ -f "/tmp/inx-indexer/inx-indexer" ]; then
+            inxIndexerStatus="$(systemctl show -p ActiveState --value inx-indexer)"
+            if [ "$inxIndexerStatus" = "active" ]; then
+                sudo systemctl stop inx-indexer > /dev/null 2>&1
+            fi
+
+            sudo cp -rf /tmp/inx-indexer/inx-indexer /usr/bin/inx-indexer > /dev/null 2>&1
+            sudo chmod +x /usr/bin/inx-indexer > /dev/null 2>&1
+            newInxIndexerBinary=true
+        fi
+    fi
+fi
+
+
+##############################################################################################################################################
+
+if [ "$newInxIndexerBinary" = "true" ]; then
+    ### Mainnet Config
+    if [ "$inxIndexerNetwork" = "mainnet" ]; then
+        if [ -f "/tmp/inx-indexer/config_template.json" ]; then
+            sudo cp -rf /tmp/inx-indexer/config_template.json /var/lib/inx-indexer/config.json > /dev/null 2>&1
+            newInxIndexerConfig=true
+        fi
+        if [ -s "/tmp/inx-indexer/config.json" ]; then
+            sudo cp -rf /tmp/inx-indexer/config.json /var/lib/inx-indexer/config.json > /dev/null 2>&1
+            newInxIndexerConfig=true
+        fi
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newInxIndexerConfig" = "true" ]; then
+    # Run installer modules
+    sudo chown -R inx:inx $inxIndexerHome > /dev/null 2>&1
+
+    restartInxIndexer=true
+    inxIndexerUpdated=true
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/inx-indexer > /dev/null 2>&1
+
+
+unset newInxIndexerBinary newInxIndexerConfig inxIndexerDownloadChecksum

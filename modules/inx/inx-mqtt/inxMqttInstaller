@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# General
+if ! id inx >/dev/null 2>&1; then
+    useradd --no-create-home --system inx >/dev/null
+fi
+
+if [ ! -d "$inxMqttHome" ]; then
+    sudo mkdir -p $inxMqttHome > /dev/null 2>&1
+    sudo chown -R inx:inx $inxMqttHome > /dev/null 2>&1
+fi
+
+# Install GO
+if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    sudo snap install go --classic > /dev/null 2>&1
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/inx-mqtt.service" ]; then
+    sudo cp -rf $swarmHome/templates/inx-mqtt/inx-mqtt.service /lib/systemd/system/inx-mqtt.service
+    if [ ! -f "/etc/default/inx-mqtt" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/inx-mqtt
+    fi
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/inx-mqtt.service" ]; then
+        sudo systemctl enable inx-mqtt > /dev/null 2>&1
+    fi
+    sudo systemctl daemon-reload > /dev/null 2>&1
+fi
+
+##############################################################################################################################################
+
+# Create dir if not exist
+sudo mkdir -p /tmp/inx-mqtt > /dev/null 2>&1
+
+checkSwarmAuth=$(curl --max-time 5 -Ls -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-mqtt/latest/checksum.txt)
+if [ "$osArchitecture" = "amd64" ] && [ "$checkSwarmAuth" = "200" ]; then
+    # Download latest inx-mqtt
+    ( cd /tmp/inx-mqtt/ ; sudo wget -q https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-mqtt/v${latestInxMqttVersion}/inx-mqtt-v${latestInxMqttVersion}.tar.gz )
+    if [ -f "/tmp/inx-mqtt/inx-mqtt-v${latestInxMqttVersion}.tar.gz" ]; then
+        inxMqttDownloadChecksum=$(sudo shasum -a 256 /tmp/inx-mqtt/inx-mqtt-v${latestInxMqttVersion}.tar.gz | awk '{ print $1 }')
+    fi
+    # Download checksum
+    inxMqttChecksum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-mqtt/v$latestInxMqttVersion/checksum.txt)
+
+    # Unzip archive
+    if [ "$inxMqttDownloadChecksum" = "$inxMqttChecksum" ] && [ ! -z "$inxMqttDownloadChecksum" ] && [ ! -z "$inxMqttChecksum" ]; then
+        ( cd /tmp/inx-mqtt ; sudo tar -xzf /tmp/inx-mqtt/inx-mqtt-v${latestInxMqttVersion}.tar.gz ) > /dev/null 2>&1
+
+        # Copy binary
+        if [ -f "/tmp/inx-mqtt/inx-mqtt" ]; then
+            inxMqttStatus="$(systemctl show -p ActiveState --value inx-mqtt)"
+            if [ "$inxMqttStatus" = "active" ]; then
+                sudo systemctl stop inx-mqtt > /dev/null 2>&1
+            fi
+
+            sudo cp -rf /tmp/inx-mqtt/inx-mqtt /usr/bin/inx-mqtt > /dev/null 2>&1
+            sudo chmod +x /usr/bin/inx-mqtt > /dev/null 2>&1
+            newInxMqttBinary=true
+        fi
+    fi
+fi
+
+
+##############################################################################################################################################
+
+if [ "$newInxMqttBinary" = "true" ]; then
+    ### Mainnet Config
+    if [ "$inxMqttNetwork" = "mainnet" ]; then
+        if [ -f "/tmp/inx-mqtt/config_template.json" ]; then
+            sudo cp -rf /tmp/inx-mqtt/config_template.json /var/lib/inx-mqtt/config.json > /dev/null 2>&1
+            newInxMqttConfig=true
+        fi
+        if [ -s "/tmp/inx-mqtt/config.json" ]; then
+            sudo cp -rf /tmp/inx-mqtt/config.json /var/lib/inx-mqtt/config.json > /dev/null 2>&1
+            newInxMqttConfig=true
+        fi
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newInxMqttConfig" = "true" ]; then
+    # Run installer modules
+    sudo chown -R inx:inx $inxMqttHome > /dev/null 2>&1
+
+    restartInxMqtt=true
+    inxMqttUpdated=true
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/inx-mqtt > /dev/null 2>&1
+
+
+unset newInxMqttBinary newInxMqttConfig inxMqttDownloadChecksum
