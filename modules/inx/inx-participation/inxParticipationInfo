@@ -1,0 +1,23 @@
+#!/bin/bash
+if [ -f "/usr/bin/inx-participation" ]; then
+
+    source $swarmConfigs/inx-participation.cfg
+    source $swarmLogs/githubVersion
+
+    inxParticipationStatus=$(systemctl show -p ActiveState --value inx-participation)
+
+    inxParticipationVersion=$(/usr/bin/inx-participation -v | awk '{ print $2 }')
+    if [ -z "$inxParticipationVersion" ]; then
+        inxParticipationVersion="N/A"
+    else
+        if [ "$inxParticipationVersion" != "$latestInxParticipationVersion" ] && [ ! -z "$latestInxParticipationVersion" ]; then
+            inxParticipationVersion="$inxParticipationVersion (new version \"v$latestInxParticipationVersion\" available!)"
+        fi
+    fi
+
+    # OUTPUT
+    whiptail --title "INX-Participation - Info" --msgbox "INX-Participation: $inxParticipationStatus\nVersion: v$inxParticipationVersion\\n\nEnabled Plugins: \"$inxParticipationEnablePlugins\"\nDisabled Plugins: \"$inxParticipationDisablePlugins\"" 24 68
+else
+    # OUTPUT
+    whiptail --title "INX-Participation - Info" --msgbox "INX-Participation not installed!" 8 65
+fi

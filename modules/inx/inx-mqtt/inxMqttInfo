@@ -1,0 +1,23 @@
+#!/bin/bash
+if [ -f "/usr/bin/inx-mqtt" ]; then
+
+    source $swarmConfigs/inx-mqtt.cfg
+    source $swarmLogs/githubVersion
+
+    inxMqttStatus=$(systemctl show -p ActiveState --value inx-mqtt)
+
+    inxMqttVersion=$(/usr/bin/inx-mqtt -v | awk '{ print $2 }')
+    if [ -z "$inxMqttVersion" ]; then
+        inxMqttVersion="N/A"
+    else
+        if [ "$inxMqttVersion" != "$latestInxMqttVersion" ] && [ ! -z "$latestInxMqttVersion" ]; then
+            inxMqttVersion="$inxMqttVersion (new version \"v$latestInxMqttVersion\" available!)"
+        fi
+    fi
+
+    # OUTPUT
+    whiptail --title "INX-Mqtt - Info" --msgbox "INX-Mqtt: $inxMqttStatus\nVersion: v$inxMqttVersion\\n\nEnabled Plugins: \"$inxMqttEnablePlugins\"\nDisabled Plugins: \"$inxMqttDisablePlugins\"" 24 68
+else
+    # OUTPUT
+    whiptail --title "INX-Mqtt - Info" --msgbox "INX-Mqtt not installed!" 8 65
+fi
