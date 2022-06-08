@@ -67,11 +67,44 @@ else
     sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter='$waspStatusCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
+# INX-Indexer
+if [ -n "$inxIndexerStatusCounter" ]; then
+    if [ $inxIndexerStatusCounter -ne $inxIndexerStatusCounter ] 2>/dev/null; then
+        inxIndexerStatusCounter=0
+        sudo sed -i 's/^inxIndexerStatusCounter=.*/inxIndexerStatusCounter='$inxIndexerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+else
+    inxIndexerStatusCounter=0
+    sudo sed -i 's/^inxIndexerStatusCounter=.*/inxIndexerStatusCounter='$inxIndexerStatusCounter'/' $swarmConfigs/watchdog.cfg
+fi
+
+# INX-Mqtt
+if [ -n "$inxMqttStatusCounter" ]; then
+    if [ $inxMqttStatusCounter -ne $inxMqttStatusCounter ] 2>/dev/null; then
+        inxMqttStatusCounter=0
+        sudo sed -i 's/^inxMqttStatusCounter=.*/inxMqttStatusCounter='$inxMqttStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+else
+    inxMqttStatusCounter=0
+    sudo sed -i 's/^inxMqttStatusCounter=.*/inxMqttStatusCounter='$inxMqttStatusCounter'/' $swarmConfigs/watchdog.cfg
+fi
+
+# INX-Participation
+if [ -n "$inxParticipationStatusCounter" ]; then
+    if [ $inxParticipationStatusCounter -ne $inxParticipationStatusCounter ] 2>/dev/null; then
+        inxParticipationStatusCounter=0
+        sudo sed -i 's/^inxParticipationStatusCounter=.*/inxParticipationStatusCounter='$inxParticipationStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+else
+    inxParticipationStatusCounter=0
+    sudo sed -i 's/^inxParticipationStatusCounter=.*/inxParticipationStatusCounter='$inxParticipationStatusCounter'/' $swarmConfigs/watchdog.cfg
+fi
+
 ################################################################################################################################################
 
 # Hornet Status Check
 if [ "$hornetStatus" != "active" ] && [ -f "/usr/bin/hornet" ] && [ "$hornetServiceStatusCheck" = "true" ]; then
-    sudo systemctl stop hornet
+    sudo systemctl stop hornet > /dev/null 2>&1
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
     if [[ $hornetPlugins = *participation* ]] && [ $hornetStatusCounter -ge 1 ] 2>/dev/null; then
         sudo rm -rf $hornetHome/${hornetNetwork}db/participation 2>/dev/null
@@ -79,7 +112,7 @@ if [ "$hornetStatus" != "active" ] && [ -f "/usr/bin/hornet" ] && [ "$hornetServ
     if [ $hornetStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$hornetAllowDbReset" = "true" ]; then
             if [ "$killall" = "true" ]; then
-                sudo killall -s SIGKILL hornet
+                sudo killall -s SIGKILL hornet > /dev/null 2>&1
             fi
             sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots/${hornetNetwork}/*.bin
             echo "$restartDate [WACHTDOG] HORNET ${hornetNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
@@ -90,7 +123,7 @@ if [ "$hornetStatus" != "active" ] && [ -f "/usr/bin/hornet" ] && [ "$hornetServ
     else
         let hornetStatusCounter=$hornetStatusCounter+1
     fi
-    sudo systemctl start hornet
+    sudo systemctl start hornet > /dev/null 2>&1
     sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $swarmConfigs/watchdog.cfg
     echo "$restartDate [WACHTDOG] HORNET node was restarted because the service is not active." >> $swarmLogs/swarm.log
     telegramText="[$HOSTNAME] HORNET node was restarted because the service is not active."
@@ -104,7 +137,7 @@ fi
 
 # Hornet-Shimmer Status Check
 if [ "$hornetShimmerStatus" != "active" ] && [ -f "/usr/bin/hornet-shimmer" ] && [ "$hornetShimmerServiceStatusCheck" = "true" ]; then
-    sudo systemctl stop hornet-shimmer
+    sudo systemctl stop hornet-shimmer > /dev/null 2>&1
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
     if [[ $hornetShimmerPlugins = *participation* ]] && [ $hornetShimmerStatusCounter -ge 1 ] 2>/dev/null; then
         sudo rm -rf $hornetShimmerHome/${hornetShimmerNetwork}/database/participation 2>/dev/null
@@ -112,7 +145,7 @@ if [ "$hornetShimmerStatus" != "active" ] && [ -f "/usr/bin/hornet-shimmer" ] &&
     if [ $hornetShimmerStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$hornetShimmerAllowDbReset" = "true" ]; then
             if [ "$killall" = "true" ]; then
-                sudo killall -s SIGKILL hornet-shimmer
+                sudo killall -s SIGKILL hornet-shimmer > /dev/null 2>&1
             fi
             sudo rm -rf $hornetShimmerHome/${hornetShimmerNetwork}/database $hornetShimmerHome/${hornetShimmerNetwork}/snapshots/*.bin
             echo "$restartDate [WACHTDOG] HORNET-Shimmer ${hornetShimmerNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
@@ -123,7 +156,7 @@ if [ "$hornetShimmerStatus" != "active" ] && [ -f "/usr/bin/hornet-shimmer" ] &&
     else
         let hornetShimmerStatusCounter=$hornetShimmerStatusCounter+1
     fi
-    sudo systemctl start hornet-shimmer
+    sudo systemctl start hornet-shimmer > /dev/null 2>&1
     sudo sed -i 's/^hornetShimmerStatusCounter=.*/hornetShimmerStatusCounter='$hornetShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
     echo "$restartDate [WACHTDOG] HORNET-Shimmer node was restarted because the service is not active." >> $swarmLogs/swarm.log
     telegramText="[$HOSTNAME] HORNET-Shimmer node was restarted because the service is not active."
@@ -137,12 +170,12 @@ fi
 
 # Bee Status Check
 if [ "$beeStatus" != "active" ] && [ -f "/usr/bin/bee" ] && [ "$beeServiceStatusCheck" = "true" ]; then
-    sudo systemctl stop bee
+    sudo systemctl stop bee > /dev/null 2>&1
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
     if [ $beeStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$beeAllowDbReset" = "true" ]; then
             if [ "$killall" = "true" ]; then
-                sudo killall -s SIGKILL bee 2>/dev/null
+                sudo killall -s SIGKILL bee > /dev/null 2>&1
             fi
             sudo rm -rf $beeHome/storage/$beeNetwork $beeHome/snapshots/$beeNetwork
             echo "$restartDate [WACHTDOG] BEE ${beeNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
@@ -153,7 +186,7 @@ if [ "$beeStatus" != "active" ] && [ -f "/usr/bin/bee" ] && [ "$beeServiceStatus
     else
         let beeStatusCounter=$beeStatusCounter+1
     fi
-    sudo systemctl start bee
+    sudo systemctl start bee > /dev/null 2>&1
     sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $swarmConfigs/watchdog.cfg
     echo "$restartDate [WACHTDOG] BEE node was restarted because the service is not active." >> $swarmLogs/swarm.log
     telegramText="[$HOSTNAME] BEE node was restarted because the service is not active."
@@ -167,12 +200,12 @@ fi
 
 # Bee-Shimmer Status Check
 if [ "$beeShimmerStatus" != "active" ] && [ -f "/usr/bin/bee-shimmer" ] && [ "$beeShimmerServiceStatusCheck" = "true" ]; then
-    sudo systemctl stop bee-shimmer
+    sudo systemctl stop bee-shimmer > /dev/null 2>&1
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
     if [ $beeShimmerStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$beeShimmerAllowDbReset" = "true" ]; then
             if [ "$killall" = "true" ]; then
-                sudo killall -s SIGKILL bee-shimmer 2>/dev/null
+                sudo killall -s SIGKILL bee-shimmer > /dev/null 2>&1
             fi
             sudo rm -rf $beeShimmerHome/storage/$beeShimmerNetwork $beeShimmerHome/snapshots/$beeShimmerNetwork
             echo "$restartDate [WACHTDOG] BEE-SHIMMER ${beeShimmerNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
@@ -183,7 +216,7 @@ if [ "$beeShimmerStatus" != "active" ] && [ -f "/usr/bin/bee-shimmer" ] && [ "$b
     else
         let beeShimmerStatusCounter=$beeShimmerStatusCounter+1
     fi
-    sudo systemctl start bee-shimmer
+    sudo systemctl start bee-shimmer > /dev/null 2>&1
     sudo sed -i 's/^beeShimmerStatusCounter=.*/beeShimmerStatusCounter='$beeShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
     echo "$restartDate [WACHTDOG] BEE-SHIMMER node was restarted because the service is not active." >> $swarmLogs/swarm.log
     telegramText="[$HOSTNAME] BEE-SHIMMER node was restarted because the service is not active."
@@ -197,12 +230,12 @@ fi
 
 # GoShimmer Status Check
 if [ "$goshimmerStatus" != "active" ] && [ -f "/usr/bin/goshimmer" ] && [ ! -f "/tmp/goshimmer.lock" ]; then
-    sudo systemctl stop goshimmer
+    sudo systemctl stop goshimmer > /dev/null 2>&1
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
     if [ $goshimmerStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$goshimmerAllowDbReset" = "true" ]; then
             if [ "$killall" = "true" ]; then
-                sudo killall -s SIGKILL goshimmer
+                sudo killall -s SIGKILL goshimmer > /dev/null 2>&1
             fi
             sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb > /dev/null 2>&1
             source $goshimmerModules/goshimmerDbDownload
@@ -214,7 +247,7 @@ if [ "$goshimmerStatus" != "active" ] && [ -f "/usr/bin/goshimmer" ] && [ ! -f "
     else
         let goshimmerStatusCounter=$goshimmerStatusCounter+1
     fi
-    sudo systemctl start goshimmer
+    sudo systemctl start goshimmer > /dev/null 2>&1
     sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter='$goshimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
     echo "$restartDate [WACHTDOG] GOSHIMMER node was restarted because the service is not active." >> $swarmLogs/swarm.log
     telegramText="[$HOSTNAME] GOSHIMMER node was restarted because the service is not active."
@@ -228,12 +261,12 @@ fi
 
 # WASP Status Check
 if [ "$waspStatus" != "active" ] && [ -f "/usr/bin/wasp" ]; then
-    sudo systemctl stop wasp
+    sudo systemctl stop wasp > /dev/null 2>&1
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
     if [ $waspStatusCounter -ge 2 ] 2>/dev/null; then
         if [ "$waspAllowDbReset" = "true" ]; then
             if [ "$killall" = "true" ]; then
-                sudo killall -s SIGKILL wasp
+                sudo killall -s SIGKILL wasp > /dev/null 2>&1
             fi
             sudo rm -rf $waspHome/waspdb
             echo "$restartDate [WACHTDOG] WASP database deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
@@ -244,7 +277,7 @@ if [ "$waspStatus" != "active" ] && [ -f "/usr/bin/wasp" ]; then
     else
         let waspStatusCounter=$waspStatusCounter+1
     fi
-    sudo systemctl start wasp
+    sudo systemctl start wasp > /dev/null 2>&1
     sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter='$waspStatusCounter'/' $swarmConfigs/watchdog.cfg
     echo "$restartDate [WACHTDOG] WASP node was restarted because the service is not active." >> $swarmLogs/swarm.log
     telegramText="[$HOSTNAME] WASP node was restarted because the service is not active."
@@ -253,5 +286,95 @@ else
     if [ $waspStatusCounter -gt 0 ] 2>/dev/null; then
         let waspStatusCounter=$waspStatusCounter-1
         sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter='$waspStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+fi
+
+# INX-Indexer Status Check
+if [ "$inxIndexerStatus" != "active" ] && [ -f "/usr/bin/inx-indexer" ] && [ "$inxIndexerServiceStatusCheck" = "true" ]; then
+    sudo systemctl stop inx-indexer > /dev/null 2>&1
+    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+    if [ $inxIndexerStatusCounter -ge 2 ] 2>/dev/null; then
+        if [ "$inxIndexerAllowDbReset" = "true" ]; then
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL inx-indexer > /dev/null 2>&1
+            fi
+            sudo rm -rf $inxIndexerHome/database
+            echo "$restartDate [WACHTDOG] INX-Indexer database deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
+            telegramText="[$HOSTNAME] INX-Indexer database deleted because the maximum number of attempted restarts was reached."
+            source $watchdogModules/watchdogTelegram
+        fi
+        inxIndexerStatusCounter=0
+    else
+        let inxIndexerStatusCounter=$inxIndexerStatusCounter+1
+    fi
+    sudo systemctl start inx-indexer > /dev/null 2>&1
+    sudo sed -i 's/^inxIndexerStatusCounter=.*/inxIndexerStatusCounter='$inxIndexerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    echo "$restartDate [WACHTDOG] INX-Indexer was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$HOSTNAME] INX-Indexer was restarted because the service is not active."
+    source $watchdogModules/watchdogTelegram
+else
+    if [ $inxIndexerStatusCounter -gt 0 ] 2>/dev/null; then
+        let inxIndexerStatusCounter=$inxIndexerStatusCounter-1
+        sudo sed -i 's/^inxIndexerStatusCounter=.*/inxIndexerStatusCounter='$inxIndexerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+fi
+
+# INX-Mqtt Status Check
+if [ "$inxMqttStatus" != "active" ] && [ -f "/usr/bin/inx-mqtt" ] && [ "$inxMqttServiceStatusCheck" = "true" ]; then
+    sudo systemctl stop inx-mqtt > /dev/null 2>&1
+    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+    if [ $inxMqttStatusCounter -ge 2 ] 2>/dev/null; then
+        if [ "$inxMqttAllowDbReset" = "true" ]; then
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL inx-mqtt > /dev/null 2>&1
+            fi
+            sudo rm -rf $inxMqttHome/database
+            echo "$restartDate [WACHTDOG] INX-MQTT database deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
+            telegramText="[$HOSTNAME] INX-MQTT database deleted because the maximum number of attempted restarts was reached."
+            source $watchdogModules/watchdogTelegram
+        fi
+        inxMqttStatusCounter=0
+    else
+        let inxMqttStatusCounter=$inxMqttStatusCounter+1
+    fi
+    sudo systemctl start inx-mqtt > /dev/null 2>&1
+    sudo sed -i 's/^inxMqttStatusCounter=.*/inxMqttStatusCounter='$inxMqttStatusCounter'/' $swarmConfigs/watchdog.cfg
+    echo "$restartDate [WACHTDOG] INX-MQTT was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$HOSTNAME] INX-MQTT was restarted because the service is not active."
+    source $watchdogModules/watchdogTelegram
+else
+    if [ $inxMqttStatusCounter -gt 0 ] 2>/dev/null; then
+        let inxMqttStatusCounter=$inxMqttStatusCounter-1
+        sudo sed -i 's/^inxMqttStatusCounter=.*/inxMqttStatusCounter='$inxMqttStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+fi
+
+# INX-Participation Status Check
+if [ "$inxParticipationStatus" != "active" ] && [ -f "/usr/bin/inx-participation" ] && [ "$inxParticipationServiceStatusCheck" = "true" ]; then
+    sudo systemctl stop inx-participation > /dev/null 2>&1
+    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+    if [ $inxParticipationStatusCounter -ge 2 ] 2>/dev/null; then
+        if [ "$inxParticipationAllowDbReset" = "true" ]; then
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL inx-participation > /dev/null 2>&1
+            fi
+            sudo rm -rf $inxParticipationHome/database
+            echo "$restartDate [WACHTDOG] INX-Participation database deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
+            telegramText="[$HOSTNAME] INX-Participation database deleted because the maximum number of attempted restarts was reached."
+            source $watchdogModules/watchdogTelegram
+        fi
+        inxParticipationStatusCounter=0
+    else
+        let inxParticipationStatusCounter=$inxParticipationStatusCounter+1
+    fi
+    sudo systemctl start inx-participation > /dev/null 2>&1
+    sudo sed -i 's/^inxParticipationStatusCounter=.*/inxParticipationStatusCounter='$inxParticipationStatusCounter'/' $swarmConfigs/watchdog.cfg
+    echo "$restartDate [WACHTDOG] INX-Participation was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$HOSTNAME] INX-Participation was restarted because the service is not active."
+    source $watchdogModules/watchdogTelegram
+else
+    if [ $inxParticipationStatusCounter -gt 0 ] 2>/dev/null; then
+        let inxParticipationStatusCounter=$inxParticipationStatusCounter-1
+        sudo sed -i 's/^inxParticipationStatusCounter=.*/inxParticipationStatusCounter='$inxParticipationStatusCounter'/' $swarmConfigs/watchdog.cfg
     fi
 fi
