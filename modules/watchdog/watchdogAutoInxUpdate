@@ -1,0 +1,70 @@
+#!/bin/bash
+source $swarmLogs/latest-inx-versions
+
+if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
+    if [ "$inxIndexerAutoUpdate" = "true" ] && [ -f "/usr/bin/inx-indexer" ]; then
+        source $inxIndexerModules/inxIndexerVersion
+        currentInxIndexerVersion="$inxIndexerVersion"
+        if [ "$latestInxIndexerVersion" != "$inxIndexerVersion" ]; then
+            source $inxIndexerModules/inxIndexerInstaller
+            source $inxIndexerModules/inxIndexerVersion
+            if [ "$currentInxIndexerVersion" != "$inxIndexerVersion" ] || [ "$inxIndexerUpdated" = "true" ]; then
+                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                # CALL MODULE CONFIGPARSER
+                source $inxIndexerModules/inxIndexerParser
+                if [ "$restartInxIndexer" = "true" ]; then
+                    sudo systemctl restart inx-indexer > /dev/null 2>&1
+                    sleep 5
+                fi
+                echo "$restartDate [AUTOUPDATE] New Version ($latestInxIndexerVersion) of INX-Indexer installed. Checksum: $inxIndexerChecksum" >> $swarmLogs/swarm.log
+                telegramText="[$HOSTNAME] New Version ($latestInxIndexerVersion) of INX-Indexer installed. Checksum: $inxIndexerChecksum"
+                source $watchdogModules/watchdogTelegram
+            fi
+        fi
+        unset currentInxIndexerVersion inxIndexerUpdated inxIndexerChecksum
+    fi
+
+    if [ "$inxMqttAutoUpdate" = "true" ] && [ -f "/usr/bin/inx-mqtt" ]; then
+        source $inxMqttModules/inxMqttVersion
+        currentInxMqttVersion="$inxMqttVersion"
+        if [ "$latestInxMqttVersion" != "$inxMqttVersion" ]; then
+            source $inxMqttModules/inxMqttInstaller
+            source $inxMqttModules/inxMqttVersion
+            if [ "$currentInxMqttVersion" != "$inxMqttVersion" ] || [ "$inxMqttUpdated" = "true" ]; then
+                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                # CALL MODULE CONFIGPARSER
+                source $inxMqttModules/inxMqttParser
+                if [ "$restartInxMqtt" = "true" ]; then
+                    sudo systemctl restart inx-mqtt > /dev/null 2>&1
+                    sleep 5
+                fi
+                echo "$restartDate [AUTOUPDATE] New Version ($latestInxMqttVersion) of INX-MQTT installed. Checksum: $inxMqttChecksum" >> $swarmLogs/swarm.log
+                telegramText="[$HOSTNAME] New Version ($latestInxMqttVersion) of INX-MQTT installed. Checksum: $inxMqttChecksum"
+                source $watchdogModules/watchdogTelegram
+            fi
+        fi
+        unset currentInxMqttVersion inxMqttUpdated inxMqttChecksum
+    fi
+
+    if [ "$inxParticipationAutoUpdate" = "true" ] && [ -f "/usr/bin/inx-indexer" ]; then
+        source $inxParticipationModules/inxParticipationVersion
+        currentInxParticipationVersion="$inxParticipationVersion"
+        if [ "$latestInxParticipationVersion" != "$inxParticipationVersion" ]; then
+            source $inxParticipationModules/inxParticipationInstaller
+            source $inxParticipationModules/inxParticipationVersion
+            if [ "$currentInxParticipationVersion" != "$inxParticipationVersion" ] || [ "$inxParticipationUpdated" = "true" ]; then
+                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                # CALL MODULE CONFIGPARSER
+                source $inxParticipationModules/inxParticipationParser
+                if [ "$restartInxParticipation" = "true" ]; then
+                    sudo systemctl restart inx-indexer > /dev/null 2>&1
+                    sleep 5
+                fi
+                echo "$restartDate [AUTOUPDATE] New Version ($latestInxParticipationVersion) of INX-Participation installed. Checksum: $inxParticipationChecksum" >> $swarmLogs/swarm.log
+                telegramText="[$HOSTNAME] New Version ($latestInxParticipationVersion) of INX-Participation installed. Checksum: $inxParticipationChecksum"
+                source $watchdogModules/watchdogTelegram
+            fi
+        fi
+        unset currentInxParticipationVersion inxParticipationUpdated inxParticipationChecksum
+    fi
+fi
