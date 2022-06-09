@@ -1,9 +1,9 @@
 #!/bin/bash
 
 if [ "$swarmManualUpdate" = "true" ]; then
-    if [ ! -z "$swarmUpdateAuthUser" ] && [ ! -z "$swarmUpdateAuthPwd" ]; then
-        checkSwarmAuth=$(curl --max-time 5 -Ls -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/test.file)
-        if [ "$checkSwarmAuth" = "200" ]; then
+    if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
+        source $swarmModules/swarmAuth
+        if [ "$swarmAuth" = "200" ]; then
             {
                 echo 0
                 echo 10
@@ -17,10 +17,10 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 fi
 
                 echo 30
-                swarmUpdateChecksum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
-                sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
+                swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
+                sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmUpdateAuthUser:$swarmAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
                 swarmChecksum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
-                if [ "$swarmChecksum" = "$swarmUpdateChecksum" ]; then
+                if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                     ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                     if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
                         sudo rm -rf $swarmHome > /dev/null 2>&1
@@ -128,7 +128,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
     fi
 else
     if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
-        if [ "$checkSwarmAuth" = "200" ]; then
+        if [ "$swarmAuth" = "200" ]; then
             if [ ! -d "$swarmTmp/v$latestSwarmVersion" ]; then
                 sudo mkdir -p $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
             fi
