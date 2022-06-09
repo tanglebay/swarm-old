@@ -14,10 +14,10 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
                 sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
                 echo 30
-                swarmChkSum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
+                swarmUpdateChecksum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
                 sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
-                swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
-                if [ "$swarmChkSum" = "$swarmUpdateChkSum" ]; then
+                swarmChecksum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
+                if [ "$swarmChecksum" = "$swarmUpdateChecksum" ]; then
                     ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                     if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
                         sudo rm -rf $swarmHome > /dev/null 2>&1
@@ -106,9 +106,9 @@ if [ "$swarmManualUpdate" = "true" ]; then
             sudo rm -rf $swarmHome/update.lock > /dev/null 2>&1
         fi
         if [ "$swarmUpdated" = "true" ]; then
-            swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
-            whiptail --title "SWARM Menu" --msgbox "\nSWARM successfully updated.\n\nChecksum: $swarmUpdateChkSum" 14 65
-            unset swarmUpdated swarmUpdateChkSum
+            swarmChecksum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
+            whiptail --title "SWARM Menu" --msgbox "\nSWARM successfully updated.\n\nChecksum: $swarmChecksum" 14 65
+            unset swarmUpdated swarmChecksum
             if [ -d "$swarmTmp" ]; then
                 sudo rm -rf $swarmTmp > /dev/null 2>&1
             fi
@@ -134,12 +134,12 @@ else
             sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
             sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
 
-            swarmChkSum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
+            swarmUpdateChecksum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
             sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
-            swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
-            if [ "$swarmChkSum" = "$swarmUpdateChkSum" ]; then
+            swarmChecksum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
+            if [ "$swarmChecksum" = "$swarmUpdateChecksum" ]; then
                 ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
-                if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/swarm" ]; then
+                if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
                     sudo rm -rf $swarmHome > /dev/null 2>&1
                     sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
                     source $swarmModules/swarmUpdaterAfter
@@ -152,6 +152,6 @@ else
         # ( cd $swarmHome ; sudo git pull ) > /dev/null 2>&1
         # ( cd $swarmHome ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
         fi
-        unset checkSwarmUpdateAuth swarmChkSum swarmUpdateChkSum
+        unset checkSwarmUpdateAuth swarmUpdateChecksum
     fi
 fi
