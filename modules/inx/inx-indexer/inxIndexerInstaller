@@ -32,15 +32,15 @@ fi
 # Create dir if not exist
 sudo mkdir -p /tmp/inx-indexer > /dev/null 2>&1
 
-checkSwarmAuth=$(curl --max-time 5 -Ls -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/test.file)
-if [ "$osArchitecture" = "amd64" ] && [ "$checkSwarmAuth" = "200" ]; then
+source $swarmModules/swarmAuth
+if [ "$osArchitecture" = "amd64" ] && [ "$swarmAuth" = "200" ]; then
     # Download latest inx-indexer
-    ( cd /tmp/inx-indexer/ ; sudo wget -q https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-indexer/v${latestInxIndexerVersion}/inx-indexer-v${latestInxIndexerVersion}.tar.gz )
+    ( cd /tmp/inx-indexer/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-indexer/v${latestInxIndexerVersion}/inx-indexer-v${latestInxIndexerVersion}.tar.gz )
     if [ -f "/tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}.tar.gz" ]; then
         inxIndexerDownloadChecksum=$(sudo shasum -a 256 /tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}.tar.gz | awk '{ print $1 }')
     fi
     # Download checksum
-    inxIndexerChecksum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-indexer/v$latestInxIndexerVersion/checksum.txt)
+    inxIndexerChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-indexer/v$latestInxIndexerVersion/checksum.txt)
 
     # Unzip archive
     if [ "$inxIndexerDownloadChecksum" = "$inxIndexerChecksum" ] && [ ! -z "$inxIndexerDownloadChecksum" ] && [ ! -z "$inxIndexerChecksum" ]; then

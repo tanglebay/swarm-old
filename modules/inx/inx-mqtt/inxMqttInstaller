@@ -32,15 +32,15 @@ fi
 # Create dir if not exist
 sudo mkdir -p /tmp/inx-mqtt > /dev/null 2>&1
 
-checkSwarmAuth=$(curl --max-time 5 -Ls -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/test.file)
-if [ "$osArchitecture" = "amd64" ] && [ "$checkSwarmAuth" = "200" ]; then
+source $swarmModules/swarmAuth
+if [ "$osArchitecture" = "amd64" ] && [ "$swarmAuth" = "200" ]; then
     # Download latest inx-mqtt
-    ( cd /tmp/inx-mqtt/ ; sudo wget -q https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-mqtt/v${latestInxMqttVersion}/inx-mqtt-v${latestInxMqttVersion}.tar.gz )
+    ( cd /tmp/inx-mqtt/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-mqtt/v${latestInxMqttVersion}/inx-mqtt-v${latestInxMqttVersion}.tar.gz )
     if [ -f "/tmp/inx-mqtt/inx-mqtt-v${latestInxMqttVersion}.tar.gz" ]; then
         inxMqttDownloadChecksum=$(sudo shasum -a 256 /tmp/inx-mqtt/inx-mqtt-v${latestInxMqttVersion}.tar.gz | awk '{ print $1 }')
     fi
     # Download checksum
-    inxMqttChecksum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-mqtt/v$latestInxMqttVersion/checksum.txt)
+    inxMqttChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-mqtt/v$latestInxMqttVersion/checksum.txt)
 
     # Unzip archive
     if [ "$inxMqttDownloadChecksum" = "$inxMqttChecksum" ] && [ ! -z "$inxMqttDownloadChecksum" ] && [ ! -z "$inxMqttChecksum" ]; then
