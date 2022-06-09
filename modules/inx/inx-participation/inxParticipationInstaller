@@ -1,0 +1,94 @@
+#!/bin/bash
+
+# General
+if ! id inx >/dev/null 2>&1; then
+    useradd --no-create-home --system inx >/dev/null
+fi
+
+if [ ! -d "$inxParticipationHome" ]; then
+    sudo mkdir -p $inxParticipationHome > /dev/null 2>&1
+    sudo chown -R inx:inx $inxParticipationHome > /dev/null 2>&1
+fi
+
+# Install GO
+if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    sudo snap install go --classic > /dev/null 2>&1
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/inx-participation.service" ]; then
+    sudo cp -rf $swarmHome/templates/inx/inx-participation.service /lib/systemd/system/inx-participation.service
+    if [ ! -f "/etc/default/inx-participation" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/inx-participation
+    fi
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/inx-participation.service" ]; then
+        sudo systemctl enable inx-participation > /dev/null 2>&1
+    fi
+    sudo systemctl daemon-reload > /dev/null 2>&1
+fi
+
+##############################################################################################################################################
+
+# Create dir if not exist
+sudo mkdir -p /tmp/inx-participation > /dev/null 2>&1
+
+checkSwarmAuth=$(curl --max-time 5 -Ls -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/test.file)
+if [ "$osArchitecture" = "amd64" ] && [ "$checkSwarmAuth" = "200" ]; then
+    # Download latest inx-participation
+    ( cd /tmp/inx-participation/ ; sudo wget -q https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-participation/v${latestInxParticipationVersion}/inx-participation-v${latestInxParticipationVersion}.tar.gz )
+    if [ -f "/tmp/inx-participation/inx-participation-v${latestInxParticipationVersion}.tar.gz" ]; then
+        inxParticipationDownloadChecksum=$(sudo shasum -a 256 /tmp/inx-participation/inx-participation-v${latestInxParticipationVersion}.tar.gz | awk '{ print $1 }')
+    fi
+    # Download checksum
+    inxParticipationChecksum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/inx/inx-participation/v$latestInxParticipationVersion/checksum.txt)
+
+    # Unzip archive
+    if [ "$inxParticipationDownloadChecksum" = "$inxParticipationChecksum" ] && [ ! -z "$inxParticipationDownloadChecksum" ] && [ ! -z "$inxParticipationChecksum" ]; then
+        ( cd /tmp/inx-participation ; sudo tar -xzf /tmp/inx-participation/inx-participation-v${latestInxParticipationVersion}.tar.gz ) > /dev/null 2>&1
+
+        # Copy binary
+        if [ -f "/tmp/inx-participation/inx-participation" ]; then
+            inxParticipationStatus="$(systemctl show -p ActiveState --value inx-participation)"
+            if [ "$inxParticipationStatus" = "active" ]; then
+                sudo systemctl stop inx-participation > /dev/null 2>&1
+            fi
+
+            sudo cp -rf /tmp/inx-participation/inx-participation /usr/bin/inx-participation > /dev/null 2>&1
+            sudo chmod +x /usr/bin/inx-participation > /dev/null 2>&1
+            newInxParticipationBinary=true
+        fi
+    fi
+fi
+
+
+##############################################################################################################################################
+
+if [ "$newInxParticipationBinary" = "true" ]; then
+    ### Mainnet Config
+    if [ "$inxParticipationNetwork" = "mainnet" ]; then
+        if [ -f "/tmp/inx-participation/config_template.json" ]; then
+            sudo cp -rf /tmp/inx-participation/config_template.json /var/lib/inx-participation/config.json > /dev/null 2>&1
+            newInxParticipationConfig=true
+        fi
+        if [ -s "/tmp/inx-participation/config.json" ]; then
+            sudo cp -rf /tmp/inx-participation/config.json /var/lib/inx-participation/config.json > /dev/null 2>&1
+            newInxParticipationConfig=true
+        fi
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newInxParticipationConfig" = "true" ]; then
+    # Run installer modules
+    sudo chown -R inx:inx $inxParticipationHome > /dev/null 2>&1
+
+    restartInxParticipation=true
+    inxParticipationUpdated=true
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/inx-participation > /dev/null 2>&1
+
+
+unset newInxParticipationBinary newInxParticipationConfig inxParticipationDownloadChecksum
