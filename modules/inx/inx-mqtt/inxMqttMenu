@@ -35,28 +35,34 @@ while [ $exitCode -lt 1 ]; do
 
                 case $CHOICE in
                     "1)")
-                        sudo $swarmCLEditor $inxMqttHome/config.json
-                        if (whiptail --title "INX-MQTT - Configuration" --yesno --defaultno "Would you like to restart INX-MQTT now?" 8 65); then
-                            {
-                                echo 0
-                                echo 50
-                                sudo systemctl restart inx-mqtt > /dev/null 2>&1
-                                echo 100
-                                sleep 0.25
-                            } | whiptail --gauge "Please wait while INX-MQTT is restarting..." 8 65 0
+                        if [ -f "$inxMqttHome/config.json" ]; then
+                            sudo $swarmCLEditor $inxMqttHome/config.json
+                            if (whiptail --title "INX-MQTT - Configuration" --yesno --defaultno "Would you like to restart INX-MQTT now?" 8 65); then
+                                {
+                                    echo 0
+                                    echo 50
+                                    sudo systemctl restart inx-mqtt > /dev/null 2>&1
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while INX-MQTT is restarting..." 8 65 0
+                            fi
+                        else
+                            whiptail --title "INX-MQTT - Configuration" --msgbox "INX-MQTT is not installed." 8 65
                         fi
                     ;;
                     "2)")
                         sudo $swarmCLEditor $swarmConfigs/inx-mqtt.cfg
-                        if (whiptail --title "INX-MQTT - Configuration" --yesno --defaultno "Would you like to restart INX-MQTT now?" 8 65); then
-                            {
-                                echo 0
-                                source $inxIndexerModules/inxMqttParser
-                                echo 50
-                                sudo systemctl restart inx-mqtt > /dev/null 2>&1
-                                echo 100
-                                sleep 0.25
-                            } | whiptail --gauge "Please wait while INX-MQTT is restarting..." 8 65 0
+                        if [ -f "/usr/bin/inx-mqtt" ]; then
+                            if (whiptail --title "INX-MQTT - Configuration" --yesno --defaultno "Would you like to restart INX-MQTT now?" 8 65); then
+                                {
+                                    echo 0
+                                    source $inxIndexerModules/inxMqttParser
+                                    echo 50
+                                    sudo systemctl restart inx-mqtt > /dev/null 2>&1
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while INX-MQTT is restarting..." 8 65 0
+                            fi
                         fi
                     ;;
                 esac
