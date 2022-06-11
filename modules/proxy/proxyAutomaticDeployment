@@ -135,12 +135,10 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
         sudo sed -i 's/# server_tokens off;/server_tokens off;/g' /etc/nginx/nginx.conf
         sudo sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
         sudo sed -i 's/domain.tld/'$defaultDomain'/g' /etc/nginx/sites-enabled/default
-        source $swarmHome/version
-        swarmEndpointVersion=$(cat /var/www/html/swarm.json |jq '.swarm.version' | tr -d '"')
-        if [ "$swarmEndpointVersion" != "$version" ] || [ -z "$swarmEndpointVersion" ] || [ "$swarmEndpointVersion" = "null" ]; then
-            echo "{\"swarm\":{\"version\":\"$version\"}}" > /var/www/swarm.json
+        if [ ! -f /etc/nginx/swarm.conf ]; then
+            sudo touch /etc/nginx/swarm.conf > /dev/null 2>&1
         fi
-        unset swarmEndpointVersion
+        source $proxyModules/proxySwarmEndpoint
         sudo systemctl restart nginx > /dev/null 2>&1
     fi
 fi

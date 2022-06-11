@@ -1,0 +1,19 @@
+#!/bin/bash
+
+if [ -f "/usr/sbin/nginx" ]; then
+    if [ "$proxySwarmEndpoint" = "true" ]; then
+        if [ ! -s /etc/nginx/swarm.conf ]; then
+            sudo cp -rf $swarmTemplates/swarm/swarm.json /var/www/swarm.json
+        fi
+        source $swarmHome/version
+        parser=$(jq '.swarm.version' /var/www/swarm.json)
+        parser=$(echo $parser | tr -d '"')
+        if [ "$parser" != "$version" ]; then
+            sudo jq '.swarm.version = "'$version'"' /var/www/swarm.json|sponge /var/www/swarm.json
+        fi
+    else
+        if [ -s /etc/nginx/swarm.conf ]; then
+            echo -n > /etc/nginx/swarm.conf
+        fi
+    fi
+fi

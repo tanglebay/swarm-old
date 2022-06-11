@@ -21,16 +21,22 @@ while [ $exitCode -lt 1 ]; do
         "2)")
             while [ $exitCode -lt 1 ]; do
                 clear
+                if [ "$proxySwarmEndpoint" = "true" ]; then
+                    menuProxySwarmEndpoint="Disable"
+                else
+                    menuProxySwarmEndpoint="Enable"
+                fi
                 proxyUrlRegex='[-A-Za-z0-9\+&@#/%?=~_|!:,.;]:[-A-Za-z0-9\+&@#/%=~_|]'
                 CHOICE=$(
                     whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
-                    "1)" "Hornet proxy settings" \
-                    "2)" "Hornet-Shimmer proxy settings" \
-                    "3)" "Bee proxy settings" \
-                    "4)" "Bee-Shimmer proxy settings" \
-                    "5)" "GoShimmer proxy settings" \
-                    "6)" "WASP proxy settings" \
-                    "7)" "Advanced Settings" 3>&2 2>&1 1>&3
+                    "1)" "$menuProxySwarmEndpoint SWARM Endpoint" \
+                    "2)" "Hornet proxy settings" \
+                    "3)" "Hornet-Shimmer proxy settings" \
+                    "4)" "Bee proxy settings" \
+                    "5)" "Bee-Shimmer proxy settings" \ 
+                    "6)" "GoShimmer proxy settings" \
+                    "7)" "WASP proxy settings" \
+                    "8)" "Advanced Settings" 3>&2 2>&1 1>&3
                 )
 
                 exitStatus=$?
@@ -40,6 +46,17 @@ while [ $exitCode -lt 1 ]; do
 
                 case $CHOICE in
                     "1)")
+                        if [ "$proxySwarmEndpoint" = "true" ]; then
+                            proxySwarmEndpoint=false
+                            sudo sed -i 's/^proxySwarmEndpoint=.*/proxySwarmEndpoint='$proxySwarmEndpoint'/' $swarmConfigs/proxy.cfg
+                            whiptail --title "Proxy - SWARM" --msgbox "SWARM endpoint disabled." 8 65
+                        else
+                            proxySwarmEndpoint=true
+                            sudo sed -i 's/^proxySwarmEndpoint=.*/proxySwarmEndpoint='$proxySwarmEndpoint'/' $swarmConfigs/proxy.cfg
+                            whiptail --title "Proxy - Hornet" --msgbox "SWARM endpoint enabled." 8 65
+                        fi
+                    ;;
+                    "2)")
                         source $swarmConfigs/proxy.cfg
                         currentProxyHornetUrl="$proxyHornetUrl"
                         if [ -z "$proxyHornetUrl" ]; then
@@ -63,7 +80,7 @@ while [ $exitCode -lt 1 ]; do
                             fi
                         fi
                     ;;
-                    "2)")
+                    "3)")
                         source $swarmConfigs/proxy.cfg
                         currentProxyHornetShimmerUrl="$proxyHornetShimmerUrl"
                         if [ -z "$proxyHornetShimmerUrl" ]; then
@@ -87,7 +104,7 @@ while [ $exitCode -lt 1 ]; do
                             fi
                         fi
                     ;;
-                    "3)")
+                    "4)")
                         source $swarmConfigs/proxy.cfg
                         currentProxyBeeUrl="$proxyBeeUrl"
                         if [ -z "$proxyBeeUrl" ]; then
@@ -111,7 +128,7 @@ while [ $exitCode -lt 1 ]; do
                             fi
                         fi
                     ;;
-                    "4)")
+                    "5)")
                         source $swarmConfigs/proxy.cfg
                         currentProxyBeeShimmerUrl="$proxyBeeShimmerUrl"
                         if [ -z "$proxyBeeShimmerUrl" ]; then
@@ -135,7 +152,7 @@ while [ $exitCode -lt 1 ]; do
                             fi
                         fi
                     ;;
-                    "5)")
+                    "6)")
                         source $swarmConfigs/proxy.cfg
                         currentProxyGoshimmerUrl="$proxyGoshimmerUrl"
                         if [ -z "$proxyGoshimmerUrl" ]; then
@@ -159,7 +176,7 @@ while [ $exitCode -lt 1 ]; do
                             fi
                         fi
                     ;;
-                    "6)")
+                    "7)")
                         while [ $exitCode -lt 1 ]; do
                             source $swarmConfigs/proxy.cfg
                             clear
@@ -225,7 +242,7 @@ while [ $exitCode -lt 1 ]; do
                         done
                         exitCode=0
                     ;;
-                    "7)")
+                    "8)")
                         while [ $exitCode -lt 1 ]; do
                             source $swarmConfigs/proxy.cfg
                             clear
