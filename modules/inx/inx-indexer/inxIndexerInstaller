@@ -32,35 +32,38 @@ fi
 # Create dir if not exist
 sudo mkdir -p /tmp/inx-indexer > /dev/null 2>&1
 
-source $swarmModules/swarmAuth
-if [ "$osArchitecture" = "amd64" ] && [ "$swarmAuth" = "200" ]; then
-    # Download latest inx-indexer
-    ( cd /tmp/inx-indexer/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-indexer/v${latestInxIndexerVersion}/inx-indexer-v${latestInxIndexerVersion}.tar.gz )
-    if [ -f "/tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}.tar.gz" ]; then
-        inxIndexerDownloadChecksum=$(sudo shasum -a 512 /tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}.tar.gz | awk '{ print $1 }')
-    fi
-    # Download checksum
-    inxIndexerChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-indexer/v$latestInxIndexerVersion/checksum.txt)
-    echo $inxIndexerChecksum > /tmp/inx-indexer.checksum
+if [ "$osArchitecture" = "amd64" ] || [ "$osArchitecture" = "arm64" ]; then
+    source $swarmModules/swarmAuth
+    if [ "$swarmAuth" = "200" ]; then
+        # Download latest inx-indexer
+        ( cd /tmp/inx-indexer/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-indexer/v${latestInxIndexerVersion}/inx-indexer-v${latestInxIndexerVersion}_linux_$osArchitecture.tar.gz )
+        if [ -f "/tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}.tar.gz" ]; then
+            inxIndexerDownloadChecksum=$(sudo shasum -a 512 /tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        fi
+        
+        # Download checksum
+        ( cd /tmp/inx-indexer/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-indexer/v${latestInxIndexerVersion}/checksums.txt )
+        inxIndexerChecksum=$(sudo grep "inx-indexer-v${latestInxIndexerVersion}_linux_$osArchitecture.tar.gz" /tmp/inx-indexer/checksums.txt | awk '{ print $1 }')
+        echo $inxIndexerChecksum > /tmp/inx-indexer.checksum
 
-    # Unzip archive
-    if [ "$inxIndexerDownloadChecksum" = "$inxIndexerChecksum" ] && [ ! -z "$inxIndexerDownloadChecksum" ] && [ ! -z "$inxIndexerChecksum" ]; then
-        ( cd /tmp/inx-indexer ; sudo tar -xzf /tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}.tar.gz ) > /dev/null 2>&1
+        # Unzip archive
+        if [ "$inxIndexerDownloadChecksum" = "$inxIndexerChecksum" ] && [ ! -z "$inxIndexerDownloadChecksum" ] && [ ! -z "$inxIndexerChecksum" ]; then
+            ( cd /tmp/inx-indexer ; sudo tar -xzf /tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
-        # Copy binary
-        if [ -f "/tmp/inx-indexer/inx-indexer" ]; then
-            inxIndexerStatus="$(systemctl show -p ActiveState --value inx-indexer)"
-            if [ "$inxIndexerStatus" = "active" ]; then
-                sudo systemctl stop inx-indexer > /dev/null 2>&1
+            # Copy binary
+            if [ -f "/tmp/inx-indexer/inx-indexer" ]; then
+                inxIndexerStatus="$(systemctl show -p ActiveState --value inx-indexer)"
+                if [ "$inxIndexerStatus" = "active" ]; then
+                    sudo systemctl stop inx-indexer > /dev/null 2>&1
+                fi
+
+                sudo cp -rf /tmp/inx-indexer/inx-indexer /usr/bin/inx-indexer > /dev/null 2>&1
+                sudo chmod +x /usr/bin/inx-indexer > /dev/null 2>&1
+                newInxIndexerBinary=true
             fi
-
-            sudo cp -rf /tmp/inx-indexer/inx-indexer /usr/bin/inx-indexer > /dev/null 2>&1
-            sudo chmod +x /usr/bin/inx-indexer > /dev/null 2>&1
-            newInxIndexerBinary=true
         fi
     fi
 fi
-
 
 ##############################################################################################################################################
 

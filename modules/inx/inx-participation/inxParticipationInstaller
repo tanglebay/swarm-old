@@ -32,35 +32,37 @@ fi
 # Create dir if not exist
 sudo mkdir -p /tmp/inx-participation > /dev/null 2>&1
 
-source $swarmModules/swarmAuth
-if [ "$osArchitecture" = "amd64" ] && [ "$swarmAuth" = "200" ]; then
-    # Download latest inx-participation
-    ( cd /tmp/inx-participation/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-participation/v${latestInxParticipationVersion}/inx-participation-v${latestInxParticipationVersion}.tar.gz )
-    if [ -f "/tmp/inx-participation/inx-participation-v${latestInxParticipationVersion}.tar.gz" ]; then
-        inxParticipationDownloadChecksum=$(sudo shasum -a 512 /tmp/inx-participation/inx-participation-v${latestInxParticipationVersion}.tar.gz | awk '{ print $1 }')
-    fi
-    # Download checksum
-    inxParticipationChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-participation/v$latestInxParticipationVersion/checksum.txt)
-    echo $inxParticipationChecksum > /tmp/inx-participation.checksum
+if [ "$osArchitecture" = "amd64" ] && [ "$osArchitecture" = "arm64" ]; then
+    source $swarmModules/swarmAuth
+    if [ "$swarmAuth" = "200" ]; then
+        # Download latest inx-participation
+        ( cd /tmp/inx-participation/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-participation/v${latestInxParticipationVersion}/inx-participation-v${latestInxParticipationVersion}.tar.gz )
+        if [ -f "/tmp/inx-participation/inx-participation-v${latestInxParticipationVersion}.tar.gz" ]; then
+            inxParticipationDownloadChecksum=$(sudo shasum -a 512 /tmp/inx-participation/inx-participation-v${latestInxParticipationVersion}.tar.gz | awk '{ print $1 }')
+        fi
+        # Download checksum
+        ( cd /tmp/inx-participation/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-participation/v${latestInxParticipationVersion}/checksums.txt )
+        inxParticipationChecksum=$(sudo grep "inx-participation-v${latestInxParticipationVersion}_linux_$osArchitecture.tar.gz" /tmp/inx-participation/checksums.txt | awk '{ print $1 }')
+        echo $inxParticipationChecksum > /tmp/inx-participation.checksum
 
-    # Unzip archive
-    if [ "$inxParticipationDownloadChecksum" = "$inxParticipationChecksum" ] && [ ! -z "$inxParticipationDownloadChecksum" ] && [ ! -z "$inxParticipationChecksum" ]; then
-        ( cd /tmp/inx-participation ; sudo tar -xzf /tmp/inx-participation/inx-participation-v${latestInxParticipationVersion}.tar.gz ) > /dev/null 2>&1
+        # Unzip archive
+        if [ "$inxParticipationDownloadChecksum" = "$inxParticipationChecksum" ] && [ ! -z "$inxParticipationDownloadChecksum" ] && [ ! -z "$inxParticipationChecksum" ]; then
+            ( cd /tmp/inx-participation ; sudo tar -xzf /tmp/inx-participation/inx-participation-v${latestInxParticipationVersion}.tar.gz ) > /dev/null 2>&1
 
-        # Copy binary
-        if [ -f "/tmp/inx-participation/inx-participation" ]; then
-            inxParticipationStatus="$(systemctl show -p ActiveState --value inx-participation)"
-            if [ "$inxParticipationStatus" = "active" ]; then
-                sudo systemctl stop inx-participation > /dev/null 2>&1
+            # Copy binary
+            if [ -f "/tmp/inx-participation/inx-participation" ]; then
+                inxParticipationStatus="$(systemctl show -p ActiveState --value inx-participation)"
+                if [ "$inxParticipationStatus" = "active" ]; then
+                    sudo systemctl stop inx-participation > /dev/null 2>&1
+                fi
+
+                sudo cp -rf /tmp/inx-participation/inx-participation /usr/bin/inx-participation > /dev/null 2>&1
+                sudo chmod +x /usr/bin/inx-participation > /dev/null 2>&1
+                newInxParticipationBinary=true
             fi
-
-            sudo cp -rf /tmp/inx-participation/inx-participation /usr/bin/inx-participation > /dev/null 2>&1
-            sudo chmod +x /usr/bin/inx-participation > /dev/null 2>&1
-            newInxParticipationBinary=true
         fi
     fi
 fi
-
 
 ##############################################################################################################################################
 
