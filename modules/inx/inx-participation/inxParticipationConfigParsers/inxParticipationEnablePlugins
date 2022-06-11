@@ -1,0 +1,22 @@
+#!/bin/bash
+
+useInxParticipationEnablePlugins=true
+source $inxParticipationModules/inxParticipationPlugins
+
+IFS=', ' read -r -a ARRAYinxParticipationEnablePlugins <<< "$inxParticipationEnablePlugins"
+
+parser="$(jq '.app.enablePlugins' $inxParticipationHome/$inxParticipationConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$inxParticipationEnablePlugins" ]; then
+    sudo jq '.app.enablePlugins |= []' $inxParticipationHome/$inxParticipationConfig.json|sponge $inxParticipationHome/$inxParticipationConfig.json
+    for inxParticipationEnablePlugin in "${ARRAYinxParticipationEnablePlugins[@]}"
+    do
+        if [ ! -z "$inxParticipationEnablePlugin" ]; then
+            sudo jq '.app.enablePlugins |= .+ ["'$inxParticipationEnablePlugin'"]' $inxParticipationHome/$inxParticipationConfig.json|sponge $inxParticipationHome/$inxParticipationConfig.json
+        fi
+    done
+    restartInxParticipation=true
+    echo "inxParticipationEnablePlugins" >> /tmp/inxParticipationParsing
+fi
+
+unset ARRAYinxParticipationEnablePlugins inxParticipationEnablePlugin useInxParticipationEnablePlugins

@@ -4,16 +4,27 @@ if [ ! -f "/tmp/watchdog.lock" ]; then
     # Create LOCK file
     sudo touch /tmp/watchdog.lock
 
+    # GLOBAL
     source /var/lib/swarm/environment
+    source $swarmConfigs/swarm.cfg
+    source $swarmConfigs/proxy.cfg
+    source $swarmConfigs/watchdog.cfg
+
+    # NODES
     source $swarmConfigs/hornet.cfg
     source $swarmConfigs/hornet-shimmer.cfg
     source $swarmConfigs/bee.cfg
     source $swarmConfigs/bee-shimmer.cfg
     source $swarmConfigs/goshimmer.cfg
     source $swarmConfigs/wasp.cfg
-    source $swarmConfigs/swarm.cfg
-    source $swarmConfigs/proxy.cfg
-    source $swarmConfigs/watchdog.cfg
+
+    # INX
+    source $swarmConfigs/inx-indexer.cfg
+    source $swarmConfigs/inx-mqtt.cfg
+    source $swarmConfigs/inx-participation.cfg
+
+    # SWARM Auth Check
+    source $swarmModules/swarmAuth
 
     # Get Service Status
     if [ -f "/usr/bin/hornet" ]; then
@@ -34,6 +45,15 @@ if [ ! -f "/tmp/watchdog.lock" ]; then
     if [ -f "/usr/bin/wasp" ]; then
         waspStatus="$(systemctl show -p ActiveState --value wasp)"
     fi
+    if [ -f "/usr/bin/inx-indexer" ]; then
+        inxIndexerStatus="$(systemctl show -p ActiveState --value inx-indexer)"
+    fi
+    if [ -f "/usr/bin/inx-mqtt" ]; then
+        inxMqttStatus="$(systemctl show -p ActiveState --value inx-mqtt)"
+    fi
+    if [ -f "/usr/bin/inx-participation" ]; then
+        inxParticipationStatus="$(systemctl show -p ActiveState --value inx-participation)"
+    fi
 
     # Set time frame
     timeFrame=`date '+%M'`
@@ -53,19 +73,22 @@ if [ ! -f "/tmp/watchdog.lock" ]; then
     ###########################
 
     # Versions Update
-    source $watchdogModules/watchdogGithubVersionUpdate
+    source $watchdogModules/watchdogGetLatestVersions
 
     # SWARM auto updater
     source $watchdogModules/watchdogSwarmAutoUpdate
 
-    # Update check
+    # Node update check
     source $watchdogModules/watchdogAutoNodeUpdate
+
+    # INX update check
+    source $watchdogModules/watchdogAutoInxUpdate
 
     # Service check
     source $watchdogModules/watchdogStatusCheck
 
     # Check sync
-    source $watchdogModules/watchdogSyncCheck
+    # source $watchdogModules/watchdogSyncCheck
 
     # Log Pruning
     source $watchdogModules/watchdogLogPruning

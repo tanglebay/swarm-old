@@ -2,9 +2,9 @@
 while [ $exitCode -lt 1 ]; do
     clear
     CHOICE=$(
-        whiptail --title "SWARM Menu" --menu "\nChoose an option" 22 65 0 \
+        whiptail --title "SWARM Menu" --menu "\nChoose an option" 24 65 0 \
         "1)" "Swarm Auth" \
-        "2)" "Node(s) Info" \
+        "2)" "App(s) Info" \
         "3)" "SWARM Info" \
         "4)" "SWARM Configuration" \
         "5)" "Watchdog Configuration" \
@@ -19,9 +19,9 @@ while [ $exitCode -lt 1 ]; do
         "1)")
             while [ $exitCode -lt 1 ]; do
                 source $swarmConfigs/swarm.cfg
-                source $swarmModules/swarmUpdateAuth
+                source $swarmModules/swarmAuth
                 CHOICE=$(
-                    whiptail --title "SWARM - Update Auth" --menu "\nAuth Status: $swarmUpdateAuthValidText\n\nChoose an option" 18 65 0 \
+                    whiptail --title "SWARM - Auth" --menu "\nAuth Status: $swarmAuthText\n\nChoose an option" 24 65 0 \
                     "1)" "Set Password" \
                     "2)" "Set Username" 3>&2 2>&1 1>&3
                 )
@@ -31,31 +31,31 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        inputSwarmUpdateAuthPwd=$(whiptail --passwordbox "\nPlease enter the password for the update access of SWARM:" 8 65 --title "SWARM - Update Auth" 3>&1 1>&2 2>&3)
+                        inputSwarmAuthPwd=$(whiptail --passwordbox "\nPlease enter the password for the update access of SWARM:" 8 65 --title "SWARM - Auth" 3>&1 1>&2 2>&3)
                         exitStatus=$?
-                        if [ $exitStatus = 0 ] && [ "$swarmUpdateAuthPwd" != "$inputSwarmUpdateAuthPwd" ]; then
-                            swarmUpdateAuthPwd="$inputSwarmUpdateAuthPwd"
-                            sudo sed -i 's~^swarmUpdateAuthPwd=.*~swarmUpdateAuthPwd="'$swarmUpdateAuthPwd'"~g' $swarmConfigs/swarm.cfg
-                            unset swarmUpdateAuthValid
+                        if [ $exitStatus = 0 ] && [ "$swarmAuthPwd" != "$inputSwarmAuthPwd" ]; then
+                            swarmAuthPwd="$inputSwarmAuthPwd"
+                            sudo sed -i 's~^swarmAuthPwd=.*~swarmAuthPwd="'$swarmAuthPwd'"~g' $swarmConfigs/swarm.cfg
+                            unset swarmAuth
                         fi
-                        unset inputSwarmUpdateAuthPwd
+                        unset inputSwarmAuthPwd
                     ;;
                     "2)")
-                        inputSwarmUpdateAuthUser=$(whiptail --inputbox "Type the username for the update access of SWARM:" 10 65 $swarmUpdateAuthUser --title "SWARM - Update Auth" 3>&1 1>&2 2>&3)
+                        inputSwarmAuthUser=$(whiptail --inputbox "Type the username for the update access of SWARM:" 10 65 $swarmAuthUser --title "SWARM - Auth" 3>&1 1>&2 2>&3)
                         exitStatus=$?
-                        if [ $exitStatus = 0 ] && [ "$swarmUpdateAuthUser" != "$inputSwarmUpdateAuthUser" ]; then
-                            swarmUpdateAuthUser="$inputSwarmUpdateAuthUser"
-                            sudo sed -i 's~^swarmUpdateAuthUser=.*~swarmUpdateAuthUser="'$swarmUpdateAuthUser'"~g' $swarmConfigs/swarm.cfg
-                            unset swarmUpdateAuthValid
+                        if [ $exitStatus = 0 ] && [ "$swarmAuthUser" != "$inputSwarmAuthUser" ]; then
+                            swarmUpdateAuthUser="$inputSwarmAuthUser"
+                            sudo sed -i 's~^swarmAuthUser=.*~swarmAuthUser="'$swarmAuthUser'"~g' $swarmConfigs/swarm.cfg
+                            unset swarmAuth
                         fi
-                        unset inputSwarmUpdateAuthUser
+                        unset inputSwarmAuthUser
                     ;;
                 esac
             done
             exitCode=0
         ;;
         "2)")
-            source $swarmModules/swarmNodeInfo
+            source $swarmModules/swarmAppInfo
         ;;
         "3)")
             swarmInfo=true
@@ -73,7 +73,7 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "7)")
             CHOICE=$(
-                whiptail --title "SWARM Menu" --menu "\nChoose an option" 20 65 0 \
+                whiptail --title "SWARM Menu" --menu "\nChoose an option" 24 65 0 \
                 "1)" "Update SWARM" \
                 "2)" "Remove SWARM" \
                 "3)" "Check SWARM.log" 3>&2 2>&1 1>&3

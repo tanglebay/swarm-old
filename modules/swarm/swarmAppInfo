@@ -1,37 +1,34 @@
 #!/bin/bash
 
-source $swarmLogs/githubVersion
+source $swarmConfigs/latest-versions.cfg
 
 # Get Service Status
 if [ -f "/usr/bin/hornet" ]; then
     hornetStatus="$(systemctl show -p ActiveState --value hornet)"
-else
-    hornetStatus="- Not installed -"
 fi
 if [ -f "/usr/bin/hornet-shimmer" ]; then
     hornetShimmerStatus="$(systemctl show -p ActiveState --value hornet-shimmer)"
-else
-    hornetShimmerStatus="- Not installed -"
 fi
 if [ -f "/usr/bin/bee" ]; then
     beeStatus="$(systemctl show -p ActiveState --value bee)"
-else
-    beeStatus="- Not installed -"
 fi
 if [ -f "/usr/bin/bee-shimmer" ]; then
     beeShimmerStatus="$(systemctl show -p ActiveState --value bee-shimmer)"
-else
-    beeShimmerStatus="- Not installed -"
 fi
 if [ -f "/usr/bin/goshimmer" ]; then
     goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
-else
-    goshimmerStatus="- Not installed -"
 fi
 if [ -f "/usr/bin/wasp" ]; then
     waspStatus="$(systemctl show -p ActiveState --value wasp)"
-else
-    waspStatus="- Not installed -"
+fi
+if [ -f "/usr/bin/inx-indexer" ]; then
+    inxIndexerStatus="$(systemctl show -p ActiveState --value inx-indexer)"
+fi
+if [ -f "/usr/bin/inx-mqtt" ]; then
+    inxMqttStatus="$(systemctl show -p ActiveState --value inx-mqtt)"
+fi
+if [ -f "/usr/bin/inx-participation" ]; then
+    inxParticipationStatus="$(systemctl show -p ActiveState --value inx-participation)"
 fi
 
 # Hornet Version
@@ -100,6 +97,7 @@ else
     beeShimmerVersion="N/A"
 fi
 
+# GoShimmer version
 if [ -f "/usr/bin/goshimmer" ]; then
     goshimmerVersion=$(cd $goshimmerHome ; /usr/bin/goshimmer -v | awk '{print $2}' | tr -d 'v')
     if [ -z "$goshimmerVersion" ]; then
@@ -113,13 +111,60 @@ else
     goshimmerVersion="N/A"
 fi
 
+# Wasp version
 if [ -f "/usr/bin/wasp" ]; then
     waspVersion=$(cd $waspHome ; /usr/bin/wasp -v | awk '{print $2}' | tr -d 'v')
     if [ -z "$waspVersion" ]; then
         waspVersion="N/A"
+    else
+        if [ "$waspVersion" != "$latestWaspVersion" ] && [ ! -z "$latestWaspVersion" ]; then
+            waspVersion="$waspVersion (new version \"v$latestWaspVersion\" available!"
+        fi
     fi
 else
     waspVersion="N/A"
+fi
+
+# INX-Indexer version
+if [ -f "/usr/bin/inx-indexer" ]; then
+    inxIndexerVersion=$(cd $inxIndexerHome ; /usr/bin/inx-indexer -v | awk '{print $2}' | tr -d 'v')
+    if [ -z "$inxIndexerVersion" ]; then
+        inxIndexerVersion="N/A"
+    else
+        if [ "$inxIndexerVersion" != "$latestInxIndexerVersion" ] && [ ! -z "$latestInxIndexerVersion" ]; then
+            inxIndexerVersion="$inxIndexerVersion (new version \"v$latestInxIndexerVersion\" available!"
+        fi
+    fi
+else
+    inxIndexerVersion="N/A"
+fi
+
+# INX-MQTT version
+if [ -f "/usr/bin/inx-mqtt" ]; then
+    inxMqttVersion=$(cd $inxMqttHome ; /usr/bin/inx-mqtt -v | awk '{print $2}' | tr -d 'v')
+    if [ -z "$inxMqttVersion" ]; then
+        inxMqttVersion="N/A"
+    else
+        if [ "$inxMqttVersion" != "$latestInxMqttVersion" ] && [ ! -z "$latestInxMqttVersion" ]; then
+            inxMqttVersion="$inxMqttVersion (new version \"v$latestInxMqttVersion\" available!"
+        fi
+    fi
+else
+    inxMqttVersion="N/A"
+fi
+
+# INX-Participation version
+if [ -f "/usr/bin/inx-participation" ]; then
+    inxParticipationVersion=$(cd $inxParticipationHome ; /usr/bin/inx-participation -v | awk '{print $2}' | tr -d 'v')
+    if [ -z "$inxParticipationVersion" ]; then
+        inxParticipationVersion="N/A"
+    else
+        if [ "$inxParticipationVersion" != "$latestInxParticipationVersion" ] && [ ! -z "$latestInxParticipationVersion" ]; then
+            inxParticipationVersion="$inxParticipationVersion (new version \"v$latestInxParticipationVersion\" available!"
+        fi
+    fi
+else
+    inxParticipationVersion="N/A"
 fi
 
 # Hornet DB size
@@ -206,6 +251,69 @@ else
     currentWaspDbSize="N/A"
 fi
 
+# INX-Indexer DB size
+if [ -d "$inxIndexerHome/database" ]; then
+    getCurrentDbSize="$(du -sb $inxIndexerHome/database | cut -f1)"
+    let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+    if [ $getCurrentDbSizeInMb -gt 999 ]; then
+        let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+        currentInxIndexerDbSize="${getCurrentDbSizeInGb} GB"
+    else
+        currentInxIndexerDbSize="${getCurrentDbSizeInMb} MB"
+    fi
+else
+    currentInxIndexerDbSize="N/A"
+fi
+
+# INX-Participation DB size
+if [ -d "$inxParticipationHome/database" ]; then
+    getCurrentDbSize="$(du -sb $inxParticipationHome/database | cut -f1)"
+    let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+    if [ $getCurrentDbSizeInMb -gt 999 ]; then
+        let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+        currentInxParticipationDbSize="${getCurrentDbSizeInGb} GB"
+    else
+        currentInxParticipationDbSize="${getCurrentDbSizeInMb} MB"
+    fi
+else
+    currentInxParticipationDbSize="N/A"
+fi
+
+if [ -f "/usr/bin/hornet" ]; then
+    hornetAppInfo="Hornet (IOTA)\nStatus: $hornetStatus\nVersion: $hornetVersion\nDatabase: $currentHornetDbSize\n\n"
+fi
+
+if [ -f "/usr/bin/hornet-shimmer" ]; then
+    hornetShimmerAppInfo="Hornet (Shimmer)\nStatus: $hornetShimmerStatus\nVersion: $hornetShimmerVersion\nDatabase: $currentHornetShimmerDbSize\n\n"
+fi
+
+if [ -f "/usr/bin/bee" ]; then
+    beeAppInfo="Bee (IOTA)\nStatus: $beeStatus\nVersion: $beeVersion\nDatabase: $currentBeeDbSize\n\n"
+fi
+
+if [ -f "/usr/bin/bee-shimmer" ]; then
+    beeShimmerAppInfo="Bee (Shimmer)\nStatus: $beeShimmerStatus\nVersion: $beeShimmerVersion\nDatabase: $currentBeeShimmerDbSize\n\n"
+fi
+
+if [ -f "/usr/bin/goshimmer" ]; then
+    goshimmerAppInfo="GoShimmer\nStatus: $goshimmerStatus\nVersion: $goshimmerVersion\nDatabase: $currentGoshimmerDbSize\n\n"
+fi
+
+if [ -f "/usr/bin/wasp" ]; then
+    waspAppInfo="WASP\nStatus: $waspStatus\nVersion: $waspVersion\nDatabase: $currentWaspDbSize\n\n"
+fi
+
+if [ -f "/usr/bin/inx-indexer" ]; then
+    inxIndexerAppInfo="INX-Indexer\nStatus: $inxIndexerStatus\nVersion: $inxIndexerVersion\nDatabase: $currentInxIndexerDbSize\n\n"
+fi
+
+if [ -f "/usr/bin/inx-mqtt" ]; then
+    inxMqttAppInfo="INX-MQTT\nStatus: $inxMqttStatus\nVersion: $inxMqttVersion\n\n"
+fi
+
+if [ -f "/usr/bin/inx-participation" ]; then
+    inxParticipationAppInfo="INX-Participation\nStatus: $inxParticipationStatus\nVersion: $inxParticipationVersion\nDatabase: $currentInxParticipationDbSize\n\n"
+fi
 
 # OUTPUT
-whiptail --title "SWARM - Node Info" --msgbox "\nHornet (IOTA)\nStatus: $hornetStatus\nVersion: $hornetVersion\nDatabase: $currentHornetDbSize\n\nHornet (Shimmer)\nStatus: $hornetShimmerStatus\nVersion: $hornetShimmerVersion\nDatabase: $currentHornetShimmerDbSize\n\nBee (IOTA)\nStatus: $beeStatus\nVersion: $beeVersion\nDatabase: $currentBeeDbSize\n\nBee (Shimmer)\nStatus: $beeShimmerStatus\nVersion: $beeShimmerVersion\nDatabase: $currentBeeShimmerDbSize\n\nGoShimmer\nStatus: $goshimmerStatus\nVersion: $goshimmerVersion\nDatabase: $currentGoshimmerDbSize\n\nWASP\nStatus: $waspStatus\nVersion: $waspVersion\nDatabase: $currentWaspDbSize" 36 65
+whiptail --scrolltext --title "SWARM - App Info" --msgbox "\n${hornetAppInfo}${hornetShimmerAppInfo}${beeAppInfo}${beeShimmerAppInfo}${goshimmerAppInfo}${waspAppInfo}${inxIndexerAppInfo}${inxMqttAppInfo}${inxParticipationAppInfo}" 24 65

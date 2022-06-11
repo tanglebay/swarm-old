@@ -1,9 +1,9 @@
 #!/bin/bash
 
 if [ "$swarmManualUpdate" = "true" ]; then
-    if [ ! -z "$swarmUpdateAuthUser" ] && [ ! -z "$swarmUpdateAuthPwd" ]; then
-        checkSwarmUpdateAuth=$(curl --max-time 5 -Ls -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/latest/checksum.txt)
-        if [ "$checkSwarmUpdateAuth" = "200" ]; then
+    if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
+        source $swarmModules/swarmAuth
+        if [ "$swarmAuth" = "200" ]; then
             {
                 echo 0
                 echo 10
@@ -12,12 +12,15 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 fi
                 echo 20
                 sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
-                sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
+                if [ -f "$swarmLogs/githubVersion" ]; then
+                    sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
+                fi
+
                 echo 30
-                swarmUpdateChecksum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
-                sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
+                swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
+                sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
                 swarmChecksum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
-                if [ "$swarmChecksum" = "$swarmUpdateChecksum" ]; then
+                if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                     ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                     if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
                         sudo rm -rf $swarmHome > /dev/null 2>&1
@@ -41,7 +44,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                             sudo rm -rf /etc/apt/sources.list.d/hornet* > /dev/null 2>&1
                             sudo apt-get -qq update > /dev/null 2>&1
                         fi
-                        
+
                         if [ -f "/usr/bin/hornet" ]; then
                             # source $swarmConfigs/hornet.cfg
                             source $hornetModules/hornetParser
@@ -86,7 +89,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                                 unset restartGoshimmer
                             fi
                         fi
-                        echo 80
+                        echo 75
                         if [ -f "/usr/bin/wasp" ]; then
                             source $waspModules/waspParser
                             if [ "$restartWasp" = "true" ]; then
@@ -94,7 +97,31 @@ if [ "$swarmManualUpdate" = "true" ]; then
                                 unset restartWasp
                             fi
                         fi
+                        echo 80
+                        if [ -f "/usr/bin/inx-indexer" ]; then
+                            source $inxIndexerModules/inxIndexerParser
+                            if [ "$restartInxIndexer" = "true" ]; then
+                                sudo systemctl restart inx-indexer > /dev/null 2>&1
+                                unset restartInxIndexer
+                            fi
+                        fi
+                        echo 85
+                        if [ -f "/usr/bin/inx-mqtt" ]; then
+                            source $inxMqttModules/inxMqttParser
+                            if [ "$restartInxMqtt" = "true" ]; then
+                                sudo systemctl restart inx-mqtt > /dev/null 2>&1
+                                unset restartInxMqtt
+                            fi
+                        fi
                         echo 90
+                        if [ -f "/usr/bin/inx-participation" ]; then
+                            source $inxParticipationModules/inxParticipationParser
+                            if [ "$restartInxParticipation" = "true" ]; then
+                                sudo systemctl restart inx-participation > /dev/null 2>&1
+                                unset restartInxParticipation
+                            fi
+                        fi
+                        echo 95
                         source $proxyModules/proxyAutomaticDeployment
                     fi
                 fi
@@ -124,20 +151,21 @@ if [ "$swarmManualUpdate" = "true" ]; then
         unset checkSwarmUpdateAuth swarmChkSum swarmUpdateChkSum
     fi
 else
-    if [ ! -z "$swarmUpdateAuthUser" ] && [ ! -z "$swarmUpdateAuthPwd" ]; then
-        checkSwarmUpdateAuth=$(curl --max-time 5 -Ls -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/latest/checksum.txt)
-        if [ "$checkSwarmUpdateAuth" = "200" ]; then
+    if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
+        if [ "$swarmAuth" = "200" ]; then
             if [ ! -d "$swarmTmp/v$latestSwarmVersion" ]; then
                 sudo mkdir -p $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
             fi
 
             sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
-            sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
+            if [ -f "$swarmLogs/githubVersion" ]; then
+                sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
+            fi
 
-            swarmUpdateChecksum=$(curl --max-time 5 -Ls https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
-            sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
+            swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/checksum.txt)
+            sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmUpdateAuthUser:$swarmAuthPwd@$swarmUrl/download/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
             swarmChecksum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
-            if [ "$swarmChecksum" = "$swarmUpdateChecksum" ]; then
+            if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                 ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                 if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
                     sudo rm -rf $swarmHome > /dev/null 2>&1
@@ -152,6 +180,6 @@ else
         # ( cd $swarmHome ; sudo git pull ) > /dev/null 2>&1
         # ( cd $swarmHome ; sudo git reset --hard origin/$currentBranch ) > /dev/null 2>&1
         fi
-        unset checkSwarmUpdateAuth swarmUpdateChecksum
+        unset swarmAuth swarmRemoteChecksum
     fi
 fi
