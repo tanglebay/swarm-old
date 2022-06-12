@@ -1,0 +1,21 @@
+#!/bin/bash
+
+useInxIndexerDisablePlugins=true
+source $inxIndexerModules/inxIndexerPlugins
+
+IFS=', ' read -r -a ARRAYinxIndexerDisablePlugins <<< "$inxIndexerDisablePlugins"
+
+parser="$(jq '.app.disablePlugins' $inxIndexerHome/$inxIndexerConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$inxIndexerDisablePlugins" ]; then
+    sudo jq '.app.disablePlugins |= []' $inxIndexerHome/$inxIndexerConfig.json|sponge $inxIndexerHome/$inxIndexerConfig.json
+    for inxIndexerDisablePlugin in "${ARRAYinxIndexerDisablePlugins[@]}"
+    do
+        if [ ! -z "$inxIndexerDisablePlugin" ]; then
+            sudo jq '.app.disablePlugins |= .+ ["'$inxIndexerDisablePlugin'"]' $inxIndexerHome/$inxIndexerConfig.json|sponge $inxIndexerHome/$inxIndexerConfig.json
+        fi
+    done
+    restartInxIndexer=true
+    echo "inxIndexerDisablePlugins" >> /tmp/inxIndexerParsing
+fi
+unset ARRAYinxIndexerDisablePlugins inxIndexerDisablePlugin useInxIndexerDisablePlugins

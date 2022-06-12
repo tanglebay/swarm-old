@@ -1,0 +1,335 @@
+#!/bin/bash
+
+while [ $exitCode -lt 1 ]; do
+    source $swarmConfigs/shimmer-inx-indexer.cfg
+    clear
+    CHOICE=$(
+        whiptail --title "INX - Indexer" --menu "\nChoose an option" 24 65 0 \
+        "1)" "INX-Indexer Info" \
+        "2)" "INX-Indexer Configuration" \
+        "3)" "INX-Indexer Management" \
+        "4)" "INX-Indexer Installer" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $inxIndexerModules/inxIndexerInfo
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                CHOICE=$(
+                    whiptail --title "INX-Indexer - Configuration" --menu "\nChoose an option" 24 65 0 \
+                    "1)" "INX-Indexer Configuration" \
+                    "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
+                )
+
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        source $inxIndexerModules/inxIndexerConfiguration
+                    ;;
+                    "2)")
+                        while [ $exitCode -lt 1 ]; do
+                            clear
+                            CHOICE=$(
+                                whiptail --title "INX-Indexer - Configuration" --menu "\nChoose an option" 24 65 0 \
+                                "1)" "config.json" \
+                                "2)" "inx-indexer.cfg (SWARM)" 3>&2 2>&1 1>&3
+                            )
+
+                            exitstatus=$?
+                            if [ "$exitstatus" = "1" ]; then
+                                exitCode=1
+                            fi
+
+                            case $CHOICE in
+                                "1)")
+                                    if [ -f "$inxIndexerHome/config.json" ]; then
+                                        sudo $swarmCLEditor $inxIndexerHome/config.json
+                                        if (whiptail --title "INX-Indexer - Configuration" --yesno --defaultno "Would you like to restart INX-Indexer now?" 8 65); then
+                                            {
+                                                echo 0
+                                                echo 50
+                                                sudo systemctl restart inx-indexer > /dev/null 2>&1
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while INX-Indexer is restarting..." 8 65 0
+                                        fi
+                                    else
+                                        whiptail --title "INX-Indexer - Configuration" --msgbox "INX-Indexer is not installed." 8 65
+                                    fi
+                                ;;
+                                "2)")
+                                    sudo $swarmCLEditor $swarmConfigs/inx-indexer.cfg
+                                    if [ -f "/usr/bin/inx-indexer" ]; then
+                                        if (whiptail --title "INX-Indexer - Configuration" --yesno --defaultno "Would you like to restart INX-Indexer now?" 8 65); then
+                                            {
+                                                echo 0
+                                                source $inxIndexerModules/inxIndexerParser
+                                                echo 50
+                                                sudo systemctl restart inx-indexer > /dev/null 2>&1
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while INX-Indexer is restarting..." 8 65 0
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            if [ -f "/usr/bin/inx-indexer" ]; then
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    CHOICE=$(
+                        whiptail --title "INX-Indexer - Management" --menu "\nChoose an option" 24 65 0 \
+                        "1)" "Show INX-Indexer log" \
+                        "2)" "Stop/Start INX-Indexer" \
+                        "3)" "Reset INX-Indexer" \
+                        "4)" "Reset INX-Indexer config" 3>&2 2>&1 1>&3
+                    )
+
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+
+                    case $CHOICE in
+                        "1)")
+                            # Display last 65 lines of log
+                            sudo journalctl -fu inx-indexer | less -FRSXM
+                            clear
+                        ;;
+                        "2)")
+                            CHOICE=$(
+                                whiptail --title "INX-Indexer - Management" --menu "\nChoose your option" 24 65 0 \
+                                "1)" "Restart INX-Indexer" \
+                                "2)" "Start INX-Indexer" \
+                                "3)" "Stop INX-Indexer" \
+                                "4)" "Status INX-Indexer" 3>&2 2>&1 1>&3
+                            )
+                            case $CHOICE in
+                                "1)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl restart inx-indexer > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-Indexer is restarting..." 8 65 0
+                                    whiptail --title "INX-Indexer - Management" --msgbox "INX-Indexer successfully restarted" 8 65
+                                ;;
+                                "2)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl start inx-indexer > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-Indexer is starting..." 8 65 0
+                                    whiptail --title "INX-Indexer - Management" --msgbox "INX-Indexer successfully started" 8 65
+                                ;;
+                                "3)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl stop inx-indexer > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-Indexer is stopping..." 8 65 0
+                                    whiptail --title "INX-Indexer - Management" --msgbox "INX-Indexer successfully stopped." 8 65
+                                ;;
+                                "4)")
+                                    inxIndexerStatus="$(sudo systemctl status inx-indexer)"
+                                    whiptail --title "INX-Indexer - Management" --msgbox "$inxIndexerStatus" 15 65
+                                ;;
+                            esac
+                        ;;
+                        "3)")
+                            if (whiptail --title "INX-Indexer - Management" --yesno --defaultno "Are you sure you want to reset the INX-MQTT database?" 8 65); then
+                                source $swarmConfigs/inx-indexer.cfg
+                                {
+                                    echo 0
+                                    echo 25
+                                    sudo systemctl stop inx-indexer > /dev/null 2>&1
+                                    echo 50
+                                    sudo rm -rf $inxIndexerHome/database > /dev/null 2>&1
+                                    echo 75
+                                    sudo systemctl start inx-indexer > /dev/null 2>&1
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the database reset is running (this may take a while)..." 8 65 0
+                                whiptail --title "INX-Indexer - Debugging" --msgbox "INX-Indexer database successfully reset." 8 65
+                            fi
+                        ;;
+                        "4)")
+                            if (whiptail --title "INX-Indexer - Management" --yesno --defaultno "Are you sure you want to reset the INX-Indexer config file?" 8 65); then
+                                source $swarmConfigs/inx-indexer.cfg
+                                {
+                                    echo 0
+                                    echo 20
+                                    sudo systemctl stop inx-indexer > /dev/null 2>&1
+                                    echo 40
+                                    sudo -u inx wget -q -O $inxIndexerHome/config.json https://raw.githubusercontent.com/iotaledger/inx-indexer/develop/config_template.json
+                                    echo 60
+                                    source $inxIndexerModules/inxIndexerParser
+                                    echo 80
+                                    sudo systemctl start inx-indexer > /dev/null 2>&1
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the config reset is running (this may take a while)..." 8 65 0
+                                whiptail --title "INX-Indexer - Debugging" --msgbox "INX-Indexer config successfully reset." 8 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            else
+                whiptail --title "INX-Indexer" --msgbox "Sorry, but INX-Indexer is not installed." 8 65
+            fi
+        ;;
+        "4)")
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "INX-Indexer - Installer" --menu "\nChoose your option" 24 65 0 \
+                    "1)" "Update INX-Indexer" \
+                    "2)" "Install INX-Indexer" \
+                    "3)" "Remove INX-Indexer" 3>&2 2>&1 1>&3
+                )
+
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/inx-indexer" ]; then
+                            if (whiptail --title "INX-Indexer - Installer" --yesno --defaultno "Do you really want to update INX-Indexer?" 8 65); then
+                                # Update INX-Indexer
+                                source $inxIndexerModules/inxIndexerVersion
+                                if [ "$latestInxIndexerVersion" != "$inxIndexerVersion" ]; then
+                                    {
+                                        echo 0
+                                        echo 33
+                                        source $inxIndexerModules/inxIndexerVersion
+                                        echo 66
+                                        source $inxIndexerModules/inxIndexerInstaller                      
+                                        echo 100
+                                        sleep 0.5
+                                    } | whiptail --gauge "Please wait while INX-Indexer is updated..." 8 65 0
+                                    newHornetShimmerVersion=$(/usr/bin/inx-indexer -v | awk '{ print $2 }')
+                                    if [ "$inxIndexerVersion" != "$newInxIndexerVersion" ]; then
+                                        {
+                                            # CALL MODULE CONFIGPARSER
+                                            source $inxIndexerModules/inxIndexerParser
+                                            sudo systemctl restart inx-indexer 2>/dev/null
+                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                    fi
+                                    whiptail --title "INX-Indexer - Installer" --msgbox "INX-Indexer successfully updated.\n\nChecksum: $inxIndexerChecksum" 10 65
+                                else
+                                    whiptail --title "INX-Indexer - Installer" --msgbox "Congratulations, you have already installed the latest version of INX-Indexer." 8 65
+                                fi
+                                unset inxIndexerChecksum
+                            fi
+                        else
+                            whiptail --title "INX-Indexer - Installer" --msgbox "Sorry, but INX-Indexer is not installed." 8 65
+                        fi
+                    ;;
+                    "2)")
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            # INSTALL INX-Indexer
+                            if [ ! -f "/usr/bin/inx-indexer" ]; then
+                                {
+                                    echo 0
+                                    echo 10
+                                    source $swarmConfigs/inx-indexer.cfg
+                                    echo 30
+                                    source $inxIndexerModules/inxIndexerVersion
+                                    echo 40
+                                    source $inxIndexerModules/inxIndexerInstaller
+                                    echo 50
+                                    if [ -f "/usr/bin/inx-indexer" ]; then
+                                        source $swarmConfigs/inx-indexer.cfg
+                                        echo 60
+                                        # CALL MODULE CONFIGPARSER
+                                        source $inxIndexerModules/inxIndexerParser
+                                        echo 70
+                                        sudo systemctl start inx-indexer > /dev/null 2>&1
+                                        echo 80
+                                        sleep 2
+                                        inxIndexerStatus="$(systemctl show -p ActiveState --value inx-indexer)"
+                                        if [ "$inxIndexerStatus" != "active" ]; then
+                                            sudo systemctl restart inx-indexer > /dev/null 2>&1
+                                        fi
+                                        echo 100
+                                    fi
+                                } | whiptail --gauge "Please wait while installing INX-Indexer..." 8 65 0
+                                if [ -f "/usr/bin/inx-indexer" ]; then
+                                    if [ -f "/tmp/inx-indexer.checksum" ]; then
+                                        inxIndexerChecksum=$(cat /tmp/inx-indexer.checksum)
+                                    fi
+                                    whiptail --title "INX-Indexer - Installer" --msgbox "INX-Indexer installation finished!\n\nChecksum: $inxIndexerChecksum" 17 65
+                                    if [ -f "/tmp/inx-indexer.checksum" ]; then
+                                        sudo rm -rf /tmp/inx-indexer.checksum > /dev/null 2>&1
+                                    fi
+                                else
+                                    {
+                                        echo 0
+                                        echo 25
+                                        source $swarmConfigs/inx-indexer.cfg
+                                        echo 50
+                                        source $inxIndexerModules/inxIndexerRemoval
+                                        echo 75
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while the INX-Indexer files are removed...." 8 65 0
+                                    whiptail --title "INX-Indexer - Installer" --msgbox "Error while installing INX-Indexer! Please try again later." 8 65
+                                fi
+                            else
+                                if [ -f "/usr/bin/inx-indexer" ]; then
+                                    whiptail --title "INX-Indexer - Installer" --msgbox "INX-Indexer already installed." 8 65
+                                else
+                                    if [ "$inxIndexerSkipInstallation" = "true" ]; then
+                                        whiptail --title "INX-Indexer - Installer" --msgbox "Installation of INX-Indexer aborted." 8 65
+                                    fi
+                                fi
+                            fi
+                            unset inxIndexerSkipInstallation inxIndexerChecksum
+                        else
+                            whiptail --title "INX-Indexer" --msgbox "To be able to install INX-Indexer, a compatible node must be installed first." 8 65
+                        fi
+                    ;;
+                    "3)")
+                        if (whiptail --title "INX-Indexer - Installer" --yesno --defaultno "Do you really want to remove INX-Indexer?" 8 65); then
+                            {
+                                echo 0
+                                echo 50
+                                source $inxIndexerModules/inxIndexerRemoval
+                                echo 100
+                                sleep 0.5
+                            } | whiptail --gauge "Please wait while INX-Indexer will be removed..." 8 65 0
+                            whiptail --title "INX-Indexer - Installer" --msgbox "INX-Indexer successfully removed." 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+    esac
+done
+exitCode=0

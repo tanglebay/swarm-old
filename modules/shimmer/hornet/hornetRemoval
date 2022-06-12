@@ -1,0 +1,43 @@
+#!/bin/bash
+
+source $swarmConfigs/hornet.cfg
+source $swarmConfigs/proxy.cfg
+source $proxyModules/proxyParser
+
+if [ "$killall" = "true" ]; then
+    sudo killall -s SIGKILL hornet > /dev/null 2>&1
+else
+    sudo systemctl stop hornet > /dev/null 2>&1
+fi
+
+if [ ! -f "/usr/bin/hornet" ]; then
+    if id hornet >/dev/null 2>&1; then
+        sudo deluser hornet >/dev/null
+    fi
+fi
+
+sudo systemctl disable hornet > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/hornet /var/lib/hornet /lib/systemd/system/hornet.service /etc/default/hornet > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+if [ "$ufw" = "true" ]; then
+    sudo ufw delete allow $hornetGossipPort/tcp > /dev/null 2>&1
+    sudo ufw delete allow $hornetAutopeeringPort/udp > /dev/null 2>&1
+fi
+
+if [ ! -f "/usr/bin/hornet-shimmer" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ] && [ ! -f "/usr/bin/inx-indexer" ] && [ ! -f "/usr/bin/inx-mqtt" ] && [ ! -f "/usr/bin/inx-participation" ]; then
+    sudo snap remove go > /dev/null 2>&1
+fi
+
+if [ -f "/etc/nginx/sites-enabled/hornet" ]; then
+    if [ "$ufw" = "true" ]; then
+        if [ "$proxyHornetPort" != "$proxySwarmDashboardPort" ] && [ "$proxyHornetPort" != "$proxyHornetShimmerPort" ] && [ "$proxyHornetPort" != "$proxyBeePort" ] && [ "$proxyHornetPort" != "$proxyGoshimmerPort" ] && [ "$proxyHornetPort" != "$proxyWaspDashboardPort" ] && [ "$proxyHornetPort" != "$proxyWaspApiPort" ]; then
+            sudo ufw delete allow $proxyHornetPort/tcp > /dev/null 2>&1
+        fi
+    fi
+    sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetUrl=""/' $swarmConfigs/proxy.cfg
+    sudo rm -rf /etc/nginx/sites-enabled/hornet > /dev/null 2>&1
+    sudo systemctl reload nginx
+fi

@@ -1,0 +1,30 @@
+#!/bin/bash
+source $swarmConfigs/latest-versions.cfg
+
+if [ -z "$latestInxIndexerVersion" ] || [ "$latestInxIndexerVersion" = "\"\"" ] || [ "$latestInxIndexerVersion" = "null" ]; then
+    if [ "$inxIndexerRelease" = "stable" ]; then
+        latestInxIndexerVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-indexer/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $inxIndexerReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestInxIndexerVersion=$(echo $latestInxIndexerVersion | tr -d 'v"')
+    fi
+    if [ "$inxIndexerRelease" = "beta" ]; then
+        latestInxIndexerVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-indexer/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $inxIndexerReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestInxIndexerVersion=$(echo $latestInxIndexerVersion | tr -d 'v"')
+    fi
+    if [ "$inxIndexerRelease" = "alpha" ]; then
+        latestInxIndexerVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-indexer/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $inxIndexerReleaseVersion | head -n 1)
+        latestInxIndexerVersion=$(echo $latestInxIndexerVersion | tr -d 'v"')
+    fi
+    if [ ! -z "$latestInxIndexerVersion" ] && [ "$latestInxIndexerVersion" != "\"\"" ] && [ "$latestInxIndexerVersion" != "null" ]; then
+        sudo sed -i 's~^latestInxIndexerVersion=.*~latestInxIndexerVersion="'$latestInxIndexerVersion'"~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
+
+# Local node version
+if [ -f "/usr/bin/inx-indexer" ]; then
+    inxIndexerVersion=$(/usr/bin/inx-indexer -v | awk '{ print $2 }')
+fi
+
+# Replace var if empty
+if [ -z "$latestInxIndexerVersion" ] || [ "$latestInxIndexerVersion" = "null" ]; then
+    latestInxIndexerVersion=$inxIndexerVersion
+fi

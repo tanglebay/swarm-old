@@ -1,0 +1,21 @@
+#!/bin/bash
+
+useInxDashboardDisablePlugins=true
+source $inxDashboardModules/inxDashboardPlugins
+
+IFS=', ' read -r -a ARRAYinxDashboardDisablePlugins <<< "$inxDashboardDisablePlugins"
+
+parser="$(jq '.app.disablePlugins' $inxDashboardHome/$inxDashboardConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$inxDashboardDisablePlugins" ]; then
+    sudo jq '.app.disablePlugins |= []' $inxDashboardHome/$inxDashboardConfig.json|sponge $inxDashboardHome/$inxDashboardConfig.json
+    for inxDashboardDisablePlugin in "${ARRAYinxDashboardDisablePlugins[@]}"
+    do
+        if [ ! -z "$inxDashboardDisablePlugin" ]; then
+            sudo jq '.app.disablePlugins |= .+ ["'$inxDashboardDisablePlugin'"]' $inxDashboardHome/$inxDashboardConfig.json|sponge $inxDashboardHome/$inxDashboardConfig.json
+        fi
+    done
+    restartInxDashboard=true
+    echo "inxDashboardDisablePlugins" >> /tmp/inxDashboardParsing
+fi
+unset ARRAYinxDashboardDisablePlugins inxDashboardDisablePlugin useInxDashboardDisablePlugins

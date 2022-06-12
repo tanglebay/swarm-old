@@ -1,0 +1,35 @@
+#!/bin/bash
+
+source $swarmConfigs/bee.cfg
+source $swarmConfigs/proxy.cfg
+source $proxyModules/proxyParser
+
+sudo systemctl stop bee > /dev/null 2>&1
+
+sudo systemctl disable bee > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/bee /var/lib/bee /lib/systemd/system/bee.service /etc/default/bee > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+if [ "$ufw" = "true" ]; then
+    sudo ufw delete allow $beeGossipPort/tcp > /dev/null 2>&1
+    sudo ufw delete allow $beeAutopeeringPort/udp > /dev/null 2>&1
+fi
+
+sudo rm -rf $beeHome > /dev/null 2>&1
+
+if id bee > /dev/null 2>&1; then
+    sudo deluser bee > /dev/null 2>&1
+fi
+
+if [ -f "/etc/nginx/sites-enabled/bee" ]; then
+    if [ "$ufw" = "true" ]; then
+        if [ "$proxyBeePort" != "$proxySwarmDashboardPort" ] && [ "$proxyBeePort" != "$proxyHornetPort" ] && [ "$proxyBeePort" != "$proxyHornetShimmerPort" ] && [ "$proxyBeePort" != "$proxyBeeShimmerPort" ] && [ "$proxyBeePort" != "$proxyGoshimmerPort" ] && [ "$proxyBeePort" != "$proxyWaspDashboardPort" ] && [ "$proxyBeePort" != "$proxyWaspApiPort" ]; then
+            sudo ufw delete allow $proxyBeePort/tcp > /dev/null 2>&1
+        fi
+    fi
+    sudo sed -i 's/^proxyBeeUrl=.*/proxyBeeUrl=/' $swarmConfigs/proxy.cfg
+    sudo rm -rf /etc/nginx/sites-enabled/bee > /dev/null 2>&1
+    sudo systemctl reload nginx
+fi

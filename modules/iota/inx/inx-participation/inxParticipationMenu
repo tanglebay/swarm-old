@@ -1,0 +1,335 @@
+#!/bin/bash
+
+while [ $exitCode -lt 1 ]; do
+    source $swarmConfigs/iota-inx-participation.cfg
+    clear
+    CHOICE=$(
+        whiptail --title "INX - Participation" --menu "\nChoose an option" 24 65 0 \
+        "1)" "INX-Participation Info" \
+        "2)" "INX-Participation Configuration" \
+        "3)" "INX-Participation Management" \
+        "4)" "INX-Participation Installer" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $inxParticipationModules/inxParticipationInfo
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                CHOICE=$(
+                    whiptail --title "INX-Participation - Configuration" --menu "\nChoose an option" 24 65 0 \
+                    "1)" "INX-Participation Configuration" \
+                    "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
+                )
+
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        source $inxParticipationModules/inxParticipationConfiguration
+                    ;;
+                    "2)")
+                        while [ $exitCode -lt 1 ]; do
+                            clear
+                            CHOICE=$(
+                                whiptail --title "INX-Participation - Configuration" --menu "\nChoose an option" 24 65 0 \
+                                "1)" "config.json" \
+                                "2)" "inx-participation.cfg (SWARM)" 3>&2 2>&1 1>&3
+                            )
+
+                            exitstatus=$?
+                            if [ "$exitstatus" = "1" ]; then
+                                exitCode=1
+                            fi
+
+                            case $CHOICE in
+                                "1)")
+                                    if [ -f "$inxParticipationHome/config.json" ]; then
+                                        sudo $swarmCLEditor $inxParticipationHome/config.json
+                                        if (whiptail --title "INX-Participation - Configuration" --yesno --defaultno "Would you like to restart INX-Participation now?" 8 65); then
+                                            {
+                                                echo 0
+                                                echo 50
+                                                sudo systemctl restart inx-participation > /dev/null 2>&1
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while INX-Participation is restarting..." 8 65 0
+                                        fi
+                                    else
+                                        whiptail --title "INX-Participation - Configuration" --msgbox "INX-Participation is not installed." 8 65
+                                    fi
+                                ;;
+                                "2)")
+                                    sudo $swarmCLEditor $swarmConfigs/inx-participation.cfg
+                                    if [ -f "/usr/bin/inx-participation.cfg" ]; then
+                                        if (whiptail --title "INX-Participation - Configuration" --yesno --defaultno "Would you like to restart INX-Participation now?" 8 65); then
+                                            {
+                                                echo 0
+                                                source $inxParticipationModules/inxParticipationParser
+                                                echo 50
+                                                sudo systemctl restart inx-participation > /dev/null 2>&1
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while INX-Participation is restarting..." 8 65 0
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            if [ -f "/usr/bin/inx-participation" ]; then
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    CHOICE=$(
+                        whiptail --title "INX-Participation - Management" --menu "\nChoose an option" 24 65 0 \
+                        "1)" "Show INX-Participation log" \
+                        "2)" "Stop/Start INX-Participation" \
+                        "3)" "Reset INX-Participation" \
+                        "4)" "Reset INX-Participation config" 3>&2 2>&1 1>&3
+                    )
+
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+
+                    case $CHOICE in
+                        "1)")
+                            # Display last 65 lines of log
+                            sudo journalctl -fu inx-participation | less -FRSXM
+                            clear
+                        ;;
+                        "2)")
+                            CHOICE=$(
+                                whiptail --title "INX-Participation - Management" --menu "\nChoose your option" 24 65 0 \
+                                "1)" "Restart INX-Participation" \
+                                "2)" "Start INX-Participation" \
+                                "3)" "Stop INX-Participation" \
+                                "4)" "Status INX-Participation" 3>&2 2>&1 1>&3
+                            )
+                            case $CHOICE in
+                                "1)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl restart inx-participation > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-Participation is restarting..." 8 65 0
+                                    whiptail --title "INX-Participation - Management" --msgbox "INX-Participation successfully restarted" 8 65
+                                ;;
+                                "2)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl start inx-participation > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-Participation is starting..." 8 65 0
+                                    whiptail --title "INX-Participation - Management" --msgbox "INX-Participation successfully started" 8 65
+                                ;;
+                                "3)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl stop inx-participation > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-Participation is stopping..." 8 65 0
+                                    whiptail --title "INX-Participation - Management" --msgbox "INX-Participation successfully stopped." 8 65
+                                ;;
+                                "4)")
+                                    inxParticipationStatus="$(sudo systemctl status inx-participation)"
+                                    whiptail --title "INX-Participation - Management" --msgbox "$inxParticipationStatus" 15 65
+                                ;;
+                            esac
+                        ;;
+                        "3)")
+                            if (whiptail --title "INX-Participation - Management" --yesno --defaultno "Are you sure you want to reset the INX-Participation database?" 8 65); then
+                                source $swarmConfigs/inx-participation.cfg
+                                {
+                                    echo 0
+                                    echo 25
+                                    sudo systemctl stop inx-participation > /dev/null 2>&1
+                                    echo 50
+                                    sudo rm -rf $inxParticipationHome/database > /dev/null 2>&1
+                                    echo 75
+                                    sudo systemctl start inx-participation > /dev/null 2>&1
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the database reset is running (this may take a while)..." 8 65 0
+                                whiptail --title "INX-Participation - Debugging" --msgbox "INX-Participation database successfully reset." 8 65
+                            fi
+                        ;;
+                        "4)")
+                            if (whiptail --title "INX-Participation - Management" --yesno --defaultno "Are you sure you want to reset the INX-Participation config file?" 8 65); then
+                                source $swarmConfigs/inx-participation.cfg
+                                {
+                                    echo 0
+                                    echo 20
+                                    sudo systemctl stop inx-participation > /dev/null 2>&1
+                                    echo 40
+                                    sudo -u inx wget -q -O $inxParticipationHome/config.json https://raw.githubusercontent.com/iotaledger/inx-participation/develop/config_template.json
+                                    echo 60
+                                    source $inxParticipationModules/inxParticipationParser
+                                    echo 80
+                                    sudo systemctl start inx-participation > /dev/null 2>&1
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the config reset is running (this may take a while)..." 8 65 0
+                                whiptail --title "INX-Participation - Debugging" --msgbox "INX-Participation config successfully reset." 8 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            else
+                whiptail --title "INX-Participation" --msgbox "INX-Participation is not installed." 8 65
+            fi
+        ;;
+        "4)")
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "INX-Participation - Installer" --menu "\nChoose your option" 24 65 0 \
+                    "1)" "Update INX-Participation" \
+                    "2)" "Install INX-Participation" \
+                    "3)" "Remove INX-Participation" 3>&2 2>&1 1>&3
+                )
+
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/inx-participation" ]; then
+                            if (whiptail --title "INX-Participation - Installer" --yesno --defaultno "Do you really want to update INX-Participation?" 8 65); then
+                                # Update INX-Participation
+                                source $inxParticipationModules/inxParticipationVersion
+                                if [ "$latestInxParticipationVersion" != "$inxParticipationVersion" ]; then
+                                    {
+                                        echo 0
+                                        echo 33
+                                        source $inxParticipationModules/inxParticipationVersion
+                                        echo 66
+                                        source $inxParticipationModules/inxParticipationInstaller                      
+                                        echo 100
+                                        sleep 0.5
+                                    } | whiptail --gauge "Please wait while INX-Participation is updated..." 8 65 0
+                                    newInxParticipationVersion=$(/usr/bin/inx-participation -v | awk '{ print $2 }')
+                                    if [ "$inxParticipationVersion" != "$newInxParticipationVersion" ]; then
+                                        {
+                                            # CALL MODULE CONFIGPARSER
+                                            source $inxParticipationModules/inxParticipationParser
+                                            sudo systemctl restart inx-participation 2>/dev/null
+                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                    fi
+                                    whiptail --title "INX-Participation - Installer" --msgbox "INX-Participation successfully updated.\n\nChecksum: $inxParticipationChecksum" 10 65
+                                else
+                                    whiptail --title "INX-Participation - Installer" --msgbox "Congratulations, you have already installed the latest version of INX-Participation." 8 65
+                                fi
+                                unset inxParticipationChecksum
+                            fi
+                        else
+                            whiptail --title "INX-Participation - Installer" --msgbox "Sorry, but INX-Participation is not installed." 8 65
+                        fi
+                    ;;
+                    "2)")
+                        if [ -f "/usr/bin/hornet-shimmer" ]; then
+                            # INSTALL INX-Participation
+                            if [ ! -f "/usr/bin/inx-participation" ]; then
+                                {
+                                    echo 0
+                                    echo 10
+                                    source $swarmConfigs/inx-participation.cfg
+                                    echo 30
+                                    source $inxParticipationModules/inxParticipationVersion
+                                    echo 40
+                                    source $inxParticipationModules/inxParticipationInstaller
+                                    echo 50
+                                    if [ -f "/usr/bin/inx-participation" ]; then
+                                        source $swarmConfigs/inx-participation.cfg
+                                        echo 60
+                                        # CALL MODULE CONFIGPARSER
+                                        source $inxParticipationModules/inxParticipationParser
+                                        echo 70
+                                        sudo systemctl start inx-participation > /dev/null 2>&1
+                                        echo 80
+                                        sleep 2
+                                        inxParticipationStatus="$(systemctl show -p ActiveState --value inx-participation)"
+                                        if [ "$inxParticipationStatus" != "active" ]; then
+                                            sudo systemctl restart inx-participation > /dev/null 2>&1
+                                        fi
+                                        echo 100
+                                    fi
+                                } | whiptail --gauge "Please wait while installing INX-Participation..." 8 65 0
+                                if [ -f "/usr/bin/inx-participation" ]; then
+                                    if [ -f "/tmp/inx-participation.checksum" ]; then
+                                        inxParticipationChecksum=$(cat /tmp/inx-participation.checksum)
+                                    fi
+                                    whiptail --title "INX-Participation - Installer" --msgbox "INX-Participation installation finished!\n\nChecksum: $inxParticipationChecksum" 17 65
+                                    if [ -f "/tmp/inx-participation.checksum" ]; then
+                                        sudo rm -rf /tmp/inx-participation.checksum > /dev/null 2>&1
+                                    fi
+                                else
+                                    {
+                                        echo 0
+                                        echo 25
+                                        source $swarmConfigs/inx-participation.cfg
+                                        echo 50
+                                        source $inxParticipationModules/inxParticipationRemoval
+                                        echo 75
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while the INX-Participation files are removed...." 8 65 0
+                                    whiptail --title "INX-Participation - Installer" --msgbox "Error while installing INX-Participation! Please try again later." 8 65
+                                fi
+                            else
+                                if [ -f "/usr/bin/inx-participation" ]; then
+                                    whiptail --title "INX-Participation - Installer" --msgbox "INX-Participation already installed." 8 65
+                                else
+                                    if [ "$inxParticipationSkipInstallation" = "true" ]; then
+                                        whiptail --title "INX-Participation - Installer" --msgbox "Installation of INX-Participation aborted." 8 65
+                                    fi
+                                fi
+                            fi
+                            unset inxParticipationSkipInstallation inxParticipationChecksum
+                        else
+                            whiptail --title "INX-Participation" --msgbox "To be able to install INX-Participation, a compatible node must be installed first." 8 65
+                        fi
+                    ;;
+                    "3)")
+                        if (whiptail --title "INX-Participation - Installer" --yesno --defaultno "Do you really want to remove INX-Participation?" 8 65); then
+                            {
+                                echo 0
+                                echo 50
+                                source $inxParticipationModules/inxParticipationRemoval
+                                echo 100
+                                sleep 0.5
+                            } | whiptail --gauge "Please wait while INX-Participation will be removed..." 8 65 0
+                            whiptail --title "INX-Participation - Installer" --msgbox "INX-Participation successfully removed." 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+    esac
+done
+exitCode=0

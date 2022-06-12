@@ -1,0 +1,130 @@
+#!/bin/bash
+while [ $exitCode -lt 1 ]; do
+    clear
+    source $swarmConfigs/inx-dashboard.cfg
+    if [ "$inxDashboardUpdateCheck" = "true" ]; then
+        menuInxDashboardUpdateCheck="Disable"
+    else
+        menuInxDashboardUpdateCheck="Enable"
+    fi
+    source $inxDashboardModules/inxDashboardConfigs
+    CHOICE=$(
+        whiptail --title "INX-Dashboard - Configurations" --menu "\nChoose an option" 24 65 0 \
+        "1)" "INX Address" \
+        "2)" "Enable Plugins" \
+        "3)" "Disable Plugins" \
+        "4)" "$menuInxDashboardUpdateCheck update check" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+        if [ "$restartInxDashboard" = "true" ] && [ -f "/usr/bin/inx-dashboard" ]; then
+            if (whiptail --title "INX-Dashboard - Menu" --yesno "Would you like to apply the changes and restart INX-Dashboard?" 8 65); then
+                {
+                    echo 0
+                    echo 33
+                    source $inxDashboardModules/inxDashboardParser
+                    echo 50
+                    sudo systemctl restart inx-dashboard > /dev/null 2>&1
+                    sleep 0.25
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while the changes are applied and INX-Dashboard is restarted..." 8 65 0
+                unset restartInxDashboard
+            fi
+        fi
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $swarmConfigs/inx-dashboard.cfg
+            inxDashboardInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $inxDashboardInxAddress --title "INX-Dashboard - INX Address" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ $exitStatus != 1 ]; then
+                if [ ! -z "$inxDashboardInxAddress" ] && [[ $inxDashboardInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                    source $inxDashboardConfigParsers/inxDashboardInxAddress
+                    if [ "$newInxDashboardInxAddress" = "true" ]; then
+                        sudo sed -i 's/^inxDashboardInxAddress=.*/inxDashboardInxAddress="'$inxDashboardInxAddress'"/' $swarmConfigs/inx-dashboard.cfg
+                        whiptail --title "INX-Dashboard - INX Address" --msgbox "New INX address \"$inxDashboardInxAddress\" applied!" 8 65
+                        unset newInxDashboardInxAddress
+                    else
+                        whiptail --title "INX-Dashboard - INX Address" --msgbox "No INX address change detected." 8 65
+                    fi
+                else
+                    whiptail --title "INX-Dashboard - INX Address" --msgbox "No valid INX address, please try again." 8 65
+                fi
+            fi
+        ;;
+        "2)")
+            useInxDashboardEnablePlugins=true
+            source $swarmConfigs/inx-dashboard.cfg
+            currentInxDashboardEnablePlugins=$inxDashboardEnablePlugins
+            source $inxDashboardModules/inxDashboardPlugins
+            inxDashboardEnablePlugins=$(whiptail --title "INX-Dashboard - Plugins" --checklist "\nSelect (with spacebar) the INX-Dashboard plugins to be activated:" 24 65 1 \
+                "Prometheus" "plugin for metrics (e.g. Grafana)" $inxDashboardPluginPrometheus 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            inxDashboardEnablePlugins=$(echo $inxDashboardEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$inxDashboardEnablePlugins" ] || [[ $inxDashboardEnablePlugins = *prometheus* ]]; then
+                if [ "$inxDashboardEnablePlugins" != "$currentInxDashboardEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/inx-dashboard" ]; then
+                        source $inxDashboardConfigParsers/inxDashboardEnablePlugins
+                    fi
+                    sudo sed -i 's/^inxDashboardEnablePlugins=.*/inxDashboardEnablePlugins="'$inxDashboardEnablePlugins'"/' $swarmConfigs/inx-dashboard.cfg
+                    if [ ! -z "$inxDashboardEnablePlugins" ]; then
+                        whiptail --title "INX-Dashboard - Plugins" --msgbox "The following plugins are enabled:\n$inxDashboardEnablePlugins" 14 65
+                    else
+                        whiptail --title "INX-Dashboard - Plugins" --msgbox "There are no plugins enabled for INX-Dashboard!" 8 65
+                    fi
+                fi
+                unset inxDashboardEnablePlugins
+            fi
+            unset useInxDashboardEnablePlugins
+        ;;
+        "3)")
+            useInxDashboardDisablePlugins=true
+            source $swarmConfigs/inx-dashboard.cfg
+            currentInxDashboardDisablePlugins=$inxDashboardDisablePlugins
+            source $inxDashboardModules/inxDashboardPlugins
+            inxDashboardDisablePlugins=$(whiptail --title "INX-Dashboard - Plugins" --checklist "\nSelect (with spacebar) the INX-Dashboard plugins to be deactivated:" 24 65 1 \
+                "Prometheus" "plugin for metrics (e.g. Grafana)" $inxDashboardPluginPrometheus 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            inxDashboardDisablePlugins=$(echo $inxDashboardDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$inxDashboardDisablePlugins" ] || [[ $inxDashboardDisablePlugins = *warpsync* ]]; then
+                if [ "$inxDashboardDisablePlugins" != "$currentInxDashboardDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/inx-dashboard" ]; then
+                        source $inxDashboardConfigParsers/inxDashboardDisablePlugins
+                    fi
+                    sudo sed -i 's/^inxDashboardDisablePlugins=.*/inxDashboardDisablePlugins="'$inxDashboardDisablePlugins'"/' $swarmConfigs/inx-dashboard.cfg
+                    if [ ! -z "$inxDashboardDisablePlugins" ]; then
+                        whiptail --title "INX-Dashboard - Plugins" --msgbox "The following plugins are disabled:\n$inxDashboardDisablePlugins" 14 65
+                    else
+                        whiptail --title "INX-Dashboard - Plugins" --msgbox "There are no plugins disabled for INX-Dashboard!" 8 65
+                    fi
+                fi
+            else
+                unset inxDashboardDisablePlugins
+            fi
+            unset useInxDashboardDisablePlugins
+        ;;
+        "4)")
+            source $swarmConfigs/inx-dashboard.cfg
+            if [ "$inxDashboardUpdateCheck" = "true" ]; then
+                inxDashboardUpdateCheckStatus="enabled"
+            else
+                inxDashboardUpdateCheckStatus="disabled"
+            fi
+            if (whiptail --title "INX-Dashboard - Update Check" --yesno "Would you like to \"$inxDashboardUpdateCheckStatus\" update check?" 8 65); then
+                if [ "$inxDashboardUpdateCheck" = "true" ]; then
+                    inxDashboardUpdateCheck=false
+                else
+                    inxDashboardUpdateCheck=true
+                fi
+                source $inxDashboardConfigParsers/inxDashboardUpdateCheck
+                sudo sed -i 's~^inxDashboardUpdateCheck=.*~inxDashboardUpdateCheck='$inxDashboardUpdateCheck'~g' $swarmConfigs/inx-dashboard.cfg
+            fi
+        ;;
+    esac
+done
+sudo chown -R inx:inx $inxDashboardHome/*.json
+exitCode=0

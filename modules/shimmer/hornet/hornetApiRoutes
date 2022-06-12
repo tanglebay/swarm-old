@@ -1,0 +1,126 @@
+#!/bin/bash
+
+# Unset VARS
+unset hornetApiPublicRoutes
+
+# /health
+if [[ $hornetApiRoutes = */health* ]]; then
+    hornetApiRoutesHealth=ON
+else
+    hornetApiRoutesHealth=OFF
+    hornetApiPublicRoutes="/health"
+fi
+
+# /mqtt
+if [[ $hornetApiRoutes = */mqtt* ]]; then
+    hornetApiRoutesMqtt=ON
+else
+    hornetApiRoutesMqtt=OFF
+    hornetApiPublicRoutes="$hornetApiPublicRoutes,/mqtt"
+fi
+
+# /api/v1/info
+if [[ $hornetApiRoutes = */api/v1/info* ]]; then
+    hornetApiRoutesInfo=ON
+else
+    hornetApiRoutesInfo=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/v1/info")
+fi
+
+# /api/v1/tips
+if [[ $hornetApiRoutes = */api/v1/tips* ]]; then
+    hornetApiRoutesTips=ON
+else
+    hornetApiRoutesTips=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/v1/tips")
+fi
+
+# /api/v1/messages
+if [[ $hornetApiRoutes = */api/v1/messages\** ]]; then
+    hornetApiRoutesMessages=ON
+else
+    hornetApiRoutesMessages=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/v1/messages*")
+fi
+
+#/api/v1/transactions
+if [[ $hornetApiRoutes = */api/v1/transactions\** ]]; then
+    hornetApiRoutesTransactions=ON
+else
+    hornetApiRoutesTransactions=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/v1/transactions*")
+fi
+
+#/api/v1/milestones
+if [[ $hornetApiRoutes = */api/v1/milestones\** ]]; then
+    hornetApiRoutesMilestones=ON
+else
+    hornetApiRoutesMilestones=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/v1/milestones*")
+fi
+
+#/api/v1/outputs
+if [[ $hornetApiRoutes = */api/v1/outputs\** ]]; then
+    hornetApiRoutesOutputs=ON
+else
+    hornetApiRoutesOutputs=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/v1/outputs*")
+fi
+
+#/api/v1/addresses
+if [[ $hornetApiRoutes = */api/v1/addresses\** ]]; then
+    hornetApiRoutesAddresses=ON
+else
+    hornetApiRoutesAddresses=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/v1/addresses*")
+fi
+
+#/api/v1/treasury
+if [[ $hornetApiRoutes = */api/v1/treasury* ]]; then
+    hornetApiRoutesTreasury=ON
+else
+    hornetApiRoutesTreasury=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/v1/treasury")
+fi
+
+#/api/v1/receipts
+if [[ $hornetApiRoutes = */api/v1/receipts\** ]]; then
+    hornetApiRoutesReceipts=ON
+else
+    hornetApiRoutesReceipts=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/v1/receipts*")
+fi
+
+#/api/plugins/participation/events*
+if [[ $hornetApiRoutes = */api/plugins/participation/events\** ]]; then
+    hornetApiRoutesParticipationEvents=ON
+else
+    hornetApiRoutesParticipationEvents=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/plugins/participation/events*")
+fi
+
+if [[ $hornetApiRoutes = */api/plugins/participation/outputs\** ]]; then
+    hornetApiRoutesParticipationOutputs=ON
+else
+    hornetApiRoutesParticipationOutputs=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/plugins/participation/outputs*")
+fi
+
+if [[ $hornetApiRoutes = */api/plugins/participation/addresses\** ]]; then
+    hornetApiRoutesParticipationAddresses=ON
+else
+    hornetApiRoutesParticipationAddresses=OFF
+    hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes,/api/plugins/participation/addresses*")
+fi
+
+######
+
+hornetApiPublicRoutes=$(echo "$hornetApiPublicRoutes" | tr -s ',,' ',')
+validateHornetApiPublicRoutes=$(echo "${hornetApiPublicRoutes: -1}")
+if [ "$validateHornetApiPublicRoutes" = "," ]; then
+    hornetApiPublicRoutes="${hornetApiPublicRoutes%?}"
+fi
+
+if [ "$hornetUpdateApiRoutes" = "true" ]; then
+    sudo sed -i 's~^hornetApiPublicRoutes=.*~hornetApiPublicRoutes="'$hornetApiPublicRoutes'"~' $swarmConfigs/hornet.cfg
+fi

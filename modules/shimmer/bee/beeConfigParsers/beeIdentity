@@ -1,0 +1,64 @@
+#!/bin/bash
+
+if [[ ${#beeIdentity} -gt 70 ]]; then
+    sudo systemctl stop bee
+    sudo rm -rf $beeHome/identity.key 2>/dev/null
+    sudo systemctl start bee
+    sleep 3
+    beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
+    sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
+    echo "beeAlias - Identity has more than 70 chars" >> /tmp/beeParsing
+fi
+
+if [ "$beeResetIdentity" != "true" ]; then
+    if [ -f "$beeHome/identity.key" ]; then
+        parser=$(cat $beeHome/identity.key | sed -n '2 p')
+    fi
+    if [ "$parser" != "$beeIdentity" ]; then
+        if [ ! -z "$beeIdentity" ]; then
+            sudo systemctl stop bee
+            sudo -u bee echo "-----BEGIN PRIVATE KEY-----" > $beeHome/identity.key
+            sudo -u bee echo "$beeIdentity" >> $beeHome/identity.key
+            sudo -u bee echo "-----END PRIVATE KEY-----" >> $beeHome/identity.key
+            sudo systemctl start bee
+            echo "beeIdentity - Identity not equal using from var now" >> /tmp/beeParsing
+        else
+            if [ -f "$beeHome/identity.key" ]; then
+                beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
+            fi
+            if [ ! -z "$beeIdentity" ]; then
+                sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
+            else
+                sudo systemctl stop bee
+                sudo rm -rf $beeHome/identity.key 2>/dev/null
+                sudo systemctl start bee
+                sleep 3
+                beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
+                sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
+                echo "beeIdentity - Identity not equal using new identity" >> /tmp/beeParsing
+            fi
+        fi
+    fi
+else
+    {
+        echo 0
+        echo 20
+        sudo systemctl stop bee
+        echo 40
+        sudo rm -rf $beeHome/identity.key 2>/dev/null
+        echo 60
+        sudo systemctl start bee
+        echo 80
+        beeIdentity=$(cat $beeHome/identity.key | sed -n '2 p')
+        echo 100
+        if [ ! -z "$beeIdentity" ]; then
+            sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
+        else
+            sudo sed -i 's~^beeIdentity=.*~beeIdentity=""~' $swarmConfigs/bee.cfg
+        fi
+        sleep 1
+    } | whiptail --gauge "Generate new identity for Bee..." 8 65 0
+    echo "beeIdentity - Reset Identity" >> /tmp/beeParsing
+fi
+
+unset beeResetIdentity

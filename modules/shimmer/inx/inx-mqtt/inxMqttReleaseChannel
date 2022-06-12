@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Check if release is changed
+if [ "$inxMqttRelease" != "$currentInxMqttRelease" ]; then
+    {
+        echo 0
+        echo 20
+        source $inxMqttModules/inxMqttRemoval
+        echo 40
+        source $inxMqttModules/inxMqttInstaller
+        echo 60
+        source $inxMqttModules/inxMqttParser
+        echo 80
+        if [ "$inxMqttUpdated" = "true" ] || [ "$restartInxMqtt" = "true" ]; then
+            sudo systemctl restart inx-mqtt
+            unset restartInxMqtt
+        fi
+        echo 100
+    } | whiptail --gauge "Please wait while INX-MQTT is prepared..." 8 65 0
+    whiptail --title "INX-MQTT - Configuration" --msgbox "New release channel ($inxMqttRelease) applied and INX-MQTT was reinstalled!" 8 65
+fi

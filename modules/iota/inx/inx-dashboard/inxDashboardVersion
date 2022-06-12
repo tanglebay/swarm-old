@@ -1,0 +1,30 @@
+#!/bin/bash
+source $swarmConfigs/latest-versions.cfg
+
+if [ -z "$latestInxDashboardVersion" ] || [ "$latestInxDashboardVersion" = "\"\"" ] || [ "$latestInxDashboardVersion" = "null" ]; then
+    if [ "$inxDashboardRelease" = "stable" ]; then
+        latestInxDashboardVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-dashboard/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $inxDashboardReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestInxDashboardVersion=$(echo $latestInxDashboardVersion | tr -d 'v"')
+    fi
+    if [ "$inxDashboardRelease" = "beta" ]; then
+        latestInxDashboardVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-dashboard/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $inxDashboardReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestInxDashboardVersion=$(echo $latestInxDashboardVersion | tr -d 'v"')
+    fi
+    if [ "$inxDashboardRelease" = "alpha" ]; then
+        latestInxDashboardVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-dashboard/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $inxDashboardReleaseVersion | head -n 1)
+        latestInxDashboardVersion=$(echo $latestInxDashboardVersion | tr -d 'v"')
+    fi
+    if [ ! -z "$latestInxDashboardVersion" ] && [ "$latestInxDashboardVersion" != "\"\"" ] && [ "$latestInxDashboardVersion" != "null" ]; then
+        sudo sed -i 's~^latestInxDashboardVersion=.*~latestInxDashboardVersion="'$latestInxDashboardVersion'"~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
+
+# Local node version
+if [ -f "/usr/bin/inx-dashboard" ]; then
+    inxDashboardVersion=$(/usr/bin/inx-dashboard -v | awk '{ print $2 }')
+fi
+
+# Replace var if empty
+if [ -z "$latestInxDashboardVersion" ] || [ "$latestInxDashboardVersion" = "null" ]; then
+    latestInxDashboardVersion=$inxDashboardVersion
+fi

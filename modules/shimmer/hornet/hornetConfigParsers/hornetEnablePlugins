@@ -1,0 +1,24 @@
+#!/bin/bash
+
+useHornetEnablePlugins=true
+source $hornetModules/hornetPlugins
+
+IFS=', ' read -r -a ARRAYhornetEnablePlugins <<< "$hornetEnablePlugins"
+
+parser="$(jq '.node.enablePlugins' $hornetHome/$hornetConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$hornetEnablePlugins" ]; then
+    sudo jq '.node.enablePlugins |= []' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+    for hornetEnablePlugin in "${ARRAYhornetEnablePlugins[@]}"
+    do
+        if [ ! -z "$hornetEnablePlugin" ]; then
+            sudo jq '.node.enablePlugins |= .+ ["'$hornetEnablePlugin'"]' $hornetHome/$hornetConfig.json|sponge $hornetHome/$hornetConfig.json
+        fi
+    done
+    restartHornet=true
+    echo "hornetEnablePlugins" >> /tmp/hornetParsing
+fi
+
+unset ARRAYhornetEnablePlugins
+unset hornetEnablePlugin
+unset useHornetEnablePlugins

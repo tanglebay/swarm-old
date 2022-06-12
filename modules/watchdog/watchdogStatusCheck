@@ -289,6 +289,36 @@ else
     fi
 fi
 
+# INX-Dashboard Status Check
+if [ "$inxDashboardStatus" != "active" ] && [ -f "/usr/bin/inx-dashboard" ] && [ "$inxDashboardServiceStatusCheck" = "true" ]; then
+    sudo systemctl stop inx-dashboard 2>/dev/null
+    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+    if [ $inxDashboardStatusCounter -ge 2 ] 2>/dev/null; then
+        if [ "$inxDashboardAllowDbReset" = "true" ]; then
+            if [ "$killall" = "true" ]; then
+                sudo killall -s SIGKILL inx-dashboard 2>/dev/null
+            fi
+            sudo rm -rf $inxDashboardHome/database
+            echo "$restartDate [WACHTDOG] INX-Dashboard database deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
+            telegramText="[$HOSTNAME] INX-Dashboard database deleted because the maximum number of attempted restarts was reached."
+            source $watchdogModules/watchdogTelegram
+        fi
+        inxDashboardStatusCounter=0
+    else
+        let inxDashboardStatusCounter=$inxDashboardStatusCounter+1
+    fi
+    sudo systemctl start inx-dashboard 2>/dev/null
+    sudo sed -i 's/^inxDashboardStatusCounter=.*/inxDashboardStatusCounter='$inxDashboardStatusCounter'/' $swarmConfigs/watchdog.cfg
+    echo "$restartDate [WACHTDOG] INX-Dashboard was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$HOSTNAME] INX-Dashboard was restarted because the service is not active."
+    source $watchdogModules/watchdogTelegram
+else
+    if [ $inxDashboardStatusCounter -gt 0 ] 2>/dev/null; then
+        let inxDashboardStatusCounter=$inxDashboardStatusCounter-1
+        sudo sed -i 's/^inxDashboardStatusCounter=.*/inxDashboardStatusCounter='$inxDashboardStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+fi
+
 # INX-Indexer Status Check
 if [ "$inxIndexerStatus" != "active" ] && [ -f "/usr/bin/inx-indexer" ] && [ "$inxIndexerServiceStatusCheck" = "true" ]; then
     sudo systemctl stop inx-indexer 2>/dev/null

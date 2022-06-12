@@ -1,0 +1,30 @@
+#!/bin/bash
+source $swarmConfigs/latest-versions.cfg
+
+if [ -z "$latestHornetVersion" ] || [ "$latestHornetVersion" = "\"\"" ] || [ "$latestHornetVersion" = "null" ]; then
+    if [ "$hornetRelease" = "stable" ]; then
+        latestHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $hornetReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestHornetVersion=$(echo $latestHornetVersion | tr -d 'v"')
+    fi
+    if [ "$hornetRelease" = "beta" ]; then
+        latestHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $hornetReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestHornetVersion=$(echo $latestHornetVersion | tr -d 'v"')
+    fi
+    if [ "$hornetRelease" = "alpha" ]; then
+        latestHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $hornetReleaseVersion | head -n 1)
+        latestHornetVersion=$(echo $latestHornetVersion | tr -d 'v"')
+    fi
+    if [ ! -z "$latestHornetVersion" ] && [ "$latestHornetVersion" != "\"\"" ] && [ "$latestHornetVersion" != "null" ]; then
+        sudo sed -i 's~^latestHornetVersion=.*~latestHornetVersion="'$latestHornetVersion'"~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
+
+# Local node version
+if [ -f "/usr/bin/hornet" ]; then
+    hornetVersion=$(/usr/bin/hornet -v | awk '{ print $2 }')
+fi
+
+# Replace var if empty
+if [ -z "$latestHornetVersion" ] || [ "$latestHornetVersion" = "null" ]; then
+    latestHornetVersion=$hornetVersion
+fi

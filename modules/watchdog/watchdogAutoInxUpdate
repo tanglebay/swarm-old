@@ -2,6 +2,28 @@
 source $swarmConfigs/latest-versions.cfg
 
 if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
+    if [ "$inxDashboardAutoUpdate" = "true" ] && [ -f "/usr/bin/inx-dashboard" ]; then
+        source $inxDashboardModules/inxDashboardVersion
+        currentInxDashboardVersion="$inxDashboardVersion"
+        if [ "$latestInxDashboardVersion" != "$inxDashboardVersion" ]; then
+            source $inxDashboardModules/inxDashboardInstaller
+            source $inxDashboardModules/inxDashboardVersion
+            if [ "$currentInxDashboardVersion" != "$inxDashboardVersion" ] || [ "$inxDashboardUpdated" = "true" ]; then
+                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                # CALL MODULE CONFIGPARSER
+                source $inxDashboardModules/inxDashboardParser
+                if [ "$restartInxDashboard" = "true" ]; then
+                    sudo systemctl restart inx-dashboard > /dev/null 2>&1
+                    sleep 5
+                fi
+                echo "$restartDate [AUTOUPDATE] New Version ($latestInxDashboardVersion) of INX-Dashboard installed. Checksum: $inxDashboardChecksum" >> $swarmLogs/swarm.log
+                telegramText="[$HOSTNAME] New Version ($latestInxDashboardVersion) of INX-Dashboard installed. Checksum: $inxDashboardChecksum"
+                source $watchdogModules/watchdogTelegram
+            fi
+        fi
+        unset currentInxDashboardVersion inxDashboardUpdated inxDashboardChecksum
+    fi
+
     if [ "$inxIndexerAutoUpdate" = "true" ] && [ -f "/usr/bin/inx-indexer" ]; then
         source $inxIndexerModules/inxIndexerVersion
         currentInxIndexerVersion="$inxIndexerVersion"

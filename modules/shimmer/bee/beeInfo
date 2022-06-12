@@ -1,0 +1,84 @@
+#!/bin/bash
+
+if [ -f "/usr/bin/bee" ]; then
+
+    source $swarmConfigs/bee.cfg
+
+    beeStatus=$(systemctl show -p ActiveState --value bee)
+
+    # Bee version
+    if [ -f "/usr/bin/bee" ]; then
+        beeVersion=$(/usr/bin/bee -v | tr -d 'v"')
+        if [[ $beeVersion = *rc[0-9]* ]]; then
+            beeVersion=$(echo $beeVersion | cut -f1,2 -d"-")
+        else
+            beeVersion=$(echo $beeVersion | cut -f1 -d"-")
+        fi
+    fi
+    if [ -z "$beeVersion" ]; then
+        beeVersion="N/A"
+    else
+        if [ "$beeVersion" != "$latestBeeVersion" ] && [ ! -z "$latestBeeVersion" ]; then
+            beeVersion="$beeVersion (new version \"v$latestBeeVersion\" available!"
+        fi
+    fi
+
+    if [ "$beeStatus" = "active" ]; then
+        beeHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14266/api/v1/info" -H  "accept: application/json"|jq -r '.data.isHealthy' 2> /dev/null)"
+        if [ -z "$beeHealthy" ]; then
+            beeHealthy="N/A"
+        else
+            if [ "$beeHealthy" = "true" ]; then
+                beeHealthy="Yes"
+            else
+                beeHealthy="No"
+            fi
+        fi
+    else
+        beeHealthy="N/A"
+    fi
+
+    # DB size
+    if [ -d "$beeHome/storage" ]; then
+        getCurrentDbSize="$(du -sb $beeHome/storage | cut -f1)"
+        let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+        if [ $getCurrentDbSizeInMb -gt 999 ]; then
+            let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+            currentBeeDbSize="${getCurrentDbSizeInGb} GB"
+        else
+            currentBeeDbSize="${getCurrentDbSizeInMb} MB"
+        fi
+    else
+        currentBeeDbSize="N/A"
+    fi
+
+    if [ "$beePruningEnabled" = "true" ]; then
+        beePruningEnabledStatus=enabled
+    else
+        beePruningEnabledStatus=disabled
+    fi
+
+    if [ "$beePowEnabled" = "true" ]; then
+        beePowEnabledStatus=enabled
+    else
+        beePowEnabledStatus=disabled
+    fi
+
+    if [ -f "/etc/nginx/sites-enabled/bee" ]; then
+        beeProxyStatus=active
+    else
+        beeProxyStatus=inactive
+    fi
+
+    if [ "$beeAutopeeringEnabled" = "true" ]; then
+        beeAutopeeringEnabledMenu=enabled
+    else
+        beeAutopeeringEnabledMenu=disabled
+    fi
+
+    # OUTPUT
+    whiptail --scrolltext --title "Bee Info" --msgbox "Bee: $beeStatus\nVersion: v$beeVersion\nHealthy: $beeHealthy\nDB size: $currentBeeDbSize\nProxy: $beeProxyStatus\n\nAlias: $beeAlias\nPoW: $beePowEnabledStatus\nLS Interval: $beeSnapshotInterval milestones\n\nAutopeering: $beeAutopeeringEnabledMenu\nMax unknown Peers: $beeMaxUnknownPeers\nGossip Port: ${beeGossipPort}/tcp\nAutopeering Port: $beeAutopeeringPort/udp\n\nPruning: $beePruningEnabledStatus\nPruning Delay: $beePruningDelay milestones" 24 65
+else
+    # OUTPUT
+    whiptail --title "Bee Info" --msgbox "Bee not installed!" 8 65
+fi
