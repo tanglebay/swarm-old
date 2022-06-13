@@ -4,729 +4,1017 @@ if [ ! -d "/tmp/swarm" ]; then
     sudo mkdir -p $tmpdir
 fi
 
+source $swarmModules/swarmMigration
+
 ###########################################################################################################################
 
-if [ -f "$swarmTmp/hornet.cfg" ]; then
-    source $swarmTmp/hornet.cfg
+if [ -f "$swarmTmp/iota-hornet.cfg" ]; then
+    source $swarmTmp/iota-hornet.cfg
 
-    # Upater for Hornet.cfg
-    if [ ! -z "$release" ]; then
-        hornetRelease="$release"
+    ####
+    if [ "$iotaHornetRelease" = "testing" ]; then
+        iotaHornetRelease="beta"
+    fi
+    if [ -z "$iotaHornetRelease" ]; then
+        sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease="stable"/' $swarmConfigs/iota-hornet.cfg
+    else
+        sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease="'$iotaHornetRelease'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ "$hornetRelease" = "testing" ]; then
-        hornetRelease="beta"
-    fi
-    if [ -z "$hornetRelease" ]; then
-        sudo sed -i 's/^hornetRelease=.*/hornetRelease="stable"/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetNetwork" ]; then
+        sudo sed -i 's/^iotaHornetNetwork=.*/iotaHornetNetwork="mainnet"/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetRelease=.*/hornetRelease="'$hornetRelease'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetNetwork=.*/iotaHornetNetwork="'$iotaHornetNetwork'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$network" ]; then
-        hornetNetwork="$network"
-    fi
-    if [ -z "$hornetNetwork" ]; then
-        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork="mainnet"/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetAlias" ]; then
+        sudo sed -i 's/^iotaHornetAlias=.*/iotaHornetAlias="Hornet"/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork="'$hornetNetwork'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i "s~^iotaHornetAlias=.*~iotaHornetAlias=\"$iotaHornetAlias\"~g" $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$hornetNodeAlias" ]; then
-        hornetAlias="$hornetNodeAlias"
-    fi
-    if [ -z "$hornetAlias" ]; then
-        sudo sed -i 's/^hornetAlias=.*/hornetAlias="Hornet"/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetDisablePlugins" ]; then
+        sudo sed -i 's/^iotaHornetDisablePlugins=.*/iotaHornetDisablePlugins=""/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i "s~^hornetAlias=.*~hornetAlias=\"$hornetAlias\"~g" $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetDisablePlugins=.*/iotaHornetDisablePlugins="'$iotaHornetDisablePlugins'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$disablePlugins" ]; then
-        hornetDisablePlugins="$disablePlugins"
-    fi
-    if [ -z "$hornetDisablePlugins" ]; then
-        sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins=""/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetEnablePlugins" ]; then
+        sudo sed -i 's/^iotaHornetEnablePlugins=.*/iotaHornetEnablePlugins=""/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins="'$hornetDisablePlugins'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetEnablePlugins=.*/iotaHornetEnablePlugins="'$iotaHornetEnablePlugins'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetEnablePlugins" ]; then
-        sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins=""/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetUnknownPeersLimit" ]; then
+        sudo sed -i 's/^iotaHornetUnknownPeersLimit=.*/iotaHornetUnknownPeersLimit=2/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="'$hornetEnablePlugins'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetUnknownPeersLimit=.*/iotaHornetUnknownPeersLimit='$iotaHornetUnknownPeersLimit'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$maxUnknownNeighbors" ]; then
-        hornetUnknownPeersLimit=$maxUnknownNeighbors
-    fi
-    if [ -z "$hornetUnknownPeersLimit" ]; then
-        sudo sed -i 's/^hornetUnknownPeersLimit=.*/hornetUnknownPeersLimit=2/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetSnapshotInterval" ]; then
+        sudo sed -i 's/^iotaHornetSnapshotInterval=.*/iotaHornetSnapshotInterval=360/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetUnknownPeersLimit=.*/hornetUnknownPeersLimit='$hornetUnknownPeersLimit'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetSnapshotInterval=.*/iotaHornetSnapshotInterval='$iotaHornetSnapshotInterval'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$snapshotInterval" ]; then
-        hornetSnapshotInterval=$snapshotInterval
-    fi
-    if [ -z "$hornetSnapshotInterval" ]; then
-        sudo sed -i 's/^hornetSnapshotInterval=.*/hornetSnapshotInterval=360/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetGossipPort" ]; then
+        sudo sed -i 's/^iotaHornetGossipPort=.*/iotaHornetGossipPort=15600/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetSnapshotInterval=.*/hornetSnapshotInterval='$hornetSnapshotInterval'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetGossipPort=.*/iotaHornetGossipPort='$iotaHornetGossipPort'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetGossipPort" ]; then
-        sudo sed -i 's/^hornetGossipPort=.*/hornetGossipPort=15600/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetAutopeeringPort" ]; then
+        sudo sed -i 's/^iotaHornetAutopeeringPort=.*/iotaHornetAutopeeringPort=14626/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetGossipPort=.*/hornetGossipPort='$hornetGossipPort'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetAutopeeringPort=.*/iotaHornetAutopeeringPort='$iotaHornetAutopeeringPort'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetAutopeeringPort" ]; then
-        sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort=14626/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPowEnabled" ]; then
+        sudo sed -i 's/^iotaHornetPowEnabled=.*/iotaHornetPowEnabled=false/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort='$hornetAutopeeringPort'/' $swarmConfigs/hornet.cfg
-    fi
-    ####
-    if [ ! -z "$pow" ]; then
-        hornetPowEnabled="$pow"
-    fi
-    if [ -z "$hornetPowEnabled" ]; then
-        sudo sed -i 's/^hornetPowEnabled=.*/hornetPowEnabled=false/' $swarmConfigs/hornet.cfg
-    else
-        sudo sed -i 's/^hornetPowEnabled=.*/hornetPowEnabled='$hornetPowEnabled'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPowEnabled=.*/iotaHornetPowEnabled='$iotaHornetPowEnabled'/' $swarmConfigs/iota-hornet.cfg
     fi
     ###
-    if [ ! -z "$powWorkerCount" ]; then
-        hornetPowWorkerCount=$powWorkerCount
-    fi
-    if [ -z "$hornetPowWorkerCount" ]; then
-        sudo sed -i 's/^hornetPowWorkerCount=.*/hornetPowWorkerCount=1/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPowWorkerCount" ]; then
+        sudo sed -i 's/^iotaHornetPowWorkerCount=.*/iotaHornetPowWorkerCount=1/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPowWorkerCount=.*/hornetPowWorkerCount='$hornetPowWorkerCount'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPowWorkerCount=.*/iotaHornetPowWorkerCount='$iotaHornetPowWorkerCount'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$autoRevalidation" ]; then
-        hornetAutoRevalidation=$autoRevalidation
-    fi
-    if [ -z "$hornetAutoRevalidation" ]; then
-        sudo sed -i 's/^hornetAutoRevalidation=.*/hornetAutoRevalidation=false/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetAutoRevalidation" ]; then
+        sudo sed -i 's/^iotaHornetAutoRevalidation=.*/iotaHornetAutoRevalidation=false/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetAutoRevalidation=.*/hornetAutoRevalidation='$hornetAutoRevalidation'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetAutoRevalidation=.*/iotaHornetAutoRevalidation='$iotaHornetAutoRevalidation'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$pruning" ]; then
-        hornetPruningEnabled=$pruning
-    fi
-    if [ -z "$hornetPruningEnabled" ]; then
-        sudo sed -i 's/^hornetPruningEnabled=.*/hornetPruningEnabled=true/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPruningEnabled" ]; then
+        sudo sed -i 's/^iotaHornetPruningEnabled=.*/iotaHornetPruningEnabled=true/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPruningEnabled=.*/hornetPruningEnabled='$hornetPruningEnabled'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPruningEnabled=.*/iotaHornetPruningEnabled='$iotaHornetPruningEnabled'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$pruningDatabaseSize" ]; then
-        hornetPruningDatabaseSize=$pruningDatabaseSize
-    fi
-    if [ -z "$hornetPruningDatabaseSize" ]; then
-        sudo sed -i 's/^hornetPruningDatabaseSize=.*/hornetPruningDatabaseSize=/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPruningDatabaseSize" ]; then
+        sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize=/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPruningDatabaseSize=.*/hornetPruningDatabaseSize='$hornetPruningDatabaseSize'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$pruningPercentage" ]; then
-        hornetPruningPercentage=$pruningPercentage
-    fi
-    if [ -z "$hornetPruningPercentage" ]; then
-        sudo sed -i 's/^hornetPruningPercentage=.*/hornetPruningPercentage=5/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPruningPercentage" ]; then
+        sudo sed -i 's/^iotaHornetPruningPercentage=.*/iotaHornetPruningPercentage=5/' $swarmConfigs/iota-hornet.cfg
     else
-        hornetPruningPercentage=$(echo $hornetPruningPercentage | tr -d '%')
-        sudo sed -i 's/^hornetPruningPercentage=.*/hornetPruningPercentage='$hornetPruningPercentage'/' $swarmConfigs/hornet.cfg      
+        iotaHornetPruningPercentage=$(echo $iotaHornetPruningPercentage | tr -d '%')
+        sudo sed -i 's/^iotaHornetPruningPercentage=.*/iotaHornetPruningPercentage='$iotaHornetPruningPercentage'/' $swarmConfigs/iota-hornet.cfg      
     fi
     ####
-    if [ ! -z "$pruningCooldownTime" ]; then
-        hornetPruningCooldownTime=$pruningCooldownTime
-    fi
-    if [ -z "$hornetPruningCooldownTime" ]; then
-        sudo sed -i 's/^hornetPruningCooldownTime=.*/hornetPruningCooldownTime=5/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPruningCooldownTime" ]; then
+        sudo sed -i 's/^iotaHornetPruningCooldownTime=.*/iotaHornetPruningCooldownTime=5/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPruningCooldownTime=.*/hornetPruningCooldownTime='$hornetPruningCooldownTime'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPruningCooldownTime=.*/iotaHornetPruningCooldownTime='$iotaHornetPruningCooldownTime'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$username" ]; then
-        hornetUsername="$username"
-    fi
-    if [ -z "$hornetUsername" ]; then
-        sudo sed -i 's/^hornetUsername=.*/hornetUsername=""/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetUsername" ]; then
+        sudo sed -i 's/^iotaHornetUsername=.*/iotaHornetUsername=""/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetUsername=.*/hornetUsername="'$hornetUsername'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetUsername=.*/iotaHornetUsername="'$iotaHornetUsername'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$passwordHash" ]; then
-        hornetPasswordHash="$passwordHash"
-    fi
-    if [ -z "$hornetPasswordHash" ]; then
-        sudo sed -i 's/^hornetPasswordHash=.*/hornetPasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPasswordHash" ]; then
+        sudo sed -i 's/^iotaHornetPasswordHash=.*/iotaHornetPasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPasswordHash=.*/hornetPasswordHash="'$hornetPasswordHash'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPasswordHash=.*/iotaHornetPasswordHash="'$iotaHornetPasswordHash'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$passwordSalt" ]; then
-        hornetPasswordSalt="$passwordSalt"
-    fi
-    if [ -z "$hornetPasswordSalt" ]; then
-        sudo sed -i 's/^hornetPasswordSalt=.*/hornetPasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPasswordSalt" ]; then
+        sudo sed -i 's/^iotaHornetPasswordSalt=.*/iotaHornetPasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPasswordSalt=.*/hornetPasswordSalt="'$hornetPasswordSalt'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPasswordSalt=.*/iotaHornetPasswordSalt="'$iotaHornetPasswordSalt'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetIdentity" ]; then
-        sudo sed -i 's~^hornetIdentity=.*~hornetIdentity=""~' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetIdentity" ]; then
+        sudo sed -i 's~^iotaHornetIdentity=.*~iotaHornetIdentity=""~' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's~^hornetIdentity=.*~hornetIdentity="'$hornetIdentity'"~' $swarmConfigs/hornet.cfg
+        sudo sed -i 's~^iotaHornetIdentity=.*~iotaHornetIdentity="'$iotaHornetIdentity'"~' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$runAsEntryNode" ]; then
-        hornetRunAsEntryNode=$runAsEntryNode
-    fi
-    if [ -z "$hornetRunAsEntryNode" ]; then
-        sudo sed -i 's/^hornetRunAsEntryNode=.*/hornetRunAsEntryNode=false/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetRunAsEntryNode" ]; then
+        sudo sed -i 's/^iotaHornetRunAsEntryNode=.*/iotaHornetRunAsEntryNode=false/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetRunAsEntryNode=.*/hornetRunAsEntryNode='$hornetRunAsEntryNode'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetRunAsEntryNode=.*/iotaHornetRunAsEntryNode='$iotaHornetRunAsEntryNode'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetApiJwtSalt" ]; then
-        sudo sed -i 's~^hornetApiJwtSalt=.*~hornetApiJwtSalt="HORNET"~' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetApiJwtSalt" ]; then
+        sudo sed -i 's~^iotaHornetApiJwtSalt=.*~iotaHornetApiJwtSalt="HORNET"~' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's~^hornetApiJwtSalt=.*~hornetApiJwtSalt="'$hornetApiJwtSalt'"~' $swarmConfigs/hornet.cfg
+        sudo sed -i 's~^iotaHornetApiJwtSalt=.*~iotaHornetApiJwtSalt="'$iotaHornetApiJwtSalt'"~' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetApiJwtToken" ]; then
-        sudo sed -i 's~^hornetApiJwtToken=.*~hornetApiJwtToken=""~' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetApiJwtToken" ]; then
+        sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken=""~' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's~^hornetApiJwtToken=.*~hornetApiJwtToken="'$hornetApiJwtToken'"~' $swarmConfigs/hornet.cfg
+        sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'$iotaHornetApiJwtToken'"~' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetApiPublicRoutes" ]; then
-        sudo sed -i 's~^hornetApiPublicRoutes=.*~hornetApiPublicRoutes="/health,/mqtt,/api/v1/info,/api/v1/tips,/api/v1/messages*,/api/v1/transactions*,/api/v1/milestones*,/api/v1/outputs*,/api/v1/addresses*,/api/v1/treasury,/api/v1/receipts*,/api/plugins/participation/events*,/api/plugins/participation/outputs*,/api/plugins/participation/addresses*"~' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetApiPublicRoutes" ]; then
+        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="/health,/mqtt,/api/v1/info,/api/v1/tips,/api/v1/messages*,/api/v1/transactions*,/api/v1/milestones*,/api/v1/outputs*,/api/v1/addresses*,/api/v1/treasury,/api/v1/receipts*,/api/plugins/participation/events*,/api/plugins/participation/outputs*,/api/plugins/participation/addresses*"~' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's~^hornetApiPublicRoutes=.*~hornetApiPublicRoutes="'$hornetApiPublicRoutes'"~' $swarmConfigs/hornet.cfg
+        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
     fi
 fi
 
 ####################################################################################################################################
 
-if [ -f "$swarmTmp/hornet-shimmer.cfg" ]; then
-    source $swarmTmp/hornet-shimmer.cfg
+if [ -f "$swarmTmp/shimmer-hornet.cfg" ]; then
+    source $swarmTmp/shimmer-hornet.cfg
 
     ####
-    if [ -z "$hornetShimmerRelease" ]; then
-        sudo sed -i 's/^hornetShimmerRelease=.*/hornetShimmerRelease="alpha"/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetRelease" ]; then
+        sudo sed -i 's/^shimmerHornetRelease=.*/shimmerHornetRelease="alpha"/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerRelease=.*/hornetShimmerRelease="'$hornetShimmerRelease'"/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetRelease=.*/shimmerHornetRelease="'$shimmerHornetRelease'"/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerNetwork" ]; then
-        sudo sed -i 's/^hornetShimmerNetwork=.*/hornetShimmerNetwork="alphanet"/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetNetwork" ]; then
+        sudo sed -i 's/^shimmerHornetNetwork=.*/shimmerHornetNetwork="alphanet"/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerNetwork=.*/hornetShimmerNetwork="'$hornetShimmerNetwork'"/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetNetwork=.*/shimmerHornetNetwork="'$shimmerHornetNetwork'"/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerAlias" ]; then
-        sudo sed -i 's/^hornetShimmerAlias=.*/hornetShimmerAlias="Hornet-Shimmer"/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetAlias" ]; then
+        sudo sed -i 's/^shimmerHornetAlias=.*/shimmerHornetAlias="Hornet-Shimmer"/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i "s~^hornetShimmerAlias=.*~hornetShimmerAlias=\"$hornetShimmerAlias\"~g" $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i "s~^shimmerHornetAlias=.*~shimmerHornetAlias=\"$shimmerHornetAlias\"~g" $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerDisablePlugins" ]; then
-        sudo sed -i 's/^hornetShimmerDisablePlugins=.*/hornetShimmerDisablePlugins=""/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetDisablePlugins" ]; then
+        sudo sed -i 's/^shimmerHornetDisablePlugins=.*/shimmerHornetDisablePlugins=""/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerDisablePlugins=.*/hornetShimmerDisablePlugins="'$hornetShimmerDisablePlugins'"/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetDisablePlugins=.*/shimmerHornetDisablePlugins="'$shimmerHornetDisablePlugins'"/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerEnablePlugins" ]; then
-        sudo sed -i 's/^hornetShimmerEnablePlugins=.*/hornetShimmerEnablePlugins=""/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetEnablePlugins" ]; then
+        sudo sed -i 's/^shimmerHornetEnablePlugins=.*/shimmerHornetEnablePlugins=""/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerEnablePlugins=.*/hornetShimmerEnablePlugins="'$hornetShimmerEnablePlugins'"/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetEnablePlugins=.*/shimmerHornetEnablePlugins="'$shimmerHornetEnablePlugins'"/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerUnknownPeersLimit" ]; then
-        sudo sed -i 's/^hornetShimmerUnknownPeersLimit=.*/hornetShimmerUnknownPeersLimit=2/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetUnknownPeersLimit" ]; then
+        sudo sed -i 's/^shimmerHornetUnknownPeersLimit=.*/shimmerHornetUnknownPeersLimit=2/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerUnknownPeersLimit=.*/hornetShimmerUnknownPeersLimit='$hornetShimmerUnknownPeersLimit'/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetUnknownPeersLimit=.*/shimmerHornetUnknownPeersLimit='$shimmerHornetUnknownPeersLimit'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerSnapshotInterval" ]; then
-        sudo sed -i 's/^hornetShimmerSnapshotInterval=.*/hornetShimmerSnapshotInterval=360/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetSnapshotInterval" ]; then
+        sudo sed -i 's/^shimmerHornetSnapshotInterval=.*/shimmerHornetSnapshotInterval=360/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerSnapshotInterval=.*/hornetShimmerSnapshotInterval='$hornetShimmerSnapshotInterval'/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetSnapshotInterval=.*/shimmerHornetSnapshotInterval='$shimmerHornetSnapshotInterval'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerGossipPort" ]; then
-        sudo sed -i 's/^hornetShimmerGossipPort=.*/hornetShimmerGossipPort=15600/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetGossipPort" ]; then
+        sudo sed -i 's/^shimmerHornetGossipPort=.*/shimmerHornetGossipPort=15600/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerGossipPort=.*/hornetShimmerGossipPort='$hornetShimmerGossipPort'/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetGossipPort=.*/shimmerHornetGossipPort='$shimmerHornetGossipPort'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerAutopeeringPort" ]; then
-        sudo sed -i 's/^hornetShimmerAutopeeringPort=.*/hornetShimmerAutopeeringPort=14626/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetAutopeeringPort" ]; then
+        sudo sed -i 's/^shimmerHornetAutopeeringPort=.*/shimmerHornetAutopeeringPort=14626/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerAutopeeringPort=.*/hornetShimmerAutopeeringPort='$hornetShimmerAutopeeringPort'/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetAutopeeringPort=.*/shimmerHornetAutopeeringPort='$shimmerHornetAutopeeringPort'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerPowEnabled" ]; then
-        sudo sed -i 's/^hornetShimmerPowEnabled=.*/hornetShimmerPowEnabled=false/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetPowEnabled" ]; then
+        sudo sed -i 's/^shimmerHornetPowEnabled=.*/shimmerHornetPowEnabled=false/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerPowEnabled=.*/hornetShimmerPowEnabled='$hornetShimmerPowEnabled'/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetPowEnabled=.*/shimmerHornetPowEnabled='$shimmerHornetPowEnabled'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ###
-    if [ -z "$hornetShimmerPowWorkerCount" ]; then
-        sudo sed -i 's/^hornetShimmerPowWorkerCount=.*/hornetShimmerPowWorkerCount=1/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetPowWorkerCount" ]; then
+        sudo sed -i 's/^shimmerHornetPowWorkerCount=.*/shimmerHornetPowWorkerCount=1/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerPowWorkerCount=.*/hornetShimmerPowWorkerCount='$hornetShimmerPowWorkerCount'/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetPowWorkerCount=.*/shimmerHornetPowWorkerCount='$shimmerHornetPowWorkerCount'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerAutoRevalidation" ]; then
-        sudo sed -i 's/^hornetShimmerAutoRevalidation=.*/hornetShimmerAutoRevalidation=false/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetAutoRevalidation" ]; then
+        sudo sed -i 's/^shimmerHornetAutoRevalidation=.*/shimmerHornetAutoRevalidation=false/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerAutoRevalidation=.*/hornetShimmerAutoRevalidation='$hornetShimmerAutoRevalidation'/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetAutoRevalidation=.*/shimmerHornetAutoRevalidation='$shimmerHornetAutoRevalidation'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerPruningEnabled" ]; then
-        sudo sed -i 's/^hornetShimmerPruningEnabled=.*/hornetShimmerPruningEnabled=true/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetPruningEnabled" ]; then
+        sudo sed -i 's/^shimmerHornetPruningEnabled=.*/shimmerHornetPruningEnabled=true/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerPruningEnabled=.*/hornetShimmerPruningEnabled='$hornetShimmerPruningEnabled'/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetPruningEnabled=.*/shimmerHornetPruningEnabled='$shimmerHornetPruningEnabled'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerPruningDatabaseSize" ]; then
-        sudo sed -i 's/^hornetShimmerPruningDatabaseSize=.*/hornetShimmerPruningDatabaseSize=/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetPruningDatabaseSize" ]; then
+        sudo sed -i 's/^shimmerHornetPruningDatabaseSize=.*/shimmerHornetPruningDatabaseSize=/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerPruningDatabaseSize=.*/hornetShimmerPruningDatabaseSize='$hornetShimmerPruningDatabaseSize'/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetPruningDatabaseSize=.*/shimmerHornetPruningDatabaseSize='$shimmerHornetPruningDatabaseSize'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerPruningPercentage" ]; then
-        sudo sed -i 's/^hornetShimmerPruningPercentage=.*/hornetShimmerPruningPercentage=5/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetPruningPercentage" ]; then
+        sudo sed -i 's/^shimmerHornetPruningPercentage=.*/shimmerHornetPruningPercentage=5/' $swarmConfigs/shimmer-hornet.cfg
     else
-        hornetShimmerPruningPercentage=$(echo $hornetShimmerPruningPercentage | tr -d '%')
-        sudo sed -i 's/^hornetShimmerPruningPercentage=.*/hornetShimmerPruningPercentage='$hornetShimmerPruningPercentage'/' $swarmConfigs/hornet-shimmer.cfg   
+        shimmerHornetPruningPercentage=$(echo $shimmerHornetPruningPercentage | tr -d '%')
+        sudo sed -i 's/^shimmerHornetPruningPercentage=.*/shimmerHornetPruningPercentage='$shimmerHornetPruningPercentage'/' $swarmConfigs/shimmer-hornet.cfg   
     fi
     ####
-    if [ -z "$hornetShimmerPruningCooldownTime" ]; then
-        sudo sed -i 's/^hornetShimmerPruningCooldownTime=.*/hornetShimmerPruningCooldownTime=5/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetPruningCooldownTime" ]; then
+        sudo sed -i 's/^shimmerHornetPruningCooldownTime=.*/shimmerHornetPruningCooldownTime=5/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerPruningCooldownTime=.*/hornetShimmerPruningCooldownTime='$hornetShimmerPruningCooldownTime'/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetPruningCooldownTime=.*/shimmerHornetPruningCooldownTime='$shimmerHornetPruningCooldownTime'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerUsername" ]; then
-        sudo sed -i 's/^hornetShimmerUsername=.*/hornetShimmerUsername=""/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetUsername" ]; then
+        sudo sed -i 's/^shimmerHornetUsername=.*/shimmerHornetUsername=""/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerUsername=.*/hornetShimmerUsername="'$hornetShimmerUsername'"/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetUsername=.*/shimmerHornetUsername="'$shimmerHornetUsername'"/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerPasswordHash" ]; then
-        sudo sed -i 's/^hornetShimmerPasswordHash=.*/hornetShimmerPasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetPasswordHash" ]; then
+        sudo sed -i 's/^shimmerHornetPasswordHash=.*/shimmerHornetPasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerPasswordHash=.*/hornetShimmerPasswordHash="'$hornetShimmerPasswordHash'"/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetPasswordHash=.*/shimmerHornetPasswordHash="'$shimmerHornetPasswordHash'"/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerPasswordSalt" ]; then
-        sudo sed -i 's/^hornetShimmerPasswordSalt=.*/hornetShimmerPasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetPasswordSalt" ]; then
+        sudo sed -i 's/^shimmerHornetPasswordSalt=.*/shimmerHornetPasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerPasswordSalt=.*/hornetShimmerPasswordSalt="'$hornetShimmerPasswordSalt'"/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetPasswordSalt=.*/shimmerHornetPasswordSalt="'$shimmerHornetPasswordSalt'"/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerIdentity" ]; then
-        sudo sed -i 's~^hornetShimmerIdentity=.*~hornetShimmerIdentity=""~' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetIdentity" ]; then
+        sudo sed -i 's~^shimmerHornetIdentity=.*~shimmerHornetIdentity=""~' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's~^hornetShimmerIdentity=.*~hornetShimmerIdentity="'$hornetShimmerIdentity'"~' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's~^shimmerHornetIdentity=.*~shimmerHornetIdentity="'$shimmerHornetIdentity'"~' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerRunAsEntryNode" ]; then
-        sudo sed -i 's/^hornetShimmerRunAsEntryNode=.*/hornetShimmerRunAsEntryNode=false/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetRunAsEntryNode" ]; then
+        sudo sed -i 's/^shimmerHornetRunAsEntryNode=.*/shimmerHornetRunAsEntryNode=false/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^hornetShimmerRunAsEntryNode=.*/hornetShimmerRunAsEntryNode='$hornetShimmerRunAsEntryNode'/' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's/^shimmerHornetRunAsEntryNode=.*/shimmerHornetRunAsEntryNode='$shimmerHornetRunAsEntryNode'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerApiJwtSalt" ]; then
-        sudo sed -i 's~^hornetShimmerApiJwtSalt=.*~hornetShimmerApiJwtSalt="HORNET"~' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetApiJwtSalt" ]; then
+        sudo sed -i 's~^shimmerHornetApiJwtSalt=.*~shimmerHornetApiJwtSalt="HORNET"~' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's~^hornetShimmerApiJwtSalt=.*~hornetShimmerApiJwtSalt="'$hornetShimmerApiJwtSalt'"~' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's~^shimmerHornetApiJwtSalt=.*~shimmerHornetApiJwtSalt="'$shimmerHornetApiJwtSalt'"~' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerApiJwtToken" ]; then
-        sudo sed -i 's~^hornetShimmerApiJwtToken=.*~hornetShimmerApiJwtToken=""~' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetApiJwtToken" ]; then
+        sudo sed -i 's~^shimmerHornetApiJwtToken=.*~shimmerHornetApiJwtToken=""~' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's~^hornetShimmerApiJwtToken=.*~hornetShimmerApiJwtToken="'$hornetShimmerApiJwtToken'"~' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's~^shimmerHornetApiJwtToken=.*~shimmerHornetApiJwtToken="'$shimmerHornetApiJwtToken'"~' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$hornetShimmerApiPublicRoutes" ]; then
-        sudo sed -i 's~^hornetShimmerApiPublicRoutes=.*~hornetShimmerApiPublicRoutes="/health,/api/v2/info,/api/v2/tips,/api/v2/messages*,/api/v2/transactions*,/api/v2/milestones*,/api/v2/outputs*,/api/v2/addresses*,/api/v2/treasury,/api/v2/receipts*,/api/plugins/debug/v1/*,/api/plugins/indexer/v1/*,/api/plugins/mqtt/v1,/api/plugins/participation/v1/events*,/api/plugins/participation/v1/outputs*,/api/plugins/participation/v1/addresses*"~' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetApiPublicRoutes" ]; then
+        sudo sed -i 's~^shimmerHornetApiPublicRoutes=.*~shimmerHornetApiPublicRoutes="/health,/api/v2/info,/api/v2/tips,/api/v2/messages*,/api/v2/transactions*,/api/v2/milestones*,/api/v2/outputs*,/api/v2/addresses*,/api/v2/treasury,/api/v2/receipts*,/api/plugins/debug/v1/*,/api/plugins/indexer/v1/*,/api/plugins/mqtt/v1,/api/plugins/participation/v1/events*,/api/plugins/participation/v1/outputs*,/api/plugins/participation/v1/addresses*"~' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's~^hornetShimmerApiPublicRoutes=.*~hornetShimmerApiPublicRoutes="'$hornetShimmerApiPublicRoutes'"~' $swarmConfigs/hornet-shimmer.cfg
+        sudo sed -i 's~^shimmerHornetApiPublicRoutes=.*~shimmerHornetApiPublicRoutes="'$shimmerHornetApiPublicRoutes'"~' $swarmConfigs/shimmer-hornet.cfg
     fi
 fi
 
 ####################################################################################################################################
 
-if [ -f "$swarmTmp/bee.cfg" ]; then
-    source $swarmTmp/bee.cfg
+if [ -f "$swarmTmp/iota-bee.cfg" ]; then
+    source $swarmTmp/iota-bee.cfg
 
-    if [ -z "$beeRelease" ]; then
-        sudo sed -i 's/^beeRelease=.*/beeRelease="stable"/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$iotaBeeRelease" ]; then
+        sudo sed -i 's/^iotaBeeRelease=.*/iotaBeeRelease="stable"/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beeRelease=.*/beeRelease="'$beeRelease'"/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^iotaBeeRelease=.*/iotaBeeRelease="'$iotaBeeRelease'"/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeNetwork" ]; then
-        sudo sed -i 's/^beeNetwork=.*/beeNetwork="mainnet"/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeNetwork" ]; then
+        sudo sed -i 's/^iotaBeeNetwork=.*/iotaBeeNetwork="mainnet"/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beeNetwork=.*/beeNetwork="'$beeNetwork'"/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeeNetwork=.*/iotaBeeNetwork="'$iotaBeeNetwork'"/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeAlias" ]; then
-        sudo sed -i 's~^beeAlias=.*~beeAlias="Bee"~' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeAlias" ]; then
+        sudo sed -i 's~^iotaBeeAlias=.*~iotaBeeAlias="Bee"~' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i "s~^beeAlias=.*~beeAlias=\"$beeAlias\"~g" $swarmConfigs/bee.cfg
+        sudo sed -i "s~^iotaBeeAlias=.*~iotaBeeAlias=\"$iotaBeeAlias\"~g" $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeGossipPort" ]; then
-        sudo sed -i 's/^beeGossipPort=.*/beeGossipPort=15601/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeGossipPort" ]; then
+        sudo sed -i 's/^iotaBeeGossipPort=.*/iotaBeeGossipPort=15601/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beeGossipPort=.*/beeGossipPort='$beeGossipPort'/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeeGossipPort=.*/iotaBeeGossipPort='$iotaBeeGossipPort'/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeIdentity" ]; then
-        sudo sed -i 's~beeIdentity=.*~beeIdentity=""~' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeIdentity" ]; then
+        sudo sed -i 's~^iotaBeeIdentity=.*~iotaBeeIdentity=""~' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's~^beeIdentity=.*~beeIdentity="'$beeIdentity'"~' $swarmConfigs/bee.cfg
+        sudo sed -i 's~^iotaBeeIdentity=.*~iotaBeeIdentity="'$iotaBeeIdentity'"~' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeMaxUnknownPeers" ]; then
-        sudo sed -i 's/^beeMaxUnknownPeers=.*/beeMaxUnknownPeers=0/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeMaxUnknownPeers" ]; then
+        sudo sed -i 's/^iotaBeeMaxUnknownPeers=.*/iotaBeeMaxUnknownPeers=0/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beeMaxUnknownPeers=.*/beeMaxUnknownPeers='$beeMaxUnknownPeers'/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeeMaxUnknownPeers=.*/iotaBeeMaxUnknownPeers='$iotaBeeMaxUnknownPeers'/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beePasswordHash" ]; then
-        sudo sed -i 's/^beePasswordHash=.*/beePasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePasswordHash" ]; then
+        sudo sed -i 's/^iotaBeePasswordHash=.*/iotaBeePasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beePasswordHash=.*/beePasswordHash="'$beePasswordHash'"/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeePasswordHash=.*/iotaBeePasswordHash="'$iotaBeePasswordHash'"/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beePasswordSalt" ]; then
-        sudo sed -i 's/^beePasswordSalt=.*/beePasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePasswordSalt" ]; then
+        sudo sed -i 's/^iotaBeePasswordSalt=.*/iotaBeePasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beePasswordSalt=.*/beePasswordSalt="'$beePasswordSalt'"/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeePasswordSalt=.*/iotaBeePasswordSalt="'$iotaBeePasswordSalt'"/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beePowEnabled" ]; then
-        sudo sed -i 's/^beePowEnabled=.*/beePowEnabled=false/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePowEnabled" ]; then
+        sudo sed -i 's/^iotaBeePowEnabled=.*/iotaBeePowEnabled=false/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beePowEnabled=.*/beePowEnabled='$beePowEnabled'/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeePowEnabled=.*/iotaBeePowEnabled='$iotaBeePowEnabled'/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beePruningDelay" ]; then
-        sudo sed -i 's/^beePruningDelay=.*/beePruningDelay=60480/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePruningDelay" ]; then
+        sudo sed -i 's/^iotaBeePruningDelay=.*/iotaBeePruningDelay=60480/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beePruningDelay=.*/beePruningDelay='$beePruningDelay'/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeePruningDelay=.*/iotaBeePruningDelay='$iotaBeePruningDelay'/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beePruningEnabled" ]; then
-        sudo sed -i 's/^beePruningEnabled=.*/beePruningEnabled=true/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePruningEnabled" ]; then
+        sudo sed -i 's/^iotaBeePruningEnabled=.*/iotaBeePruningEnabled=true/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beePruningEnabled=.*/beePruningEnabled='$beePruningEnabled'/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeePruningEnabled=.*/iotaBeePruningEnabled='$iotaBeePruningEnabled'/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeSnapshotInterval" ]; then
-        sudo sed -i 's/^beeSnapshotInterval=.*/beeSnapshotInterval=360/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeSnapshotInterval" ]; then
+        sudo sed -i 's/^iotaBeeSnapshotInterval=.*/iotaBeeSnapshotInterval=360/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beeSnapshotInterval=.*/beeSnapshotInterval='$beeSnapshotInterval'/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeeSnapshotInterval=.*/iotaBeeSnapshotInterval='$iotaBeeSnapshotInterval'/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeUsername" ]; then
-        sudo sed -i 's/^beeUsername=.*/beeUsername="admin"/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeUsername" ]; then
+        sudo sed -i 's/^iotaBeeUsername=.*/iotaBeeUsername="admin"/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beeUsername=.*/beeUsername="'$beeUsername'"/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeeUsername=.*/iotaBeeUsername="'$iotaBeeUsername'"/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeAutopeeringEnabled" ]; then
-        sudo sed -i 's/^beeAutopeeringEnabled=.*/beeAutopeeringEnabled=false/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeAutopeeringEnabled" ]; then
+        sudo sed -i 's/^iotaBeeAutopeeringEnabled=.*/iotaBeeAutopeeringEnabled=false/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beeAutopeeringEnabled=.*/beeAutopeeringEnabled='$beeAutopeeringEnabled'/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeeAutopeeringEnabled=.*/iotaBeeAutopeeringEnabled='$iotaBeeAutopeeringEnabled'/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeAutopeeringPort" ]; then
-        sudo sed -i 's/^beeAutopeeringPort=.*/beeAutopeeringPort=14636/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeAutopeeringPort" ]; then
+        sudo sed -i 's/^iotaBeeAutopeeringPort=.*/iotaBeeAutopeeringPort=14636/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beeAutopeeringPort=.*/beeAutopeeringPort='$beeAutopeeringPort'/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeeAutopeeringPort=.*/iotaBeeAutopeeringPort='$iotaBeeAutopeeringPort'/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeRunAsEntryNode" ]; then
-        sudo sed -i 's/^beeRunAsEntryNode=.*/beeRunAsEntryNode=false/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeRunAsEntryNode" ]; then
+        sudo sed -i 's/^iotaBeeRunAsEntryNode=.*/iotaBeeRunAsEntryNode=false/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beeRunAsEntryNode=.*/beeRunAsEntryNode='$beeRunAsEntryNode'/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeeRunAsEntryNode=.*/iotaBeeRunAsEntryNode='$iotaBeeRunAsEntryNode'/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeMaxDiscoveredPeers" ]; then
-        sudo sed -i 's/^beeMaxDiscoveredPeers=.*/beeMaxDiscoveredPeers=6/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeMaxDiscoveredPeers" ]; then
+        sudo sed -i 's/^iotaBeeMaxDiscoveredPeers=.*/iotaBeeMaxDiscoveredPeers=6/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beeMaxDiscoveredPeers=.*/beeMaxDiscoveredPeers='$beeMaxDiscoveredPeers'/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeeMaxDiscoveredPeers=.*/iotaBeeMaxDiscoveredPeers='$iotaBeeMaxDiscoveredPeers'/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beeApiPublicRoutes" ]; then
-        sudo sed -i 's~^beeApiPublicRoutes=.*~beeApiPublicRoutes="/health,/api/v1/info,/api/v1/tips,/api/v1/messages,/api/v1/messages/:messageId,/api/v1/messages/:messageId/metadata,/api/v1/messages/:messageId/raw,/api/v1/messages/:messageId/children,/api/v1/outputs/:outputId,/api/v1/addresses/:address,/api/v1/addresses/ed25519/:address,/api/v1/addresses/:address/outputs,/api/v1/addresses/d25519/:address/outputs,/api/v1/receipts,/api/v1/receipts/:milestoneIndex,/api/v1/treasury,/api/v1/transactions/:transactionId/included-message,/api/v1/milestones/:milestoneIndex,/api/v1/milestones/:milestoneIndex/utxo-changes"~g' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeeApiPublicRoutes" ]; then
+        sudo sed -i 's~^iotaBeeApiPublicRoutes=.*~iotaBeeApiPublicRoutes="/health,/api/v1/info,/api/v1/tips,/api/v1/messages,/api/v1/messages/:messageId,/api/v1/messages/:messageId/metadata,/api/v1/messages/:messageId/raw,/api/v1/messages/:messageId/children,/api/v1/outputs/:outputId,/api/v1/addresses/:address,/api/v1/addresses/ed25519/:address,/api/v1/addresses/:address/outputs,/api/v1/addresses/d25519/:address/outputs,/api/v1/receipts,/api/v1/receipts/:milestoneIndex,/api/v1/treasury,/api/v1/transactions/:transactionId/included-message,/api/v1/milestones/:milestoneIndex,/api/v1/milestones/:milestoneIndex/utxo-changes"~g' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's~^beeApiPublicRoutes=.*~beeApiPublicRoutes="'$beeApiPublicRoutes'"~g' $swarmConfigs/bee.cfg
+        sudo sed -i 's~^iotaBeeApiPublicRoutes=.*~iotaBeeApiPublicRoutes="'$iotaBeeApiPublicRoutes'"~g' $swarmConfigs/iota-bee.cfg
     fi
 
     ####
     # BEE PEERS
-    if [ -z "$beePeer1" ]; then
-        sudo sed -i 's/^beePeer1=.*/beePeer1=""/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePeer1" ]; then
+        sudo sed -i 's/^iotaBeePeer1=.*/iotaBeePeer1=""/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's~^beePeer1=.*~beePeer1="'$beePeer1'"~g' $swarmConfigs/bee.cfg
+        sudo sed -i 's~^iotaBeePeer1=.*~iotaBeePeer1="'$iotaBeePeer1'"~g' $swarmConfigs/iota-bee.cfg
     fi
-    if [ -z "$beePeerAlias1" ]; then
-        sudo sed -i 's/^beePeerAlias1=.*/beePeerAlias1=""/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePeerAlias1" ]; then
+        sudo sed -i 's/^iotaBeePeerAlias1=.*/iotaBeePeerAlias1=""/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beePeerAlias1=.*/beePeerAlias1="'$beePeerAlias1'"/' $swarmConfigs/bee.cfg
-    fi
-    ####
-    if [ -z "$beePeer2" ]; then
-        sudo sed -i 's/^beePeer2=.*/beePeer2=""/' $swarmConfigs/bee.cfg
-    else
-        sudo sed -i 's~^beePeer2=.*~beePeer2="'$beePeer2'"~g' $swarmConfigs/bee.cfg
-    fi
-    if [ -z "$beePeerAlias2" ]; then
-        sudo sed -i 's/^beePeerAlias2=.*/beePeerAlias2=""/' $swarmConfigs/bee.cfg
-    else
-        sudo sed -i 's/^beePeerAlias2=.*/beePeerAlias2="'$beePeerAlias2'"/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeePeerAlias1=.*/iotaBeePeerAlias1="'$iotaBeePeerAlias1'"/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beePeer3" ]; then
-        sudo sed -i 's/^beePeer3=.*/beePeer3=""/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePeer2" ]; then
+        sudo sed -i 's/^iotaBeePeer2=.*/iotaBeePeer2=""/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's~^beePeer3=.*~beePeer3="'$beePeer3'"~g' $swarmConfigs/bee.cfg
+        sudo sed -i 's~^iotaBeePeer2=.*~iotaBeePeer2="'$iotaBeePeer2'"~g' $swarmConfigs/iota-bee.cfg
     fi
-    if [ -z "$beePeerAlias3" ]; then
-        sudo sed -i 's/^beePeerAlias3=.*/beePeerAlias3=""/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePeerAlias2" ]; then
+        sudo sed -i 's/^iotaBeePeerAlias2=.*/iotaBeePeerAlias2=""/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beePeerAlias3=.*/beePeerAlias3="'$beePeerAlias3'"/' $swarmConfigs/bee.cfg
-    fi
-    ####
-    if [ -z "$beePeer4" ]; then
-        sudo sed -i 's/^beePeer4=.*/beePeer4=""/' $swarmConfigs/bee.cfg
-    else
-        sudo sed -i 's~^beePeer4=.*~beePeer4="'$beePeer4'"~g' $swarmConfigs/bee.cfg
-    fi
-    if [ -z "$beePeerAlias4" ]; then
-        sudo sed -i 's/^beePeerAlias4=.*/beePeerAlias4=""/' $swarmConfigs/bee.cfg
-    else
-        sudo sed -i 's/^beePeerAlias4=.*/beePeerAlias4="'$beePeerAlias4'"/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeePeerAlias2=.*/iotaBeePeerAlias2="'$iotaBeePeerAlias2'"/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beePeer5" ]; then
-        sudo sed -i 's/^beePeer5=.*/beePeer5=""/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePeer3" ]; then
+        sudo sed -i 's/^iotaBeePeer3=.*/iotaBeePeer3=""/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's~^beePeer5=.*~beePeer5="'$beePeer5'"~g' $swarmConfigs/bee.cfg
+        sudo sed -i 's~^iotaBeePeer3=.*~iotaBeePeer3="'$iotaBeePeer3'"~g' $swarmConfigs/iota-bee.cfg
     fi
-    if [ -z "$beePeerAlias5" ]; then
-        sudo sed -i 's/^beePeerAlias5=.*/beePeerAlias5=""/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePeerAlias3" ]; then
+        sudo sed -i 's/^iotaBeePeerAlias3=.*/iotaBeePeerAlias3=""/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beePeerAlias5=.*/beePeerAlias5="'$beePeerAlias5'"/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeePeerAlias3=.*/iotaBeePeerAlias3="'$iotaBeePeerAlias3'"/' $swarmConfigs/iota-bee.cfg
     fi
     ####
-    if [ -z "$beePeer6" ]; then
-        sudo sed -i 's/^beePeer6=.*/beePeer6=""/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePeer4" ]; then
+        sudo sed -i 's/^iotaBeePeer4=.*/iotaBeePeer4=""/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's~^beePeer6=.*~beePeer6="'$beePeer6'"~g' $swarmConfigs/bee.cfg
+        sudo sed -i 's~^iotaBeePeer4=.*~iotaBeePeer4="'$iotaBeePeer4'"~g' $swarmConfigs/iota-bee.cfg
     fi
-    if [ -z "$beePeerAlias6" ]; then
-        sudo sed -i 's/^beePeerAlias6=.*/beePeerAlias6=""/' $swarmConfigs/bee.cfg
+    if [ -z "$iotaBeePeerAlias4" ]; then
+        sudo sed -i 's/^iotaBeePeerAlias4=.*/iotaBeePeerAlias4=""/' $swarmConfigs/iota-bee.cfg
     else
-        sudo sed -i 's/^beePeerAlias6=.*/beePeerAlias6="'$beePeerAlias6'"/' $swarmConfigs/bee.cfg
+        sudo sed -i 's/^iotaBeePeerAlias4=.*/iotaBeePeerAlias4="'$iotaBeePeerAlias4'"/' $swarmConfigs/iota-bee.cfg
+    fi
+    ####
+    if [ -z "$iotaBeePeer5" ]; then
+        sudo sed -i 's/^iotaBeePeer5=.*/iotaBeePeer5=""/' $swarmConfigs/iota-bee.cfg
+    else
+        sudo sed -i 's~^iotaBeePeer5=.*~iotaBeePeer5="'$iotaBeePeer5'"~g' $swarmConfigs/iota-bee.cfg
+    fi
+    if [ -z "$iotaBeePeerAlias5" ]; then
+        sudo sed -i 's/^iotaBeePeerAlias5=.*/iotaBeePeerAlias5=""/' $swarmConfigs/iota-bee.cfg
+    else
+        sudo sed -i 's/^iotaBeePeerAlias5=.*/iotaBeePeerAlias5="'$iotaBeePeerAlias5'"/' $swarmConfigs/iota-bee.cfg
+    fi
+    ####
+    if [ -z "$iotaBeePeer6" ]; then
+        sudo sed -i 's/^iotaBeePeer6=.*/iotaBeePeer6=""/' $swarmConfigs/iota-bee.cfg
+    else
+        sudo sed -i 's~^iotaBeePeer6=.*~iotaBeePeer6="'$iotaBeePeer6'"~g' $swarmConfigs/iota-bee.cfg
+    fi
+    if [ -z "$iotaBeePeerAlias6" ]; then
+        sudo sed -i 's/^iotaBeePeerAlias6=.*/iotaBeePeerAlias6=""/' $swarmConfigs/iota-bee.cfg
+    else
+        sudo sed -i 's/^iotaBeePeerAlias6=.*/iotaBeePeerAlias6="'$iotaBeePeerAlias6'"/' $swarmConfigs/iota-bee.cfg
     fi
 fi
 
 ####################################################################################################################################
 
-if [ -f "$swarmTmp/bee-shimmer.cfg" ]; then
-    source $swarmTmp/bee-shimmer.cfg
+if [ -f "$swarmTmp/shimmer-bee.cfg" ]; then
+    source $swarmTmp/shimmer-bee.cfg
 
 
-    if [ -z "$beeShimmerRelease" ]; then
-        sudo sed -i 's/^beeShimmerRelease=.*/beeShimmerRelease="alpha"/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeRelease" ]; then
+        sudo sed -i 's/^shimmerBeeRelease=.*/shimmerBeeRelease="alpha"/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerRelease=.*/beeShimmerRelease="'$beeShimmerRelease'"/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeeRelease=.*/shimmerBeeRelease="'$shimmerBeeRelease'"/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerNetwork" ]; then
-        sudo sed -i 's/^beeShimmerNetwork=.*/beeShimmerNetwork="alphanet"/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeNetwork" ]; then
+        sudo sed -i 's/^shimmerBeeNetwork=.*/shimmerBeeNetwork="alphanet"/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerNetwork=.*/beeShimmerNetwork="'$beeShimmerNetwork'"/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeeNetwork=.*/shimmerBeeNetwork="'$shimmerBeeNetwork'"/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerAlias" ]; then
-        sudo sed -i 's~^beeShimmerAlias=.*~beeShimmerAlias="Bee"~' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeAlias" ]; then
+        sudo sed -i 's~^shimmerBeeAlias=.*~shimmerBeeAlias="Bee"~' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i "s~^beeShimmerAlias=.*~beeShimmerAlias=\"$beeShimmerAlias\"~g" $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i "s~^shimmerBeeAlias=.*~shimmerBeeAlias=\"$shimmerBeeAlias\"~g" $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerGossipPort" ]; then
-        sudo sed -i 's/^beeShimmerGossipPort=.*/beeShimmerGossipPort=15601/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeGossipPort" ]; then
+        sudo sed -i 's/^shimmerBeeGossipPort=.*/shimmerBeeGossipPort=15601/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerGossipPort=.*/beeShimmerGossipPort='$beeShimmerGossipPort'/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeeGossipPort=.*/shimmerBeeGossipPort='$shimmerBeeGossipPort'/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerIdentity" ]; then
-        sudo sed -i 's~beeShimmerIdentity=.*~beeShimmerIdentity=""~' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeIdentity" ]; then
+        sudo sed -i 's~shimmerBeeIdentity=.*~shimmerBeeIdentity=""~' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's~^beeShimmerIdentity=.*~beeShimmerIdentity="'$beeShimmerIdentity'"~' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's~^shimmerBeeIdentity=.*~shimmerBeeIdentity="'$shimmerBeeIdentity'"~' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerMaxUnknownPeers" ]; then
-        sudo sed -i 's/^beeShimmerMaxUnknownPeers=.*/beeShimmerMaxUnknownPeers=0/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeMaxUnknownPeers" ]; then
+        sudo sed -i 's/^shimmerBeeMaxUnknownPeers=.*/shimmerBeeMaxUnknownPeers=0/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerMaxUnknownPeers=.*/beeShimmerMaxUnknownPeers='$beeShimmerMaxUnknownPeers'/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeeMaxUnknownPeers=.*/shimmerBeeMaxUnknownPeers='$shimmerBeeMaxUnknownPeers'/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerPasswordHash" ]; then
-        sudo sed -i 's/^beeShimmerPasswordHash=.*/beeShimmerPasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePasswordHash" ]; then
+        sudo sed -i 's/^shimmerBeePasswordHash=.*/shimmerBeePasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerPasswordHash=.*/beeShimmerPasswordHash="'$beeShimmerPasswordHash'"/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeePasswordHash=.*/shimmerBeePasswordHash="'$shimmerBeePasswordHash'"/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerPasswordSalt" ]; then
-        sudo sed -i 's/^beeShimmerPasswordSalt=.*/beeShimmerPasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePasswordSalt" ]; then
+        sudo sed -i 's/^shimmerBeePasswordSalt=.*/shimmerBeePasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerPasswordSalt=.*/beeShimmerPasswordSalt="'$beeShimmerPasswordSalt'"/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeePasswordSalt=.*/shimmerBeePasswordSalt="'$shimmerBeePasswordSalt'"/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerPowEnabled" ]; then
-        sudo sed -i 's/^beeShimmerPowEnabled=.*/beeShimmerPowEnabled=false/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePowEnabled" ]; then
+        sudo sed -i 's/^shimmerBeePowEnabled=.*/shimmerBeePowEnabled=false/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerPowEnabled=.*/beeShimmerPowEnabled='$beeShimmerPowEnabled'/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeePowEnabled=.*/shimmerBeePowEnabled='$shimmerBeePowEnabled'/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerPruningDelay" ]; then
-        sudo sed -i 's/^beeShimmerPruningDelay=.*/beeShimmerPruningDelay=60480/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePruningDelay" ]; then
+        sudo sed -i 's/^shimmerBeePruningDelay=.*/shimmerBeePruningDelay=60480/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerPruningDelay=.*/beeShimmerPruningDelay='$beeShimmerPruningDelay'/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeePruningDelay=.*/shimmerBeePruningDelay='$shimmerBeePruningDelay'/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerPruningEnabled" ]; then
-        sudo sed -i 's/^beeShimmerPruningEnabled=.*/beeShimmerPruningEnabled=true/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePruningEnabled" ]; then
+        sudo sed -i 's/^shimmerBeePruningEnabled=.*/shimmerBeePruningEnabled=true/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerPruningEnabled=.*/beeShimmerPruningEnabled='$beeShimmerPruningEnabled'/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeePruningEnabled=.*/shimmerBeePruningEnabled='$shimmerBeePruningEnabled'/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerSnapshotInterval" ]; then
-        sudo sed -i 's/^beeShimmerSnapshotInterval=.*/beeShimmerSnapshotInterval=360/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeSnapshotInterval" ]; then
+        sudo sed -i 's/^shimmerBeeSnapshotInterval=.*/shimmerBeeSnapshotInterval=360/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerSnapshotInterval=.*/beeShimmerSnapshotInterval='$beeShimmerSnapshotInterval'/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeeSnapshotInterval=.*/shimmerBeeSnapshotInterval='$shimmerBeeSnapshotInterval'/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerUsername" ]; then
-        sudo sed -i 's/^beeShimmerUsername=.*/beeShimmerUsername="admin"/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeUsername" ]; then
+        sudo sed -i 's/^shimmerBeeUsername=.*/shimmerBeeUsername="admin"/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerUsername=.*/beeShimmerUsername="'$beeShimmerUsername'"/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeeUsername=.*/shimmerBeeUsername="'$shimmerBeeUsername'"/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
     if [ -z "$beShimmereAutopeeringEnabled" ]; then
-        sudo sed -i 's/^beeShimmerAutopeeringEnabled=.*/beeShimmerAutopeeringEnabled=false/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeeAutopeeringEnabled=.*/shimmerBeeAutopeeringEnabled=false/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerAutopeeringEnabled=.*/beeShimmerAutopeeringEnabled='$beeShimmerAutopeeringEnabled'/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeeAutopeeringEnabled=.*/shimmerBeeAutopeeringEnabled='$shimmerBeeAutopeeringEnabled'/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerAutopeeringPort" ]; then
-        sudo sed -i 's/^beeShimmerAutopeeringPort=.*/beeShimmerAutopeeringPort=14676/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeAutopeeringPort" ]; then
+        sudo sed -i 's/^shimmerBeeAutopeeringPort=.*/shimmerBeeAutopeeringPort=14676/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerAutopeeringPort=.*/beeShimmerAutopeeringPort='$beeShimmerAutopeeringPort'/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeeAutopeeringPort=.*/shimmerBeeAutopeeringPort='$shimmerBeeAutopeeringPort'/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerRunAsEntryNode" ]; then
-        sudo sed -i 's/^beeShimmerRunAsEntryNode=.*/beeShimmerRunAsEntryNode=false/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeRunAsEntryNode" ]; then
+        sudo sed -i 's/^shimmerBeeRunAsEntryNode=.*/shimmerBeeRunAsEntryNode=false/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerRunAsEntryNode=.*/beeShimmerRunAsEntryNode='$beeShimmerRunAsEntryNode'/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeeRunAsEntryNode=.*/shimmerBeeRunAsEntryNode='$shimmerBeeRunAsEntryNode'/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerMaxDiscoveredPeers" ]; then
-        sudo sed -i 's/^beeShimmerMaxDiscoveredPeers=.*/beeShimmerMaxDiscoveredPeers=6/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeMaxDiscoveredPeers" ]; then
+        sudo sed -i 's/^shimmerBeeMaxDiscoveredPeers=.*/shimmerBeeMaxDiscoveredPeers=6/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerMaxDiscoveredPeers=.*/beeShimmerMaxDiscoveredPeers='$beeShimmerMaxDiscoveredPeers'/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeeMaxDiscoveredPeers=.*/shimmerBeeMaxDiscoveredPeers='$shimmerBeeMaxDiscoveredPeers'/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerApiPublicRoutes" ]; then
-        sudo sed -i 's~^beeShimmerApiPublicRoutes=.*~beeShimmerApiPublicRoutes="/health,/api/v2/info,/api/v2/tips,/api/v2/messages,/api/v2/messages/:messageId,/api/v2/messages/:messageId/metadata,/api/v2/messages/:messageId/raw,/api/v2/messages/:messageId/children,/api/v2/outputs/:outputId,/api/v2/addresses/:address,/api/v2/addresses/ed25519/:address,/api/v2/addresses/:address/outputs,/api/v2/addresses/ed25519/:address/outputs,/api/v2/receipts,/api/v2/receipts/:milestoneIndex,/api/v2/treasury,/api/v2/transactions/:transactionId/included-message,/api/v2/milestones/milestoneIndex,/api/v2/milestones/:milestoneIndex/utxo-changes"~g' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeeApiPublicRoutes" ]; then
+        sudo sed -i 's~^shimmerBeeApiPublicRoutes=.*~shimmerBeeApiPublicRoutes="/health,/api/v2/info,/api/v2/tips,/api/v2/messages,/api/v2/messages/:messageId,/api/v2/messages/:messageId/metadata,/api/v2/messages/:messageId/raw,/api/v2/messages/:messageId/children,/api/v2/outputs/:outputId,/api/v2/addresses/:address,/api/v2/addresses/ed25519/:address,/api/v2/addresses/:address/outputs,/api/v2/addresses/ed25519/:address/outputs,/api/v2/receipts,/api/v2/receipts/:milestoneIndex,/api/v2/treasury,/api/v2/transactions/:transactionId/included-message,/api/v2/milestones/milestoneIndex,/api/v2/milestones/:milestoneIndex/utxo-changes"~g' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's~^beeShimmerApiPublicRoutes=.*~beeShimmerApiPublicRoutes="'$beeShimmerApiPublicRoutes'"~g' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's~^shimmerBeeApiPublicRoutes=.*~shimmerBeeApiPublicRoutes="'$shimmerBeeApiPublicRoutes'"~g' $swarmConfigs/shimmer-bee.cfg
     fi
 
     ####
     # BEE PEERS
-    if [ -z "$beeShimmerPeer1" ]; then
-        sudo sed -i 's/^beeShimmerPeer1=.*/beeShimmerPeer1=""/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePeer1" ]; then
+        sudo sed -i 's/^shimmerBeePeer1=.*/shimmerBeePeer1=""/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's~^beeShimmerPeer1=.*~beeShimmerPeer1="'$beeShimmerPeer1'"~g' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's~^shimmerBeePeer1=.*~shimmerBeePeer1="'$shimmerBeePeer1'"~g' $swarmConfigs/shimmer-bee.cfg
     fi
-    if [ -z "$beeShimmerPeerAlias1" ]; then
-        sudo sed -i 's/^beeShimmerPeerAlias1=.*/beeShimmerPeerAlias1=""/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePeerAlias1" ]; then
+        sudo sed -i 's/^shimmerBeePeerAlias1=.*/shimmerBeePeerAlias1=""/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerPeerAlias1=.*/beeShimmerPeerAlias1="'$beeShimmerPeerAlias1'"/' $swarmConfigs/bee-shimmer.cfg
-    fi
-    ####
-    if [ -z "$beeShimmerPeer2" ]; then
-        sudo sed -i 's/^beeShimmerPeer2=.*/beeShimmerPeer2=""/' $swarmConfigs/bee-shimmer.cfg
-    else
-        sudo sed -i 's~^beeShimmerPeer2=.*~beeShimmerPeer2="'$beeShimmerPeer2'"~g' $swarmConfigs/bee-shimmer.cfg
-    fi
-    if [ -z "$beeShimmerPeerAlias2" ]; then
-        sudo sed -i 's/^beeShimmerPeerAlias2=.*/beeShimmerPeerAlias2=""/' $swarmConfigs/bee-shimmer.cfg
-    else
-        sudo sed -i 's/^beeShimmerPeerAlias2=.*/beeShimmerPeerAlias2="'$beeShimmerPeerAlias2'"/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeePeerAlias1=.*/shimmerBeePeerAlias1="'$shimmerBeePeerAlias1'"/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerPeer3" ]; then
-        sudo sed -i 's/^beeShimmerPeer3=.*/beeShimmerPeer3=""/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePeer2" ]; then
+        sudo sed -i 's/^shimmerBeePeer2=.*/shimmerBeePeer2=""/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's~^beeShimmerPeer3=.*~beeShimmerPeer3="'$beeShimmerPeer3'"~g' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's~^shimmerBeePeer2=.*~shimmerBeePeer2="'$shimmerBeePeer2'"~g' $swarmConfigs/shimmer-bee.cfg
     fi
-    if [ -z "$beeShimmerPeerAlias3" ]; then
-        sudo sed -i 's/^beeShimmerPeerAlias3=.*/beeShimmerPeerAlias3=""/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePeerAlias2" ]; then
+        sudo sed -i 's/^shimmerBeePeerAlias2=.*/shimmerBeePeerAlias2=""/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerPeerAlias3=.*/beeShimmerPeerAlias3="'$beeShimmerPeerAlias3'"/' $swarmConfigs/bee-shimmer.cfg
-    fi
-    ####
-    if [ -z "$beeShimmerPeer4" ]; then
-        sudo sed -i 's/^beeShimmerPeer4=.*/beeShimmerPeer4=""/' $swarmConfigs/bee-shimmer.cfg
-    else
-        sudo sed -i 's~^beeShimmerPeer4=.*~beeShimmerPeer4="'$beeShimmerPeer4'"~g' $swarmConfigs/bee-shimmer.cfg
-    fi
-    if [ -z "$beeShimmerPeerAlias4" ]; then
-        sudo sed -i 's/^beeShimmerPeerAlias4=.*/beeShimmerPeerAlias4=""/' $swarmConfigs/bee-shimmer.cfg
-    else
-        sudo sed -i 's/^beeShimmerPeerAlias4=.*/beeShimmerPeerAlias4="'$beeShimmerPeerAlias4'"/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeePeerAlias2=.*/shimmerBeePeerAlias2="'$shimmerBeePeerAlias2'"/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerPeer5" ]; then
-        sudo sed -i 's/^beeShimmerPeer5=.*/beeShimmerPeer5=""/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePeer3" ]; then
+        sudo sed -i 's/^shimmerBeePeer3=.*/shimmerBeePeer3=""/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's~^beeShimmerPeer5=.*~beeShimmerPeer5="'$beeShimmerPeer5'"~g' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's~^shimmerBeePeer3=.*~shimmerBeePeer3="'$shimmerBeePeer3'"~g' $swarmConfigs/shimmer-bee.cfg
     fi
-    if [ -z "$beeShimmerPeerAlias5" ]; then
-        sudo sed -i 's/^beeShimmerPeerAlias5=.*/beeShimmerPeerAlias5=""/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePeerAlias3" ]; then
+        sudo sed -i 's/^shimmerBeePeerAlias3=.*/shimmerBeePeerAlias3=""/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerPeerAlias5=.*/beeShimmerPeerAlias5="'$beeShimmerPeerAlias5'"/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeePeerAlias3=.*/shimmerBeePeerAlias3="'$shimmerBeePeerAlias3'"/' $swarmConfigs/shimmer-bee.cfg
     fi
     ####
-    if [ -z "$beeShimmerPeer6" ]; then
-        sudo sed -i 's/^beeShimmerPeer6=.*/beeShimmerPeer6=""/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePeer4" ]; then
+        sudo sed -i 's/^shimmerBeePeer4=.*/shimmerBeePeer4=""/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's~^beeShimmerPeer6=.*~beeShimmerPeer6="'$beeShimmerPeer6'"~g' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's~^shimmerBeePeer4=.*~shimmerBeePeer4="'$shimmerBeePeer4'"~g' $swarmConfigs/shimmer-bee.cfg
     fi
-    if [ -z "$beeShimmerPeerAlias6" ]; then
-        sudo sed -i 's/^beeShimmerPeerAlias6=.*/beeShimmerPeerAlias6=""/' $swarmConfigs/bee-shimmer.cfg
+    if [ -z "$shimmerBeePeerAlias4" ]; then
+        sudo sed -i 's/^shimmerBeePeerAlias4=.*/shimmerBeePeerAlias4=""/' $swarmConfigs/shimmer-bee.cfg
     else
-        sudo sed -i 's/^beeShimmerPeerAlias6=.*/beeShimmerPeerAlias6="'$beeShimmerPeerAlias6'"/' $swarmConfigs/bee-shimmer.cfg
+        sudo sed -i 's/^shimmerBeePeerAlias4=.*/shimmerBeePeerAlias4="'$shimmerBeePeerAlias4'"/' $swarmConfigs/shimmer-bee.cfg
+    fi
+    ####
+    if [ -z "$shimmerBeePeer5" ]; then
+        sudo sed -i 's/^shimmerBeePeer5=.*/shimmerBeePeer5=""/' $swarmConfigs/shimmer-bee.cfg
+    else
+        sudo sed -i 's~^shimmerBeePeer5=.*~shimmerBeePeer5="'$shimmerBeePeer5'"~g' $swarmConfigs/shimmer-bee.cfg
+    fi
+    if [ -z "$shimmerBeePeerAlias5" ]; then
+        sudo sed -i 's/^shimmerBeePeerAlias5=.*/shimmerBeePeerAlias5=""/' $swarmConfigs/shimmer-bee.cfg
+    else
+        sudo sed -i 's/^shimmerBeePeerAlias5=.*/shimmerBeePeerAlias5="'$shimmerBeePeerAlias5'"/' $swarmConfigs/shimmer-bee.cfg
+    fi
+    ####
+    if [ -z "$shimmerBeePeer6" ]; then
+        sudo sed -i 's/^shimmerBeePeer6=.*/shimmerBeePeer6=""/' $swarmConfigs/shimmer-bee.cfg
+    else
+        sudo sed -i 's~^shimmerBeePeer6=.*~shimmerBeePeer6="'$shimmerBeePeer6'"~g' $swarmConfigs/shimmer-bee.cfg
+    fi
+    if [ -z "$shimmerBeePeerAlias6" ]; then
+        sudo sed -i 's/^shimmerBeePeerAlias6=.*/shimmerBeePeerAlias6=""/' $swarmConfigs/shimmer-bee.cfg
+    else
+        sudo sed -i 's/^shimmerBeePeerAlias6=.*/shimmerBeePeerAlias6="'$shimmerBeePeerAlias6'"/' $swarmConfigs/shimmer-bee.cfg
     fi
 fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmp/iota-inx-dashboard.cfg" ]; then
+    source $swarmTmp/iota-inx-dashboard.cfg
+
+    if [ -z "$iotaInxDashboardRelease" ]; then
+        sudo sed -i 's~^iotaInxDashboardRelease=.*~iotaInxDashboardRelease="stable"~g' $swarmConfigs/iota-inx-dashboard
+    else
+        sudo sed -i 's~^iotaInxDashboardRelease=.*~iotaInxDashboardRelease="'$iotaInxDashboardRelease'"~g' $swarmConfigs/iota-inx-dashboard
+    fi
+
+    if [ -z "$iotaInxDashboardUpdateCheck" ]; then
+        sudo sed -i 's~^iotaInxDashboardUpdateCheck=.*~iotaInxDashboardUpdateCheck=true~g' $swarmConfigs/iota-inx-dashboard
+    else
+        sudo sed -i 's~^iotaInxDashboardUpdateCheck=.*~iotaInxDashboardUpdateCheck="'$iotaInxDashboardUpdateCheck'"~g' $swarmConfigs/iota-inx-dashboard
+    fi
+
+    if [ -z "$iotaInxDashboardEnablePlugins" ]; then
+        sudo sed -i 's~^iotaInxDashboardEnablePlugins=.*~iotaInxDashboardEnablePlugins=""~g' $swarmConfigs/iota-inx-dashboard
+    else
+        sudo sed -i 's~^iotaInxDashboardEnablePlugins=.*~iotaInxDashboardEnablePlugins="'$iotaInxDashboardEnablePlugins'"~g' $swarmConfigs/iota-inx-dashboard
+    fi
+
+    if [ -z "$iotaInxDashboardDisablePlugins" ]; then
+        sudo sed -i 's~^iotaInxDashboardDisablePlugins=.*~iotaInxDashboardDisablePlugins=""~g' $swarmConfigs/iota-inx-indexer.cfg
+    else
+        sudo sed -i 's~^iotaInxDashboardDisablePlugins=.*~iotaInxDashboardDisablePlugins="'$iotaInxDashboardDisablePlugins'"~g' $swarmConfigs/iota-inx-dashboard
+    fi
+
+    if [ -z "$iotaInxDashboardInxAddress" ]; then
+        sudo sed -i 's~^iotaInxDashboardInxAddress=.*~iotaInxDashboardInxAddress="localhost:9029"~g' $swarmConfigs/iota-inx-dashboard
+    else
+        sudo sed -i 's~^iotaInxDashboardInxAddress=.*~iotaInxDashboardInxAddress="'$iotaInxDashboardInxAddress'"~g' $swarmConfigs/iota-inx-dashboard
+    fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmp/iota-inx-indexer.cfg" ]; then
+    source $swarmTmp/iota-inx-indexer.cfg
+
+    if [ -z "$iotaInxIndexerRelease" ]; then
+        sudo sed -i 's~^iotaInxIndexerRelease=.*~iotaInxIndexerRelease="stable"~g' $swarmConfigs/iota-inx-indexer.cfg
+    else
+        sudo sed -i 's~^iotaInxIndexerRelease=.*~iotaInxIndexerRelease="'$iotaInxIndexerRelease'"~g' $swarmConfigs/iota-inx-indexer.cfg
+    fi
+
+    if [ -z "$iotaInxIndexerUpdateCheck" ]; then
+        sudo sed -i 's~^iotaInxIndexerUpdateCheck=.*~iotaInxIndexerUpdateCheck=true~g' $swarmConfigs/iota-inx-indexer.cfg
+    else
+        sudo sed -i 's~^iotaInxIndexerUpdateCheck=.*~iotaInxIndexerUpdateCheck="'$iotaInxIndexerUpdateCheck'"~g' $swarmConfigs/iota-inx-indexer.cfg
+    fi
+
+    if [ -z "$iotaInxIndexerEnablePlugins" ]; then
+        sudo sed -i 's~^iotaInxIndexerEnablePlugins=.*~iotaInxIndexerEnablePlugins=""~g' $swarmConfigs/iota-inx-indexer.cfg
+    else
+        sudo sed -i 's~^iotaInxIndexerEnablePlugins=.*~iotaInxIndexerEnablePlugins="'$iotaInxIndexerEnablePlugins'"~g' $swarmConfigs/iota-inx-indexer.cfg
+    fi
+
+    if [ -z "$iotaInxIndexerDisablePlugins" ]; then
+        sudo sed -i 's~^iotaInxIndexerDisablePlugins=.*~iotaInxIndexerDisablePlugins=""~g' $swarmConfigs/iota-inx-indexer.cfg
+    else
+        sudo sed -i 's~^iotaInxIndexerDisablePlugins=.*~iotaInxIndexerDisablePlugins="'$iotaInxIndexerDisablePlugins'"~g' $swarmConfigs/iota-inx-indexer.cfg
+    fi
+
+    if [ -z "$iotaInxIndexerInxAddress" ]; then
+        sudo sed -i 's~^iotaInxIndexerInxAddress=.*~iotaInxIndexerInxAddress="localhost:9029"~g' $swarmConfigs/iota-inx-indexer.cfg
+    else
+        sudo sed -i 's~^iotaInxIndexerInxAddress=.*~iotaInxIndexerInxAddress="'$iotaInxIndexerInxAddress'"~g' $swarmConfigs/iota-inx-indexer.cfg
+    fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmp/iota-inx-mqtt.cfg" ]; then
+    source $swarmTmp/iota-inx-mqtt.cfg
+
+    if [ -z "$iotaInxMqttRelease" ]; then
+        sudo sed -i 's~^iotaInxMqttRelease=.*~iotaInxMqttRelease="stable"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttRelease=.*~iotaInxMqttRelease="'$iotaInxMqttRelease'"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttUpdateCheck" ]; then
+        sudo sed -i 's~^iotaInxMqttUpdateCheck=.*~iotaInxMqttUpdateCheck=true~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttUpdateCheck=.*~iotaInxMqttUpdateCheck="'$iotaInxMqttUpdateCheck'"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttEnablePlugins" ]; then
+        sudo sed -i 's~^iotaInxMqttEnablePlugins=.*~iotaInxMqttEnablePlugins=""~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttEnablePlugins=.*~iotaInxMqttEnablePlugins="'$iotaInxMqttEnablePlugins'"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttDisablePlugins" ]; then
+        sudo sed -i 's~^iotaInxMqttDisablePlugins=.*~iotaInxMqttDisablePlugins=""~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttDisablePlugins=.*~iotaInxMqttDisablePlugins="'$iotaInxMqttDisablePlugins'"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttInxAddress" ]; then
+        sudo sed -i 's~^iotaInxMqttInxAddress=.*~iotaInxMqttInxAddress="localhost:9029"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttInxAddress=.*~iotaInxMqttInxAddress="'$iotaInxMqttInxAddress'"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttWebsocketEnabled" ]; then
+        sudo sed -i 's~^iotaInxMqttWebsocketEnabled=.*~iotaInxMqttWebsocketEnabled=true~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttWebsocketEnabled=.*~iotaInxMqttWebsocketEnabled='$iotaInxMqttWebsocketEnabled'~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttWebsocketAddress" ]; then
+        sudo sed -i 's~^iotaInxMqttWebsocketAddress=.*~iotaInxMqttWebsocketAddress="localhost:1888"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttWebsocketAddress=.*~iotaInxMqttWebsocketAddress="'$iotaInxMqttWebsocketAddress'"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttTcpEnabled" ]; then
+        sudo sed -i 's~^iotaInxMqttTcpEnabled=.*~iotaInxMqttTcpEnabled=true~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttTcpEnabled=.*~iotaInxMqttTcpEnabled='$iotaInxMqttTcpEnabled'~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttTcpAddress" ]; then
+        sudo sed -i 's~^iotaInxMqttTcpAddress=.*~iotaInxMqttTcpAddress="localhost:1883"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttTcpAddress=.*~iotaInxMqttTcpAddress="'$iotaInxMqttTcpAddress'"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmp/iota-inx-participation.cfg" ]; then
+    source $swarmTmp/iota-inx-participation.cfg
+
+    if [ -z "$iotaInxParticipationRelease" ]; then
+        sudo sed -i 's~^iotaInxParticipationRelease=.*~iotaInxParticipationRelease="stable"~g' $swarmConfigs/iota-inx-participation.cfg
+    else
+        sudo sed -i 's~^iotaInxParticipationRelease=.*~iotaInxParticipationRelease="'$iotaInxParticipationRelease'"~g' $swarmConfigs/iota-inx-participation.cfg
+    fi
+
+    if [ -z "$iotaInxParticipationUpdateCheck" ]; then
+        sudo sed -i 's~^iotaInxParticipationUpdateCheck=.*~iotaInxParticipationUpdateCheck=true~g' $swarmConfigs/iota-inx-participation.cfg
+    else
+        sudo sed -i 's~^iotaInxParticipationUpdateCheck=.*~iotaInxParticipationUpdateCheck="'$iotaInxParticipationUpdateCheck'"~g' $swarmConfigs/iota-inx-participation.cfg
+    fi
+
+    if [ -z "$iotaInxParticipationEnablePlugins" ]; then
+        sudo sed -i 's~^iotaInxParticipationEnablePlugins=.*~iotaInxParticipationEnablePlugins=""~g' $swarmConfigs/iota-inx-participation.cfg
+    else
+        sudo sed -i 's~^iotaInxParticipationEnablePlugins=.*~iotaInxParticipationEnablePlugins="'$iotaInxParticipationEnablePlugins'"~g' $swarmConfigs/iota-inx-participation.cfg
+    fi
+
+    if [ -z "$iotaInxParticipationDisablePlugins" ]; then
+        sudo sed -i 's~^iotaInxParticipationDisablePlugins=.*~iotaInxParticipationDisablePlugins=""~g' $swarmConfigs/iota-inx-participation.cfg
+    else
+        sudo sed -i 's~^iotaInxParticipationDisablePlugins=.*~iotaInxParticipationDisablePlugins="'$iotaInxParticipationDisablePlugins'"~g' $swarmConfigs/iota-inx-participation.cfg
+    fi
+
+    if [ -z "$iotaInxParticipationInxAddress" ]; then
+        sudo sed -i 's~^iotaInxParticipationInxAddress=.*~iotaInxParticipationInxAddress="localhost:9029"~g' $swarmConfigs/iota-inx-participation.cfg
+    else
+        sudo sed -i 's~^iotaInxParticipationInxAddress=.*~iotaInxParticipationInxAddress="'$iotaInxParticipationInxAddress'"~g' $swarmConfigs/iota-inx-participation.cfg
+    fi
+fi
+
+####################################################################################################################################
+# SHIMMER
+
+if [ -f "$swarmTmp/shimmer-inx-dashboard.cfg" ]; then
+    source $swarmTmp/shimmer-inx-dashboard.cfg
+
+    if [ -z "$shimmerInxDashboardRelease" ]; then
+        sudo sed -i 's~^shimmerInxDashboardRelease=.*~shimmerInxDashboardRelease="stable"~g' $swarmConfigs/shimmer-inx-dashboard
+    else
+        sudo sed -i 's~^shimmerInxDashboardRelease=.*~shimmerInxDashboardRelease="'$shimmerInxDashboardRelease'"~g' $swarmConfigs/shimmer-inx-dashboard
+    fi
+
+    if [ -z "$shimmerInxDashboardUpdateCheck" ]; then
+        sudo sed -i 's~^shimmerInxDashboardUpdateCheck=.*~shimmerInxDashboardUpdateCheck=true~g' $swarmConfigs/shimmer-inx-dashboard
+    else
+        sudo sed -i 's~^shimmerInxDashboardUpdateCheck=.*~shimmerInxDashboardUpdateCheck="'$shimmerInxDashboardUpdateCheck'"~g' $swarmConfigs/shimmer-inx-dashboard
+    fi
+
+    if [ -z "$shimmerInxDashboardEnablePlugins" ]; then
+        sudo sed -i 's~^shimmerInxDashboardEnablePlugins=.*~shimmerInxDashboardEnablePlugins=""~g' $swarmConfigs/shimmer-inx-dashboard
+    else
+        sudo sed -i 's~^shimmerInxDashboardEnablePlugins=.*~shimmerInxDashboardEnablePlugins="'$shimmerInxDashboardEnablePlugins'"~g' $swarmConfigs/shimmer-inx-dashboard
+    fi
+
+    if [ -z "$shimmerInxDashboardDisablePlugins" ]; then
+        sudo sed -i 's~^shimmerInxDashboardDisablePlugins=.*~shimmerInxDashboardDisablePlugins=""~g' $swarmConfigs/shimmer-inx-indexer.cfg
+    else
+        sudo sed -i 's~^shimmerInxDashboardDisablePlugins=.*~shimmerInxDashboardDisablePlugins="'$shimmerInxDashboardDisablePlugins'"~g' $swarmConfigs/shimmer-inx-dashboard
+    fi
+
+    if [ -z "$shimmerInxDashboardInxAddress" ]; then
+        sudo sed -i 's~^shimmerInxDashboardInxAddress=.*~shimmerInxDashboardInxAddress="localhost:9029"~g' $swarmConfigs/shimmer-inx-dashboard
+    else
+        sudo sed -i 's~^shimmerInxDashboardInxAddress=.*~shimmerInxDashboardInxAddress="'$shimmerInxDashboardInxAddress'"~g' $swarmConfigs/shimmer-inx-dashboard
+    fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmp/shimmer-inx-indexer.cfg" ]; then
+    source $swarmTmp/shimmer-inx-indexer.cfg
+
+    if [ -z "$shimmerInxIndexerRelease" ]; then
+        sudo sed -i 's~^shimmerInxIndexerRelease=.*~shimmerInxIndexerRelease="stable"~g' $swarmConfigs/shimmer-inx-indexer.cfg
+    else
+        sudo sed -i 's~^shimmerInxIndexerRelease=.*~shimmerInxIndexerRelease="'$shimmerInxIndexerRelease'"~g' $swarmConfigs/shimmer-inx-indexer.cfg
+    fi
+
+    if [ -z "$shimmerInxIndexerUpdateCheck" ]; then
+        sudo sed -i 's~^shimmerInxIndexerUpdateCheck=.*~shimmerInxIndexerUpdateCheck=true~g' $swarmConfigs/shimmer-inx-indexer.cfg
+    else
+        sudo sed -i 's~^shimmerInxIndexerUpdateCheck=.*~shimmerInxIndexerUpdateCheck="'$shimmerInxIndexerUpdateCheck'"~g' $swarmConfigs/shimmer-inx-indexer.cfg
+    fi
+
+    if [ -z "$shimmerInxIndexerEnablePlugins" ]; then
+        sudo sed -i 's~^shimmerInxIndexerEnablePlugins=.*~shimmerInxIndexerEnablePlugins=""~g' $swarmConfigs/shimmer-inx-indexer.cfg
+    else
+        sudo sed -i 's~^shimmerInxIndexerEnablePlugins=.*~shimmerInxIndexerEnablePlugins="'$shimmerInxIndexerEnablePlugins'"~g' $swarmConfigs/shimmer-inx-indexer.cfg
+    fi
+
+    if [ -z "$shimmerInxIndexerDisablePlugins" ]; then
+        sudo sed -i 's~^shimmerInxIndexerDisablePlugins=.*~shimmerInxIndexerDisablePlugins=""~g' $swarmConfigs/shimmer-inx-indexer.cfg
+    else
+        sudo sed -i 's~^shimmerInxIndexerDisablePlugins=.*~shimmerInxIndexerDisablePlugins="'$shimmerInxIndexerDisablePlugins'"~g' $swarmConfigs/shimmer-inx-indexer.cfg
+    fi
+
+    if [ -z "$shimmerInxIndexerInxAddress" ]; then
+        sudo sed -i 's~^shimmerInxIndexerInxAddress=.*~shimmerInxIndexerInxAddress="localhost:9029"~g' $swarmConfigs/shimmer-inx-indexer.cfg
+    else
+        sudo sed -i 's~^shimmerInxIndexerInxAddress=.*~shimmerInxIndexerInxAddress="'$shimmerInxIndexerInxAddress'"~g' $swarmConfigs/shimmer-inx-indexer.cfg
+    fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmp/shimmer-inx-mqtt.cfg" ]; then
+    source $swarmTmp/shimmer-inx-mqtt.cfg
+
+    if [ -z "$shimmerInxMqttRelease" ]; then
+        sudo sed -i 's~^shimmerInxMqttRelease=.*~shimmerInxMqttRelease="stable"~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^shimmerInxMqttRelease=.*~shimmerInxMqttRelease="'$shimmerInxMqttRelease'"~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    fi
+
+    if [ -z "$shimmerInxMqttUpdateCheck" ]; then
+        sudo sed -i 's~^shimmerInxMqttUpdateCheck=.*~shimmerInxMqttUpdateCheck=true~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^shimmerInxMqttUpdateCheck=.*~shimmerInxMqttUpdateCheck="'$shimmerInxMqttUpdateCheck'"~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    fi
+
+    if [ -z "$shimmerInxMqttEnablePlugins" ]; then
+        sudo sed -i 's~^shimmerInxMqttEnablePlugins=.*~shimmerInxMqttEnablePlugins=""~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^shimmerInxMqttEnablePlugins=.*~shimmerInxMqttEnablePlugins="'$shimmerInxMqttEnablePlugins'"~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    fi
+
+    if [ -z "$shimmerInxMqttDisablePlugins" ]; then
+        sudo sed -i 's~^shimmerInxMqttDisablePlugins=.*~shimmerInxMqttDisablePlugins=""~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^shimmerInxMqttDisablePlugins=.*~shimmerInxMqttDisablePlugins="'$shimmerInxMqttDisablePlugins'"~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    fi
+
+    if [ -z "$shimmerInxMqttInxAddress" ]; then
+        sudo sed -i 's~^shimmerInxMqttInxAddress=.*~shimmerInxMqttInxAddress="localhost:9029"~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^shimmerInxMqttInxAddress=.*~shimmerInxMqttInxAddress="'$shimmerInxMqttInxAddress'"~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    fi
+
+    if [ -z "$shimmerInxMqttWebsocketEnabled" ]; then
+        sudo sed -i 's~^shimmerInxMqttWebsocketEnabled=.*~shimmerInxMqttWebsocketEnabled=true~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^shimmerInxMqttWebsocketEnabled=.*~shimmerInxMqttWebsocketEnabled='$shimmerInxMqttWebsocketEnabled'~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    fi
+
+    if [ -z "$shimmerInxMqttWebsocketAddress" ]; then
+        sudo sed -i 's~^shimmerInxMqttWebsocketAddress=.*~shimmerInxMqttWebsocketAddress="localhost:1888"~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^shimmerInxMqttWebsocketAddress=.*~shimmerInxMqttWebsocketAddress="'$shimmerInxMqttWebsocketAddress'"~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    fi
+
+    if [ -z "$shimmerInxMqttTcpEnabled" ]; then
+        sudo sed -i 's~^shimmerInxMqttTcpEnabled=.*~shimmerInxMqttTcpEnabled=true~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^shimmerInxMqttTcpEnabled=.*~shimmerInxMqttTcpEnabled='$shimmerInxMqttTcpEnabled'~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    fi
+
+    if [ -z "$shimmerInxMqttTcpAddress" ]; then
+        sudo sed -i 's~^shimmerInxMqttTcpAddress=.*~shimmerInxMqttTcpAddress="localhost:1883"~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^shimmerInxMqttTcpAddress=.*~shimmerInxMqttTcpAddress="'$shimmerInxMqttTcpAddress'"~g' $swarmConfigs/shimmer-inx-mqtt.cfg
+    fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmp/shimmer-inx-participation.cfg" ]; then
+    source $swarmTmp/shimmer-inx-participation.cfg
+
+    if [ -z "$shimmerInxParticipationRelease" ]; then
+        sudo sed -i 's~^shimmerInxParticipationRelease=.*~shimmerInxParticipationRelease="stable"~g' $swarmConfigs/shimmer-inx-participation.cfg
+    else
+        sudo sed -i 's~^shimmerInxParticipationRelease=.*~shimmerInxParticipationRelease="'$shimmerInxParticipationRelease'"~g' $swarmConfigs/shimmer-inx-participation.cfg
+    fi
+
+    if [ -z "$shimmerInxParticipationUpdateCheck" ]; then
+        sudo sed -i 's~^shimmerInxParticipationUpdateCheck=.*~shimmerInxParticipationUpdateCheck=true~g' $swarmConfigs/shimmer-inx-participation.cfg
+    else
+        sudo sed -i 's~^shimmerInxParticipationUpdateCheck=.*~shimmerInxParticipationUpdateCheck="'$shimmerInxParticipationUpdateCheck'"~g' $swarmConfigs/shimmer-inx-participation.cfg
+    fi
+
+    if [ -z "$shimmerInxParticipationEnablePlugins" ]; then
+        sudo sed -i 's~^shimmerInxParticipationEnablePlugins=.*~shimmerInxParticipationEnablePlugins=""~g' $swarmConfigs/shimmer-inx-participation.cfg
+    else
+        sudo sed -i 's~^shimmerInxParticipationEnablePlugins=.*~shimmerInxParticipationEnablePlugins="'$shimmerInxParticipationEnablePlugins'"~g' $swarmConfigs/shimmer-inx-participation.cfg
+    fi
+
+    if [ -z "$shimmerInxParticipationDisablePlugins" ]; then
+        sudo sed -i 's~^shimmerInxParticipationDisablePlugins=.*~shimmerInxParticipationDisablePlugins=""~g' $swarmConfigs/shimmer-inx-participation.cfg
+    else
+        sudo sed -i 's~^shimmerInxParticipationDisablePlugins=.*~shimmerInxParticipationDisablePlugins="'$shimmerInxParticipationDisablePlugins'"~g' $swarmConfigs/shimmer-inx-participation.cfg
+    fi
+
+    if [ -z "$shimmerInxParticipationInxAddress" ]; then
+        sudo sed -i 's~^shimmerInxParticipationInxAddress=.*~shimmerInxParticipationInxAddress="localhost:9029"~g' $swarmConfigs/shimmer-inx-participation.cfg
+    else
+        sudo sed -i 's~^shimmerInxParticipationInxAddress=.*~shimmerInxParticipationInxAddress="'$shimmerInxParticipationInxAddress'"~g' $swarmConfigs/shimmer-inx-participation.cfg
+    fi
+fi
+
 
 ####################################################################################################################################
 
@@ -857,138 +1145,6 @@ fi
 
 ####################################################################################################################################
 
-if [ -f "$swarmTmp/inx-indexer.cfg" ]; then
-    source $swarmTmp/inx-indexer.cfg
-
-    if [ -z "$inxIndexerRelease" ]; then
-        sudo sed -i 's~^inxIndexerRelease=.*~inxIndexerRelease="stable"~g' $swarmConfigs/inx-indexer.cfg
-    else
-        sudo sed -i 's~^inxIndexerRelease=.*~inxIndexerRelease="'$inxIndexerRelease'"~g' $swarmConfigs/inx-indexer.cfg
-    fi
-
-    if [ -z "$inxIndexerUpdateCheck" ]; then
-        sudo sed -i 's~^inxIndexerUpdateCheck=.*~inxIndexerUpdateCheck=true~g' $swarmConfigs/inx-indexer.cfg
-    else
-        sudo sed -i 's~^inxIndexerUpdateCheck=.*~inxIndexerUpdateCheck="'$inxIndexerUpdateCheck'"~g' $swarmConfigs/inx-indexer.cfg
-    fi
-
-    if [ -z "$inxIndexerEnablePlugins" ]; then
-        sudo sed -i 's~^inxIndexerEnablePlugins=.*~inxIndexerEnablePlugins=""~g' $swarmConfigs/inx-indexer.cfg
-    else
-        sudo sed -i 's~^inxIndexerEnablePlugins=.*~inxIndexerEnablePlugins="'$inxIndexerEnablePlugins'"~g' $swarmConfigs/inx-indexer.cfg
-    fi
-
-    if [ -z "$inxIndexerDisablePlugins" ]; then
-        sudo sed -i 's~^inxIndexerDisablePlugins=.*~inxIndexerDisablePlugins=""~g' $swarmConfigs/inx-indexer.cfg
-    else
-        sudo sed -i 's~^inxIndexerDisablePlugins=.*~inxIndexerDisablePlugins="'$inxIndexerDisablePlugins'"~g' $swarmConfigs/inx-indexer.cfg
-    fi
-
-    if [ -z "$inxIndexerInxAddress" ]; then
-        sudo sed -i 's~^inxIndexerInxAddress=.*~inxIndexerInxAddress="localhost:9029"~g' $swarmConfigs/inx-indexer.cfg
-    else
-        sudo sed -i 's~^inxIndexerInxAddress=.*~inxIndexerInxAddress="'$inxIndexerInxAddress'"~g' $swarmConfigs/inx-indexer.cfg
-    fi
-fi
-
-####################################################################################################################################
-
-if [ -f "$swarmTmp/inx-mqtt.cfg" ]; then
-    source $swarmTmp/inx-mqtt.cfg
-
-    if [ -z "$inxMqttRelease" ]; then
-        sudo sed -i 's~^inxMqttRelease=.*~inxMqttRelease="stable"~g' $swarmConfigs/inx-mqtt.cfg
-    else
-        sudo sed -i 's~^inxMqttRelease=.*~inxMqttRelease="'$inxMqttRelease'"~g' $swarmConfigs/inx-mqtt.cfg
-    fi
-
-    if [ -z "$inxMqttUpdateCheck" ]; then
-        sudo sed -i 's~^inxMqttUpdateCheck=.*~inxMqttUpdateCheck=true~g' $swarmConfigs/inx-mqtt.cfg
-    else
-        sudo sed -i 's~^inxMqttUpdateCheck=.*~inxMqttUpdateCheck="'$inxMqttUpdateCheck'"~g' $swarmConfigs/inx-mqtt.cfg
-    fi
-
-    if [ -z "$inxMqttEnablePlugins" ]; then
-        sudo sed -i 's~^inxMqttEnablePlugins=.*~inxMqttEnablePlugins=""~g' $swarmConfigs/inx-mqtt.cfg
-    else
-        sudo sed -i 's~^inxMqttEnablePlugins=.*~inxMqttEnablePlugins="'$inxMqttEnablePlugins'"~g' $swarmConfigs/inx-mqtt.cfg
-    fi
-
-    if [ -z "$inxMqttDisablePlugins" ]; then
-        sudo sed -i 's~^inxMqttDisablePlugins=.*~inxMqttDisablePlugins=""~g' $swarmConfigs/inx-mqtt.cfg
-    else
-        sudo sed -i 's~^inxMqttDisablePlugins=.*~inxMqttDisablePlugins="'$inxMqttDisablePlugins'"~g' $swarmConfigs/inx-mqtt.cfg
-    fi
-
-    if [ -z "$inxMqttInxAddress" ]; then
-        sudo sed -i 's~^inxMqttInxAddress=.*~inxMqttInxAddress="localhost:9029"~g' $swarmConfigs/inx-mqtt.cfg
-    else
-        sudo sed -i 's~^inxMqttInxAddress=.*~inxMqttInxAddress="'$inxMqttInxAddress'"~g' $swarmConfigs/inx-mqtt.cfg
-    fi
-
-    if [ -z "$inxMqttWebsocketEnabled" ]; then
-        sudo sed -i 's~^inxMqttWebsocketEnabled=.*~inxMqttWebsocketEnabled=true~g' $swarmConfigs/inx-mqtt.cfg
-    else
-        sudo sed -i 's~^inxMqttWebsocketEnabled=.*~inxMqttWebsocketEnabled='$inxMqttWebsocketEnabled'~g' $swarmConfigs/inx-mqtt.cfg
-    fi
-
-    if [ -z "$inxMqttWebsocketAddress" ]; then
-        sudo sed -i 's~^inxMqttWebsocketAddress=.*~inxMqttWebsocketAddress="localhost:1888"~g' $swarmConfigs/inx-mqtt.cfg
-    else
-        sudo sed -i 's~^inxMqttWebsocketAddress=.*~inxMqttWebsocketAddress="'$inxMqttWebsocketAddress'"~g' $swarmConfigs/inx-mqtt.cfg
-    fi
-
-    if [ -z "$inxMqttTcpEnabled" ]; then
-        sudo sed -i 's~^inxMqttTcpEnabled=.*~inxMqttTcpEnabled=true~g' $swarmConfigs/inx-mqtt.cfg
-    else
-        sudo sed -i 's~^inxMqttTcpEnabled=.*~inxMqttTcpEnabled='$inxMqttTcpEnabled'~g' $swarmConfigs/inx-mqtt.cfg
-    fi
-
-    if [ -z "$inxMqttTcpAddress" ]; then
-        sudo sed -i 's~^inxMqttTcpAddress=.*~inxMqttTcpAddress="localhost:1883"~g' $swarmConfigs/inx-mqtt.cfg
-    else
-        sudo sed -i 's~^inxMqttTcpAddress=.*~inxMqttTcpAddress="'$inxMqttTcpAddress'"~g' $swarmConfigs/inx-mqtt.cfg
-    fi
-fi
-
-####################################################################################################################################
-
-if [ -f "$swarmTmp/inx-participation.cfg" ]; then
-    source $swarmTmp/inx-participation.cfg
-
-    if [ -z "$inxParticipationRelease" ]; then
-        sudo sed -i 's~^inxParticipationRelease=.*~inxParticipationRelease="stable"~g' $swarmConfigs/inx-participation.cfg
-    else
-        sudo sed -i 's~^inxParticipationRelease=.*~inxParticipationRelease="'$inxParticipationRelease'"~g' $swarmConfigs/inx-participation.cfg
-    fi
-
-    if [ -z "$inxParticipationUpdateCheck" ]; then
-        sudo sed -i 's~^inxParticipationUpdateCheck=.*~inxParticipationUpdateCheck=true~g' $swarmConfigs/inx-participation.cfg
-    else
-        sudo sed -i 's~^inxParticipationUpdateCheck=.*~inxParticipationUpdateCheck="'$inxParticipationUpdateCheck'"~g' $swarmConfigs/inx-participation.cfg
-    fi
-
-    if [ -z "$inxParticipationEnablePlugins" ]; then
-        sudo sed -i 's~^inxParticipationEnablePlugins=.*~inxParticipationEnablePlugins=""~g' $swarmConfigs/inx-participation.cfg
-    else
-        sudo sed -i 's~^inxParticipationEnablePlugins=.*~inxParticipationEnablePlugins="'$inxParticipationEnablePlugins'"~g' $swarmConfigs/inx-participation.cfg
-    fi
-
-    if [ -z "$inxParticipationDisablePlugins" ]; then
-        sudo sed -i 's~^inxParticipationDisablePlugins=.*~inxParticipationDisablePlugins=""~g' $swarmConfigs/inx-participation.cfg
-    else
-        sudo sed -i 's~^inxParticipationDisablePlugins=.*~inxParticipationDisablePlugins="'$inxParticipationDisablePlugins'"~g' $swarmConfigs/inx-participation.cfg
-    fi
-
-    if [ -z "$inxParticipationInxAddress" ]; then
-        sudo sed -i 's~^inxParticipationInxAddress=.*~inxParticipationInxAddress="localhost:9029"~g' $swarmConfigs/inx-participation.cfg
-    else
-        sudo sed -i 's~^inxParticipationInxAddress=.*~inxParticipationInxAddress="'$inxParticipationInxAddress'"~g' $swarmConfigs/inx-participation.cfg
-    fi
-fi
-
-####################################################################################################################################
-
 if [ -f "$swarmTmp/proxy.cfg" ]; then
     source $swarmTmp/proxy.cfg
 
@@ -1006,63 +1162,37 @@ if [ -f "$swarmTmp/proxy.cfg" ]; then
         sudo sed -i 's/^proxyAutomaticDeployment=.*/proxyAutomaticDeployment='$proxyAutomaticDeployment'/' $swarmConfigs/proxy.cfg
     fi
     ####
-    if [ -z "$proxyHornetExternalDashboard" ]; then
-        sudo sed -i 's/^proxyHornetExternalDashboard=.*/proxyHornetExternalDashboard=false/' $swarmConfigs/proxy.cfg
-    else
-        sudo sed -i 's/^proxyHornetExternalDashboard=.*/proxyHornetExternalDashboard='$proxyHornetExternalDashboard'/' $swarmConfigs/proxy.cfg
+    if [ ! -z "$proxyIotaHornetDomain" ] && [ ! -z "$proxyIotaHornetPort" ]; then
+        proxyIotaHornetUrl="$proxyIotaHornetDomain:$proxyIotaHornetPort"
     fi
-    if [ -z "$proxyHornetShimmerExternalDashboard" ]; then
-        sudo sed -i 's/^proxyHornetShimmerExternalDashboard=.*/proxyHornetShimmerExternalDashboard=false/' $swarmConfigs/proxy.cfg
+    if [ -z "$proxyIotaHornetUrl" ]; then
+        sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl=""/' $swarmConfigs/proxy.cfg
     else
-        sudo sed -i 's/^proxyHornetShimmerExternalDashboard=.*/proxyHornetShimmerExternalDashboard='$proxyHornetShimmerExternalDashboard'/' $swarmConfigs/proxy.cfg
-    fi
-    if [ -z "$proxyBeeExternalDashboard" ]; then
-        sudo sed -i 's/^proxyBeeExternalDashboard=.*/proxyBeeExternalDashboard=false/' $swarmConfigs/proxy.cfg
-    else
-        sudo sed -i 's/^proxyBeeExternalDashboard=.*/proxyBeeExternalDashboard='$proxyBeeExternalDashboard'/' $swarmConfigs/proxy.cfg
-    fi
-    if [ -z "$proxyBeeShimmerExternalDashboard" ]; then
-        sudo sed -i 's/^proxyBeeShimmerExternalDashboard=.*/proxyBeeShimmerExternalDashboard=false/' $swarmConfigs/proxy.cfg
-    else
-        sudo sed -i 's/^proxyBeeShimmerExternalDashboard=.*/proxyBeeShimmerExternalDashboard='$proxyBeeShimmerExternalDashboard'/' $swarmConfigs/proxy.cfg
-    fi
-    if [ -z "$proxyGoshimmerExternalDashboard" ]; then
-        sudo sed -i 's/^proxyGoshimmerExternalDashboard=.*/proxyGoshimmerExternalDashboard=false/' $swarmConfigs/proxy.cfg
-    else
-        sudo sed -i 's/^proxyGoshimmerExternalDashboard=.*/proxyGoshimmerExternalDashboard='$proxyGoshimmerExternalDashboard'/' $swarmConfigs/proxy.cfg
+        sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl="'$proxyIotaHornetUrl'"/' $swarmConfigs/proxy.cfg
     fi
     ####
-    if [ ! -z "$proxyHornetDomain" ] && [ ! -z "$proxyHornetPort" ]; then
-        proxyHornetUrl="$proxyHornetDomain:$proxyHornetPort"
-    fi
-    if [ -z "$proxyHornetUrl" ]; then
-        sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetUrl=""/' $swarmConfigs/proxy.cfg
+    if [ -z "$proxyShimmerHornetUrl" ]; then
+        sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl=""/' $swarmConfigs/proxy.cfg
     else
-        sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetUrl="'$proxyHornetUrl'"/' $swarmConfigs/proxy.cfg
-    fi
-    ####
-    if [ -z "$proxyHornetShimmerUrl" ]; then
-        sudo sed -i 's/^proxyHornetShimmerUrl=.*/proxyHornetShimmerUrl=""/' $swarmConfigs/proxy.cfg
-    else
-        sudo sed -i 's/^proxyHornetShimmerUrl=.*/proxyHornetShimmerUrl="'$proxyHornetShimmerUrl'"/' $swarmConfigs/proxy.cfg
+        sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl="'$proxyShimmerHornetUrl'"/' $swarmConfigs/proxy.cfg
     fi
     #####
-    if [ ! -z "$proxyBeeDomain" ] && [ ! -z "$proxyBeePort" ]; then
-        proxyBeeUrl="$proxyBeeDomain:$proxyBeePort"
+    if [ ! -z "$proxyIotaBeeDomain" ] && [ ! -z "$proxyIotaBeePort" ]; then
+        proxyIotaBeeUrl="$proxyIotaBeeDomain:$proxyIotaBeePort"
     fi
-    if [ -z "$proxyBeeUrl" ]; then
-        sudo sed -i 's/^proxyBeeUrl=.*/proxyBeeUrl=""/' $swarmConfigs/proxy.cfg
+    if [ -z "$proxyIotaBeeUrl" ]; then
+        sudo sed -i 's/^proxyIotaBeeUrl=.*/proxyIotaBeeUrl=""/' $swarmConfigs/proxy.cfg
     else
-        sudo sed -i 's/^proxyBeeUrl=.*/proxyBeeUrl="'$proxyBeeUrl'"/' $swarmConfigs/proxy.cfg
+        sudo sed -i 's/^proxyIotaBeeUrl=.*/proxyIotaBeeUrl="'$proxyIotaBeeUrl'"/' $swarmConfigs/proxy.cfg
     fi
     #####
-    if [ ! -z "$proxyBeeShimmerDomain" ] && [ ! -z "$proxyBeeShimmerPort" ]; then
-        proxyBeeUrl="$proxyBeeShimmerDomain:$proxyBeeShimmerPort"
+    if [ ! -z "$proxyShimmerBeeDomain" ] && [ ! -z "$proxyShimmerBeePort" ]; then
+        proxyIotaBeeUrl="$proxyShimmerBeeDomain:$proxyShimmerBeePort"
     fi
-    if [ -z "$proxyBeeShimmerUrl" ]; then
-        sudo sed -i 's/^proxyBeeShimmerUrl=.*/proxyBeeShimmerUrl=""/' $swarmConfigs/proxy.cfg
+    if [ -z "$proxyShimmerBeeUrl" ]; then
+        sudo sed -i 's/^proxyShimmerBeeUrl=.*/proxyShimmerBeeUrl=""/' $swarmConfigs/proxy.cfg
     else
-        sudo sed -i 's/^proxyBeeShimmerUrl=.*/proxyBeeShimmerUrl="'$proxyBeeShimmerUrl'"/' $swarmConfigs/proxy.cfg
+        sudo sed -i 's/^proxyShimmerBeeUrl=.*/proxyShimmerBeeUrl="'$proxyShimmerBeeUrl'"/' $swarmConfigs/proxy.cfg
     fi
     #####
     if [ ! -z "$proxyGoshimmerDomain" ] && [ ! -z "$proxyGoshimmerPort" ]; then
@@ -1148,28 +1278,28 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's/^swarmAutoUpdate=.*/swarmAutoUpdate='$swarmAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$hornetAutoUpdate" ]; then
-        sudo sed -i 's/^hornetAutoUpdate=.*/hornetAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaHornetAutoUpdate" ]; then
+        sudo sed -i 's/^iotaHornetAutoUpdate=.*/iotaHornetAutoUpdate=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetAutoUpdate=.*/hornetAutoUpdate='$hornetAutoUpdate'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaHornetAutoUpdate=.*/iotaHornetAutoUpdate='$iotaHornetAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$hornetShimmerAutoUpdate" ]; then
-        sudo sed -i 's/^hornetShimmerAutoUpdate=.*/hornetShimmerAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$shimmerHornetAutoUpdate" ]; then
+        sudo sed -i 's/^shimmerHornetAutoUpdate=.*/shimmerHornetAutoUpdate=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetShimmerAutoUpdate=.*/hornetShimmerAutoUpdate='$hornetShimmerAutoUpdate'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^shimmerHornetAutoUpdate=.*/shimmerHornetAutoUpdate='$shimmerHornetAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$beeAutoUpdate" ]; then
-        sudo sed -i 's/^beeAutoUpdate=.*/beeAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaBeeAutoUpdate" ]; then
+        sudo sed -i 's/^iotaBeeAutoUpdate=.*/iotaBeeAutoUpdate=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^beeAutoUpdate=.*/beeAutoUpdate='$beeAutoUpdate'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaBeeAutoUpdate=.*/iotaBeeAutoUpdate='$iotaBeeAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$beeShimmerAutoUpdate" ]; then
-        sudo sed -i 's/^beeShimmerAutoUpdate=.*/beeShimmerAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$shimmerBeeAutoUpdate" ]; then
+        sudo sed -i 's/^shimmerBeeAutoUpdate=.*/shimmerBeeAutoUpdate=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^beeShimmerAutoUpdate=.*/beeShimmerAutoUpdate='$beeShimmerAutoUpdate'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^shimmerBeeAutoUpdate=.*/shimmerBeeAutoUpdate='$shimmerBeeAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
     if [ -z "$goshimmerAutoUpdate" ]; then
@@ -1184,46 +1314,76 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's/^waspAutoUpdate=.*/waspAutoUpdate='$waspAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$inxIndexerAutoUpdate" ]; then
-        sudo sed -i 's/^inxIndexerAutoUpdate=.*/inxIndexerAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaInxDashboardAutoUpdate" ]; then
+        sudo sed -i 's/^iotaInxDashboardAutoUpdate=.*/iotaInxDashboardAutoUpdate=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^inxIndexerAutoUpdate=.*/inxIndexerAutoUpdate='$inxIndexerAutoUpdate'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaInxDashboardAutoUpdate=.*/iotaInxDashboardAutoUpdate='$iotaInxDashboardAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$inxMqttAutoUpdate" ]; then
-        sudo sed -i 's/^inxMqttAutoUpdate=.*/inxMqttAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaInxIndexerAutoUpdate" ]; then
+        sudo sed -i 's/^iotaInxIndexerAutoUpdate=.*/iotaInxIndexerAutoUpdate=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^inxMqttAutoUpdate=.*/inxMqttAutoUpdate='$inxMqttAutoUpdate'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaInxIndexerAutoUpdate=.*/iotaInxIndexerAutoUpdate='$iotaInxIndexerAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$inxParticipationAutoUpdate" ]; then
-        sudo sed -i 's/^inxParticipationAutoUpdate=.*/inxParticipationAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaInxMqttAutoUpdate" ]; then
+        sudo sed -i 's/^iotaInxMqttAutoUpdate=.*/iotaInxMqttAutoUpdate=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^inxParticipationAutoUpdate=.*/inxParticipationAutoUpdate='$inxParticipationAutoUpdate'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaInxMqttAutoUpdate=.*/iotaInxMqttAutoUpdate='$iotaInxMqttAutoUpdate'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$iotaInxParticipationAutoUpdate" ]; then
+        sudo sed -i 's/^iotaInxParticipationAutoUpdate=.*/iotaInxParticipationAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^iotaInxParticipationAutoUpdate=.*/iotaInxParticipationAutoUpdate='$iotaInxParticipationAutoUpdate'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$shimmerInxDashboardAutoUpdate" ]; then
+        sudo sed -i 's/^shimmerInxDashboardAutoUpdate=.*/shimmerInxDashboardAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^shimmerInxDashboardAutoUpdate=.*/shimmerInxDashboardAutoUpdate='$shimmerInxDashboardAutoUpdate'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$shimmerInxIndexerAutoUpdate" ]; then
+        sudo sed -i 's/^shimmerInxIndexerAutoUpdate=.*/shimmerInxIndexerAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^shimmerInxIndexerAutoUpdate=.*/shimmerInxIndexerAutoUpdate='$shimmerInxIndexerAutoUpdate'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$shimmerInxMqttAutoUpdate" ]; then
+        sudo sed -i 's/^shimmerInxMqttAutoUpdate=.*/shimmerInxMqttAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^shimmerInxMqttAutoUpdate=.*/shimmerInxMqttAutoUpdate='$shimmerInxMqttAutoUpdate'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$shimmerInxParticipationAutoUpdate" ]; then
+        sudo sed -i 's/^shimmerInxParticipationAutoUpdate=.*/shimmerInxParticipationAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^shimmerInxParticipationAutoUpdate=.*/shimmerInxParticipationAutoUpdate='$shimmerInxParticipationAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
     ####
-    if [ -z "$hornetAllowDbReset" ]; then
-        sudo sed -i 's/^hornetAllowDbReset=.*/hornetAllowDbReset=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaHornetAllowDbReset" ]; then
+        sudo sed -i 's/^iotaHornetAllowDbReset=.*/iotaHornetAllowDbReset=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetAllowDbReset=.*/hornetAllowDbReset='$hornetAllowDbReset'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaHornetAllowDbReset=.*/iotaHornetAllowDbReset='$iotaHornetAllowDbReset'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$hornetShimmerAllowDbReset" ]; then
-        sudo sed -i 's/^hornetShimmerAllowDbReset=.*/hornetShimmerAllowDbReset=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$shimmerHornetAllowDbReset" ]; then
+        sudo sed -i 's/^shimmerHornetAllowDbReset=.*/shimmerHornetAllowDbReset=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetShimmerAllowDbReset=.*/hornetShimmerAllowDbReset='$hornetShimmerAllowDbReset'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^shimmerHornetAllowDbReset=.*/shimmerHornetAllowDbReset='$shimmerHornetAllowDbReset'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$beeAllowDbReset" ]; then
-        sudo sed -i 's/^beeAllowDbReset=.*/beeAllowDbReset=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaBeeAllowDbReset" ]; then
+        sudo sed -i 's/^iotaBeeAllowDbReset=.*/iotaBeeAllowDbReset=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^beeAllowDbReset=.*/beeAllowDbReset='$beeAllowDbReset'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaBeeAllowDbReset=.*/iotaBeeAllowDbReset='$iotaBeeAllowDbReset'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$beeShimmerAllowDbReset" ]; then
-        sudo sed -i 's/^beeShimmerAllowDbReset=.*/beeShimmerAllowDbReset=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$shimmerBeeAllowDbReset" ]; then
+        sudo sed -i 's/^shimmerBeeAllowDbReset=.*/shimmerBeeAllowDbReset=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^beeShimmerAllowDbReset=.*/beeShimmerAllowDbReset='$beeShimmerAllowDbReset'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^shimmerBeeAllowDbReset=.*/shimmerBeeAllowDbReset='$shimmerBeeAllowDbReset'/' $swarmConfigs/swarm.cfg
     fi
 
     if [ -z "$goshimmerDbReset" ]; then
@@ -1238,40 +1398,40 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's/^waspAllowDbReset=.*/waspAllowDbReset='$waspAllowDbReset'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$inxIndexerAllowDbReset" ]; then
-        sudo sed -i 's/^inxIndexerAllowDbReset=.*/inxIndexerAllowDbReset=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaInxIndexerAllowDbReset" ]; then
+        sudo sed -i 's/^iotaInxIndexerAllowDbReset=.*/iotaInxIndexerAllowDbReset=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^inxIndexerAllowDbReset=.*/inxIndexerAllowDbReset='$inxIndexerAllowDbReset'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaInxIndexerAllowDbReset=.*/iotaInxIndexerAllowDbReset='$iotaInxIndexerAllowDbReset'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$inxParticipationAllowDbReset" ]; then
-        sudo sed -i 's/^inxParticipationAllowDbReset=.*/inxParticipationAllowDbReset=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaInxParticipationAllowDbReset" ]; then
+        sudo sed -i 's/^iotaInxParticipationAllowDbReset=.*/iotaInxParticipationAllowDbReset=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^inxParticipationAllowDbReset=.*/inxParticipationAllowDbReset='$inxParticipationAllowDbReset'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaInxParticipationAllowDbReset=.*/iotaInxParticipationAllowDbReset='$iotaInxParticipationAllowDbReset'/' $swarmConfigs/swarm.cfg
     fi
     ####
-    if [ -z "$hornetCheckSync" ]; then
-        sudo sed -i 's/^hornetCheckSync=.*/hornetCheckSync=false/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaHornetCheckSync" ]; then
+        sudo sed -i 's/^iotaHornetCheckSync=.*/iotaHornetCheckSync=false/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetCheckSync=.*/hornetCheckSync='$hornetCheckSync'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaHornetCheckSync=.*/iotaHornetCheckSync='$iotaHornetCheckSync'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$hornetShimmerCheckSync" ]; then
-        sudo sed -i 's/^hornetShimmerCheckSync=.*/hornetShimmerCheckSync=false/' $swarmConfigs/swarm.cfg
+    if [ -z "$shimmerHornetCheckSync" ]; then
+        sudo sed -i 's/^shimmerHornetCheckSync=.*/shimmerHornetCheckSync=false/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetShimmerCheckSync=.*/hornetShimmerCheckSync='$hornetShimmerCheckSync'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^shimmerHornetCheckSync=.*/shimmerHornetCheckSync='$shimmerHornetCheckSync'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$beeCheckSync" ]; then
-        sudo sed -i 's/^beeCheckSync=.*/beeCheckSync=false/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaBeeCheckSync" ]; then
+        sudo sed -i 's/^iotaBeeCheckSync=.*/iotaBeeCheckSync=false/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^beeCheckSync=.*/beeCheckSync='$beeCheckSync'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaBeeCheckSync=.*/iotaBeeCheckSync='$iotaBeeCheckSync'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$beeShimmerCheckSync" ]; then
-        sudo sed -i 's/^beeShimmerCheckSync=.*/beeShimmerCheckSync=false/' $swarmConfigs/swarm.cfg
+    if [ -z "$shimmerBeeCheckSync" ]; then
+        sudo sed -i 's/^shimmerBeeCheckSync=.*/shimmerBeeCheckSync=false/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^beeShimmerCheckSync=.*/beeShimmerCheckSync='$beeShimmerCheckSync'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^shimmerBeeCheckSync=.*/shimmerBeeCheckSync='$shimmerBeeCheckSync'/' $swarmConfigs/swarm.cfg
     fi
 
     if [ -z "$goshimmerCheckSync" ]; then
@@ -1280,28 +1440,28 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's/^goshimmerCheckSync=.*/goshimmerCheckSync='$goshimmerCheckSync'/' $swarmConfigs/swarm.cfg
     fi  
 
-    if [ -z "$hornetMaxMilestones" ]; then
-        sudo sed -i 's/^hornetMaxMilestones=.*/hornetMaxMilestones=360/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaHornetMaxMilestones" ]; then
+        sudo sed -i 's/^iotaHornetMaxMilestones=.*/iotaHornetMaxMilestones=360/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetMaxMilestones=.*/hornetMaxMilestones='$hornetMaxMilestones'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaHornetMaxMilestones=.*/iotaHornetMaxMilestones='$iotaHornetMaxMilestones'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$hornetShimmerMaxMilestones" ]; then
-        sudo sed -i 's/^hornetShimmerMaxMilestones=.*/hornetShimmerMaxMilestones=360/' $swarmConfigs/swarm.cfg
+    if [ -z "$shimmerHornetMaxMilestones" ]; then
+        sudo sed -i 's/^shimmerHornetMaxMilestones=.*/shimmerHornetMaxMilestones=360/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetShimmerMaxMilestones=.*/hornetShimmerMaxMilestones='$hornetShimmerMaxMilestones'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^shimmerHornetMaxMilestones=.*/shimmerHornetMaxMilestones='$shimmerHornetMaxMilestones'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$beeMaxMilestones" ]; then
-        sudo sed -i 's/^beeMaxMilestones=.*/beeMaxMilestones=360/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaBeeMaxMilestones" ]; then
+        sudo sed -i 's/^iotaBeeMaxMilestones=.*/iotaBeeMaxMilestones=360/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^beeMaxMilestones=.*/beeMaxMilestones='$beeMaxMilestones'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaBeeMaxMilestones=.*/iotaBeeMaxMilestones='$iotaBeeMaxMilestones'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$beeShimmerMaxMilestones" ]; then
-        sudo sed -i 's/^beeShimmerMaxMilestones=.*/beeShimmerMaxMilestones=360/' $swarmConfigs/swarm.cfg
+    if [ -z "$shimmerBeeMaxMilestones" ]; then
+        sudo sed -i 's/^shimmerBeeMaxMilestones=.*/shimmerBeeMaxMilestones=360/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^beeShimmerMaxMilestones=.*/beeShimmerMaxMilestones='$beeShimmerMaxMilestones'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^shimmerBeeMaxMilestones=.*/shimmerBeeMaxMilestones='$shimmerBeeMaxMilestones'/' $swarmConfigs/swarm.cfg
     fi
 
     if [ -z "$swarmLogRotation" ]; then
@@ -1340,46 +1500,76 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's~^goshimmerDbBackupDownload=.*~goshimmerDbBackupDownload='$goshimmerDbBackupDownload'~g' $swarmConfigs/goshimmer.cfg
     fi
     
-    if [ -z "$hornetServiceStatusCheck" ]; then
-        sudo sed -i 's/^hornetServiceStatusCheck=.*/hornetServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaHornetServiceStatusCheck" ]; then
+        sudo sed -i 's/^iotaHornetServiceStatusCheck=.*/iotaHornetServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetServiceStatusCheck=.*/hornetServiceStatusCheck='$hornetServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaHornetServiceStatusCheck=.*/iotaHornetServiceStatusCheck='$iotaHornetServiceStatusCheck'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$hornetShimmerServiceStatusCheck" ]; then
-        sudo sed -i 's/^hornetShimmerServiceStatusCheck=.*/hornetShimmerServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$shimmerHornetServiceStatusCheck" ]; then
+        sudo sed -i 's/^shimmerHornetServiceStatusCheck=.*/shimmerHornetServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetShimmerServiceStatusCheck=.*/hornetShimmerServiceStatusCheck='$hornetShimmerServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^shimmerHornetServiceStatusCheck=.*/shimmerHornetServiceStatusCheck='$shimmerHornetServiceStatusCheck'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$beeServiceStatusCheck" ]; then
-        sudo sed -i 's/^beeServiceStatusCheck=.*/beeServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaBeeServiceStatusCheck" ]; then
+        sudo sed -i 's/^iotaBeeServiceStatusCheck=.*/iotaBeeServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^beeServiceStatusCheck=.*/beeServiceStatusCheck='$beeServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaBeeServiceStatusCheck=.*/iotaBeeServiceStatusCheck='$iotaBeeServiceStatusCheck'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$beeShimmerServiceStatusCheck" ]; then
-        sudo sed -i 's/^beeShimmerServiceStatusCheck=.*/beeShimmerServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$shimmerBeeServiceStatusCheck" ]; then
+        sudo sed -i 's/^shimmerBeeServiceStatusCheck=.*/shimmerBeeServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^beeShimmerServiceStatusCheck=.*/beeShimmerServiceStatusCheck='$beeShimmerServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^shimmerBeeServiceStatusCheck=.*/shimmerBeeServiceStatusCheck='$shimmerBeeServiceStatusCheck'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$inxIndexerServiceStatusCheck" ]; then
-        sudo sed -i 's/^inxIndexerServiceStatusCheck=.*/inxIndexerServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaInxDashboardServiceStatusCheck" ]; then
+        sudo sed -i 's/^iotaInxDashboardServiceStatusCheck=.*/iotaInxDashboardServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^inxIndexerServiceStatusCheck=.*/inxIndexerServiceStatusCheck='$inxIndexerServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaInxDashboardServiceStatusCheck=.*/iotaInxDashboardServiceStatusCheck='$iotaInxDashboardServiceStatusCheck'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$inxMqttServiceStatusCheck" ]; then
-        sudo sed -i 's/^inxMqttServiceStatusCheck=.*/inxMqttServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaInxIndexerServiceStatusCheck" ]; then
+        sudo sed -i 's/^iotaInxIndexerServiceStatusCheck=.*/iotaInxIndexerServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^inxMqttServiceStatusCheck=.*/inxMqttServiceStatusCheck='$inxMqttServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaInxIndexerServiceStatusCheck=.*/iotaInxIndexerServiceStatusCheck='$iotaInxIndexerServiceStatusCheck'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$inxParticipationServiceStatusCheck" ]; then
-        sudo sed -i 's/^inxParticipationServiceStatusCheck=.*/inxParticipationServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaInxMqttServiceStatusCheck" ]; then
+        sudo sed -i 's/^iotaInxMqttServiceStatusCheck=.*/iotaInxMqttServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^inxParticipationServiceStatusCheck=.*/inxParticipationServiceStatusCheck='$inxParticipationServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaInxMqttServiceStatusCheck=.*/iotaInxMqttServiceStatusCheck='$iotaInxMqttServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$iotaInxParticipationServiceStatusCheck" ]; then
+        sudo sed -i 's/^iotaInxParticipationServiceStatusCheck=.*/iotaInxParticipationServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^iotaInxParticipationServiceStatusCheck=.*/iotaInxParticipationServiceStatusCheck='$iotaInxParticipationServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$shimmerInxDashboardServiceStatusCheck" ]; then
+        sudo sed -i 's/^shimmerInxDashboardServiceStatusCheck=.*/shimmerInxDashboardServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^shimmerInxDashboardServiceStatusCheck=.*/shimmerInxDashboardServiceStatusCheck='$shimmerInxDashboardServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$shimmerInxIndexerServiceStatusCheck" ]; then
+        sudo sed -i 's/^shimmerInxIndexerServiceStatusCheck=.*/shimmerInxIndexerServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^shimmerInxIndexerServiceStatusCheck=.*/shimmerInxIndexerServiceStatusCheck='$shimmerInxIndexerServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$shimmerInxMqttServiceStatusCheck" ]; then
+        sudo sed -i 's/^shimmerInxMqttServiceStatusCheck=.*/shimmerInxMqttServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^shimmerInxMqttServiceStatusCheck=.*/shimmerInxMqttServiceStatusCheck='$shimmerInxMqttServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+    fi
+
+    if [ -z "$shimmerInxParticipationServiceStatusCheck" ]; then
+        sudo sed -i 's/^shimmerInxParticipationServiceStatusCheck=.*/shimmerInxParticipationServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    else
+        sudo sed -i 's/^shimmerInxParticipationServiceStatusCheck=.*/shimmerInxParticipationServiceStatusCheck='$shimmerInxParticipationServiceStatusCheck'/' $swarmConfigs/swarm.cfg
     fi
 fi
 
@@ -1389,17 +1579,25 @@ if [ -f "$swarmTmp/watchdog.cfg" ]; then
     source $swarmTmp/watchdog.cfg
 
     # Updater for watchdog.log
-    sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $swarmConfigs/watchdog.cfg
-    sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $swarmConfigs/watchdog.cfg
-    sudo sed -i 's/^hornetShimmerStatusCounter=.*/hornetShimmerStatusCounter='$hornetShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
-    sudo sed -i 's/^hornetShimmerSyncCounter=.*/hornetShimmerSyncCounter='$hornetShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
-    sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $swarmConfigs/watchdog.cfg
-    sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $swarmConfigs/watchdog.cfg
-    sudo sed -i 's/^beeShimmerStatusCounter=.*/beeShimmerStatusCounter='$beeShimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
-    sudo sed -i 's/^beeShimmerSyncCounter=.*/beeShimmerSyncCounter='$beeShimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^iotaHornetStatusCounter=.*/iotaHornetStatusCounter='$iotaHornetStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^iotaHornetSyncCounter=.*/iotaHornetSyncCounter='$iotaHornetSyncCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^shimmerHornetStatusCounter=.*/shimmerHornetStatusCounter='$shimmerHornetStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^shimmerHornetSyncCounter=.*/shimmerHornetSyncCounter='$shimmerHornetSyncCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^iotaBeeStatusCounter=.*/iotaBeeStatusCounter='$iotaBeeStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^iotaBeeSyncCounter=.*/iotaBeeSyncCounter='$iotaBeeSyncCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^shimmerBeeStatusCounter=.*/shimmerBeeStatusCounter='$shimmerBeeStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^shimmerBeeSyncCounter=.*/shimmerBeeSyncCounter='$shimmerBeeSyncCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter='$goshimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^goshimmerSyncCounter=.*/goshimmerSyncCounter='$goshimmerSyncCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^waspStatusCounter=.*/waspStatusCounter='$waspStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^iotaInxDashboardStatusCounter=.*/iotaInxDashboardStatusCounter='$iotaInxDashboardStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^iotaInxIndexerStatusCounter=.*/iotaInxIndexerStatusCounter='$iotaInxIndexerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^iotaInxMqttStatusCounter=.*/iotaInxMqttStatusCounter='$iotaInxMqttStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^iotaInxParticipationStatusCounter=.*/iotaInxParticipationStatusCounter='$iotaInxParticipationStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^shimmerInxDashboardStatusCounter=.*/shimmerInxDashboardStatusCounter='$shimmerInxDashboardStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^shimmerInxIndexerStatusCounter=.*/shimmerInxIndexerStatusCounter='$shimmerInxIndexerStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^shimmerInxMqttStatusCounter=.*/shimmerInxMqttStatusCounter='$shimmerInxMqttStatusCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^shimmerInxParticipationStatusCounter=.*/shimmerInxParticipationStatusCounter='$shimmerInxParticipationStatusCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
 ####################################################################################################################################
@@ -1413,15 +1611,20 @@ if [ -f "$swarmTmp/githubVersion" ] || [ -f "$swarmTmp/latest-versions.cfg" ]; t
 
     # Updater for latest-versions.cfg
     sudo sed -i 's~^latestSwarmVersion=.*~latestSwarmVersion="'$latestSwarmVersion'"~' $swarmConfigs/latest-versions.cfg
-    sudo sed -i 's~^latestHornetVersion=.*~latestHornetVersion="'$latestHornetVersion'"~' $swarmConfigs/latest-versions.cfg
-    sudo sed -i 's~^latestHornetShimmerVersion=.*~latestHornetShimmerVersion="'$latestHornetShimmerVersion'"~' $swarmConfigs/latest-versions.cfg
-    sudo sed -i 's~^latestBeeVersion=.*~latestBeeVersion="'$latestBeeVersion'"~' $swarmConfigs/latest-versions.cfg
-    sudo sed -i 's~^latestBeeShimmerVersion=.*~latestBeeShimmerVersion="'$latestBeeShimmerVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestIotaHornetVersion=.*~latestIotaHornetVersion="'$latestHornetVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestShimmerHornetVersion=.*~latestShimmerHornetVersion="'$latestShimmerHornetVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestIotaBeeVersion=.*~latestIotaBeeVersion="'$latestBeeVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestShimmerBeeVersion=.*~latestShimmerBeeVersion="'$latestShimmerBeeVersion'"~' $swarmConfigs/latest-versions.cfg
     sudo sed -i 's~^latestGoshimmerVersion=.*~latestGoshimmerVersion="'$latestGoshimmerVersion'"~' $swarmConfigs/latest-versions.cfg
     sudo sed -i 's~^latestWaspVersion=.*~latestWaspVersion="'$latestWaspVersion'"~' $swarmConfigs/latest-versions.cfg
-    sudo sed -i 's~^latestInxIndexerVersion=.*~latestInxIndexerVersion="'$latestInxIndexerVersion'"~' $swarmConfigs/latest-versions.cfg
-    sudo sed -i 's~^latestInxMqttVersion=.*~latestInxMqttVersion="'$latestInxMqttVersion'"~' $swarmConfigs/latest-versions.cfg
-    sudo sed -i 's~^latestInxParticipationVersion=.*~latestInxParticipationVersion="'$latestInxParticipationVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestIotaInxDashboardVersion=.*~latestIotaInxDashboardVersion="'$latestIotaInxDashboardVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestIotaInxIndexerVersion=.*~latestIotaInxIndexerVersion="'$latestIotaInxIndexerVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestIotaInxMqttVersion=.*~latestIotaInxMqttVersion="'$latestIotaInxMqttVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestIotaInxParticipationVersion=.*~latestIotaInxParticipationVersion="'$latestIotaInxParticipationVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestShimmerInxDashboardVersion=.*~latestShimmerInxDashboardVersion="'$latestShimmerInxDashboardVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestShimmerInxIndexerVersion=.*~latestShimmerInxIndexerVersion="'$latestShimmerInxIndexerVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestShimmerInxMqttVersion=.*~latestShimmerInxMqttVersion="'$latestShimmerInxMqttVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestShimmerInxParticipationVersion=.*~latestShimmerInxParticipationVersion="'$latestShimmerInxParticipationVersion'"~' $swarmConfigs/latest-versions.cfg
 fi
 
 ####################################################################################################################################
