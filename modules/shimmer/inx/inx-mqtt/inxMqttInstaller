@@ -5,9 +5,9 @@ if ! id inx >/dev/null 2>&1; then
     useradd --no-create-home --system inx >/dev/null
 fi
 
-if [ ! -d "$inxMqttHome" ]; then
-    sudo mkdir -p $inxMqttHome > /dev/null 2>&1
-    sudo chown -R inx:inx $inxMqttHome > /dev/null 2>&1
+if [ ! -d "$shimmerInxMqttHome" ]; then
+    sudo mkdir -p $shimmerInxMqttHome > /dev/null 2>&1
+    sudo chown -R inx:inx $shimmerInxMqttHome > /dev/null 2>&1
 fi
 
 # Install GO
@@ -16,13 +16,13 @@ if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
 fi
 
 # Create Service
-if [ ! -f "/lib/systemd/system/inx-mqtt.service" ]; then
-    sudo cp -rf $swarmHome/templates/inx/inx-mqtt.service /lib/systemd/system/inx-mqtt.service
-    if [ ! -f "/etc/default/inx-mqtt" ]; then
-        echo "OPTIONS=\"--config config.json\"" > /etc/default/inx-mqtt
+if [ ! -f "/lib/systemd/system/shimmer-inx-mqtt.service" ]; then
+    sudo cp -rf $swarmHome/templates/inx/shimmer-inx-mqtt.service /lib/systemd/system/shimmer-inx-mqtt.service
+    if [ ! -f "/etc/default/shimmer-inx-mqtt" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/shimmer-inx-mqtt
     fi
-    if [ ! -f "/etc/systemd/system/multi-user.target.wants/inx-mqtt.service" ]; then
-        sudo systemctl enable inx-mqtt > /dev/null 2>&1
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/shimmer-inx-mqtt.service" ]; then
+        sudo systemctl enable shimmer-inx-mqtt > /dev/null 2>&1
     fi
     sudo systemctl daemon-reload > /dev/null 2>&1
 fi
@@ -30,36 +30,36 @@ fi
 ##############################################################################################################################################
 
 # Create dir if not exist
-sudo mkdir -p /tmp/inx-mqtt > /dev/null 2>&1
+sudo mkdir -p /tmp/shimmer-inx-mqtt > /dev/null 2>&1
 
 if [ "$osArchitecture" = "amd64" ]; then
     source $swarmModules/swarmAuth
     if [ "$swarmAuth" = "200" ]; then
         # Download latest inx-mqtt
-        ( cd /tmp/inx-mqtt/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-mqtt/v${latestInxMqttVersion}/inx-mqtt-v${latestInxMqttVersion}_linux_$osArchitecture.tar.gz )
-        if [ -f "/tmp/inx-mqtt/inx-mqtt-v${latestInxMqttVersion}_linux_$osArchitecture.tar.gz" ]; then
-            inxMqttDownloadChecksum=$(sudo shasum -a 512 /tmp/inx-mqtt/inx-mqtt-v${latestInxMqttVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        ( cd /tmp/shimmer-inx-mqtt/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-mqtt/v${latestShimmerInxMqttVersion}/inx-mqtt-v${latestShimmerInxMqttVersion}_linux_$osArchitecture.tar.gz )
+        if [ -f "/tmp/shimmer-inx-mqtt/inx-mqtt-v${latestShimmerInxMqttVersion}_linux_$osArchitecture.tar.gz" ]; then
+            shimmerInxMqttDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-mqtt/inx-mqtt-v${latestShimmerInxMqttVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
         fi
 
         # Download checksum
-        ( cd /tmp/inx-mqtt/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-mqtt/v${latestInxMqttVersion}/checksums.txt )
-        inxMqttChecksum=$(sudo grep "inx-mqtt-v${latestInxMqttVersion}_linux_$osArchitecture.tar.gz" /tmp/inx-mqtt/checksums.txt | awk '{ print $1 }')
-        echo $inxMqttChecksum > /tmp/inx-mqtt.checksum
+        ( cd /tmp/shimmer-inx-mqtt/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmerInx/shimmerInx-mqtt/v${latestShimmerInxMqttVersion}/checksums.txt )
+        shimmerInxMqttChecksum=$(sudo grep "inx-mqtt-v${latestShimmerInxMqttVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmerInx-mqtt/checksums.txt | awk '{ print $1 }')
+        echo $shimmerInxMqttChecksum > /tmp/shimmer-inx-mqtt.checksum
 
         # Unzip archive
-        if [ "$inxMqttDownloadChecksum" = "$inxMqttChecksum" ] && [ ! -z "$inxMqttDownloadChecksum" ] && [ ! -z "$inxMqttChecksum" ]; then
-            ( cd /tmp/inx-mqtt ; sudo tar -xzf /tmp/inx-mqtt/inx-mqtt-v${latestInxMqttVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+        if [ "$shimmerInxMqttDownloadChecksum" = "$shimmerInxMqttChecksum" ] && [ ! -z "$shimmerInxMqttDownloadChecksum" ] && [ ! -z "$shimmerInxMqttChecksum" ]; then
+            ( cd /tmp/shimmer-inx-mqtt ; sudo tar -xzf /tmp/shimmer-inx-mqtt/inx-mqtt-v${latestShimmerInxMqttVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
             # Copy binary
-            if [ -f "/tmp/inx-mqtt/inx-mqtt" ]; then
-                inxMqttStatus="$(systemctl show -p ActiveState --value inx-mqtt)"
-                if [ "$inxMqttStatus" = "active" ]; then
-                    sudo systemctl stop inx-mqtt > /dev/null 2>&1
+            if [ -f "/tmp/shimmer-inx-mqtt/inx-mqtt" ]; then
+                shimmerInxMqttStatus="$(systemctl show -p ActiveState --value shimmer-inx-mqtt)"
+                if [ "$shimmerInxMqttStatus" = "active" ]; then
+                    sudo systemctl stop shimmer-inx-mqtt > /dev/null 2>&1
                 fi
 
-                sudo cp -rf /tmp/inx-mqtt/inx-mqtt /usr/bin/inx-mqtt > /dev/null 2>&1
-                sudo chmod +x /usr/bin/inx-mqtt > /dev/null 2>&1
-                newInxMqttBinary=true
+                sudo cp -rf /tmp/shimmer-inx-mqtt/inx-mqtt /usr/bin/shimmer-inx-mqtt > /dev/null 2>&1
+                sudo chmod +x /usr/bin/shimmer-inx-mqtt > /dev/null 2>&1
+                newShimmerInxMqttBinary=true
             fi
         fi
     fi
@@ -67,29 +67,29 @@ fi
 
 ##############################################################################################################################################
 
-if [ "$newInxMqttBinary" = "true" ]; then
-    if [ -f "/tmp/inx-mqtt/config_template.json" ]; then
-        sudo cp -rf /tmp/inx-mqtt/config_template.json /var/lib/inx-mqtt/config.json > /dev/null 2>&1
-        newInxMqttConfig=true
+if [ "$newShimmerInxMqttBinary" = "true" ]; then
+    if [ -f "/tmp/shimmer-inx-mqtt/config_template.json" ]; then
+        sudo cp -rf /tmp/shimmer-inx-mqtt/config_template.json /var/lib/shimmer-inx-mqtt/config.json > /dev/null 2>&1
+        newShimmerInxMqttConfig=true
     fi
-    if [ -f "/tmp/inx-mqtt/config.json" ]; then
-        sudo cp -rf /tmp/inx-mqtt/config.json /var/lib/inx-mqtt/config.json > /dev/null 2>&1
-        newInxMqttConfig=true
+    if [ -f "/tmp/shimmer-inx-mqtt/config.json" ]; then
+        sudo cp -rf /tmp/shimmer-inx-mqtt/config.json /var/lib/shimmer-inx-mqtt/config.json > /dev/null 2>&1
+        newShimmerInxMqttConfig=true
     fi
 fi
 
 ##############################################################################################################################################
 
-if [ "$newInxMqttConfig" = "true" ]; then
+if [ "$newShimmerInxMqttConfig" = "true" ]; then
     # Run installer modules
-    sudo chown -R inx:inx $inxMqttHome > /dev/null 2>&1
+    sudo chown -R inx:inx $shimmerInxMqttHome > /dev/null 2>&1
 
-    restartInxMqtt=true
-    inxMqttUpdated=true
+    restartShimmerInxMqtt=true
+    shimmerInxMqttUpdated=true
 fi
 
 # Remove temporary files
-sudo rm -rf /tmp/inx-mqtt > /dev/null 2>&1
+sudo rm -rf /tmp/shimmer-inx-mqtt > /dev/null 2>&1
 
 
-unset newInxMqttBinary newInxMqttConfig inxMqttDownloadChecksum
+unset newShimmerInxMqttBinary newShimmerInxMqttConfig shimmerInxMqttDownloadChecksum

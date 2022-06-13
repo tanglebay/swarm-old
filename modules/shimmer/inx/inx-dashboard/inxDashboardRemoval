@@ -1,25 +1,27 @@
 #!/bin/bash
 
-source $swarmConfigs/inx-dashboard.cfg
+source $swarmConfigs/shimmer-inx-dashboard.cfg
 
 if [ "$killall" = "true" ]; then
-    sudo killall -s SIGKILL inx-dashboard > /dev/null 2>&1
+    sudo killall -s SIGKILL shimmer-inx-dashboard > /dev/null 2>&1
 else
-    sudo systemctl stop inx-dashboard > /dev/null 2>&1
+    sudo systemctl stop shimmer-inx-dashboard > /dev/null 2>&1
 fi
 
-if [ ! -f "/usr/bin/inx-mqtt" ] && [ ! -f "/usr/bin/inx-participation" ]; then
+sudo systemctl disable shimmer-inx-dashboard > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/shimmer-inx-dashboard /var/lib/shimmer-inx-dashboard /lib/systemd/system/shimmer-inx-dashboard.service /etc/default/shimmer-inx-dashboard > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+getInxPlugins=$(ls /usr/bin/ | grep inx-)
+
+if [ -z "$getInxPlugins" ]; then
     if id inx >/dev/null 2>&1; then
         sudo deluser inx >/dev/null
     fi
 fi
 
-sudo systemctl disable inx-dashboard > /dev/null 2>&1
-
-sudo rm -rf /usr/bin/inx-dashboard /var/lib/inx-dashboard /lib/systemd/system/inx-dashboard.service /etc/default/inx-dashboard > /dev/null 2>&1
-
-sudo systemctl daemon-reload > /dev/null 2>&1
-
-if [ ! -f "/usr/bin/hornet" ] && [ ! -f "/usr/bin/hornet-shimmer" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ] && [ ! -f "/usr/bin/inx-dashboard" ] && [ ! -f "/usr/bin/inx-mqtt" ] && [ ! -f "/usr/bin/inx-participation" ]; then
+if [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/shimmer-hornet" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ] && [ -z "$getInxPlugins" ]; then
     sudo snap remove go > /dev/null 2>&1
 fi

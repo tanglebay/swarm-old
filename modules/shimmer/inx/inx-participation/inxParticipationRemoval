@@ -1,25 +1,29 @@
 #!/bin/bash
 
-source $swarmConfigs/inx-participation.cfg
+source $swarmConfigs/shimmer-inx-participation.cfg
 
 if [ "$killall" = "true" ]; then
-    sudo killall -s SIGKILL inx-participation > /dev/null 2>&1
+    sudo killall -s SIGKILL shimmer-inx-participation > /dev/null 2>&1
 else
-    sudo systemctl stop inx-participation > /dev/null 2>&1
+    sudo systemctl stop shimmer-inx-participation > /dev/null 2>&1
 fi
 
-if [ ! -f "/usr/bin/inx-indexer" ] && [ ! -f "/usr/bin/inx-mqtt" ]; then
+
+sudo systemctl disable shimmer-inx-participation > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/shimmer-inx-participation /var/lib/shimmer-inx-participation /lib/systemd/system/shimmer-inx-participation.service /etc/default/shimmer-inx-participation > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+
+getInxPlugins=$(ls /usr/bin/ | grep inx-)
+
+if [ -z "$getInxPlugins" ]; then
     if id inx >/dev/null 2>&1; then
         sudo deluser inx >/dev/null
     fi
 fi
 
-sudo systemctl disable inx-participation > /dev/null 2>&1
-
-sudo rm -rf /usr/bin/inx-participation /var/lib/inx-participation /lib/systemd/system/inx-participation.service /etc/default/inx-participation > /dev/null 2>&1
-
-sudo systemctl daemon-reload > /dev/null 2>&1
-
-if [ ! -f "/usr/bin/hornet" ] && [ ! -f "/usr/bin/hornet-shimmer" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ] && [ ! -f "/usr/bin/inx-indexer" ] && [ ! -f "/usr/bin/inx-mqtt" ]; then
+if [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/shimmer-hornet" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ] && [ -z "$getInxPlugins" ]; then
     sudo snap remove go > /dev/null 2>&1
 fi
