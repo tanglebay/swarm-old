@@ -1,84 +1,84 @@
 #!/bin/bash
 
-if [ -f "/usr/bin/bee" ]; then
+if [ -f "/usr/bin/iota-bee" ]; then
 
-    source $swarmConfigs/bee.cfg
+    source $swarmConfigs/iota-bee.cfg
 
-    beeStatus=$(systemctl show -p ActiveState --value bee)
+    iotaBeeStatus=$(systemctl show -p ActiveState --value iota-bee)
 
-    # Bee version
-    if [ -f "/usr/bin/bee" ]; then
-        beeVersion=$(/usr/bin/bee -v | tr -d 'v"')
-        if [[ $beeVersion = *rc[0-9]* ]]; then
-            beeVersion=$(echo $beeVersion | cut -f1,2 -d"-")
+    # IotaBee version
+    if [ -f "/usr/bin/iota-bee" ]; then
+        beeVersion=$(/usr/bin/iota-bee -v | tr -d 'v"')
+        if [[ $iotaBeeVersion = *rc[0-9]* ]]; then
+            iotaBeeVersion=$(echo $iotaBeeVersion | cut -f1,2 -d"-")
         else
-            beeVersion=$(echo $beeVersion | cut -f1 -d"-")
+            iotaBeeVersion=$(echo $iotaBeeVersion | cut -f1 -d"-")
         fi
     fi
-    if [ -z "$beeVersion" ]; then
-        beeVersion="N/A"
+    if [ -z "$iotaBeeVersion" ]; then
+        iotaBeeVersion="N/A"
     else
-        if [ "$beeVersion" != "$latestBeeVersion" ] && [ ! -z "$latestBeeVersion" ]; then
-            beeVersion="$beeVersion (new version \"v$latestBeeVersion\" available!"
+        if [ "$iotaBeeVersion" != "$latestIotaBeeVersion" ] && [ ! -z "$latestIotaBeeVersion" ]; then
+            iotaBeeVersionInfo="$iotaBeeVersion (new version \"v$latestIotaBeeVersion\" available!"
         fi
     fi
 
-    if [ "$beeStatus" = "active" ]; then
-        beeHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14266/api/v1/info" -H  "accept: application/json"|jq -r '.data.isHealthy' 2> /dev/null)"
-        if [ -z "$beeHealthy" ]; then
-            beeHealthy="N/A"
+    if [ "$iotaBeeStatus" = "active" ]; then
+        iotaBeeHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14266/api/v1/info" -H  "accept: application/json"|jq -r '.data.isHealthy' 2> /dev/null)"
+        if [ -z "$iotaBeeHealthy" ]; then
+            iotaBeeHealthy="N/A"
         else
-            if [ "$beeHealthy" = "true" ]; then
-                beeHealthy="Yes"
+            if [ "$iotaBeeHealthy" = "true" ]; then
+                iotaBeeHealthy="Yes"
             else
-                beeHealthy="No"
+                iotaBeeHealthy="No"
             fi
         fi
     else
-        beeHealthy="N/A"
+        iotaBeeHealthy="N/A"
     fi
 
     # DB size
-    if [ -d "$beeHome/storage" ]; then
-        getCurrentDbSize="$(du -sb $beeHome/storage | cut -f1)"
+    if [ -d "$iotaBeeHome/storage" ]; then
+        getCurrentDbSize="$(du -sb $iotaBeeHome/storage | cut -f1)"
         let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
         if [ $getCurrentDbSizeInMb -gt 999 ]; then
             let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
-            currentBeeDbSize="${getCurrentDbSizeInGb} GB"
+            currentIotaBeeDbSize="${getCurrentDbSizeInGb} GB"
         else
-            currentBeeDbSize="${getCurrentDbSizeInMb} MB"
+            currentIotaBeeDbSize="${getCurrentDbSizeInMb} MB"
         fi
     else
-        currentBeeDbSize="N/A"
+        currentIotaBeeDbSize="N/A"
     fi
 
-    if [ "$beePruningEnabled" = "true" ]; then
-        beePruningEnabledStatus=enabled
+    if [ "$iotaBeePruningEnabled" = "true" ]; then
+        iotaBeePruningEnabledStatus=enabled
     else
-        beePruningEnabledStatus=disabled
+        iotaBeePruningEnabledStatus=disabled
     fi
 
-    if [ "$beePowEnabled" = "true" ]; then
-        beePowEnabledStatus=enabled
+    if [ "$iotaBeePowEnabled" = "true" ]; then
+        iotaBeePowEnabledStatus=enabled
     else
-        beePowEnabledStatus=disabled
+        iotaBeePowEnabledStatus=disabled
     fi
 
-    if [ -f "/etc/nginx/sites-enabled/bee" ]; then
-        beeProxyStatus=active
+    if [ -f "/etc/nginx/sites-enabled/iota-bee" ]; then
+        iotaBeeProxyStatus=active
     else
-        beeProxyStatus=inactive
+        iotaBeeProxyStatus=inactive
     fi
 
-    if [ "$beeAutopeeringEnabled" = "true" ]; then
-        beeAutopeeringEnabledMenu=enabled
+    if [ "$iotaBeeAutopeeringEnabled" = "true" ]; then
+        iotaBeeAutopeeringEnabledMenu=enabled
     else
-        beeAutopeeringEnabledMenu=disabled
+        iotaBeeAutopeeringEnabledMenu=disabled
     fi
 
     # OUTPUT
-    whiptail --scrolltext --title "Bee Info" --msgbox "Bee: $beeStatus\nVersion: v$beeVersion\nHealthy: $beeHealthy\nDB size: $currentBeeDbSize\nProxy: $beeProxyStatus\n\nAlias: $beeAlias\nPoW: $beePowEnabledStatus\nLS Interval: $beeSnapshotInterval milestones\n\nAutopeering: $beeAutopeeringEnabledMenu\nMax unknown Peers: $beeMaxUnknownPeers\nGossip Port: ${beeGossipPort}/tcp\nAutopeering Port: $beeAutopeeringPort/udp\n\nPruning: $beePruningEnabledStatus\nPruning Delay: $beePruningDelay milestones" 24 65
+    whiptail --scrolltext --title "Bee (IOTA) - Info" --msgbox "Bee (IOTA): $iotaBeeStatus\nVersion: v$iotaBeeVersionInfo\nHealthy: $iotaBeeHealthy\nDB size: $currentIotaBeeDbSize\nProxy: $iotaBeeProxyStatus\n\nAlias: $iotaBeeAlias\nPoW: $iotaBeePowEnabledStatus\nLS Interval: $iotaBeeSnapshotInterval milestones\n\nAutopeering: $iotaBeeAutopeeringEnabledMenu\nMax unknown Peers: $iotaBeeMaxUnknownPeers\nGossip Port: ${iotaBeeGossipPort}/tcp\nAutopeering Port: $iotaBeeAutopeeringPort/udp\n\nPruning: $iotaBeePruningEnabledStatus\nPruning Delay: $iotaBeePruningDelay milestones" 24 65
 else
     # OUTPUT
-    whiptail --title "Bee Info" --msgbox "Bee not installed!" 8 65
+    whiptail --title "Bee (IOTA) - Info" --msgbox "Bee (IOTA) not installed!" 8 65
 fi
