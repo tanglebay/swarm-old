@@ -5,9 +5,9 @@ if ! id bee >/dev/null 2>&1; then
     useradd --no-create-home --system bee >/dev/null
 fi
 
-if [ ! -d "$beeHome" ]; then
-    sudo mkdir -p $beeHome > /dev/null 2>&1
-    sudo chown -R bee:bee $beeHome > /dev/null 2>&1
+if [ ! -d "$shimmerBeeHome" ]; then
+    sudo mkdir -p $shimmerBeeHome > /dev/null 2>&1
+    sudo chown -R bee:bee $shimmerBeeHome > /dev/null 2>&1
 fi
 
 # Install Unzip
@@ -16,21 +16,21 @@ if ! [ -x "$(command -v unzip)" ] > /dev/null 2>&1; then
 fi
 
 # Create Service
-if [ ! -f "/lib/systemd/system/bee.service" ]; then
-    sudo cp -rf $swarmHome/templates/bee/bee.service /lib/systemd/system/bee.service
-    if [ ! -f "/etc/default/bee" ]; then
-        if [ "$beeNetwork" = "mainnet" ]; then 
-            echo "OPTIONS=\"--config config.chrysalis-mainnet.json\"" > /etc/default/bee
+if [ ! -f "/lib/systemd/system/shimmer-bee.service" ]; then
+    sudo cp -rf $swarmHome/templates/shimmer/bee/bee.service /lib/systemd/system/shimmer-bee.service
+    if [ ! -f "/etc/default/shimmer-bee" ]; then
+        if [ "$shimmerBeeNetwork" = "mainnet" ]; then 
+            echo "OPTIONS=\"--config config.chrysalis-mainnet.json\"" > /etc/default/shimmer-bee
         fi
-        if [ "$beeNetwork" = "comnet" ]; then 
-            echo "OPTIONS=\"--config config.chrysalis-comnet.json\"" > /etc/default/bee
+        if [ "$shimmerBeeNetwork" = "comnet" ]; then 
+            echo "OPTIONS=\"--config config.chrysalis-comnet.json\"" > /etc/default/shimmer-bee
         fi
-        if [ "$beeNetwork" = "devnet" ]; then 
-            echo "OPTIONS=\"--config config.chrysalis-devnet.json\"" > /etc/default/bee
+        if [ "$shimmerBeeNetwork" = "devnet" ]; then 
+            echo "OPTIONS=\"--config config.chrysalis-devnet.json\"" > /etc/default/shimmer-bee
         fi
     fi
-    if [ ! -f "/etc/systemd/system/multi-user.target.wants/bee.service" ]; then
-        sudo systemctl enable bee > /dev/null 2>&1
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/shimmer-bee.service" ]; then
+        sudo systemctl enable shimmer-bee > /dev/null 2>&1
     fi
     sudo systemctl daemon-reload
 fi
@@ -38,78 +38,68 @@ fi
 ##############################################################################################################################################
 
 # Create dir if not exist
-sudo mkdir -p /tmp/bee > /dev/null 2>&1
+sudo mkdir -p /tmp/shimmer-bee > /dev/null 2>&1
 
 if [ "$osArchitecture" = "amd64" ]; then
     # Download latest bee
-    sudo wget -q -O /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/bee-node-${latestBeeVersion}-linux-x86-64.zip
+    sudo wget -q -O /tmp/shimmer-bee/bee-node-${latestShimmerBeeVersion}-linux-x86-64.zip https://github.com/iotaledger/bee/releases/download/v${latestShimmerBeeVersion}/bee-node-${latestShimmerBeeVersion}-linux-x86-64.zip
 
     # Unzip archive
-    if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip" ]; then
-        sudo unzip /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64.zip -d /tmp/bee > /dev/null 2>&1
+    if [ -f "/tmp/shimmer-bee/bee-node-${latestShimmerBeeVersion}-linux-x86-64.zip" ]; then
+        sudo unzip /tmp/shimmer-bee/bee-node-${latestShimmerBeeVersion}-linux-x86-64.zip -d /tmp/shimmer-bee > /dev/null 2>&1
     fi
 
     # Copy binary
-    if [ -f "/tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee" ]; then
-        beeStatus="$(systemctl show -p ActiveState --value bee)"
-        if [ "$beeStatus" = "active" ]; then
-            sudo systemctl stop bee
+    if [ -f "/tmp/shimmer-bee/bee-node-${latestShimmerBeeVersion}-linux-x86-64/bee" ]; then
+        beeStatus="$(systemctl show -p ActiveState --value shimmer-bee)"
+        if [ "$shimmerBeeStatus" = "active" ]; then
+            sudo systemctl stop shimmer-bee
         fi
 
-        sudo cp -rf /tmp/bee/bee-node-${latestBeeVersion}-linux-x86-64/bee /usr/bin/bee > /dev/null 2>&1
-        sudo chmod +x /usr/bin/bee
-        newBeeBinary=true
+        sudo cp -rf /tmp/shimmer-bee/bee-node-${latestShimmerBeeVersion}-linux-x86-64/bee /usr/bin/shimmer-bee > /dev/null 2>&1
+        sudo chmod +x /usr/bin/shimmer-bee
+        newShimmerBeeBinary=true
     fi
 fi
 
 ##############################################################################################################################################
 
-if [ "$newBeeBinary" = "true" ]; then
+if [ "$newShimmerBeeBinary" = "true" ]; then
     ## Download config
     ### Mainnet Config
-    sudo wget -q -O /tmp/bee/config.chrysalis-mainnet.json https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-mainnet.json
-    if [ ! -s "/tmp/bee/config.chrysalis-mainnet.json" ]; then
-        sudo wget -q -O /tmp/bee/config.chrysalis-mainnet.json https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-mainnet.json
+    sudo wget -q -O /tmp/shimmer-bee/config.chrysalis-mainnet.json https://github.com/iotaledger/bee/releases/download/v${latestShimmerBeeVersion}/config.chrysalis-mainnet.json
+    if [ ! -s "/tmp/shimmer-bee/config.chrysalis-mainnet.json" ]; then
+        sudo wget -q -O /tmp/shimmer-bee/config.chrysalis-mainnet.json https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-mainnet.json
     fi
-    if [ -f "/tmp/bee/config.chrysalis-mainnet.json" ]; then
-        sudo cp -rf /tmp/bee/config.chrysalis-mainnet.json $beeHome/config.chrysalis-mainnet.json > /dev/null 2>&1
-        newBeeConfig=true
-    fi
-
-    ### Comnet Config
-    sudo wget -q -O /tmp/bee/config.chrysalis-comnet.json https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-comnet.json
-    if [ ! -s "/tmp/bee/config.chrysalis-comnet.json" ]; then
-        sudo wget -q -O /tmp/bee/config.chrysalis-comnet.json https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-comnet.json
-    fi
-    if [ -f "/tmp/bee/config.chrysalis-comnet.json" ]; then
-        sudo cp -rf /tmp/bee/config.chrysalis-comnet.json $beeHome/config.chrysalis-comnet.json > /dev/null 2>&1
-        newBeeConfig=true
+    if [ -f "/tmp/shimmer-bee/config.chrysalis-mainnet.json" ]; then
+        sudo cp -rf /tmp/shimmer-bee/config.chrysalis-mainnet.json $shimmerBeeHome/config.chrysalis-mainnet.json > /dev/null 2>&1
+        newShimmerBeeConfig=true
     fi
 
     ### Devnet Config
-    sudo wget -q -O /tmp/bee/config.chrysalis-devnet.json https://github.com/iotaledger/bee/releases/download/v${latestBeeVersion}/config.chrysalis-devnet.json
-    if [ ! -s "/tmp/bee/config.chrysalis-devnet.json" ]; then
-        sudo wget -q -O /tmp/bee/config.chrysalis-devnet.json https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-devnet.json
+    sudo wget -q -O /tmp/shimmer-bee/config.chrysalis-devnet.json https://github.com/iotaledger/bee/releases/download/v${latestShimmerBeeVersion}/config.chrysalis-devnet.json
+    if [ ! -s "/tmp/shimmer-bee/config.chrysalis-devnet.json" ]; then
+        sudo wget -q -O /tmp/shimmer-bee/config.chrysalis-devnet.json https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-devnet.json
     fi
-    if [ -f "/tmp/bee/config.chrysalis-devnet.json" ]; then
-        sudo cp -rf /tmp/bee/config.chrysalis-devnet.json $beeHome/config.chrysalis-devnet.json > /dev/null 2>&1
-        newBeeConfig=true
+    if [ -f "/tmp/shimmer-bee/config.chrysalis-devnet.json" ]; then
+        sudo cp -rf /tmp/shimmer-bee/config.chrysalis-devnet.json $shimmerBeeHome/config.chrysalis-devnet.json > /dev/null 2>&1
+        newShimmerBeeConfig=true
     fi
 fi
 
 ##############################################################################################################################################
 
-if [ "$newBeeConfig" = "true" ]; then
+if [ "$newShimmerBeeConfig" = "true" ]; then
     # Run installer modules
-    sudo chown -R bee:bee $beeHome > /dev/null 2>&1
+    sudo chown -R bee:bee $shimmerBeeHome > /dev/null 2>&1
 
-    restartBee=true
-    beeUpdated=true
+    restartShimmerBee=true
+    shimmerBeeUpdated=true
 fi
 
 # Remove temporary files
-sudo rm -rf /tmp/bee > /dev/null 2>&1
+sudo rm -rf /tmp/shimmer-bee > /dev/null 2>&1
 
 
-unset newBeeBinary
-unset newBeeConfig
+unset newShimmerBeeBinary
+unset newShimmerBeeConfig
