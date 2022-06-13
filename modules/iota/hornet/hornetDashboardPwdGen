@@ -1,45 +1,41 @@
 #!/bin/bash
 
-hornetVersion=$(/usr/bin/hornet -v | awk '{ print $2 }')
-hornetDashboardPassword=$(whiptail --passwordbox "\nPlease enter a secure password for your dashboard login:" 8 65 --title "Hornet - Dashboard" 3>&1 1>&2 2>&3)
+iotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }')
+iotaHornetDashboardPassword=$(whiptail --passwordbox "\nPlease enter a secure password for your dashboard login:" 8 65 --title "Hornet - Dashboard" 3>&1 1>&2 2>&3)
 exitstatus=$?
 if [ "$exitstatus" != "1" ]; then
     hornetDashboardPassword2=$(whiptail --passwordbox "\nPlease re-enter the password for your dashboard login:" 8 65 --title "Hornet - Dashboard" 3>&1 1>&2 2>&3)
     exitstatus=$?
     if [ "$exitstatus" != "1" ]; then
-        if [ ! -z "$hornetDashboardPassword" ] && [ ! -z "$hornetDashboardPassword2" ] && [ "$hornetDashboardPassword" = "$hornetDashboardPassword2" ] && [ -f "/usr/bin/hornet" ]; then
+        if [ ! -z "$iotaHornetDashboardPassword" ] && [ ! -z "$iotaHornetDashboardPassword2" ] && [ "$iotaHornetDashboardPassword" = "$iotaHornetDashboardPassword2" ] && [ -f "/usr/bin/iota-hornet" ]; then
             {
                 echo 0
-                export HORNET_TOOL_PASSWORD="$hornetDashboardPassword"
+                export HORNET_TOOL_PASSWORD="$iotaHornetDashboardPassword"
                 echo 10
-                if [ "$hornetVersion" = "1.0.2" ] || [ "$hornetVersion" = "1.0.3" ] || [ "$hornetVersion" = "1.0.4" ]; then
-                    hornetPwdHash=$(/usr/bin/hornet tools pwdhash)
-                else
-                    hornetPwdHash=$(/usr/bin/hornet tools pwd-hash)
-                fi
+                iotaHornetPwdHash=$(/usr/bin/iota-hornet tools pwd-hash)
                 echo 20
-                hornetPasswordHash=$(echo $hornetPwdHash | grep -o "Your hash:.*" | awk '{print $3}')
+                iotaHornetPasswordHash=$(echo $iotaHornetPwdHash | grep -o "Your hash:.*" | awk '{print $3}')
                 echo 30
-                hornetPasswordSalt=$(echo $hornetPwdHash | grep -o "Your salt:.*" | awk '{print $3}')
+                iotaHornetPasswordSalt=$(echo $iotaHornetPwdHash | grep -o "Your salt:.*" | awk '{print $3}')
                 echo 40
-                sudo sed -i 's/^hornetPasswordHash=.*/hornetPasswordHash="'$hornetPasswordHash'"/' $swarmConfigs/hornet.cfg
+                sudo sed -i 's/^iotaHornetPasswordHash=.*/iotaHornetPasswordHash="'$iotaHornetPasswordHash'"/' $swarmConfigs/iota-hornet.cfg
                 echo 50
-                sudo sed -i 's/^hornetPasswordSalt=.*/hornetPasswordSalt="'$hornetPasswordSalt'"/' $swarmConfigs/hornet.cfg
+                sudo sed -i 's/^iotaHornetPasswordSalt=.*/iotaHornetPasswordSalt="'$iotaHornetPasswordSalt'"/' $swarmConfigs/iota-hornet.cfg
                 echo 60
-                source $hornetConfigParsers/hornetDashboardPasswordHash
+                source $iotaHornetConfigParsers/hornetDashboardPasswordHash
                 echo 70
-                source $hornetConfigParsers/hornetDashboardPasswordSalt
+                source $iotaHornetConfigParsers/hornetDashboardPasswordSalt
                 echo 80
                 export HORNET_TOOL_PASSWORD=""
-                unset hornetDashboardPassword
-                unset hornetDashboardPassword2
+                unset iotaHornetDashboardPassword
+                unset iotaHornetDashboardPassword2
                 echo 100
                 sleep 0.25
             } | whiptail --gauge "Please wait while generating Dashboard login..." 8 65 0
-            whiptail --title "Hornet - Dashboard" --msgbox "New password created successfully!" 8 65
-            restartHornet=true
+            whiptail --title "Hornet (IOTA) - Dashboard" --msgbox "New password created successfully!" 8 65
+            restartIotaHornet=true
         else
-            whiptail --title "Hornet - Dashboard" --msgbox "Aborted - Passwords do not match!" 8 65
+            whiptail --title "Hornet (IOTA) - Dashboard" --msgbox "Aborted - Passwords do not match!" 8 65
         fi
     fi
 fi
