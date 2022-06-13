@@ -5,9 +5,9 @@ if ! id inx >/dev/null 2>&1; then
     useradd --no-create-home --system inx >/dev/null
 fi
 
-if [ ! -d "$inxDashboardHome" ]; then
-    sudo mkdir -p $inxDashboardHome > /dev/null 2>&1
-    sudo chown -R inx:inx $inxDashboardHome > /dev/null 2>&1
+if [ ! -d "$shimmerInxDashboardHome" ]; then
+    sudo mkdir -p $shimmerInxDashboardHome > /dev/null 2>&1
+    sudo chown -R inx:inx $shimmerInxDashboardHome > /dev/null 2>&1
 fi
 
 # Install GO
@@ -16,13 +16,13 @@ if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
 fi
 
 # Create Service
-if [ ! -f "/lib/systemd/system/inx-dashboard.service" ]; then
-    sudo cp -rf $swarmHome/templates/inx/inx-dashboard.service /lib/systemd/system/inx-dashboard.service
-    if [ ! -f "/etc/default/inx-dashboard" ]; then
-        echo "OPTIONS=\"--config config.json\"" > /etc/default/inx-dashboard
+if [ ! -f "/lib/systemd/system/shimmer-inx-dashboard.service" ]; then
+    sudo cp -rf $swarmHome/templates/inx/shimmer-inx-dashboard.service /lib/systemd/system/shimmer-inx-dashboard.service
+    if [ ! -f "/etc/default/shimmer-inx-dashboard" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/shimmer-inx-dashboard
     fi
-    if [ ! -f "/etc/systemd/system/multi-user.target.wants/inx-dashboard.service" ]; then
-        sudo systemctl enable inx-dashboard > /dev/null 2>&1
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/shimmer-inx-dashboard.service" ]; then
+        sudo systemctl enable shimmer-inx-dashboard > /dev/null 2>&1
     fi
     sudo systemctl daemon-reload > /dev/null 2>&1
 fi
@@ -30,36 +30,36 @@ fi
 ##############################################################################################################################################
 
 # Create dir if not exist
-sudo mkdir -p /tmp/inx-dashboard > /dev/null 2>&1
+sudo mkdir -p /tmp/shimmer-inx-dashboard > /dev/null 2>&1
 
 if [ "$osArchitecture" = "amd64" ]; then
     source $swarmModules/swarmAuth
     if [ "$swarmAuth" = "200" ]; then
-        # Download latest inx-dashboard
-        ( cd /tmp/inx-dashboard/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-dashboard/v${latestInxDashboardVersion}/inx-dashboard-v${latestInxDashboardVersion}_linux_$osArchitecture.tar.gz )
-        if [ -f "/tmp/inx-dashboard/inx-dashboard-v${latestInxDashboardVersion}_linux_$osArchitecture.tar.gz" ]; then
-            inxDashboardDownloadChecksum=$(sudo shasum -a 512 /tmp/inx-dashboard/inx-dashboard-v${latestInxDashboardVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        # Download latest shimmerInx-dashboard
+        ( cd /tmp/shimmer-inx-dashboard/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx-dashboard/v${latestShimmerInxDashboardVersion}/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz )
+        if [ -f "/tmp/shimmer-inx-dashboard/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz" ]; then
+            shimmerInxDashboardDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-dashboard/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
         fi
 
         # Download checksum
-        ( cd /tmp/inx-dashboard/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-dashboard/v${latestInxDashboardVersion}/checksums.txt )
-        inxDashboardChecksum=$(sudo grep "inx-dashboard-v${latestInxDashboardVersion}_linux_$osArchitecture.tar.gz" /tmp/inx-dashboard/checksums.txt | awk '{ print $1 }')
-        echo $inxDashboardChecksum > /tmp/inx-dashboard.checksum
+        ( cd /tmp/shimmer-inx-dashboard/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmerInx/shimmerInx-dashboard/v${latestShimmerInxDashboardVersion}/checksums.txt )
+        shimmerInxDashboardChecksum=$(sudo grep "shimmerInx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-dashboard/checksums.txt | awk '{ print $1 }')
+        echo $shimmerInxDashboardChecksum > /tmp/shimmer-inx-dashboard.checksum
 
         # Unzip archive
-        if [ "$inxDashboardDownloadChecksum" = "$inxDashboardChecksum" ] && [ ! -z "$inxDashboardDownloadChecksum" ] && [ ! -z "$inxDashboardChecksum" ]; then
-            ( cd /tmp/inx-dashboard ; sudo tar -xzf /tmp/inx-dashboard/inx-dashboard-v${latestInxDashboardVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+        if [ "$shimmerInxDashboardDownloadChecksum" = "$shimmerInxDashboardChecksum" ] && [ ! -z "$shimmerInxDashboardDownloadChecksum" ] && [ ! -z "$shimmerInxDashboardChecksum" ]; then
+            ( cd /tmp/shimmer-inx-dashboard ; sudo tar -xzf /tmp/shimmer-inx-dashboard/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
             # Copy binary
-            if [ -f "/tmp/inx-dashboard/inx-dashboard" ]; then
-                inxDashboardStatus="$(systemctl show -p ActiveState --value inx-dashboard)"
-                if [ "$inxDashboardStatus" = "active" ]; then
-                    sudo systemctl stop inx-dashboard > /dev/null 2>&1
+            if [ -f "/tmp/shimmer-inx-dashboard/inx-dashboard" ]; then
+                shimmerInxDashboardStatus="$(systemctl show -p ActiveState --value shimmer-inx-dashboard)"
+                if [ "$shimmerInxDashboardStatus" = "active" ]; then
+                    sudo systemctl stop shimmer-inx-dashboard > /dev/null 2>&1
                 fi
 
-                sudo cp -rf /tmp/inx-dashboard/inx-dashboard /usr/bin/inx-dashboard > /dev/null 2>&1
-                sudo chmod +x /usr/bin/inx-dashboard > /dev/null 2>&1
-                newInxDashboardBinary=true
+                sudo cp -rf /tmp/shimmer-inx-dashboard/inx-dashboard /usr/bin/shimmer-inx-dashboard > /dev/null 2>&1
+                sudo chmod +x /usr/bin/shimmer-inx-dashboard > /dev/null 2>&1
+                newShimmerInxDashboardBinary=true
             fi
         fi
     fi
@@ -67,29 +67,29 @@ fi
 
 ##############################################################################################################################################
 
-if [ "$newInxDashboardBinary" = "true" ]; then
-    if [ -f "/tmp/inx-dashboard/config_template.json" ]; then
-        sudo cp -rf /tmp/inx-dashboard/config_template.json /var/lib/inx-dashboard/config.json > /dev/null 2>&1
-        newInxDashboardConfig=true
+if [ "$newShimmerInxDashboardBinary" = "true" ]; then
+    if [ -f "/tmp/shimmer-inx-dashboard/config_template.json" ]; then
+        sudo cp -rf /tmp/shimmer-inx-dashboard/config_template.json /var/lib/shimmer-inx-dashboard/config.json > /dev/null 2>&1
+        newShimmerInxDashboardConfig=true
     fi
-    if [ -f "/tmp/inx-dashboard/config.json" ]; then
-        sudo cp -rf /tmp/inx-dashboard/config.json /var/lib/inx-dashboard/config.json > /dev/null 2>&1
-        newInxDashboardConfig=true
+    if [ -f "/tmp/shimmer-inx-dashboard/config.json" ]; then
+        sudo cp -rf /tmp/shimmer-inx-dashboard/config.json /var/lib/shimmer-inx-dashboard/config.json > /dev/null 2>&1
+        newShimmerInxDashboardConfig=true
     fi
 fi
 
 ##############################################################################################################################################
 
-if [ "$newInxDashboardConfig" = "true" ]; then
+if [ "$newShimmerInxDashboardConfig" = "true" ]; then
     # Run installer modules
-    sudo chown -R inx:inx $inxDashboardHome > /dev/null 2>&1
+    sudo chown -R inx:inx $shimmerInxDashboardHome > /dev/null 2>&1
 
-    restartInxDashboard=true
-    inxDashboardUpdated=true
+    restartShimmerInxDashboard=true
+    shimmerInxDashboardUpdated=true
 fi
 
 # Remove temporary files
-sudo rm -rf /tmp/inx-dashboard > /dev/null 2>&1
+sudo rm -rf /tmp/shimmer-inx-dashboard > /dev/null 2>&1
 
 
-unset newInxDashboardBinary newInxDashboardConfig inxDashboardDownloadChecksum
+unset newShimmerInxDashboardBinary newShimmerInxDashboardConfig shimmerInxDashboardDownloadChecksum
