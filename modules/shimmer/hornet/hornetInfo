@@ -1,75 +1,76 @@
 #!/bin/bash
-if [ -f "/usr/bin/hornet" ]; then
+if [ -f "/usr/bin/hornet-shimmer" ]; then
 
-    source $swarmConfigs/hornet.cfg
+    source $swarmConfigs/hornet-shimmer.cfg
+    source $swarmLogs/githubVersion
 
-    hornetStatus=$(systemctl show -p ActiveState --value hornet)
+    hornetShimmerStatus=$(systemctl show -p ActiveState --value hornet-shimmer)
 
-    hornetVersion=$(/usr/bin/hornet -v | awk '{ print $2 }')
-    if [ -z "$hornetVersion" ]; then
-        hornetVersion="N/A"
+    hornetShimmerVersion=$(/usr/bin/hornet-shimmer -v | awk '{ print $2 }')
+    if [ -z "$hornetShimmerVersion" ]; then
+        hornetShimmerVersion="N/A"
     else
-        if [ "$hornetVersion" != "$latestHornetVersion" ] && [ ! -z "$latestHornetVersion" ]; then
-            hornetVersion="$hornetVersion (new version \"v$latestHornetVersion\" available!)"
+        if [ "$hornetShimmerVersion" != "$latestHornetShimmerVersion" ] && [ ! -z "$latestHornetShimmerVersion" ]; then
+            hornetShimmerVersion="$hornetShimmerVersion (new version \"v$latestHornetShimmerVersion\" available!)"
         fi
     fi
 
-    if [ "$hornetStatus" = "active" ]; then
-        hornetHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetApiJwtToken}"|jq -r '.data.isHealthy' 2> /dev/null)"
-        if [ -z "$hornetHealthy" ]; then
-            hornetHealthy="N/A"
+    if [ "$hornetShimmerStatus" = "active" ]; then
+        hornetShimmerHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14267/api/v2/info" -H  "accept: application/json" -H "Authorization: Bearer ${hornetShimmerApiJwtToken}"|jq -r '.status.isHealthy' 2> /dev/null)"
+        if [ -z "$hornetShimmerHealthy" ]; then
+            hornetShimmerHealthy="N/A"
         else
-            if [ "$hornetHealthy" = "true" ]; then
-                hornetHealthy="Yes"
+            if [ "$hornetShimmerHealthy" = "true" ]; then
+                hornetShimmerHealthy="Yes"
             else
-                hornetHealthy="No"
+                hornetShimmerHealthy="No"
             fi
         fi
     else
-        hornetHealthy="N/A"
+        hornetShimmerHealthy="N/A"
     fi
 
     # DB size
-    if [ -d "$hornetHome/${hornetNetwork}db" ]; then
-        getCurrentDbSize="$(du -sb $hornetHome/${hornetNetwork}db | cut -f1)"
+    if [ -d "$hornetShimmerHome/$hornetShimmerNetwork/database" ]; then
+        getCurrentDbSize="$(du -sb $hornetShimmerHome/$hornetShimmerNetwork/database | cut -f1)"
         let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
         if [ $getCurrentDbSizeInMb -gt 999 ]; then
             let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
-            currentHornetDbSize="${getCurrentDbSizeInGb} GB"
+            currentHornetShimmerDbSize="${getCurrentDbSizeInGb} GB"
         else
-            currentHornetDbSize="${getCurrentDbSizeInMb} MB"
+            currentHornetShimmerDbSize="${getCurrentDbSizeInMb} MB"
         fi
     else
-        currentHornetDbSize="N/A"
+        currentHornetShimmerDbSize="N/A"
     fi
 
-    if [ "$hornetAutoRevalidation" = "true" ]; then
-        hornetAutoRevalidationStatus=enabled
+    if [ "$hornetShimmerAutoRevalidation" = "true" ]; then
+        hornetShimmerAutoRevalidationStatus=enabled
     else
-        hornetAutoRevalidationStatus=disabled
+        hornetShimmerAutoRevalidationStatus=disabled
     fi
 
-    if [ "$hornetPruningEnabled" = "true" ]; then
-        hornetPruningEnabledStatus=enabled
+    if [ "$hornetShimmerPruningEnabled" = "true" ]; then
+        hornetShimmerPruningEnabledStatus=enabled
     else
-        hornetPruningEnabledStatus=disabled
+        hornetShimmerPruningEnabledStatus=disabled
     fi
 
-    if [ "$hornetPowEnabled" = "true" ]; then
-        hornetPowEnabledStatus=active
+    if [ "$hornetShimmerPowEnabled" = "true" ]; then
+        hornetShimmerPowEnabledStatus=active
     else
-        hornetPowEnabledStatus=inactive
+        hornetShimmerPowEnabledStatus=inactive
     fi
 
-    if [ -f "/etc/nginx/sites-enabled/hornet" ]; then
-        hornetProxyStatus=active
+    if [ -f "/etc/nginx/sites-enabled/hornet-shimmer" ]; then
+        hornetShimmerProxyStatus=active
     else
-        hornetProxyStatus=inactive
+        hornetShimmerProxyStatus=inactive
     fi
 
     # OUTPUT
-    whiptail --scrolltext --title "Hornet (IOTA) - Info" --msgbox "Hornet (IOTA): $hornetStatus\nVersion: v$hornetVersion\nNetwork: $hornetNetwork\nHealthy: $hornetHealthy\nDB size: $currentHornetDbSize\nProxy: $hornetProxyStatus\n\nAlias: $hornetAlias\nPoW: $hornetPowEnabledStatus\nLS Interval: $hornetSnapshotInterval milestones\nGossip Port: ${hornetGossipPort}/tcp\nAutopeering Port: ${hornetAutopeeringPort}/udp\nDB Revalidation: $hornetAutoRevalidation\n\nPruning: $hornetPruningEnabledStatus\nMax DB size: ${hornetPruningDatabaseSize} GB\nPruning percentage: ${hornetPruningPercentage}%\nPruning Cooldown: $hornetPruningCooldownTime minutes\n\nEnabled Plugins: \"$hornetEnablePlugins\"\nDisabled Plugins: \"$hornetDisablePlugins\"" 24 65
+    whiptail --title "Hornet Shimmer - Info" --msgbox "Hornet: $hornetShimmerStatus\nVersion: v$hornetShimmerVersion\nNetwork: $hornetShimmerNetwork\nHealthy: $hornetShimmerHealthy\nDB size: $currentHornetShimmerDbSize\nProxy: $hornetShimmerProxyStatus\n\nAlias: $hornetShimmerAlias\nPoW: $hornetShimmerPowEnabledStatus\nLS Interval: $hornetShimmerSnapshotInterval milestones\nGossip Port: ${hornetShimmerGossipPort}/tcp\nAutopeering Port: ${hornetShimmerAutopeeringPort}/udp\nDB Revalidation: $hornetShimmerAutoRevalidation\n\nPruning: $hornetShimmerPruningEnabledStatus\nMax DB size: ${hornetShimmerPruningDatabaseSize} GB\nPruning percentage: ${hornetShimmerPruningPercentage}%\nPruning Cooldown: $hornetShimmerPruningCooldownTime minutes\n\nEnabled Plugins: \"$hornetShimmerEnablePlugins\"\nDisabled Plugins: \"$hornetShimmerDisablePlugins\"" 32 68
 else
     # OUTPUT
-    whiptail --title "Hornet (IOTA) - Info" --msgbox "Hornet (IOTA) not installed!" 8 65
+    whiptail --title "Hornet Shimmer - Info" --msgbox "Hornet not installed!" 8 65
 fi

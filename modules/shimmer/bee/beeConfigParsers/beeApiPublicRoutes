@@ -1,30 +1,28 @@
 #!/bin/bash
 
-IFS=', ' read -r -a ARRAYshimmerBeeApiPublicRoutes <<< "$shimmerBeeApiPublicRoutes"
-validateShimmerBeeApiPublicRoutes=$(echo "${shimmerBeeApiPublicRoutes: -1}")
-if [ "$validateShimmerBeeApiPublicRoutes" = "," ]; then
-    shimmerBeeApiPublicRoutes="${shimmerBeeApiPublicRoutes%?}"
-    sudo sed -i 's~^shimmerBeeApiPublicRoutes=.*~shimmerBeeApiPublicRoutes="'$shimmerBeeApiPublicRoutes'"~' $swarmConfigs/shimmer-bee.cfg
-    shimmerBeeForceApiPublicRoutes=true
-    echo "shimmerBeeApiPublicRoutes" >> /tmp/shimmerBeeParsing
+IFS=', ' read -r -a ARRAYbeeShimmerApiPublicRoutes <<< "$beeShimmerApiPublicRoutes"
+validateBeeShimmerApiPublicRoutes=$(echo "${beeShimmerApiPublicRoutes: -1}")
+if [ "$validateBeeShimmerApiPublicRoutes" = "," ]; then
+    beeShimmerApiPublicRoutes="${beeShimmerApiPublicRoutes%?}"
+    sudo sed -i 's~^beeShimmerApiPublicRoutes=.*~beeShimmerApiPublicRoutes="'$beeShimmerApiPublicRoutes'"~' $swarmConfigs/bee-shimmer.cfg
+    beeShimmerForceApiPublicRoutes=true
 fi
 
-parser="$(jq '.restApi.publicRoutes' $shimmerBeeHome/$shimmerBeeConfig.json)"
+parser="$(jq '.restApi.publicRoutes' $beeShimmerHome/$beeShimmerConfig.json)"
 parser="$(echo $parser | tr -d '[]" ')"
 
-
-if [ "$parser" != "$shimmerBeeApiPublicRoutes" ] || [ "$shimmerBeeForceApiPublicRoutes" = "true" ]; then
-    sudo jq '.restApi.publicRoutes |= []' $shimmerBeeHome/$shimmerBeeConfig.json|sponge $shimmerBeeHome/$shimmerBeeConfig.json
-    for shimmerBeeApiPublicRoute in "${ARRAYshimmerBeeApiPublicRoutes[@]}"
+if [ "$parser" != "$beeShimmerApiPublicRoutes" ] || [ "$beeShimmerForceApiPublicRoutes" = "true" ]; then
+    sudo jq '.restApi.publicRoutes |= []' $beeShimmerHome/$beeShimmerConfig.json|sponge $beeShimmerHome/$beeShimmerConfig.json
+    for beeShimmerApiPublicRoute in "${ARRAYbeeShimmerApiPublicRoutes[@]}"
     do
-        sudo jq '.restApi.publicRoutes |= .+ ["'$shimmerBeeApiPublicRoute'"]' $shimmerBeeHome/$shimmerBeeConfig.json|sponge $shimmerBeeHome/$shimmerBeeConfig.json
+        sudo jq '.restApi.publicRoutes |= .+ ["'$beeShimmerApiPublicRoute'"]' $beeShimmerHome/$beeShimmerConfig.json|sponge $beeShimmerHome/$beeShimmerConfig.json
     done
-    restartShimmerBee=true
-    echo "shimmerBeeApiPublicRoutes2" >> /tmp/shimmerBeeParsing
+    restartBeeShimmer=true
+    echo "beeShimmerApiPublicRoutes" >> /tmp/beeShimmerParsing
 fi
 
 if [ -z "$parser" ]; then
-    echo "Empty parsing shimmerBeeApiPublicRoutes" >> /tmp/shimmerBeeParsing
+    echo "Empty parsing beeShimmerApiPublicRoutes" >> /tmp/beeShimmerParsing
 fi
 
-unset ARRAYshimmerBeeApiPublicRoutes shimmerBeeApiPublicRoute shimmerBeeForceApiPublicRoutes
+unset ARRAYbeeShimmerApiPublicRoutes beeShimmerApiPublicRoute beeShimmerForceApiPublicRoutes

@@ -5,9 +5,9 @@ if ! id hornet >/dev/null 2>&1; then
     useradd --no-create-home --system hornet >/dev/null
 fi
 
-if [ ! -d "$hornetHome" ]; then
-    sudo mkdir -p $hornetHome > /dev/null 2>&1
-    sudo chown -R hornet:hornet $hornetHome > /dev/null 2>&1
+if [ ! -d "$hornetShimmerHome" ]; then
+    sudo mkdir -p $hornetShimmerHome > /dev/null 2>&1
+    sudo chown -R hornet:hornet $hornetShimmerHome > /dev/null 2>&1
 fi
 
 # Install GO
@@ -16,21 +16,24 @@ if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
 fi
 
 # Create Service
-if [ ! -f "/lib/systemd/system/hornet.service" ]; then
-    sudo cp -rf $swarmHome/templates/hornet/hornet.service /lib/systemd/system/hornet.service
-    if [ ! -f "/etc/default/hornet" ]; then
-        if [ "$hornetNetwork" = "mainnet" ]; then 
-            echo "OPTIONS=\"--config config.json\"" > /etc/default/hornet
+if [ ! -f "/lib/systemd/system/hornet-shimmer.service" ]; then
+    sudo cp -rf $swarmHome/templates/hornet-shimmer/hornet-shimmer.service /lib/systemd/system/hornet-shimmer.service
+    if [ ! -f "/etc/default/hornet-shimmer" ]; then
+        if [ "$hornetShimmerNetwork" = "mainnet" ]; then 
+            echo "OPTIONS=\"--config config.json\"" > /etc/default/hornet-shimmer
         fi
-        if [ "$hornetNetwork" = "comnet" ]; then 
-            echo "OPTIONS=\"--config config-comnet.json\"" > /etc/default/hornet
+        if [ "$hornetShimmerNetwork" = "comnet" ]; then 
+            echo "OPTIONS=\"--config config-comnet.json\"" > /etc/default/hornet-shimmer
         fi
-        if [ "$hornetNetwork" = "devnet" ]; then 
-            echo "OPTIONS=\"--config config-devnet.json\"" > /etc/default/hornet
+        if [ "$hornetShimmerNetwork" = "devnet" ]; then 
+            echo "OPTIONS=\"--config config-devnet.json\"" > /etc/default/hornet-shimmer
+        fi
+        if [ "$hornetShimmerNetwork" = "alphanet" ]; then 
+            echo "OPTIONS=\"--config config.json\"" > /etc/default/hornet-shimmer
         fi
     fi
-    if [ ! -f "/etc/systemd/system/multi-user.target.wants/hornet.service" ]; then
-        sudo systemctl enable hornet > /dev/null 2>&1
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/hornet-shimmer.service" ]; then
+        sudo systemctl enable hornet-shimmer > /dev/null 2>&1
     fi
     sudo systemctl daemon-reload
 fi
@@ -38,93 +41,95 @@ fi
 ##############################################################################################################################################
 
 # Create dir if not exist
-sudo mkdir -p /tmp/hornet > /dev/null 2>&1
+sudo mkdir -p /tmp/hornet-shimmer > /dev/null 2>&1
 
 if [ "$osArchitecture" = "amd64" ]; then
-    hornetArchitecture="x86_64"
+    hornetShimmerArchitecture="x86_64"
 fi
 if [ "$osArchitecture" = "arm64" ]; then
-    hornetArchitecture="ARM64"
+    hornetShimmerArchitecture="ARM64"
 fi
 
-if [ ! -z "$hornetArchitecture" ]; then
+if [ ! -z "$hornetShimmerArchitecture" ]; then
     # Download latest hornet
-    ( cd /tmp/hornet/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestHornetVersion}/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz )
-    if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz" ]; then
-        hornetDownloadChecksum=$(sudo shasum -a 256 /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz | awk '{ print $1 }')
-    fi
-    # Download checksum
-    ( cd /tmp/hornet/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestHornetVersion}/checksums.txt )
-    if [ -f "/tmp/hornet/checksums.txt" ]; then
-        hornetChecksum=$(sudo grep "HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz" /tmp/hornet/checksums.txt | awk '{ print $1 }')
-        echo $hornetChecksum > /tmp/hornet.checksum
-    fi
+    sudo wget -q -O /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz https://github.com/gohornet/hornet/releases/download/v${latestHornetShimmerVersion}/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz
 
     # Unzip archive
-    if [ "$hornetDownloadChecksum" = "$hornetChecksum" ] && [ ! -z "$hornetDownloadChecksum" ] && [ ! -z "$hornetChecksum" ]; then
-        ( cd /tmp/hornet ; sudo tar -xzf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz ) > /dev/null 2>&1
+    if [ -f "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz" ]; then
+        ( cd /tmp/hornet-shimmer ; sudo tar -xzf /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture.tar.gz ) > /dev/null 2>&1
+    fi
 
-        # Copy binary
-        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/hornet" ]; then
-            hornetStatus="$(systemctl show -p ActiveState --value hornet)"
-            if [ "$hornetStatus" = "active" ]; then
-                sudo systemctl stop hornet > /dev/null 2>&1
-            fi
-
-            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/hornet /usr/bin/hornet > /dev/null 2>&1
-            sudo chmod +x /usr/bin/hornet > /dev/null 2>&1
-            newHornetBinary=true
+    # Copy binary
+    if [ -f "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/hornet" ]; then
+        hornetShimmerStatus="$(systemctl show -p ActiveState --value hornet-shimmer)"
+        if [ "$hornetShimmerStatus" = "active" ]; then
+            sudo systemctl stop hornet-shimmer
         fi
+
+        sudo cp -rf /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/hornet /usr/bin/hornet-shimmer > /dev/null 2>&1
+        sudo chmod +x /usr/bin/hornet-shimmer > /dev/null 2>&1
+        newHornetShimmerBinary=true
     fi
 fi
 
 
 ##############################################################################################################################################
 
-if [ "$newHornetBinary" = "true" ]; then
+if [ "$newHornetShimmerBinary" = "true" ]; then
     ### Mainnet Config
-    if [ "$hornetNetwork" = "mainnet" ]; then
-        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config.json" ]; then
-            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config.json /var/lib/hornet/config.json > /dev/null 2>&1
+    if [ "$hornetShimmerNetwork" = "mainnet" ]; then
+        if [ -f "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config.json" ]; then
+            sudo cp -rf /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config.json /var/lib/hornet-shimmer/config.json > /dev/null 2>&1
         fi
-        if [ -s "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config.json" ]; then
-            newHornetConfig=true
+        if [ -s "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config.json" ]; then
+            newHornetShimmerConfig=true
         fi
     fi
 
     ### Comnet Config
-    if [ "$hornetNetwork" = "comnet" ]; then
-        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-comnet.json" ]; then
-            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-comnet.json /var/lib/hornet/config-comnet.json > /dev/null 2>&1
+    if [ "$hornetShimmerNetwork" = "comnet" ]; then
+        if [ -f "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config-comnet.json" ]; then
+            sudo cp -rf /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config-comnet.json /var/lib/hornet-shimmer/config-comnet.json > /dev/null 2>&1
         fi
-        if [ -s "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-comnet.json" ]; then
-            newHornetConfig=true
+        if [ -s "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config-comnet.json" ]; then
+            newHornetShimmerConfig=true
         fi
     fi
 
     ### Devnet Config
-    if [ "$hornetNetwork" = "devnet" ]; then
-        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-devnet.json" ]; then
-            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-devnet.json /var/lib/hornet/config-devnet.json > /dev/null 2>&1
+    if [ "$hornetShimmerNetwork" = "devnet" ]; then
+        if [ -f "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config-devnet.json" ]; then
+            sudo cp -rf /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config-devnet.json /var/lib/hornet-shimmer/config-devnet.json > /dev/null 2>&1
         fi
-        if [ -s "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-devnet.json" ]; then
-            newHornetConfig=true
+        if [ -s "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config-devnet.json" ]; then
+            newHornetShimmerConfig=true
+        fi
+    fi
+
+    ### Alphanet Config
+    if [ "$hornetShimmerNetwork" = "alphanet" ]; then
+        if [ -f "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config.json" ]; then
+            sudo cp -rf /tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config.json /var/lib/hornet-shimmer/config.json > /dev/null 2>&1
+        fi
+        if [ -s "/tmp/hornet-shimmer/HORNET-${latestHornetShimmerVersion}_Linux_$hornetShimmerArchitecture/config.json" ]; then
+            newHornetShimmerConfig=true
         fi
     fi
 fi
 
 ##############################################################################################################################################
 
-if [ "$newHornetConfig" = "true" ]; then
+if [ "$newHornetShimmerConfig" = "true" ]; then
     # Run installer modules
-    sudo chown -R hornet:hornet $hornetHome > /dev/null 2>&1
+    sudo chown -R hornet:hornet $hornetShimmerHome > /dev/null 2>&1
 
-    restartHornet=true
-    hornetUpdated=true
+    restartHornetShimmer=true
+    hornetShimmerUpdated=true
 fi
 
 # Remove temporary files
-sudo rm -rf /tmp/hornet > /dev/null 2>&1
+sudo rm -rf /tmp/hornet-shimmer > /dev/null 2>&1
 
 
-unset newHornetBinary newHornetConfig hornetDownloadChecksum
+unset newHornetShimmerBinary
+unset newHornetShimmerConfig

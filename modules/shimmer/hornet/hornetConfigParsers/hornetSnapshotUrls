@@ -1,22 +1,21 @@
 #!/bin/bash
-if [ "$hornetNetwork" = "mainnet" ]; then
-    hornetFullSnapshotOld="https://cdn.tanglebay.com/snapshots/mainnet/full_snapshot.bin"
-    hornetDeltaSnapshotOld="https://cdn.tanglebay.com/snapshots/mainnet/delta_snapshot.bin"
-    hornetFullSnapshot="https://cdn.tanglebay.com/snapshots/iota-mainnet/full_snapshot.bin"
-    hornetDeltaSnapshot="https://cdn.tanglebay.com/snapshots/iota-mainnet/delta_snapshot.bin"
-    parser="$(jq '.snapshots.downloadURLs' $hornetHome/config.json)"
-    if [[ $parser = *$hornetFullSnapshotOld* ]] && [[ $parser = *$hornetDeltaSnapshotOld* ]]; then
-        sudo sudo sed -i 's~'$hornetFullSnapshotOld'~'$hornetFullSnapshot'~g' $hornetHome/config.json
-        sudo sudo sed -i 's~'$hornetDeltaSnapshotOld'~'$hornetDeltaSnapshot'~g' $hornetHome/config.json
-        restartHornet=true
-        echo "hornetSnapshotUrl" >> /tmp/hornetParsing
+if [ "$hornetShimmerNetwork" = "mainnet" ] || [ "$hornetShimmerNetwork" = "alphanet" ]; then
+    hornetShimmerFullSnapshotOld="https://cdn.tanglebay.com/snapshots/shimmernet/full_snapshot.bin"
+    hornetShimmerDeltaSnapshotOld="https://cdn.tanglebay.com/snapshots/shimmernet/delta_snapshot.bin"
+    hornetShimmerFullSnapshot="https://cdn.tanglebay.com/snapshots/shimmer-mainnet/full_snapshot.bin"
+    hornetShimmerDeltaSnapshot="https://cdn.tanglebay.com/snapshots/shimmer-mainnet/delta_snapshot.bin"
+    parser="$(jq '.snapshots.downloadURLs' $hornetShimmerHome/config.json)"
+    if [[ $parser = *$hornetShimmerFullSnapshotOld* ]] && [[ $parser = *$hornetShimmerDeltaSnapshotOld* ]]; then
+        sudo sudo sed -i 's~'$hornetShimmerFullSnapshotOld'~'$hornetShimmerFullSnapshot'~g' $hornetShimmerHome/config.json
+        sudo sudo sed -i 's~'$hornetShimmerDeltaSnapshotOld'~'$hornetShimmerDeltaSnapshot'~g' $hornetShimmerHome/config.json
+        restartHornetShimmer=true
+        echo "hornetShimmerSnapshotUrl" >> /tmp/hornetShimmerParsing
     fi
-    parser="$(jq '.snapshots.downloadURLs' $hornetHome/config.json)"
-    if [[ $parser != *$hornetFullSnapshot* ]] && [[ $parser != *$hornetDeltaSnapshot* ]]; then
-        sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . + {"full": "'$hornetFullSnapshot'","delta": "'$hornetDeltaSnapshot'"}' $hornetHome/config.json|sponge $hornetHome/config.json
-        restartHornet=true
-        echo "hornetSnapshotUrl" >> /tmp/hornetParsing
+    parser="$(jq '.snapshots.downloadURLs' $hornetShimmerHome/config.json)"
+    if [[ $parser != *$hornetShimmerFullSnapshot* ]] && [[ $parser != *$hornetShimmerDeltaSnapshot* ]]; then
+        sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . + {"full": "'$hornetShimmerFullSnapshot'","delta": "'$hornetShimmerDeltaSnapshot'"}' $hornetShimmerHome/config.json|sponge $hornetShimmerHome/config.json
+        restartHornetShimmer=true
+        echo "hornetShimmerSnapshotUrl" >> /tmp/hornetShimmerParsing
     fi
-    unset hornetFullSnapshot
-    unset parser
+    unset parser hornetShimmerFullSnapshot
 fi
