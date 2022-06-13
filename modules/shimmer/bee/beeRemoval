@@ -1,43 +1,38 @@
 #!/bin/bash
 
-source $swarmConfigs/bee-shimmer.cfg
+source $swarmConfigs/shimmer-bee.cfg
 source $swarmConfigs/proxy.cfg
 source $proxyModules/proxyParser
 
-sudo systemctl stop bee-shimmer > /dev/null 2>&1
+sudo systemctl stop shimmer-bee > /dev/null 2>&1
 
-sudo systemctl disable bee-shimmer > /dev/null 2>&1
+sudo systemctl disable shimmer-bee > /dev/null 2>&1
 
-sudo rm -rf /usr/bin/bee-shimmer /var/lib/bee-shimmer /lib/systemd/system/bee-shimmer.service /etc/default/bee-shimmer > /dev/null 2>&1
+sudo rm -rf /usr/bin/shimmer-bee /var/lib/shimmer-bee /lib/systemd/system/shimmer-bee.service /etc/default/shimmer-bee > /dev/null 2>&1
 
 sudo systemctl daemon-reload > /dev/null 2>&1
 
 if [ "$ufw" = "true" ]; then
-    sudo ufw delete allow $beeShimmerGossipPort/tcp > /dev/null 2>&1
-    sudo ufw delete allow $beeShimmerAutopeeringPort/udp > /dev/null 2>&1
+    sudo ufw delete allow $shimmerBeeGossipPort/tcp > /dev/null 2>&1
+    sudo ufw delete allow $shimmerBeeAutopeeringPort/udp > /dev/null 2>&1
 fi
 
-sudo rm -rf $beeShimmerHome > /dev/null 2>&1
+sudo rm -rf $shimmerBeeHome > /dev/null 2>&1
 
-
-if id bee > /dev/null 2>&1; then
-    if [ ! -f "/usr/bin/bee" ]; then
+getBeeInstallations=$(ls /usr/bin/ | grep bee)
+if [ -z "$getBeeInstallations" ]; then
+    if id bee > /dev/null 2>&1; then
         sudo deluser bee > /dev/null 2>&1
     fi
 fi
-
-if [ -f "/etc/nginx/sites-enabled/bee-shimmer" ]; then
+    
+if [ -f "/etc/nginx/sites-enabled/shimmer-bee" ]; then
     if [ "$ufw" = "true" ]; then
-        if [ "$proxyBeeShimmerPort" != "$proxySwarmDashboardPort" ] && [ "$proxyBeeShimmerPort" != "$proxyHornetPort" ] && [ "$proxyBeeShimmerPort" != "$proxyHornetShimmerPort" ] && [ "$proxyBeeShimmerPort" != "$proxyBeePort" ] && [ "$proxyBeeShimmerPort" != "$proxyGoshimmerPort" ] && [ "$proxyBeeShimmerPort" != "$proxyWaspDashboardPort" ] && [ "$proxyBeeShimmerPort" != "$proxyWaspApiPort" ]; then
-            sudo ufw delete allow $proxyBeeShimmerPort/tcp > /dev/null 2>&1
+        if [ "$proxyShimmerBeePort" != "$proxyIotaHornetPort" ] && [ "$proxyShimmerBeePort" != "$proxyShimmerHornetPort" ] && [ "$proxyShimmerBeePort" != "$proxyIotaBeePort" ] && [ "$proxyShimmerBeePort" != "$proxyGoshimmerPort" ] && [ "$proxyShimmerBeePort" != "$proxyWaspDashboardPort" ] && [ "$proxyShimmerBeePort" != "$proxyWaspApiPort" ]; then
+            sudo ufw delete allow $proxyShimmerBeePort/tcp > /dev/null 2>&1
         fi
     fi
-    sudo sed -i 's/^proxyBeeShimmerUrl=.*/proxyBeeShimmerUrl=/' $swarmConfigs/proxy.cfg
-    sudo rm -rf /etc/nginx/sites-enabled/bee-shimmer > /dev/null 2>&1
+    sudo sed -i 's/^proxyShimmerBeeUrl=.*/proxyShimmerBeeUrl=/' $swarmConfigs/proxy.cfg
+    sudo rm -rf /etc/nginx/sites-enabled/shimmer-bee > /dev/null 2>&1
     sudo systemctl reload nginx
-fi
-
-if [ -f "$proxyLandingPage" ]; then
-    sudo sed -i 's/https:\/\/'$proxyBeeShimmerDashboardDomain':'$proxyBeeShimmerDashboardPort'\/dashboard" target="_blank/#/g' $proxyLandingPage
-    sudo sed -i 's~/img/bee-shimmer.*id~/img/bee-shimmer_logo_gray.svg" alt="Bee-Shimmer not installed" id~' $proxyLandingPage
 fi

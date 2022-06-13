@@ -1,7 +1,7 @@
 #!/bin/bash
 while [ $exitCode -lt 1 ]; do
     clear
-    source $swarmConfigs/bee-shimmer.cfg
+    source $swarmConfigs/shimmer-bee.cfg
     CHOICE=$(
         whiptail --title "Bee-Shimmer - Configurations" --menu "\nChoose an option" 23 65 0 \
         "1)" "Bee Peers" \
@@ -22,31 +22,31 @@ while [ $exitCode -lt 1 ]; do
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
-        if [ "$restartBeeShimmer" = "true" ] && [ -f "/usr/bin/bee-shimmer" ]; then
+        if [ "$restartShimmerBee" = "true" ] && [ -f "/usr/bin/shimmer-bee" ]; then
             if (whiptail --title "Bee-Shimmer - Menu" --yesno "Would you like to apply the changes and restart Bee-Shimmer?" 8 65); then
                 {
                     echo 0
                     echo 33
-                    source $beeShimmerParser
+                    source $shimmerBeeParser
                     echo 50
-                    sudo systemctl restart bee-shimmer > /dev/null 2>&1
+                    sudo systemctl restart shimmer-bee > /dev/null 2>&1
                     sleep 0.25
                     echo 100
                     sleep 0.25
                 } | whiptail --gauge "Please wait while the changes are applied and Bee is restarted..." 8 65 0
-                unset restartBeeShimmer
+                unset restartShimmerBee
             fi
         fi
     fi
 
     case $CHOICE in
         "1)")
-            source $beeShimmerModules/beeShimmerPeersConfiguration
+            source $shimmerBeeModules/shimmerBeePeersConfiguration
         ;;
         "2)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $swarmConfigs/bee-shimmer.cfg
+                source $swarmConfigs/shimmer-bee.cfg
                 CHOICE=$(
                     whiptail --title "Bee-Shimmer - API" --menu "\nChoose an option" 16 65 0 \
                     "1)" "API Routes" 3>&2 2>&1 1>&3
@@ -57,31 +57,31 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        source $swarmConfigs/bee-shimmer.cfg
-                        beeShimmerApiRoutes="$beeShimmerApiProtectedRoutes"
-                        source $beeShimmerModules/beeShimmerApiRoutes
-                        beeShimmerApiRoutes=$(whiptail --title "Bee-Shimmer - API routes" --checklist "\nSelect (using the spacebar) the Bee-Shimmer API routes that you want to protect. All routes not selected will be public:" 24 65 11 \
-                            "/health" "" $beeShimmerApiRoutesHealth \
-                            "/api/v2/info" "" $beeShimmerApiRoutesInfo \
-                            "/api/v2/tips" "" $beeShimmerApiRoutesTips \
-                            "/api/v2/messages*" "" $beeShimmerApiRoutesMessages \
-                            "/api/v2/transactions*" "" $beeShimmerApiRoutesTransactions \
-                            "/api/v2/milestones*" "" $beeShimmerApiRoutesMilestones \
-                            "/api/v2/outputs*" "" $beeShimmerApiRoutesOutputs \
-                            "/api/v2/addresses*" "" $beeShimmerApiRoutesAddresses \
-                            "/api/v2/treasury" "" $beeShimmerApiRoutesTreasury \
-                            "/api/v2/receipts*" "" $beeShimmerApiRoutesReceipts 3>&1 1>&2 2>&3)
+                        source $swarmConfigs/shimmer-bee.cfg
+                        shimmerBeeApiRoutes="$shimmerBeeApiProtectedRoutes"
+                        source $shimmerBeeModules/shimmerBeeApiRoutes
+                        shimmerBeeApiRoutes=$(whiptail --title "Bee-Shimmer - API routes" --checklist "\nSelect (using the spacebar) the Bee-Shimmer API routes that you want to protect. All routes not selected will be public:" 24 65 11 \
+                            "/health" "" $shimmerBeeApiRoutesHealth \
+                            "/api/v2/info" "" $shimmerBeeApiRoutesInfo \
+                            "/api/v2/tips" "" $shimmerBeeApiRoutesTips \
+                            "/api/v2/messages*" "" $shimmerBeeApiRoutesMessages \
+                            "/api/v2/transactions*" "" $shimmerBeeApiRoutesTransactions \
+                            "/api/v2/milestones*" "" $shimmerBeeApiRoutesMilestones \
+                            "/api/v2/outputs*" "" $shimmerBeeApiRoutesOutputs \
+                            "/api/v2/addresses*" "" $shimmerBeeApiRoutesAddresses \
+                            "/api/v2/treasury" "" $shimmerBeeApiRoutesTreasury \
+                            "/api/v2/receipts*" "" $shimmerBeeApiRoutesReceipts 3>&1 1>&2 2>&3)
                         exitStatus=$?
-                        beeShimmerApiRoutes=$(echo $beeShimmerApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+                        shimmerBeeApiRoutes=$(echo $shimmerBeeApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
                         if [ "$exitStatus" != "1" ]; then
-                            beeShimmerUpdateApiRoutes=true
-                            source $beeShimmerModules/beeShimmerApiRoutes
-                            if [ -f "/usr/bin/bee-shimmer" ]; then
-                                source $beeShimmerConfigParsers/beeShimmerApiPublicRoutes
+                            shimmerBeeUpdateApiRoutes=true
+                            source $shimmerBeeModules/shimmerBeeApiRoutes
+                            if [ -f "/usr/bin/shimmer-bee" ]; then
+                                source $shimmerBeeConfigParsers/shimmerBeeApiPublicRoutes
                             fi
-                            unset beeShimmerUpdateApiRoutes
+                            unset shimmerBeeUpdateApiRoutes
                         fi
-                        unset beeShimmerApiRoutes
+                        unset shimmerBeeApiRoutes
                     ;;
                 esac
             done
@@ -90,7 +90,7 @@ while [ $exitCode -lt 1 ]; do
         "3)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $swarmConfigs/bee-shimmer.cfg
+                source $swarmConfigs/shimmer-bee.cfg
                 # Bee-Shimmer Dashboard
                 CHOICE=$(
                     whiptail --title "Bee-Shimmer - Dashboard" --menu "\nChoose an option" 14 65 0 \
@@ -103,16 +103,16 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ -f "/usr/bin/bee-shimmer" ]; then
-                            beeShimmerUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $beeShimmerUsername --title "Bee-Shimmer - Dashboard" 3>&1 1>&2 2>&3)
+                        if [ -f "/usr/bin/shimmer-bee" ]; then
+                            shimmerBeeUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $shimmerBeeUsername --title "Bee-Shimmer - Dashboard" 3>&1 1>&2 2>&3)
                             exitStatus=$?
                             if [ $exitStatus != 1 ]; then
-                                if [ ! -z "$beeShimmerUsername" ]; then
-                                    source $beeShimmerConfigParsers/beeShimmerUsername
-                                    if [ "$newBeeShimmerUsername" = "true" ]; then
-                                        sudo sed -i 's/^beeShimmerUsername=.*/beeShimmerUsername="'$beeShimmerUsername'"/' $swarmConfigs/bee-shimmer.cfg
-                                        whiptail --title "Bee-Shimmer - Dashboard" --msgbox "New username \"$beeShimmerUsername\" applied." 8 65
-                                        unset newBeeShimmerUsername
+                                if [ ! -z "$shimmerBeeUsername" ]; then
+                                    source $shimmerBeeConfigParsers/shimmerBeeUsername
+                                    if [ "$newShimmerBeeUsername" = "true" ]; then
+                                        sudo sed -i 's/^shimmerBeeUsername=.*/shimmerBeeUsername="'$shimmerBeeUsername'"/' $swarmConfigs/shimmer-bee.cfg
+                                        whiptail --title "Bee-Shimmer - Dashboard" --msgbox "New username \"$shimmerBeeUsername\" applied." 8 65
+                                        unset newShimmerBeeUsername
                                     else
                                         whiptail --title "Bee-Shimmer - Dashboard" --msgbox "No username change detected." 8 65
                                     fi
@@ -125,8 +125,8 @@ while [ $exitCode -lt 1 ]; do
                         fi
                     ;;
                     "2)")
-                        if [ -f "/usr/bin/bee-shimmer" ]; then
-                            source $beeShimmerModules/beeShimmerDashboardPwdGen
+                        if [ -f "/usr/bin/shimmer-bee" ]; then
+                            source $shimmerBeeModules/shimmerBeeDashboardPwdGen
                         else
                             whiptail --title "Bee-Shimmer - Dashboardn" --msgbox "Please install Bee (Shimmer) first." 8 65
                         fi
@@ -136,15 +136,15 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "4)")
-            if [ -f "/usr/bin/bee-shimmer" ]; then
+            if [ -f "/usr/bin/shimmer-bee" ]; then
                 beeAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $beeAlias --title "Bee - Alias" 3>&1 1>&2 2>&3)
                 exitStatus=$?
                 if [ $exitStatus != 1 ]; then
-                    if [ ! -z "$beeShimmerAlias" ]; then
-                        source $beeShimmerConfigParsers/beeAShimmerlias
-                        if [ "$newBeeShimmerAlias" = "true" ]; then
-                            sudo sed -i "s~^beeShimmerAlias=.*~beeShimmerAlias=\"$beeShimmerAlias\"~g" $swarmConfigs/bee-shimmer.cfg
-                            whiptail --title "Bee-Shimmer - Configuration" --msgbox "New alias \"$beeShimmerAlias\" applied." 8 65
+                    if [ ! -z "$shimmerBeeAlias" ]; then
+                        source $shimmerBeeConfigParsers/shimmerBeeAShimmerlias
+                        if [ "$newShimmerBeeAlias" = "true" ]; then
+                            sudo sed -i "s~^shimmerBeeAlias=.*~shimmerBeeAlias=\"$shimmerBeeAlias\"~g" $swarmConfigs/shimmer-bee.cfg
+                            whiptail --title "Bee-Shimmer - Configuration" --msgbox "New alias \"$shimmerBeeAlias\" applied." 8 65
                             unset newBeeAlias
                         else
                             whiptail --title "Bee-Shimmer - Configuration" --msgbox "No node alias change detected." 8 65
@@ -158,15 +158,15 @@ while [ $exitCode -lt 1 ]; do
         "5)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $swarmConfigs/bee-shimmer.cfg
+                source $swarmConfigs/shimmer-bee.cfg
                 # Bee-Shimmer Pruning
-                if [ "$beeShimmerPruningEnabled" = "true" ]; then
-                    beeShimmerPruningEnabledStatus=enabled
+                if [ "$shimmerBeePruningEnabled" = "true" ]; then
+                    shimmerBeePruningEnabledStatus=enabled
                 else
-                    beeShimmerPruningEnabledStatus=disabled
+                    shimmerBeePruningEnabledStatus=disabled
                 fi
                 CHOICE=$(
-                    whiptail --title "Bee-Shimmer - Pruning" --menu "\nStatus: $beeShimmerPruningEnabledStatus\n\nChoose an option" 18 65 0 \
+                    whiptail --title "Bee-Shimmer - Pruning" --menu "\nStatus: $shimmerBeePruningEnabledStatus\n\nChoose an option" 18 65 0 \
                     "1)" "Enable/Disable pruning" \
                     "2)" "Set pruning after Milestones" 3>&2 2>&1 1>&3
                 )
@@ -177,40 +177,40 @@ while [ $exitCode -lt 1 ]; do
                 case $CHOICE in
                     "1)")
                         CHOICE=$(
-                            whiptail --title "Bee-Shimmer - Pruning" --menu "\nStatus: $beeShimmerPruningEnabledStatus\n\nChoose an option" 14 65 0 \
+                            whiptail --title "Bee-Shimmer - Pruning" --menu "\nStatus: $shimmerBeePruningEnabledStatus\n\nChoose an option" 14 65 0 \
                             "1)" "Enable pruning" \
                             "2)" "Disable pruning" 3>&2 2>&1 1>&3
                         )
                         case $CHOICE in
                             "1)")
-                                beeShimmerPruningEnabled=true
-                                if [ -f "/usr/bin/bee-shimmer" ]; then
-                                    source $beeShimmerConfigParsers/beeShimmerPruningEnabled
+                                shimmerBeePruningEnabled=true
+                                if [ -f "/usr/bin/shimmer-bee" ]; then
+                                    source $shimmerBeeConfigParsers/shimmerBeePruningEnabled
                                 fi
-                                sudo sed -i 's/^beeShimmerPruningEnabled=.*/beeShimmerPruningEnabled='$beeShimmerPruningEnabled'/' $swarmConfigs/bee-shimmer.cfg
+                                sudo sed -i 's/^shimmerBeePruningEnabled=.*/shimmerBeePruningEnabled='$shimmerBeePruningEnabled'/' $swarmConfigs/shimmer-bee.cfg
                                 whiptail --title "Bee-Shimmer - Pruning" --msgbox "Pruning was successfully activated!" 8 65
                             ;;
                             "2)")
-                                beeShimmerPruningEnabled=false
-                                if [ -f "/usr/bin/bee-shimmer" ]; then
-                                    source $beeShimmerConfigParsers/beeShimmerPruningEnabled
+                                shimmerBeePruningEnabled=false
+                                if [ -f "/usr/bin/shimmer-bee" ]; then
+                                    source $shimmerBeeConfigParsers/shimmerBeePruningEnabled
                                 if
-                                sudo sed -i 's/^beeShimmerPruningEnabled=.*/beeShimmerPruningEnabled='$beeShimmerPruningEnabled'/' $swarmConfigs/bee-shimmer.cfg
+                                sudo sed -i 's/^shimmerBeePruningEnabled=.*/shimmerBeePruningEnabled='$shimmerBeePruningEnabled'/' $swarmConfigs/shimmer-bee.cfg
                                 whiptail --title "Bee-Shimmer - Pruning" --msgbox "Pruning was successfully deactivated!" 8 65
                             ;;
                         esac
                     ;;
                     "2)")
-                        currentBeeShimmerPruningDelay=$beeShimmerPruningDelay
-                        beeShimmerPruningDelay=$(whiptail --inputbox "\nSet the interval (milestones) at which pruning is performed." 10 65 $beeShimmerPruningDelay --title "Bee-Shimmer - Pruning" 3>&1 1>&2 2>&3)
+                        currentShimmerBeePruningDelay=$shimmerBeePruningDelay
+                        shimmerBeePruningDelay=$(whiptail --inputbox "\nSet the interval (milestones) at which pruning is performed." 10 65 $shimmerBeePruningDelay --title "Bee-Shimmer - Pruning" 3>&1 1>&2 2>&3)
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
-                            if [ $beeShimmerPruningDelay -gt 0 ] && [ $beeShimmerPruningDelay -eq $beeShimmerPruningDelay ] && [ $currentBeeShimmerPruningDelay -ne $beeShimmerPruningDelay ]> /dev/null 2>&1; then
-                                if [ -f "/usr/bin/bee-shimmer" ]; then
-                                    source $beeShimmerConfigParsers/beeShimmerPruningDelay
+                            if [ $shimmerBeePruningDelay -gt 0 ] && [ $shimmerBeePruningDelay -eq $shimmerBeePruningDelay ] && [ $currentShimmerBeePruningDelay -ne $shimmerBeePruningDelay ]> /dev/null 2>&1; then
+                                if [ -f "/usr/bin/shimmer-bee" ]; then
+                                    source $shimmerBeeConfigParsers/shimmerBeePruningDelay
                                 fi
-                                sudo sed -i 's/^beeShimmerPruningDelay=.*/beeShimmerPruningDelay='$beeShimmerPruningDelay'/' $swarmConfigs/bee-shimmer.cfg
-                                whiptail --title "Bee-Shimmer - Pruning" --msgbox "Pruning delay set to ${beeShimmerPruningDelay} milestones!" 8 65
+                                sudo sed -i 's/^shimmerBeePruningDelay=.*/shimmerBeePruningDelay='$shimmerBeePruningDelay'/' $swarmConfigs/shimmer-bee.cfg
+                                whiptail --title "Bee-Shimmer - Pruning" --msgbox "Pruning delay set to ${shimmerBeePruningDelay} milestones!" 8 65
                             fi
                         fi
                     ;;
@@ -219,60 +219,60 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "6)")
-            source $swarmConfigs/bee-shimmer.cfg
-            if [ "$beeShimmerPowEnabled" = "true" ]; then
-                beeShimmerPowEnabledStatus=enabled
+            source $swarmConfigs/shimmer-bee.cfg
+            if [ "$shimmerBeePowEnabled" = "true" ]; then
+                shimmerBeePowEnabledStatus=enabled
             else
-                beeShimmerPowEnabledStatus=disabled
+                shimmerBeePowEnabledStatus=disabled
             fi
             CHOICE=$(
-                whiptail --title "Bee-Shimmer - PoW" --menu "\nPOW: $beeShimmerPowEnabledStatus\n\nChoose an option" 14 65 0 \
+                whiptail --title "Bee-Shimmer - PoW" --menu "\nPOW: $shimmerBeePowEnabledStatus\n\nChoose an option" 14 65 0 \
                 "1)" "Enable PoW" \
                 "2)" "Disable PoW" 3>&2 2>&1 1>&3
             )
             case $CHOICE in
                 "1)")
-                    beeShimmerPowEnabled=true
-                    if [ -f "/usr/bin/bee-shimmer" ]; then
-                        source $beeShimmerConfigParsers/beeShimmerPowEnabled
+                    shimmerBeePowEnabled=true
+                    if [ -f "/usr/bin/shimmer-bee" ]; then
+                        source $shimmerBeeConfigParsers/shimmerBeePowEnabled
                     fi
-                    sudo sed -i 's/^beeShimmerPowEnabled=.*/beeShimmerPowEnabled='$beeShimmerPowEnabled'/' $swarmConfigs/bee-shimmer.cfg
+                    sudo sed -i 's/^shimmerBeePowEnabled=.*/shimmerBeePowEnabled='$shimmerBeePowEnabled'/' $swarmConfigs/shimmer-bee.cfg
                     whiptail --title "Bee-Shimmer - PoW" --msgbox "PoW has been enabled!" 8 65
                 ;;
                 "2)")
-                    beeShimmerPowEnabled=false
-                    if [ -f "/usr/bin/bee-shimmer" ]; then
-                        source $beeShimmerConfigParsers/beeShimmerPowEnabled
+                    shimmerBeePowEnabled=false
+                    if [ -f "/usr/bin/shimmer-bee" ]; then
+                        source $shimmerBeeConfigParsers/shimmerBeePowEnabled
                     fi
-                    sudo sed -i 's/^beeShimmerPowEnabled=.*/beeShimmerPowEnabled='$beeShimmerPowEnabled'/' $swarmConfigs/bee-shimmer.cfg
+                    sudo sed -i 's/^shimmerBeePowEnabled=.*/shimmerBeePowEnabled='$shimmerBeePowEnabled'/' $swarmConfigs/shimmer-bee.cfg
                     whiptail --title "Bee-Shimmer - PoW" --msgbox "PoW has been disabeld!!" 8 65
                 ;;
             esac
         ;;
         "7)")
-            source $swarmConfigs/bee-shimmer.cfg
-            currentBeeShimmerSnapshotInterval=$beeShimmerSnapshotInterval
-            beeShimmerSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $beeShimmerSnapshotInterval --title "Bee - Snapshots" 3>&1 1>&2 2>&3)
+            source $swarmConfigs/shimmer-bee.cfg
+            currentShimmerBeeSnapshotInterval=$shimmerBeeSnapshotInterval
+            shimmerBeeSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $shimmerBeeSnapshotInterval --title "Bee - Snapshots" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
-                if [ ! -z "$beeShimmerSnapshotInterval" ] && [ $beeShimmerSnapshotInterval -eq $beeShimmerSnapshotInterval ] 2>/dev/null; then
-                    if [ -f "/usr/bin/bee-shimmer" ]; then
-                        source $beeShimmerConfigParsers/beeShimmerSnapshotInterval
+                if [ ! -z "$shimmerBeeSnapshotInterval" ] && [ $shimmerBeeSnapshotInterval -eq $shimmerBeeSnapshotInterval ] 2>/dev/null; then
+                    if [ -f "/usr/bin/shimmer-bee" ]; then
+                        source $shimmerBeeConfigParsers/shimmerBeeSnapshotInterval
                     fi
-                    if [ "$currentBeeShimmerSnapshotInterval" != "$beeShimmerSnapshotInterval" ]; then
-                        sudo sed -i 's/^beeShimmerSnapshotInterval=.*/beeShimmerSnapshotInterval='$beeShimmerSnapshotInterval'/' $swarmConfigs/bee-shimmer.cfg
-                        whiptail --title "Bee-Shimmer - Snapshots" --msgbox "Snapshot interval changed to $beeShimmerSnapshotInterval milestones!" 8 65
+                    if [ "$currentShimmerBeeSnapshotInterval" != "$shimmerBeeSnapshotInterval" ]; then
+                        sudo sed -i 's/^shimmerBeeSnapshotInterval=.*/shimmerBeeSnapshotInterval='$shimmerBeeSnapshotInterval'/' $swarmConfigs/shimmer-bee.cfg
+                        whiptail --title "Bee-Shimmer - Snapshots" --msgbox "Snapshot interval changed to $shimmerBeeSnapshotInterval milestones!" 8 65
                     else
                         whiptail --title "Bee-Shimmer - Snapshots" --msgbox "No new snapshot interval detected!" 8 65
                     fi
-                    unset newBeeShimmerSnapshotInterval
+                    unset newShimmerBeeSnapshotInterval
                 fi
             fi
         ;;
         "8)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $swarmConfigs/bee-shimmer.cfg
+                source $swarmConfigs/shimmer-bee.cfg
                 CHOICE=$(
                     whiptail --title "Bee-Shimmer - p2pIdentity" --menu "\nChoose an option" 14 65 0 \
                     "1)" "Set p2pIdentity" \
@@ -284,28 +284,28 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        source $swarmConfigs/bee-shimmer.cfg
-                        currentBeeShimmerIdentity=$beeShimmerIdentity
-                        beeShimmerIdentity=$(whiptail --inputbox "\nSet your own private key for the node identity" 10 65 --title "Bee-Shimmer - Indentity" 3>&1 1>&2 2>&3)
+                        source $swarmConfigs/shimmer-bee.cfg
+                        currentShimmerBeeIdentity=$shimmerBeeIdentity
+                        shimmerBeeIdentity=$(whiptail --inputbox "\nSet your own private key for the node identity" 10 65 --title "Bee-Shimmer - Indentity" 3>&1 1>&2 2>&3)
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
-                            if [ "$beeShimmerIdentity" != "$currentBeeShimmerIdentity" ] && [ ! -z "$beeShimmerIdentity" ]; then
-                                if [ -f "/usr/bin/bee-shimmer" ]; then
-                                    source $beeShimmerConfigParsers/beeShimmerIdentity
+                            if [ "$shimmerBeeIdentity" != "$currentShimmerBeeIdentity" ] && [ ! -z "$shimmerBeeIdentity" ]; then
+                                if [ -f "/usr/bin/shimmer-bee" ]; then
+                                    source $shimmerBeeConfigParsers/shimmerBeeIdentity
                                 fi
-                                sudo sed -i 's~^beeShimmerIdentity=.*~beeShimmerIdentity="'$beeShimmerIdentity'"~' $swarmConfigs/bee-shimmer.cfg
-                                whiptail --title "Bee-Shimmer - p2pIdentity" --msgbox "The following Identity key was set: \n$beeShimmerIdentity." 10 65
+                                sudo sed -i 's~^shimmerBeeIdentity=.*~shimmerBeeIdentity="'$shimmerBeeIdentity'"~' $swarmConfigs/shimmer-bee.cfg
+                                whiptail --title "Bee-Shimmer - p2pIdentity" --msgbox "The following Identity key was set: \n$shimmerBeeIdentity." 10 65
                             fi
                         fi
                     ;;
                     "2)")
-                        if [ -f "/usr/bin/bee-shimmer" ]; then
+                        if [ -f "/usr/bin/shimmer-bee" ]; then
                             if (whiptail --title "Bee-Shimmer - Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
-                                beeShimmerResetIdentity=true
-                                source $beeShimmerConfigParsers/beeShimmerIdentity
-                                whiptail --title "Bee-Shimmer - Identity" --msgbox "The following Identity key was set: \n$beeShimmerIdentity" 12 65
-                                source $swarmConfigs/bee-shimmer.cfg
-                                unset beeShimmerResetIdentity
+                                shimmerBeeResetIdentity=true
+                                source $shimmerBeeConfigParsers/shimmerBeeIdentity
+                                whiptail --title "Bee-Shimmer - Identity" --msgbox "The following Identity key was set: \n$shimmerBeeIdentity" 12 65
+                                source $swarmConfigs/shimmer-bee.cfg
+                                unset shimmerBeeResetIdentity
                             fi
                         else
                             whiptail --title "Bee-Shimmer - Identity" --msgbox "Please install Bee (Shimmer) first." 10 65
@@ -318,15 +318,15 @@ while [ $exitCode -lt 1 ]; do
         "9)")
             while [ $exitCode -lt 1 ]; do
                 clear
-                source $swarmConfigs/bee-shimmer.cfg
-                if [ "$beeShimmerAutopeeringEnabled" = "true" ]; then
-                    beeShimmerAutopeeringEnabledMenu="Disable"
+                source $swarmConfigs/shimmer-bee.cfg
+                if [ "$shimmerBeeAutopeeringEnabled" = "true" ]; then
+                    shimmerBeeAutopeeringEnabledMenu="Disable"
                 else
-                    beeShimmerAutopeeringEnabledMenu="Enable"
+                    shimmerBeeAutopeeringEnabledMenu="Enable"
                 fi
                 CHOICE=$(
                     whiptail --title "Bee-Shimmer - Autopeering" --menu "\nChoose an option" 14 65 0 \
-                    "1)" "$beeShimmerAutopeeringEnabledMenu autopeering" \
+                    "1)" "$shimmerBeeAutopeeringEnabledMenu autopeering" \
                     "2)" "Set max discovered peers" \
                     "3)" "Set autopeering port" 3>&2 2>&1 1>&3
                 )
@@ -336,60 +336,60 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ "$beeShimmerAutopeeringEnabled" = "true" ]; then
-                            beeShimmerAutopeeringEnabledMenu="disable"
+                        if [ "$shimmerBeeAutopeeringEnabled" = "true" ]; then
+                            shimmerBeeAutopeeringEnabledMenu="disable"
                         else
-                            beeShimmerAutopeeringEnabledMenu="enable"
+                            shimmerBeeAutopeeringEnabledMenu="enable"
                         fi
-                        if (whiptail --title "Bee-Shimmer - Autopeering" --yesno --defaultno "Are you sure you want to $beeShimmerAutopeeringEnabledMenu autopeering?" 8 65); then
-                            if [ "$beeShimmerAutopeeringEnabled" = "true" ]; then
-                                beeShimmerAutopeeringEnabled=false
-                                sudo sed -i 's/^beeShimmerAutopeeringEnabled=.*/beeShimmerAutopeeringEnabled='$beeShimmerAutopeeringEnabled'/' $swarmConfigs/bee-shimmer.cfg
-                                if [ -f "/usr/bin/bee-shimmer" ]; then
-                                    source $beeShimmerConfigParsers/beeShimmerAutopeering
+                        if (whiptail --title "Bee-Shimmer - Autopeering" --yesno --defaultno "Are you sure you want to $shimmerBeeAutopeeringEnabledMenu autopeering?" 8 65); then
+                            if [ "$shimmerBeeAutopeeringEnabled" = "true" ]; then
+                                shimmerBeeAutopeeringEnabled=false
+                                sudo sed -i 's/^shimmerBeeAutopeeringEnabled=.*/shimmerBeeAutopeeringEnabled='$shimmerBeeAutopeeringEnabled'/' $swarmConfigs/shimmer-bee.cfg
+                                if [ -f "/usr/bin/shimmer-bee" ]; then
+                                    source $shimmerBeeConfigParsers/shimmerBeeAutopeering
                                 fi
                                 whiptail --title "Bee-Shimmer - Autopeering" --msgbox "Autopeering has been disabled." 8 65
                             else
-                                beeShimmerAutopeeringEnabled=true
-                                sudo sed -i 's/^beeShimmerAutopeeringEnabled=.*/beeShimmerAutopeeringEnabled='$beeShimmerAutopeeringEnabled'/' $swarmConfigs/bee-shimmer.cfg
-                                if [ -f "/usr/bin/bee-shimmer" ]; then
-                                    source $beeShimmerConfigParsers/beeShimmerAutopeering
+                                shimmerBeeAutopeeringEnabled=true
+                                sudo sed -i 's/^shimmerBeeAutopeeringEnabled=.*/shimmerBeeAutopeeringEnabled='$shimmerBeeAutopeeringEnabled'/' $swarmConfigs/shimmer-bee.cfg
+                                if [ -f "/usr/bin/shimmer-bee" ]; then
+                                    source $shimmerBeeConfigParsers/shimmerBeeAutopeering
                                 fi
                                 whiptail --title "Bee-Shimmer - Autopeering" --msgbox "Autopeering has been enabled." 8 65
                             fi
                         fi
                     ;;
                     "2)")
-                        source $swarmConfigs/bee-shimmer.cfg
-                        currentBeeShimmerMaxDiscoveredPeers=$beeShimmerMaxDiscoveredPeers
-                        beeShimmerMaxDiscoveredPeers=$(whiptail --inputbox "\nSet the max amount of discovered peers via autopeering." 10 65 $beeShimmerMaxDiscoveredPeers --title "Bee-Shimmer - Autopeering" 3>&1 1>&2 2>&3)
+                        source $swarmConfigs/shimmer-bee.cfg
+                        currentShimmerBeeMaxDiscoveredPeers=$shimmerBeeMaxDiscoveredPeers
+                        shimmerBeeMaxDiscoveredPeers=$(whiptail --inputbox "\nSet the max amount of discovered peers via autopeering." 10 65 $shimmerBeeMaxDiscoveredPeers --title "Bee-Shimmer - Autopeering" 3>&1 1>&2 2>&3)
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
-                            if [ ! -z "$beeShimmerMaxDiscoveredPeers" ] && [ $currentBeeShimmerMaxDiscoveredPeers -ne $beeShimmerMaxDiscoveredPeers ] && [ $beeShimmerMaxDiscoveredPeers -eq $beeShimmerMaxDiscoveredPeers ] 2>/dev/null; then
-                                if [ -f "/usr/bin/bee-shimmer" ]; then
-                                    source $beeShimmerConfigParsers/beeShimmerMaxDiscoveredPeers
+                            if [ ! -z "$shimmerBeeMaxDiscoveredPeers" ] && [ $currentShimmerBeeMaxDiscoveredPeers -ne $shimmerBeeMaxDiscoveredPeers ] && [ $shimmerBeeMaxDiscoveredPeers -eq $shimmerBeeMaxDiscoveredPeers ] 2>/dev/null; then
+                                if [ -f "/usr/bin/shimmer-bee" ]; then
+                                    source $shimmerBeeConfigParsers/shimmerBeeMaxDiscoveredPeers
                                 fi
-                                sudo sed -i 's/^beeShimmerMaxDiscoveredPeers=.*/beeShimmerMaxDiscoveredPeers='$beeShimmerMaxDiscoveredPeers'/' $swarmConfigs/bee-shimmer.cfg
-                                whiptail --title "Bee-Shimmer - Autopeering" --msgbox "Max amount of autodiscovered peeers set to $beeShimmerMaxDiscoveredPeers." 8 65
+                                sudo sed -i 's/^shimmerBeeMaxDiscoveredPeers=.*/shimmerBeeMaxDiscoveredPeers='$shimmerBeeMaxDiscoveredPeers'/' $swarmConfigs/shimmer-bee.cfg
+                                whiptail --title "Bee-Shimmer - Autopeering" --msgbox "Max amount of autodiscovered peeers set to $shimmerBeeMaxDiscoveredPeers." 8 65
                             fi
                         fi
                     ;;
                     "3)")
-                        source $swarmConfigs/bee-shimmer.cfg
-                        currentBeeShimmerAutopeeringPort=$beeShimmerAutopeeringPort
-                        beeShimmerAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port." 10 65 $beeShimmerAutopeeringPort --title "Bee-Shimmer - Autopeering" 3>&1 1>&2 2>&3)
+                        source $swarmConfigs/shimmer-bee.cfg
+                        currentShimmerBeeAutopeeringPort=$shimmerBeeAutopeeringPort
+                        shimmerBeeAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port." 10 65 $shimmerBeeAutopeeringPort --title "Bee-Shimmer - Autopeering" 3>&1 1>&2 2>&3)
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
-                            if [ ! -z "$beeShimmerAutopeeringPort" ] && [ $currentBeeShimmerAutopeeringPort -ne $beeShimmerAutopeeringPort ] && [ $beeShimmerAutopeeringPort -eq $beeShimmerAutopeeringPort ] 2>/dev/null; then
-                                if [ -f "/usr/bin/bee-shimmer" ]; then
+                            if [ ! -z "$shimmerBeeAutopeeringPort" ] && [ $currentShimmerBeeAutopeeringPort -ne $shimmerBeeAutopeeringPort ] && [ $shimmerBeeAutopeeringPort -eq $shimmerBeeAutopeeringPort ] 2>/dev/null; then
+                                if [ -f "/usr/bin/shimmer-bee" ]; then
                                     if [ "$ufw" = "true" ]; then
-                                        sudo ufw delete allow $currentBeeShimmerAutopeeringPort/udp > /dev/null 2>&1
-                                        sudo ufw allow $beeShimmerAutopeeringPort/udp > /dev/null 2>&1
+                                        sudo ufw delete allow $currentShimmerBeeAutopeeringPort/udp > /dev/null 2>&1
+                                        sudo ufw allow $shimmerBeeAutopeeringPort/udp > /dev/null 2>&1
                                     fi
-                                    source $beeShimmerConfigParsers/beeShimmerAutopeering
+                                    source $shimmerBeeConfigParsers/shimmerBeeAutopeering
                                 fi
-                                sudo sed -i 's/^beeShimmerAutopeeringPort=.*/beeShimmerAutopeeringPort='$beeShimmerAutopeeringPort'/' $swarmConfigs/bee-shimmer.cfg
-                                whiptail --title "Bee-Shimmer - Autopeering" --msgbox "Autopeering port set to \"$beeShimmerAutopeeringPort/udp\"!" 8 65
+                                sudo sed -i 's/^shimmerBeeAutopeeringPort=.*/shimmerBeeAutopeeringPort='$shimmerBeeAutopeeringPort'/' $swarmConfigs/shimmer-bee.cfg
+                                whiptail --title "Bee-Shimmer - Autopeering" --msgbox "Autopeering port set to \"$shimmerBeeAutopeeringPort/udp\"!" 8 65
                             fi
                         fi
                     ;;
@@ -398,66 +398,66 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "10)")
-            source $swarmConfigs/bee-shimmer.cfg
-            currentBeeShimmerGossipPort=$beeGossipPort
-            beeShimmerGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $beeShimmerGossipPort --title "Bee-Shimmer - Gossip" 3>&1 1>&2 2>&3)
+            source $swarmConfigs/shimmer-bee.cfg
+            currentShimmerBeeGossipPort=$beeGossipPort
+            shimmerBeeGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $shimmerBeeGossipPort --title "Bee-Shimmer - Gossip" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
-                if [ ! -z "$beeShimmerGossipPort" ] && [ $currentBeeShimmerGossipPort -ne $beeShimmerGossipPort ] && [ $beeShimmerGossipPort -eq $beeShimmerGossipPort ] 2>/dev/null; then
-                    if [ -f "/usr/bin/bee-shimmer" ]; then
+                if [ ! -z "$shimmerBeeGossipPort" ] && [ $currentShimmerBeeGossipPort -ne $shimmerBeeGossipPort ] && [ $shimmerBeeGossipPort -eq $shimmerBeeGossipPort ] 2>/dev/null; then
+                    if [ -f "/usr/bin/shimmer-bee" ]; then
                         if [ "$ufw" = "true" ]; then
-                            sudo ufw delete allow $currentBeeShimmerGossipPort/tcp > /dev/null 2>&1
-                            sudo ufw allow $beeShimmerGossipPort/tcp > /dev/null 2>&1
+                            sudo ufw delete allow $currentShimmerBeeGossipPort/tcp > /dev/null 2>&1
+                            sudo ufw allow $shimmerBeeGossipPort/tcp > /dev/null 2>&1
                         fi
-                        source $beeShimmerConfigParsers/beeShimmerGossipPort
+                        source $shimmerBeeConfigParsers/shimmerBeeGossipPort
                     fi
-                    sudo sed -i 's/^beeShimmerGossipPort=.*/beeShimmerGossipPort='$beeShimmerGossipPort'/' $swarmConfigs/bee-shimmer.cfg
-                    whiptail --title "Bee-Shimmer - Gossip" --msgbox "Gossip port set to \"$beeShimmerGossipPort/tcp\"!" 8 65
+                    sudo sed -i 's/^shimmerBeeGossipPort=.*/shimmerBeeGossipPort='$shimmerBeeGossipPort'/' $swarmConfigs/shimmer-bee.cfg
+                    whiptail --title "Bee-Shimmer - Gossip" --msgbox "Gossip port set to \"$shimmerBeeGossipPort/tcp\"!" 8 65
                 fi
             fi
         ;;
         "11)")
-            source $swarmConfigs/bee-shimmer.cfg
-            currentBeeShimmerMaxUnknownPeers=$beeShimmerMaxUnknownPeers
-            beeShimmerMaxUnknownPeers=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentBeeShimmerMaxUnknownPeers --title "Bee-Shimmer - Gossip" 3>&1 1>&2 2>&3)
+            source $swarmConfigs/shimmer-bee.cfg
+            currentShimmerBeeMaxUnknownPeers=$shimmerBeeMaxUnknownPeers
+            shimmerBeeMaxUnknownPeers=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentShimmerBeeMaxUnknownPeers --title "Bee-Shimmer - Gossip" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
-                if [ $currentBeeShimmerMaxUnknownPeers -ne $beeShimmerMaxUnknownPeers ] && [ $beeShimmerMaxUnknownPeers -eq $beeShimmerMaxUnknownPeers ] 2>/dev/null; then
-                    if [ -f "/usr/bin/bee-shimmer" ]; then
-                        source $beeShimmerConfigParsers/beeShimmerMaxUnknownPeers
+                if [ $currentShimmerBeeMaxUnknownPeers -ne $shimmerBeeMaxUnknownPeers ] && [ $shimmerBeeMaxUnknownPeers -eq $shimmerBeeMaxUnknownPeers ] 2>/dev/null; then
+                    if [ -f "/usr/bin/shimmer-bee" ]; then
+                        source $shimmerBeeConfigParsers/shimmerBeeMaxUnknownPeers
                     fi
-                    sudo sed -i 's/^beeShimmerMaxUnknownPeers=.*/beeShimmerMaxUnknownPeers='$beeShimmerMaxUnknownPeers'/' $swarmConfigs/bee-shimmer.cfg
-                    whiptail --title "Bee-Shimmer - Gossip" --msgbox "Maximum of unknown neighbors set to \"$beeShimmerMaxUnknownPeers\"!" 8 65
+                    sudo sed -i 's/^shimmerBeeMaxUnknownPeers=.*/shimmerBeeMaxUnknownPeers='$shimmerBeeMaxUnknownPeers'/' $swarmConfigs/shimmer-bee.cfg
+                    whiptail --title "Bee-Shimmer - Gossip" --msgbox "Maximum of unknown neighbors set to \"$shimmerBeeMaxUnknownPeers\"!" 8 65
                 fi
             fi
         ;;
         "12)")
-            source $swarmConfigs/bee-shimmer.cfg
+            source $swarmConfigs/shimmer-bee.cfg
             # Bee Networks
             CHOICE=$(
-                whiptail --title "Bee-Shimmer - Network" --menu "\nCurrent network: $beeShimmerNetwork\n\nChoose an option" 16 65 0 \
+                whiptail --title "Bee-Shimmer - Network" --menu "\nCurrent network: $shimmerBeeNetwork\n\nChoose an option" 16 65 0 \
                 "1)" "Mainnet (default)" \
                 "2)" "Devnet (dev)" 3>&2 2>&1 1>&3
             )
             case $CHOICE in
                 "1)")
                     if (whiptail --title "Bee-Shimmer - Network" --yesno --defaultno "Are you sure you want to change the network to \"mainnet\" (the old database will be deleted)?" 8 65); then
-                        currentBeeShimmerNetwork=$beeShimmerNetwork
-                        beeShimmerNetwork=mainnet
-                        sudo sed -i 's/^beeShimmerNetwork=.*/beeShimmerNetwork='$beeShimmerNetwork'/' $swarmConfigs/bee-shimmer.cfg
-                        if [ -f "/usr/bin/bee-shimmer" ]; then
-                            source $beeShimmerModules/beeShimmerNetwork
+                        currentShimmerBeeNetwork=$shimmerBeeNetwork
+                        shimmerBeeNetwork=mainnet
+                        sudo sed -i 's/^shimmerBeeNetwork=.*/shimmerBeeNetwork='$shimmerBeeNetwork'/' $swarmConfigs/shimmer-bee.cfg
+                        if [ -f "/usr/bin/shimmer-bee" ]; then
+                            source $shimmerBeeModules/shimmerBeeNetwork
                         fi
                     fi
                 ;;
                 "2)")
                     if [ "comnetOnline" = "true" ]; then
                         if (whiptail --title "Bee-Shimmer - Network" --yesno --defaultno "Are you sure you want to change the network to \"devnet\" (the old database will be deleted)?" 8 65); then
-                            currentBeeShimmerNetwork=$beeShimmerNetwork
-                            beeShimmerNetwork=devnet
-                            sudo sed -i 's/^beeShimmerNetwork=.*/beeShimmerNetwork='$beeShimmerNetwork'/' $swarmConfigs/bee-shimmer.cfg
-                            if [ -f "/usr/bin/bee-shimmer" ]; then
-                                source $beeShimmerModules/beeShimmerNetwork
+                            currentShimmerBeeNetwork=$shimmerBeeNetwork
+                            shimmerBeeNetwork=devnet
+                            sudo sed -i 's/^shimmerBeeNetwork=.*/shimmerBeeNetwork='$shimmerBeeNetwork'/' $swarmConfigs/shimmer-bee.cfg
+                            if [ -f "/usr/bin/shimmer-bee" ]; then
+                                source $shimmerBeeModules/shimmerBeeNetwork
                             fi
                         fi
                     else
@@ -467,7 +467,7 @@ while [ $exitCode -lt 1 ]; do
             esac
         ;;
         "13)")
-            source $swarmConfigs/bee-shimmer.cfg
+            source $swarmConfigs/shimmer-bee.cfg
             # Bee release channel
             CHOICE=$(
                 whiptail --title "Bee-Shimmer - Release" --menu "\nSet \"stable\" for official release or \"beta\"/\"alpha\" for releases under development\n\nChoose an option" 16 65 0 \
@@ -478,34 +478,34 @@ while [ $exitCode -lt 1 ]; do
             case $CHOICE in
                 "1)")
                     if (whiptail --title "Bee-Shimmer - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"stable\" (Bee-Shimmer will be reinstalled)?" 8 65); then
-                        currentBeeShimmerRelease=$beeShimmerRelease
-                        beeShimmerRelease=stable
-                        sudo sed -i 's/^beeShimmerRelease=.*/beeShimmerRelease='$beeShimmerRelease'/' $swarmConfigs/bee-shimmer.cfg
-                        if [ -f "/usr/bin/bee-shimmer" ]; then
-                            source $beeShimmerModules/beeShimmerReleaseChannel
-                            source $beeShimmerModules/beeShimmerParser
+                        currentShimmerBeeRelease=$shimmerBeeRelease
+                        shimmerBeeRelease=stable
+                        sudo sed -i 's/^shimmerBeeRelease=.*/shimmerBeeRelease='$shimmerBeeRelease'/' $swarmConfigs/shimmer-bee.cfg
+                        if [ -f "/usr/bin/shimmer-bee" ]; then
+                            source $shimmerBeeModules/shimmerBeeReleaseChannel
+                            source $shimmerBeeModules/shimmerBeeParser
                         fi
                     fi
                 ;;
                 "2)")
                     if (whiptail --title "Bee-Shimmer - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"beta\" (Bee-Shimmer will be reinstalled)?" 8 65); then
-                        currentBeeShimmerRelease=$beeShimmerRelease
-                        beeShimmerRelease=beta
-                        sudo sed -i 's/^beeShimmerRelease=.*/beeShimmerRelease='$beeShimmerRelease'/' $swarmConfigs/bee-shimmer.cfg
-                        if [ -f "/usr/bin/bee-shimmer" ]; then
-                            source $beeShimmerModules/beeShimmerReleaseChannel
-                            source $beeShimmerModules/beeShimmerParser
+                        currentShimmerBeeRelease=$shimmerBeeRelease
+                        shimmerBeeRelease=beta
+                        sudo sed -i 's/^shimmerBeeRelease=.*/shimmerBeeRelease='$shimmerBeeRelease'/' $swarmConfigs/shimmer-bee.cfg
+                        if [ -f "/usr/bin/shimmer-bee" ]; then
+                            source $shimmerBeeModules/shimmerBeeReleaseChannel
+                            source $shimmerBeeModules/shimmerBeeParser
                         fi
                     fi
                 ;;
                 "3)")
                     if (whiptail --title "Bee-Shimmer - Release" --yesno --defaultno "Are you sure you want to change the release channel to \"alpha\" (Bee-Shimmer will be reinstalled)?" 8 65); then
-                        currentBeeShimmerRelease=$beeShimmerRelease
-                        beeShimmerRelease=alpha
-                        sudo sed -i 's/^beeShimmerRelease=.*/beeShimmerRelease='$beeShimmerRelease'/' $swarmConfigs/bee-shimmer.cfg
-                        if [ -f "/usr/bin/bee-shimmer" ]; then
-                            source $beeShimmerModules/beeShimmerReleaseChannel
-                            source $beeShimmerModules/beeShimmerParser
+                        currentShimmerBeeRelease=$shimmerBeeRelease
+                        shimmerBeeRelease=alpha
+                        sudo sed -i 's/^shimmerBeeRelease=.*/shimmerBeeRelease='$shimmerBeeRelease'/' $swarmConfigs/shimmer-bee.cfg
+                        if [ -f "/usr/bin/shimmer-bee" ]; then
+                            source $shimmerBeeModules/shimmerBeeReleaseChannel
+                            source $shimmerBeeModules/shimmerBeeParser
                         fi
                     fi
                 ;;
@@ -513,5 +513,5 @@ while [ $exitCode -lt 1 ]; do
         ;;
     esac
 done
-sudo chown -R bee:bee $beeShimmerHome/config*.json
+sudo chown -R bee:bee $shimmerBeeHome/config*.json
 exitCode=0

@@ -1,84 +1,84 @@
 #!/bin/bash
 
-if [ -f "/usr/bin/bee-shimmer" ]; then
+if [ -f "/usr/bin/shimmer-bee" ]; then
 
-    source $swarmConfigs/bee-shimmer.cfg
+    source $swarmConfigs/shimmer-bee.cfg
 
-    beeShimmerStatus=$(systemctl show -p ActiveState --value bee-shimmer)
+    shimmerBeeStatus=$(systemctl show -p ActiveState --value shimmer-bee)
 
     # Bee version
-    if [ -f "/usr/bin/bee-shimmer" ]; then
-        beeShimmerVersion=$(/usr/bin/bee-shimmer -v | tr -d 'v"')
-        if [[ $beeShimmerVersion = *rc[0-9]* ]]; then
-            beeVersion=$(echo $beeShimmerVersion | cut -f1,2 -d"-")
+    if [ -f "/usr/bin/shimmer-bee" ]; then
+        shimmerBeeVersion=$(/usr/bin/shimmer-bee -v | tr -d 'v"')
+        if [[ $shimmerBeeVersion = *rc[0-9]* ]]; then
+            beeVersion=$(echo $shimmerBeeVersion | cut -f1,2 -d"-")
         else
-            beeShimmerVersion=$(echo $beeShimmerVersion | cut -f1 -d"-")
+            shimmerBeeVersion=$(echo $shimmerBeeVersion | cut -f1 -d"-")
         fi
     fi
-    if [ -z "$beeShimmerVersion" ]; then
-        beeShimmerVersion="N/A"
+    if [ -z "$shimmerBeeVersion" ]; then
+        shimmerBeeVersionInfo="N/A"
     else
-        if [ "$beeShimmerVersion" != "$latestBeeShimmerVersion" ] && [ ! -z "$latestBeeShimmerVersion" ]; then
-            beeShimmerVersion="$beeShimmerVersion (new version \"v$latestBeeShimmerVersion\" available!"
+        if [ "$shimmerBeeVersion" != "$latestShimmerBeeVersion" ] && [ ! -z "$latestShimmerBeeVersion" ]; then
+            shimmerBeeVersionInfo="$shimmerBeeVersion (new version \"v$latestShimmerBeeVersion\" available!"
         fi
     fi
 
-    if [ "$beeShimmerStatus" = "active" ]; then
-        beeShimmerHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14268/api/v2/info" -H  "accept: application/json"|jq -r '.status.isHealthy' 2> /dev/null)"
-        if [ -z "$beeShimmerHealthy" ]; then
-            beeShimmerHealthy="N/A"
+    if [ "$shimmerBeeStatus" = "active" ]; then
+        shimmerBeeHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14268/api/v2/info" -H  "accept: application/json"|jq -r '.status.isHealthy' 2> /dev/null)"
+        if [ -z "$shimmerBeeHealthy" ]; then
+            shimmerBeeHealthy="N/A"
         else
-            if [ "$beeShimmerHealthy" = "true" ]; then
-                beeShimmerHealthy="Yes"
+            if [ "$shimmerBeeHealthy" = "true" ]; then
+                shimmerBeeHealthy="Yes"
             else
-                beeShimmerHealthy="No"
+                shimmerBeeHealthy="No"
             fi
         fi
     else
-        beeShimmerHealthy="N/A"
+        shimmerBeeHealthy="N/A"
     fi
 
     # DB size
-    if [ -d "$beeShimmerHome/storage" ]; then
-        getCurrentDbSize="$(du -sb $beeShimmerHome/storage | cut -f1)"
+    if [ -d "$shimmerBeeHome/storage" ]; then
+        getCurrentDbSize="$(du -sb $shimmerBeeHome/storage | cut -f1)"
         let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
         if [ $getCurrentDbSizeInMb -gt 999 ]; then
             let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
-            currentBeeShimmerDbSize="${getCurrentDbSizeInGb} GB"
+            currentShimmerBeeDbSize="${getCurrentDbSizeInGb} GB"
         else
-            currentBeeShimmerDbSize="${getCurrentDbSizeInMb} MB"
+            currentShimmerBeeDbSize="${getCurrentDbSizeInMb} MB"
         fi
     else
-        currentBeeShimmerDbSize="N/A"
+        currentShimmerBeeDbSize="N/A"
     fi
 
-    if [ "$beeShimmerPruningEnabled" = "true" ]; then
-        beeShimmerPruningEnabledStatus=enabled
+    if [ "$shimmerBeePruningEnabled" = "true" ]; then
+        shimmerBeePruningEnabledStatus=enabled
     else
-        beeShimmerPruningEnabledStatus=disabled
+        shimmerBeePruningEnabledStatus=disabled
     fi
 
-    if [ "$beeShimmerPowEnabled" = "true" ]; then
-        beeShimmerPowEnabledStatus=enabled
+    if [ "$shimmerBeePowEnabled" = "true" ]; then
+        shimmerBeePowEnabledStatus=enabled
     else
-        beeShimmerPowEnabledStatus=disabled
+        shimmerBeePowEnabledStatus=disabled
     fi
 
-    if [ -f "/etc/nginx/sites-enabled/bee-shimmer" ]; then
-        beeShimmerProxyStatus=active
+    if [ -f "/etc/nginx/sites-enabled/shimmer-bee" ]; then
+        shimmerBeeProxyStatus=active
     else
-        beeShimmerProxyStatus=inactive
+        shimmerBeeProxyStatus=inactive
     fi
 
-    if [ "$beeShimmerAutopeeringEnabled" = "true" ]; then
-        beeShimmerAutopeeringEnabledMenu=enabled
+    if [ "$shimmerBeeAutopeeringEnabled" = "true" ]; then
+        shimmerBeeAutopeeringEnabledMenu=enabled
     else
-        beeShimmerAutopeeringEnabledMenu=disabled
+        shimmerBeeAutopeeringEnabledMenu=disabled
     fi
 
     # OUTPUT
-    whiptail --title "Bee-Shimmer - Info" --msgbox "Bee: $beeShimmerStatus\nVersion: v$beeShimmerVersion\nHealthy: $beeShimmerHealthy\nDB size: $currentBeeShimmerDbSize\nProxy: $beeShimmerProxyStatus\n\nAlias: $beeShimmerAlias\nPoW: $beeShimmerPowEnabledStatus\nLS Interval: $beeShimmerSnapshotInterval milestones\n\nAutopeering: $beeShimmerAutopeeringEnabledMenu\nMax unknown Peers: $beeShimmerMaxUnknownPeers\nGossip Port: ${beeShimmerGossipPort}/tcp\nAutopeering Port: $beeShimmerAutopeeringPort/udp\n\nPruning: $beeShimmerPruningEnabledStatus\nPruning Delay: $beeShimmerPruningDelay milestones" 27 68
+    whiptail --title "Bee (Shimmer) - Info" --msgbox "Bee: $shimmerBeeStatus\nVersion: v$shimmerBeeVersionInfo\nHealthy: $shimmerBeeHealthy\nDB size: $currentShimmerBeeDbSize\nProxy: $shimmerBeeProxyStatus\n\nAlias: $shimmerBeeAlias\nPoW: $shimmerBeePowEnabledStatus\nLS Interval: $shimmerBeeSnapshotInterval milestones\n\nAutopeering: $shimmerBeeAutopeeringEnabledMenu\nMax unknown Peers: $shimmerBeeMaxUnknownPeers\nGossip Port: ${shimmerBeeGossipPort}/tcp\nAutopeering Port: $shimmerBeeAutopeeringPort/udp\n\nPruning: $shimmerBeePruningEnabledStatus\nPruning Delay: $shimmerBeePruningDelay milestones" 27 68
 else
     # OUTPUT
-    whiptail --title "Bee-Shimmer - Info" --msgbox "Bee-Shimmer not installed!" 8 65
+    whiptail --title "Bee (Shimmer) - Info" --msgbox "Bee (Shimmer) not installed!" 8 65
 fi

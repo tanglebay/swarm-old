@@ -1,43 +1,43 @@
 #!/bin/bash
-source $swarmLogs/githubVersion
+source $swarmConfigs/latest-versions.cfg
 
-if [ -z "$latestBeeShimmerVersion" ] || [ "$latestBeeShimmerVersion" = "null" ] || [ "$latestBeeShimmerVersion" = "\"\"" ]; then
+if [ -z "$latestShimmerBeeVersion" ] || [ "$latestShimmerBeeVersion" = "null" ] || [ "$latestShimmerBeeVersion" = "\"\"" ]; then
     # Latest Bee-Shimmer version
-    if [ "$beeShimmerRelease" = "stable" ]; then
-        latestBeeShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeShimmerReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
-        latestBeeShimmerVersion=$(echo $latestBeeShimmerVersion | tr -d 'v')
+    if [ "$shimmerBeeRelease" = "stable" ]; then
+        latestShimmerBeeVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerBeeReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestShimmerBeeVersion=$(echo $latestShimmerBeeVersion | tr -d 'v')
     fi
-    if [ "$beeShimmerRelease" = "beta" ]; then
-        latestBeeShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeShimmerReleaseVersion | awk '!/-alpha/' | head -n 1)
-        latestBeeShimmerVersion=$(echo $latestBeeShimmerVersion | tr -d 'v')
+    if [ "$shimmerBeeRelease" = "beta" ]; then
+        latestShimmerBeeVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerBeeReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestShimmerBeeVersion=$(echo $latestShimmerBeeVersion | tr -d 'v')
     fi
-    if [ "$beeShimmerRelease" = "alpha" ]; then
-        latestBeeShimmerVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $beeShimmerReleaseVersion | head -n 1)
-        latestBeeShimmerVersion=$(echo $latestBeeShimmerVersion | tr -d 'v')
+    if [ "$shimmerBeeRelease" = "alpha" ]; then
+        latestShimmerBeeVersion=$(curl --max-time 5 -s https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerBeeReleaseVersion | head -n 1)
+        latestShimmerBeeVersion=$(echo $latestShimmerBeeVersion | tr -d 'v')
     fi
-    if [ "$latestBeeShimmerVersion" = "\"\"" ] || [ -z "$latestBeeShimmerVersion" ] || [ "$latestBeeShimmerVersion" = "null" ]; then
-        if [ -f "/usr/bin/bee-shimmer" ]; then
-            latestBeeShimmerVersion=$(/usr/bin/bee-shimmer -v | awk '{ print $2 }')
+    if [ "$latestShimmerBeeVersion" = "\"\"" ] || [ -z "$latestShimmerBeeVersion" ] || [ "$latestShimmerBeeVersion" = "null" ]; then
+        if [ -f "/usr/bin/shimmer-bee" ]; then
+            latestShimmerBeeVersion=$(/usr/bin/shimmer-bee -v | awk '{ print $2 }')
         fi
     fi
-    sudo sed -i 's~^latestBeeShimmerVersion=.*~latestBeeShimmerVersion="'$latestBeeShimmerVersion'"~' $swarmLogs/githubVersion
+    sudo sed -i 's~^latestShimmerBeeVersion=.*~latestShimmerBeeVersion="'$latestShimmerBeeVersion'"~' $swarmConfigs/latest-versions.cfg
 fi
 
 # Bee version
-if [ -f "/usr/bin/bee-shimmer" ]; then
-    beeShimmerVersion=$(/usr/bin/bee-shimmer -v | tr -d 'v"')
-    if [[ $beeShimmerVersion = *rc[0-9]* ]]; then
-        beeShimmerVersion=$(echo $beeShimmerVersion | cut -f1,2 -d"-")
+if [ -f "/usr/bin/shimmer-bee" ]; then
+    shimmerBeeVersion=$(/usr/bin/shimmer-bee -v | tr -d 'v"')
+    if [[ $shimmerBeeVersion = *rc[0-9]* ]]; then
+        shimmerBeeVersion=$(echo $shimmerBeeVersion | cut -f1,2 -d"-")
     else
-        beeShimmerVersion=$(echo $beeShimmerVersion | cut -f1 -d"-")
+        shimmerBeeVersion=$(echo $shimmerBeeVersion | cut -f1 -d"-")
     fi
 fi
 
 # Replace var if empty
-if [ -z "$latestBeeShimmerVersion" ] || [ "$latestBeeShimmerVersion" = "null" ]; then
-    latestBeeShimmerVersion=$beeShimmerVersion
+if [ -z "$latestShimmerBeeVersion" ] || [ "$latestShimmerBeeVersion" = "null" ]; then
+    latestShimmerBeeVersion=$shimmerBeeVersion
 fi
 
-if [ -z "$beeShimmerVersion" ]; then
-    beeShimmerVersion=$latestBeeShimmerVersion
+if [ -z "$shimmerBeeVersion" ]; then
+    shimmerBeeVersion=$latestShimmerBeeVersion
 fi
