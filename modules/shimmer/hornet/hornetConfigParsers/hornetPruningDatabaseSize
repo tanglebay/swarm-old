@@ -1,30 +1,30 @@
 #!/bin/bash
 
-if [ "$hornetShimmerPruningEnabled" = "true" ]; then
-    if [ ! -d "$hornetShimmerHome/$hornetShimmerNetwork/database" ]; then
-        sudo -u hornet mkdir -p $hornetShimmerHome/$hornetShimmerNetwork/database
-        sudo chmod 700 $hornetShimmerHome/$hornetShimmerNetwork/database
+if [ "$shimmerHornetPruningEnabled" = "true" ]; then
+    if [ ! -d "$shimmerHornetHome/$shimmerHornetNetwork/database" ]; then
+        sudo -u hornet mkdir -p $shimmerHornetHome/$shimmerHornetNetwork/database
+        sudo chmod 700 $shimmerHornetHome/$shimmerHornetNetwork/database
     fi
-    getDiskSize=$(df -h $hornetShimmerHome/$hornetShimmerNetwork/database | awk '{print $2}')
+    getDiskSize=$(df -h $shimmerHornetHome/$shimmerHornetNetwork/database | awk '{print $2}')
     getDiskSize=$(echo $getDiskSize | awk '{print $2}')
     diskSize=${getDiskSize//[!0-9]/}
-    if [ -z "$hornetShimmerPruningDatabaseSize" ]; then
-        hornetShimmerPruningDatabaseSize=$diskSize
-        sudo sed -i 's/^hornetShimmerPruningDatabaseSize=.*/hornetShimmerPruningDatabaseSize='$hornetShimmerPruningDatabaseSize'/' $swarmConfigs/hornet-shimmer.cfg
+    if [ -z "$shimmerHornetPruningDatabaseSize" ]; then
+        shimmerHornetPruningDatabaseSize=$diskSize
+        sudo sed -i 's/^shimmerHornetPruningDatabaseSize=.*/shimmerHornetPruningDatabaseSize='$shimmerHornetPruningDatabaseSize'/' $swarmConfigs/shimmer-hornet.cfg
     else
-        hornetShimmerPruningDatabaseSize=${hornetShimmerPruningDatabaseSize//[!0-9]/}
+        shimmerHornetPruningDatabaseSize=${shimmerHornetPruningDatabaseSize//[!0-9]/}
     fi
-    let bufferSize=$diskSize-$hornetShimmerPruningDatabaseSize
+    let bufferSize=$diskSize-$shimmerHornetPruningDatabaseSize
     if [ $bufferSize -lt 15 ]; then
-        let hornetShimmerPruningDatabaseSize=$diskSize-15
-        sudo sed -i 's/^hornetShimmerPruningDatabaseSize=.*/hornetShimmerPruningDatabaseSize='$hornetShimmerPruningDatabaseSize'/' $swarmConfigs/hornet-shimmer.cfg
+        let shimmerHornetPruningDatabaseSize=$diskSize-15
+        sudo sed -i 's/^shimmerHornetPruningDatabaseSize=.*/shimmerHornetPruningDatabaseSize='$shimmerHornetPruningDatabaseSize'/' $swarmConfigs/shimmer-hornet.cfg
     fi
 
-    parser="$(jq '.pruning.size.targetSize' $hornetShimmerHome/$hornetShimmerConfig.json)"
+    parser="$(jq '.pruning.size.targetSize' $shimmerHornetHome/$shimmerHornetConfig.json)"
     parser=$(echo $parser | tr -d '"')
-    if [ "$parser" != "${hornetShimmerPruningDatabaseSize}GB" ] && [ $hornetShimmerPruningDatabaseSize -eq $hornetShimmerPruningDatabaseSize ]; then
-        sudo jq '.pruning.size.targetSize = "'$hornetShimmerPruningDatabaseSize'GB"' $hornetShimmerHome/$hornetShimmerConfig.json|sponge $hornetShimmerHome/$hornetShimmerConfig.json
+    if [ "$parser" != "${shimmerHornetPruningDatabaseSize}GB" ] && [ $shimmerHornetPruningDatabaseSize -eq $shimmerHornetPruningDatabaseSize ]; then
+        sudo jq '.pruning.size.targetSize = "'$shimmerHornetPruningDatabaseSize'GB"' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
         restartShimmerHornet=true
-        echo "hornetShimmerPruningDatabaseSize" >> /tmp/hornetShimmerParsing
+        echo "shimmerHornetPruningDatabaseSize" >> /tmp/shimmerHornetParsing
     fi
 fi

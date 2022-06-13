@@ -1,35 +1,35 @@
 #!/bin/bash
 
-if [ ! -f "$hornetShimmerHome/$hornetShimmerNetwork/p2pstore/identity.key" ]; then
-    if [ -z "$hornetShimmerIdentity" ]; then
-        sudo systemctl stop hornet-shimmer
-        ( cd $hornetShimmerHome ; sudo -u hornet /usr/bin/hornet-shimmer tools p2pidentity-gen )
-        if [ -f "$hornetShimmerHome/p2pstore/identity.key" ]; then
-            hornetShimmerIdentity=$(cat $hornetShimmerHome/p2pstore/identity.key | sed -n '2 p')
-            if [ ! -d "$hornetShimmerHome/$hornetShimmerNetwork/p2pstore" ]; then
-                sudo -u hornet mkdir -p $hornetShimmerHome/$hornetShimmerNetwork/p2pstore
+if [ ! -f "$shimmerHornetHome/$shimmerHornetNetwork/p2pstore/identity.key" ]; then
+    if [ -z "$shimmerHornetIdentity" ]; then
+        sudo systemctl stop shimmer-hornet
+        ( cd $shimmerHornetHome ; sudo -u hornet /usr/bin/shimmer-hornet tools p2pidentity-gen )
+        if [ -f "$shimmerHornetHome/p2pstore/identity.key" ]; then
+            shimmerHornetIdentity=$(cat $shimmerHornetHome/p2pstore/identity.key | sed -n '2 p')
+            if [ ! -d "$shimmerHornetHome/$shimmerHornetNetwork/p2pstore" ]; then
+                sudo -u hornet mkdir -p $shimmerHornetHome/$shimmerHornetNetwork/p2pstore
             fi
-            sudo mv -f $hornetShimmerHome/p2pstore/identity.key $hornetShimmerHome/$hornetShimmerNetwork/p2pstore/identity.key 2>/dev/null
-            sudo sed -i 's~^hornetShimmerIdentity=.*~hornetShimmerIdentity="'$hornetShimmerIdentity'"~' $swarmConfigs/hornet-shimmer.cfg
-            sudo systemctl start hornet-shimmer
-            if [ ! -d "$hornetShimmerHome/p2pstore" ]; then
-                sudo rm -rf $hornetShimmerHome/p2pstore 2>/dev/null
+            sudo mv -f $shimmerHornetHome/p2pstore/identity.key $shimmerHornetHome/$shimmerHornetNetwork/p2pstore/identity.key 2>/dev/null
+            sudo sed -i 's~^shimmerHornetIdentity=.*~shimmerHornetIdentity="'$shimmerHornetIdentity'"~' $swarmConfigs/shimmer-hornet.cfg
+            sudo systemctl start shimmer-hornet
+            if [ ! -d "$shimmerHornetHome/p2pstore" ]; then
+                sudo rm -rf $shimmerHornetHome/p2pstore 2>/dev/null
             fi
         fi
     else
-        sudo systemctl stop hornet-shimmer
-        sudo rm -rf $hornetShimmerHome/$hornetShimmerNetwork/database $hornetShimmerHome/$hornetShimmerNetwork/p2pstore/*.* 2>/dev/null
-        sudo -u hornet echo "-----BEGIN PRIVATE KEY-----" > $hornetShimmerHome/$hornetShimmerNetwork/p2pstore/identity.key
-        sudo -u hornet echo "$hornetShimmerIdentity" >> $hornetShimmerHome/$hornetShimmerNetwork/p2pstore/identity.key
-        sudo -u hornet echo "-----END PRIVATE KEY-----" >> $hornetShimmerHome/$hornetShimmerNetwork/p2pstore/identity.key
-        sudo chown 660 $hornetShimmerHome/$hornetShimmerNetwork/p2pstore/identity.key
-        sudo systemctl start hornet-shimmer
+        sudo systemctl stop shimmer-hornet
+        sudo rm -rf $shimmerHornetHome/$shimmerHornetNetwork/database $shimmerHornetHome/$shimmerHornetNetwork/p2pstore/*.* 2>/dev/null
+        sudo -u hornet echo "-----BEGIN PRIVATE KEY-----" > $shimmerHornetHome/$shimmerHornetNetwork/p2pstore/identity.key
+        sudo -u hornet echo "$shimmerHornetIdentity" >> $shimmerHornetHome/$shimmerHornetNetwork/p2pstore/identity.key
+        sudo -u hornet echo "-----END PRIVATE KEY-----" >> $shimmerHornetHome/$shimmerHornetNetwork/p2pstore/identity.key
+        sudo chown 660 $shimmerHornetHome/$shimmerHornetNetwork/p2pstore/identity.key
+        sudo systemctl start shimmer-hornet
     fi
 fi
 
-parser=$(cat $hornetShimmerHome/$hornetShimmerNetwork/p2pstore/identity.key | sed -n '2 p')
-if [ "$parser" != "$hornetShimmerIdentity" ]; then
-    sed -i '2 s~.*~'$hornetShimmerIdentity'~' $hornetShimmerHome/$hornetShimmerNetwork/p2pstore/identity.key
+parser=$(cat $shimmerHornetHome/$shimmerHornetNetwork/p2pstore/identity.key | sed -n '2 p')
+if [ "$parser" != "$shimmerHornetIdentity" ]; then
+    sed -i '2 s~.*~'$shimmerHornetIdentity'~' $shimmerHornetHome/$shimmerHornetNetwork/p2pstore/identity.key
     restartShimmerHornet=true
-    echo "hornetShimmerIdentity" >> /tmp/hornetShimmerParsing
+    echo "shimmerHornetIdentity" >> /tmp/shimmerHornetParsing
 fi
