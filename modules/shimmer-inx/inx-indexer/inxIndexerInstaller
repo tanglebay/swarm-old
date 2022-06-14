@@ -5,9 +5,9 @@ if ! id inx >/dev/null 2>&1; then
     useradd --no-create-home --system inx >/dev/null
 fi
 
-if [ ! -d "$inxIndexerHome" ]; then
-    sudo mkdir -p $inxIndexerHome > /dev/null 2>&1
-    sudo chown -R inx:inx $inxIndexerHome > /dev/null 2>&1
+if [ ! -d "$shimmerInxIndexerHome" ]; then
+    sudo mkdir -p $shimmerInxIndexerHome > /dev/null 2>&1
+    sudo chown -R inx:inx $shimmerInxIndexerHome > /dev/null 2>&1
 fi
 
 # Install GO
@@ -16,13 +16,13 @@ if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
 fi
 
 # Create Service
-if [ ! -f "/lib/systemd/system/inx-indexer.service" ]; then
-    sudo cp -rf $swarmHome/templates/inx/inx-indexer.service /lib/systemd/system/inx-indexer.service
-    if [ ! -f "/etc/default/inx-indexer" ]; then
-        echo "OPTIONS=\"--config config.json\"" > /etc/default/inx-indexer
+if [ ! -f "/lib/systemd/system/shimmer-inx-indexer.service" ]; then
+    sudo cp -rf $swarmHome/templates/shimmer-inx/inx-indexer.service /lib/systemd/system/shimmer-inx-indexer.service
+    if [ ! -f "/etc/default/shimmer-inx-indexer" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/shimmer-inx-indexer
     fi
-    if [ ! -f "/etc/systemd/system/multi-user.target.wants/inx-indexer.service" ]; then
-        sudo systemctl enable inx-indexer > /dev/null 2>&1
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/shimmer-inx-indexer.service" ]; then
+        sudo systemctl enable shimmer-inx-indexer > /dev/null 2>&1
     fi
     sudo systemctl daemon-reload > /dev/null 2>&1
 fi
@@ -30,36 +30,36 @@ fi
 ##############################################################################################################################################
 
 # Create dir if not exist
-sudo mkdir -p /tmp/inx-indexer > /dev/null 2>&1
+sudo mkdir -p /tmp/shimmer-inx-indexer > /dev/null 2>&1
 
 if [ "$osArchitecture" = "amd64" ]; then
     source $swarmModules/swarmAuth
     if [ "$swarmAuth" = "200" ]; then
         # Download latest inx-indexer
-        ( cd /tmp/inx-indexer/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-indexer/v${latestInxIndexerVersion}/inx-indexer-v${latestInxIndexerVersion}_linux_$osArchitecture.tar.gz )
-        if [ -f "/tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}_linux_$osArchitecture.tar.gz" ]; then
-            inxIndexerDownloadChecksum=$(sudo shasum -a 512 /tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        ( cd /tmp/shimmer-inx-indexer/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-indexer/v${latestShimmerInxIndexerVersion}/inx-indexer-v${latestShimmerInxIndexerVersion}_linux_$osArchitecture.tar.gz )
+        if [ -f "/tmp/shimmer-inx-indexer/inx-indexer-v${latestShimmerInxIndexerVersion}_linux_$osArchitecture.tar.gz" ]; then
+            shimmerInxIndexerDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-indexer/inx-indexer-v${latestShimmerInxIndexerVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
         fi
 
         # Download checksum
-        ( cd /tmp/inx-indexer/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-indexer/v${latestInxIndexerVersion}/checksums.txt )
-        inxIndexerChecksum=$(sudo grep "inx-indexer-v${latestInxIndexerVersion}_linux_$osArchitecture.tar.gz" /tmp/inx-indexer/checksums.txt | awk '{ print $1 }')
-        echo $inxIndexerChecksum > /tmp/inx-indexer.checksum
+        ( cd /tmp/shimmer-inx-indexer/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-indexer/v${latestShimmerInxIndexerVersion}/checksums.txt )
+        shimmerInxIndexerChecksum=$(sudo grep "inx-indexer-v${latestShimmerInxIndexerVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-indexer/checksums.txt | awk '{ print $1 }')
+        echo $shimmerInxIndexerChecksum > /tmp/shimmer-inx-indexer.checksum
 
         # Unzip archive
-        if [ "$inxIndexerDownloadChecksum" = "$inxIndexerChecksum" ] && [ ! -z "$inxIndexerDownloadChecksum" ] && [ ! -z "$inxIndexerChecksum" ]; then
-            ( cd /tmp/inx-indexer ; sudo tar -xzf /tmp/inx-indexer/inx-indexer-v${latestInxIndexerVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+        if [ "$shimmerInxIndexerDownloadChecksum" = "$shimmerInxIndexerChecksum" ] && [ ! -z "$shimmerInxIndexerDownloadChecksum" ] && [ ! -z "$shimmerInxIndexerChecksum" ]; then
+            ( cd /tmp/shimmer-inx-indexer ; sudo tar -xzf /tmp/shimmer-inx-indexer/inx-indexer-v${latestShimmerInxIndexerVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
             # Copy binary
-            if [ -f "/tmp/inx-indexer/inx-indexer" ]; then
-                inxIndexerStatus="$(systemctl show -p ActiveState --value inx-indexer)"
-                if [ "$inxIndexerStatus" = "active" ]; then
-                    sudo systemctl stop inx-indexer > /dev/null 2>&1
+            if [ -f "/tmp/shimmer-inx-indexer/inx-indexer" ]; then
+                shimmerInxIndexerStatus="$(systemctl show -p ActiveState --value shimmer-inx-indexer)"
+                if [ "$shimmerInxIndexerStatus" = "active" ]; then
+                    sudo systemctl stop shimmer-inx-indexer > /dev/null 2>&1
                 fi
 
-                sudo cp -rf /tmp/inx-indexer/inx-indexer /usr/bin/inx-indexer > /dev/null 2>&1
-                sudo chmod +x /usr/bin/inx-indexer > /dev/null 2>&1
-                newInxIndexerBinary=true
+                sudo cp -rf /tmp/shimmer-inx-indexer/inx-indexer /usr/bin/shimmer-inx-indexer > /dev/null 2>&1
+                sudo chmod +x /usr/bin/shimmer-inx-indexer > /dev/null 2>&1
+                newShimmerInxIndexerBinary=true
             fi
         fi
     fi
@@ -67,29 +67,29 @@ fi
 
 ##############################################################################################################################################
 
-if [ "$newInxIndexerBinary" = "true" ]; then
-    if [ -f "/tmp/inx-indexer/config_template.json" ]; then
-        sudo cp -rf /tmp/inx-indexer/config_template.json /var/lib/inx-indexer/config.json > /dev/null 2>&1
-        newInxIndexerConfig=true
+if [ "$newShimmerInxIndexerBinary" = "true" ]; then
+    if [ -f "/tmp/shimmer-inx-indexer/config_template.json" ]; then
+        sudo cp -rf /tmp/shimmer-inx-indexer/config_template.json /var/lib/shimmer-inx-indexer/config.json > /dev/null 2>&1
+        newShimmerInxIndexerConfig=true
     fi
     if [ -f "/tmp/inx-indexer/config.json" ]; then
-        sudo cp -rf /tmp/inx-indexer/config.json /var/lib/inx-indexer/config.json > /dev/null 2>&1
-        newInxIndexerConfig=true
+        sudo cp -rf /tmp/shimmer-inx-indexer/config.json /var/lib/shimmer-inx-indexer/config.json > /dev/null 2>&1
+        newShimmerInxIndexerConfig=true
     fi
 fi
 
 ##############################################################################################################################################
 
-if [ "$newInxIndexerConfig" = "true" ]; then
+if [ "$newShimmerInxIndexerConfig" = "true" ]; then
     # Run installer modules
-    sudo chown -R inx:inx $inxIndexerHome > /dev/null 2>&1
+    sudo chown -R inx:inx $shimmerInxIndexerHome > /dev/null 2>&1
 
-    restartInxIndexer=true
-    inxIndexerUpdated=true
+    restartShimmerInxIndexer=true
+    shimmerInxIndexerUpdated=true
 fi
 
 # Remove temporary files
-sudo rm -rf /tmp/inx-indexer > /dev/null 2>&1
+sudo rm -rf /tmp/shimmer-inx-indexer > /dev/null 2>&1
 
 
-unset newInxIndexerBinary newInxIndexerConfig inxIndexerDownloadChecksum
+unset newShimmerInxIndexerBinary newShimmerInxIndexerConfig shimmerInxIndexerDownloadChecksum
