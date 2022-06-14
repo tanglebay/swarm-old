@@ -1,38 +1,38 @@
 #!/bin/bash
 while [ $exitCode -lt 1 ]; do
     clear
-    source $swarmConfigs/inx-mqtt.cfg
-    if [ "$inxMqttUpdateCheck" = "true" ]; then
-        menuInxMqttUpdateCheck="Disable"
+    source $swarmConfigs/shimmer-inx-mqtt.cfg
+    if [ "$shimmerInxMqttUpdateCheck" = "true" ]; then
+        menuShimmerInxMqttUpdateCheck="Disable"
     else
-        menuInxMqttUpdateCheck="Enable"
+        menuShimmerInxMqttUpdateCheck="Enable"
     fi
-    source $inxMqttModules/inxMqttConfigs
+    source $shimmerInxMqttModules/inxMqttConfigs
     CHOICE=$(
-        whiptail --title "INX-MQTT - Configurations" --menu "\nChoose an option" 24 65 0 \
+        whiptail --title "[SHIMMER] INX-MQTT - Configurations" --menu "\nChoose an option" 24 65 0 \
         "1)" "MQTT Settings" \
         "2)" "INX Address" \
         "3)" "Enable Plugins" \
         "4)" "Disable Plugins" \
-        "5)" "$menuInxMqttUpdateCheck update check" 3>&2 2>&1 1>&3
+        "5)" "$menuShimmerInxMqttUpdateCheck update check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
-        if [ "$restartInxMqtt" = "true" ] && [ -f "/usr/bin/inx-mqtt" ]; then
-            if (whiptail --title "INX-MQTT - Menu" --yesno "Would you like to apply the changes and restart INX-MQTT?" 8 65); then
+        if [ "$restartShimmerInxMqtt" = "true" ] && [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
+            if (whiptail --title "[SHIMMER] INX-MQTT - Menu" --yesno "Would you like to apply the changes and restart INX-MQTT?" 8 65); then
                 {
                     echo 0
                     echo 33
-                    source $inxMqttModules/inxMqttParser
+                    source $shimmerInxMqttModules/inxMqttParser
                     echo 50
-                    sudo systemctl restart inx-mqtt > /dev/null 2>&1
+                    sudo systemctl restart shimmer-inx-mqtt > /dev/null 2>&1
                     sleep 0.25
                     echo 100
                     sleep 0.25
                 } | whiptail --gauge "Please wait while the changes are applied and INX-MQTT is restarted..." 8 65 0
-                unset restartInxMqtt
+                unset restartShimmerInxMqtt
             fi
         fi
     fi
@@ -42,7 +42,7 @@ while [ $exitCode -lt 1 ]; do
             while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
-                    whiptail --title "INX-MQTT - MQTT Settings" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "[SHIMMER] INX-MQTT - MQTT Settings" --menu "\nChoose an option" 24 65 0 \
                     "1)" "Websocket Settings" \
                     "2)" "TCP Settings" 3>&2 2>&1 1>&3
                 )
@@ -54,14 +54,14 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         while [ $exitCode -lt 1 ]; do
                             clear
-                            if [ "$inxMqttWebsocketEnabled" = "true" ]; then
-                                menuInxMqttWebsocketEnabled="Disable"
+                            if [ "$shimmerInxMqttWebsocketEnabled" = "true" ]; then
+                                menuShimmerInxMqttWebsocketEnabled="Disable"
                             else
-                                menuInxMqttWebsocketEnabled="Enable"
+                                menuShimmerInxMqttWebsocketEnabled="Enable"
                             fi
                             CHOICE=$(
-                                whiptail --title "INX-MQTT - Websocket" --menu "\nChoose an option" 24 65 0 \
-                                "1)" "$menuInxMqttWebsocketEnabled websocket" \
+                                whiptail --title "[SHIMMER] INX-MQTT - Websocket" --menu "\nChoose an option" 24 65 0 \
+                                "1)" "$menuShimmerInxMqttWebsocketEnabled websocket" \
                                 "2)" "Websocket address" 3>&2 2>&1 1>&3
                             )
                             exitstatus=$?
@@ -70,38 +70,38 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             case $CHOICE in
                                 "1)")
-                                    source $swarmConfigs/inx-mqtt.cfg
-                                    if [ "$inxMqttWebsocketEnabled" = "true" ]; then
-                                        inxMqttWebsocketEnabledStatus="enabled"
+                                    source $swarmConfigs/shimmer-inx-mqtt.cfg
+                                    if [ "$shimmerInxMqttWebsocketEnabled" = "true" ]; then
+                                        shimmerInxMqttWebsocketEnabledStatus="enabled"
                                     else
-                                        inxMqttWebsocketEnabledStatus="disabled"
+                                        shimmerInxMqttWebsocketEnabledStatus="disabled"
                                     fi
-                                    if (whiptail --title "INX-MQTT - Update Check" --yesno "Would you like to \"$inxMqttWebsocketEnabledStatus\" update check?" 8 65); then
-                                        if [ "$inxMqttWebsocketEnabled" = "true" ]; then
-                                            inxMqttWebsocketEnabled=false
+                                    if (whiptail --title "[SHIMMER] INX-MQTT - Update Check" --yesno "Would you like to \"$shimmerInxMqttWebsocketEnabledStatus\" update check?" 8 65); then
+                                        if [ "$shimmerInxMqttWebsocketEnabled" = "true" ]; then
+                                            shimmerInxMqttWebsocketEnabled=false
                                         else
-                                            inxMqttWebsocketEnabled=true
+                                            shimmerInxMqttWebsocketEnabled=true
                                         fi
-                                        source $inxMqttConfigParsers/inxMqttWebsocketEnabled
-                                        sudo sed -i 's~^inxMqttWebsocketEnabled=.*~inxMqttWebsocketEnabled='$inxMqttWebsocketEnabled'~g' $swarmConfigs/inx-mqtt.cfg
+                                        source $shimmerInxMqttConfigParsers/inxMqttWebsocketEnabled
+                                        sudo sed -i 's~^shimmerInxMqttWebsocketEnabled=.*~shimmerInxMqttWebsocketEnabled='$shimmerInxMqttWebsocketEnabled'~g' $swarmConfigs/inx-mqtt.cfg
                                     fi
                                 ;;
                                 "2)")
-                                    source $swarmConfigs/inx-mqtt.cfg
-                                    inxMqttWebsocketAddress=$(whiptail --inputbox "\nSet the address of the websocket interface" 10 65 $inxMqttWebsocketAddress --title "INX-MQTT - Websocket Address" 3>&1 1>&2 2>&3)
+                                    source $swarmConfigs/shimmer-inx-mqtt.cfg
+                                    shimmerInxMqttWebsocketAddress=$(whiptail --inputbox "\nSet the address of the websocket interface" 10 65 $shimmerInxMqttWebsocketAddress --title "[SHIMMER] INX-MQTT - Websocket Address" 3>&1 1>&2 2>&3)
                                     exitStatus=$?
                                     if [ $exitStatus != 1 ]; then
-                                        if [ ! -z "$inxMqttWebsocketAddress" ] && [[ $inxMqttWebsocketAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
-                                            source $inxMqttConfigParsers/inxMqttWebsocketAddress
-                                            if [ "$newInxMqttWebsocketAddress" = "true" ]; then
-                                                sudo sed -i 's/^inxMqttWebsocketAddress=.*/inxMqttWebsocketAddress="'$inxMqttWebsocketAddress'"/' $swarmConfigs/inx-mqtt.cfg
-                                                whiptail --title "INX-MQTT - Websocket Address" --msgbox "New websocket address \"$inxMqttWebsocketAddress\" applied!" 8 65
+                                        if [ ! -z "$shimmerInxMqttWebsocketAddress" ] && [[ $shimmerInxMqttWebsocketAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                                            source $shimmerInxMqttConfigParsers/inxMqttWebsocketAddress
+                                            if [ "$newShimmerInxMqttWebsocketAddress" = "true" ]; then
+                                                sudo sed -i 's/^shimmerInxMqttWebsocketAddress=.*/shimmerInxMqttWebsocketAddress="'$shimmerInxMqttWebsocketAddress'"/' $swarmConfigs/inx-mqtt.cfg
+                                                whiptail --title "[SHIMMER] INX-MQTT - Websocket Address" --msgbox "New websocket address \"$shimmerInxMqttWebsocketAddress\" applied!" 8 65
                                                 unset newInxMqttWebsocketAddress
                                             else
-                                                whiptail --title "INX-MQTT - Websocket Address" --msgbox "No websocket address change detected." 8 65
+                                                whiptail --title "[SHIMMER] INX-MQTT - Websocket Address" --msgbox "No websocket address change detected." 8 65
                                             fi
                                         else
-                                            whiptail --title "INX-MQTT - Websocket Address" --msgbox "No valid websocket address, please try again." 8 65
+                                            whiptail --title "[SHIMMER] INX-MQTT - Websocket Address" --msgbox "No valid websocket address, please try again." 8 65
                                         fi
                                     fi
                                 ;;
@@ -112,14 +112,14 @@ while [ $exitCode -lt 1 ]; do
                     "2)")
                         while [ $exitCode -lt 1 ]; do
                             clear
-                            if [ "$inxMqttTcpEnabled" = "true" ]; then
-                                menuInxMqttTcpEnabled="Disable"
+                            if [ "$shimmerInxMqttTcpEnabled" = "true" ]; then
+                                menuShimmerInxMqttTcpEnabled="Disable"
                             else
-                                menuInxMqttTcpEnabled="Enable"
+                                menuShimmerInxMqttTcpEnabled="Enable"
                             fi
                             CHOICE=$(
-                                whiptail --title "INX-MQTT - TCP" --menu "\nChoose an option" 24 65 0 \
-                                "1)" "$menuInxMqttTcpEnabled TCP" \
+                                whiptail --title "[SHIMMER] INX-MQTT - TCP" --menu "\nChoose an option" 24 65 0 \
+                                "1)" "$menuShimmerInxMqttTcpEnabled TCP" \
                                 "2)" "TCP address" 3>&2 2>&1 1>&3
                             )
                             exitstatus=$?
@@ -128,38 +128,38 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             case $CHOICE in
                                 "1)")
-                                    source $swarmConfigs/inx-mqtt.cfg
-                                    if [ "$inxMqttTcpEnabled" = "true" ]; then
-                                        inxMqttTcpEnabledStatus="enabled"
+                                    source $swarmConfigs/shimmer-inx-mqtt.cfg
+                                    if [ "$shimmerInxMqttTcpEnabled" = "true" ]; then
+                                        shimmerInxMqttTcpEnabledStatus="enabled"
                                     else
-                                        inxMqttTcpEnabledStatus="disabled"
+                                        shimmerInxMqttTcpEnabledStatus="disabled"
                                     fi
-                                    if (whiptail --title "INX-MQTT - TCP" --yesno "Would you like to \"$inxMqttTcpEnabledStatus\" tcp interface?" 8 65); then
-                                        if [ "$inxMqttTcpEnabled" = "true" ]; then
-                                            inxMqttTcpEnabled=false
+                                    if (whiptail --title "[SHIMMER] INX-MQTT - TCP" --yesno "Would you like to \"$shimmerInxMqttTcpEnabledStatus\" tcp interface?" 8 65); then
+                                        if [ "$shimmerInxMqttTcpEnabled" = "true" ]; then
+                                            shimmerInxMqttTcpEnabled=false
                                         else
-                                            inxMqttTcpEnabled=true
+                                            shimmerInxMqttTcpEnabled=true
                                         fi
-                                        source $inxMqttConfigParsers/inxMqttTcpEnabled
-                                        sudo sed -i 's~^inxMqttTcpEnabled=.*~inxMqttTcpEnabled='$inxMqttTcpEnabled'~g' $swarmConfigs/inx-mqtt.cfg
+                                        source $shimmerInxMqttConfigParsers/inxMqttTcpEnabled
+                                        sudo sed -i 's~^shimmerInxMqttTcpEnabled=.*~shimmerInxMqttTcpEnabled='$shimmerInxMqttTcpEnabled'~g' $swarmConfigs/shimmer-inx-mqtt.cfg
                                     fi
                                 ;;
                                 "2)")
-                                    source $swarmConfigs/inx-mqtt.cfg
-                                    inxMqttTcpAddress=$(whiptail --inputbox "\nSet the address of the TCP interface" 10 65 $inxMqttTcpAddress --title "INX-MQTT - TCP Address" 3>&1 1>&2 2>&3)
+                                    source $swarmConfigs/shimmer-inx-mqtt.cfg
+                                    shimmerInxMqttTcpAddress=$(whiptail --inputbox "\nSet the address of the TCP interface" 10 65 $shimmerInxMqttTcpAddress --title "[SHIMMER] INX-MQTT - TCP Address" 3>&1 1>&2 2>&3)
                                     exitStatus=$?
                                     if [ $exitStatus != 1 ]; then
-                                        if [ ! -z "$inxMqttTcpAddress" ] && [[ $inxMqttTcpAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
-                                            source $inxMqttConfigParsers/inxMqttTcpAddress
-                                            if [ "$newInxMqttTcpAddress" = "true" ]; then
-                                                sudo sed -i 's/^inxMqttTcpAddress=.*/inxMqttTcpAddress="'$inxMqttTcpAddress'"/' $swarmConfigs/inx-mqtt.cfg
-                                                whiptail --title "INX-MQTT - TCP Address" --msgbox "New TCP address \"$inxMqttTcpAddress\" applied!" 8 65
-                                                unset newInxMqttTcpAddress
+                                        if [ ! -z "$shimmerInxMqttTcpAddress" ] && [[ $shimmerInxMqttTcpAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                                            source $shimmerInxMqttConfigParsers/inxMqttTcpAddress
+                                            if [ "$newShimmerInxMqttTcpAddress" = "true" ]; then
+                                                sudo sed -i 's/^shimmerInxMqttTcpAddress=.*/shimmerInxMqttTcpAddress="'$shimmerInxMqttTcpAddress'"/' $swarmConfigs/shimmer-inx-mqtt.cfg
+                                                whiptail --title "[SHIMMER] INX-MQTT - TCP Address" --msgbox "New TCP address \"$shimmerInxMqttTcpAddress\" applied!" 8 65
+                                                unset newShimmerInxMqttTcpAddress
                                             else
-                                                whiptail --title "INX-MQTT - TCP Address" --msgbox "No TCP address change detected." 8 65
+                                                whiptail --title "[SHIMMER] INX-MQTT - TCP Address" --msgbox "No TCP address change detected." 8 65
                                             fi
                                         else
-                                            whiptail --title "INX-MQTT - TCP Address" --msgbox "No valid TCP address, please try again." 8 65
+                                            whiptail --title "[SHIMMER] INX-MQTT - TCP Address" --msgbox "No valid TCP address, please try again." 8 65
                                         fi
                                     fi
                                 ;;
@@ -172,93 +172,93 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "2)")
-            source $swarmConfigs/inx-mqtt.cfg
-            inxMqttInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $inxMqttInxAddress --title "INX-MQTT - INX Address" 3>&1 1>&2 2>&3)
+            source $swarmConfigs/shimmer-inx-mqtt.cfg
+            shimmerInxMqttInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $shimmerInxMqttInxAddress --title "[SHIMMER] INX-MQTT - INX Address" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
-                if [ ! -z "$inxMqttInxAddress" ] && [[ $inxMqttInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
-                    source $inxMqttConfigParsers/inxMqttInxAddress
-                    if [ "$newInxMqttInxAddress" = "true" ]; then
-                        sudo sed -i 's/^inxMqttInxAddress=.*/inxMqttInxAddress="'$inxMqttInxAddress'"/' $swarmConfigs/inx-mqtt.cfg
-                        whiptail --title "INX-MQTT - INX Address" --msgbox "New INX address \"$inxMqttInxAddress\" applied!" 8 65
+                if [ ! -z "$shimmerInxMqttInxAddress" ] && [[ $shimmerInxMqttInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                    source $shimmerInxMqttConfigParsers/inxMqttInxAddress
+                    if [ "$newShimmerInxMqttInxAddress" = "true" ]; then
+                        sudo sed -i 's/^shimmerInxMqttInxAddress=.*/shimmerInxMqttInxAddress="'$shimmerInxMqttInxAddress'"/' $swarmConfigs/shimmer-inx-mqtt.cfg
+                        whiptail --title "[SHIMMER] INX-MQTT - INX Address" --msgbox "New INX address \"$shimmerInxMqttInxAddress\" applied!" 8 65
                         unset newInxMqttInxAddress
                     else
-                        whiptail --title "INX-MQTT - INX Address" --msgbox "No INX address change detected." 8 65
+                        whiptail --title "[SHIMMER] INX-MQTT - INX Address" --msgbox "No INX address change detected." 8 65
                     fi
                 else
-                    whiptail --title "INX-MQTT - INX Address" --msgbox "No valid INX address, please try again." 8 65
+                    whiptail --title "[SHIMMER] INX-MQTT - INX Address" --msgbox "No valid INX address, please try again." 8 65
                 fi
             fi
         ;;
         "3)")
-            useInxMqttEnablePlugins=true
-            source $swarmConfigs/inx-mqtt.cfg
-            currentInxMqttEnablePlugins=$inxMqttEnablePlugins
-            source $inxMqttModules/inxMqttPlugins
-            inxMqttEnablePlugins=$(whiptail --title "INX-MQTT - Plugins" --checklist "\nSelect (with spacebar) the INX-MQTT plugins to be activated:" 24 65 1 \
-                "Prometheus" "plugin for metrics (e.g. Grafana)" $inxMqttPluginPrometheus 3>&1 1>&2 2>&3)
+            useShimmerInxMqttEnablePlugins=true
+            source $swarmConfigs/shimmer-inx-mqtt.cfg
+            currentShimmerInxMqttEnablePlugins=$shimmerInxMqttEnablePlugins
+            source $shimmerInxMqttModules/inxMqttPlugins
+            shimmerInxMqttEnablePlugins=$(whiptail --title "[SHIMMER] INX-MQTT - Plugins" --checklist "\nSelect (with spacebar) the INX-MQTT plugins to be activated:" 24 65 1 \
+                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxMqttPluginPrometheus 3>&1 1>&2 2>&3)
             exitStatus=$?
-            inxMqttEnablePlugins=$(echo $inxMqttEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$inxMqttEnablePlugins" ] || [[ $inxMqttEnablePlugins = *prometheus* ]]; then
-                if [ "$inxMqttEnablePlugins" != "$currentInxMqttEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/inx-mqtt" ]; then
-                        source $inxMqttConfigParsers/inxMqttEnablePlugins
+            shimmerInxMqttEnablePlugins=$(echo $shimmerInxMqttEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$shimmerInxMqttEnablePlugins" ] || [[ $shimmerInxMqttEnablePlugins = *prometheus* ]]; then
+                if [ "$shimmerInxMqttEnablePlugins" != "$currentShimmerInxMqttEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
+                        source $shimmerInxMqttConfigParsers/inxMqttEnablePlugins
                     fi
-                    sudo sed -i 's/^inxMqttEnablePlugins=.*/inxMqttEnablePlugins="'$inxMqttEnablePlugins'"/' $swarmConfigs/inx-mqtt.cfg
-                    if [ ! -z "$inxMqttEnablePlugins" ]; then
-                        whiptail --title "INX-MQTT - Plugins" --msgbox "The following plugins are enabled:\n$inxMqttEnablePlugins" 14 65
+                    sudo sed -i 's/^shimmerInxMqttEnablePlugins=.*/shimmerInxMqttEnablePlugins="'$shimmerInxMqttEnablePlugins'"/' $swarmConfigs/shimmer-inx-mqtt.cfg
+                    if [ ! -z "$shimmerInxMqttEnablePlugins" ]; then
+                        whiptail --title "[SHIMMER] INX-MQTT - Plugins" --msgbox "The following plugins are enabled:\n$shimmerInxMqttEnablePlugins" 14 65
                     else
-                        whiptail --title "INX-MQTT - Plugins" --msgbox "There are no plugins enabled for INX-MQTT!" 8 65
+                        whiptail --title "[SHIMMER] INX-MQTT - Plugins" --msgbox "There are no plugins enabled for INX-MQTT!" 8 65
                     fi
                 fi
-                unset inxMqttEnablePlugins
+                unset shimmerInxMqttEnablePlugins
             fi
-            unset useInxMqttEnablePlugins
+            unset useShimmerInxMqttEnablePlugins
         ;;
         "4)")
-            useInxMqttDisablePlugins=true
-            source $swarmConfigs/inx-mqtt.cfg
-            currentInxMqttDisablePlugins=$inxMqttDisablePlugins
-            source $inxMqttModules/inxMqttPlugins
-            inxMqttDisablePlugins=$(whiptail --title "INX-MQTT - Plugins" --checklist "\nSelect (with spacebar) the INX-MQTT plugins to be deactivated:" 24 65 1 \
-                "Prometheus" "plugin for metrics (e.g. Grafana)" $inxMqttPluginPrometheus 3>&1 1>&2 2>&3)
+            useShimmerInxMqttDisablePlugins=true
+            source $swarmConfigs/shimmer-inx-mqtt.cfg
+            currentShimmerInxMqttDisablePlugins=$shimmerInxMqttDisablePlugins
+            source $shimmerInxMqttModules/inxMqttPlugins
+            shimmerInxMqttDisablePlugins=$(whiptail --title "[SHIMMER] INX-MQTT - Plugins" --checklist "\nSelect (with spacebar) the INX-MQTT plugins to be deactivated:" 24 65 1 \
+                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxMqttPluginPrometheus 3>&1 1>&2 2>&3)
             exitStatus=$?
-            inxMqttDisablePlugins=$(echo $inxMqttDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$inxMqttDisablePlugins" ] || [[ $inxMqttDisablePlugins = *warpsync* ]]; then
-                if [ "$inxMqttDisablePlugins" != "$currentInxMqttDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/inx-mqtt" ]; then
-                        source $inxMqttConfigParsers/inxMqttDisablePlugins
+            shimmerInxMqttDisablePlugins=$(echo $shimmerInxMqttDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$shimmerInxMqttDisablePlugins" ] || [[ $shimmerInxMqttDisablePlugins = *warpsync* ]]; then
+                if [ "$shimmerInxMqttDisablePlugins" != "$currentShimmerInxMqttDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
+                        source $shimmerInxMqttConfigParsers/inxMqttDisablePlugins
                     fi
-                    sudo sed -i 's/^inxMqttDisablePlugins=.*/inxMqttDisablePlugins="'$inxMqttDisablePlugins'"/' $swarmConfigs/inx-mqtt.cfg
-                    if [ ! -z "$inxMqttDisablePlugins" ]; then
-                        whiptail --title "INX-MQTT - Plugins" --msgbox "The following plugins are disabled:\n$inxMqttDisablePlugins" 14 65
+                    sudo sed -i 's/^shimmerInxMqttDisablePlugins=.*/shimmerInxMqttDisablePlugins="'$shimmerInxMqttDisablePlugins'"/' $swarmConfigs/shimmer-inx-mqtt.cfg
+                    if [ ! -z "$shimmerInxMqttDisablePlugins" ]; then
+                        whiptail --title "[SHIMMER] INX-MQTT - Plugins" --msgbox "The following plugins are disabled:\n$shimmerInxMqttDisablePlugins" 14 65
                     else
-                        whiptail --title "INX-MQTT - Plugins" --msgbox "There are no plugins disabled for INX-MQTT!" 8 65
+                        whiptail --title "[SHIMMER] INX-MQTT - Plugins" --msgbox "There are no plugins disabled for INX-MQTT!" 8 65
                     fi
                 fi
             else
-                unset inxMqttDisablePlugins
+                unset shimmerInxMqttDisablePlugins
             fi
-            unset useInxMqttDisablePlugins
+            unset useShimmerInxMqttDisablePlugins
         ;;
         "5)")
-            source $swarmConfigs/inx-mqtt.cfg
-            if [ "$inxMqttUpdateCheck" = "true" ]; then
-                inxMqttUpdateCheckStatus="enabled"
+            source $swarmConfigs/shimmer-inx-mqtt.cfg
+            if [ "$shimmerInxMqttUpdateCheck" = "true" ]; then
+                shimmerInxMqttUpdateCheckStatus="enabled"
             else
-                inxMqttUpdateCheckStatus="disabled"
+                shimmerInxMqttUpdateCheckStatus="disabled"
             fi
-            if (whiptail --title "INX-MQTT - Update Check" --yesno "Would you like to \"$inxMqttUpdateCheckStatus\" update check?" 8 65); then
-                if [ "$inxMqttUpdateCheck" = "true" ]; then
-                    inxMqttUpdateCheck=false
+            if (whiptail --title "[SHIMMER] INX-MQTT - Update Check" --yesno "Would you like to \"$shimmerInxMqttUpdateCheckStatus\" update check?" 8 65); then
+                if [ "$shimmerInxMqttUpdateCheck" = "true" ]; then
+                    shimmerInxMqttUpdateCheck=false
                 else
-                    inxMqttUpdateCheck=true
+                    shimmerInxMqttUpdateCheck=true
                 fi
-                source $inxMqttConfigParsers/inxMqttUpdateCheck
-                sudo sed -i 's~^inxMqttUpdateCheck=.*~inxMqttUpdateCheck='$inxMqttUpdateCheck'~g' $swarmConfigs/inx-mqtt.cfg
+                source $shimmerInxMqttConfigParsers/inxMqttUpdateCheck
+                sudo sed -i 's~^shimmerInxMqttUpdateCheck=.*~shimmerInxMqttUpdateCheck='$shimmerInxMqttUpdateCheck'~g' $swarmConfigs/shimmer-inx-mqtt.cfg
             fi
         ;;
     esac
 done
-sudo chown -R inx:inx $inxMqttHome/*.json
+sudo chown -R inx:inx $shimmerInxMqttHome/*.json
 exitCode=0
