@@ -1,43 +1,43 @@
 #!/bin/bash
 
-source $swarmConfigs/hornet.cfg
+source $swarmConfigs/iota-hornet.cfg
 source $swarmConfigs/proxy.cfg
 source $proxyModules/proxyParser
 
 if [ "$killall" = "true" ]; then
-    sudo killall -s SIGKILL hornet > /dev/null 2>&1
+    sudo killall -s SIGKILL iota-hornet > /dev/null 2>&1
 else
-    sudo systemctl stop hornet > /dev/null 2>&1
+    sudo systemctl stop iota-hornet > /dev/null 2>&1
 fi
 
-if [ ! -f "/usr/bin/hornet" ]; then
-    if id hornet >/dev/null 2>&1; then
-        sudo deluser hornet >/dev/null
-    fi
-fi
+sudo systemctl disable iota-hornet > /dev/null 2>&1
 
-sudo systemctl disable hornet > /dev/null 2>&1
-
-sudo rm -rf /usr/bin/hornet /var/lib/hornet /lib/systemd/system/hornet.service /etc/default/hornet > /dev/null 2>&1
+sudo rm -rf /usr/bin/iota-hornet /var/lib/iota-hornet /lib/systemd/system/iota-hornet.service /etc/default/iota-hornet > /dev/null 2>&1
 
 sudo systemctl daemon-reload > /dev/null 2>&1
 
 if [ "$ufw" = "true" ]; then
-    sudo ufw delete allow $hornetGossipPort/tcp > /dev/null 2>&1
-    sudo ufw delete allow $hornetAutopeeringPort/udp > /dev/null 2>&1
+    sudo ufw delete allow $iotaHornetGossipPort/tcp > /dev/null 2>&1
+    sudo ufw delete allow $iotaHornetAutopeeringPort/udp > /dev/null 2>&1
 fi
 
 if [ ! -f "/usr/bin/hornet-shimmer" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ] && [ ! -f "/usr/bin/inx-indexer" ] && [ ! -f "/usr/bin/inx-mqtt" ] && [ ! -f "/usr/bin/inx-participation" ]; then
     sudo snap remove go > /dev/null 2>&1
 fi
 
-if [ -f "/etc/nginx/sites-enabled/hornet" ]; then
+if [ -f "/etc/nginx/sites-enabled/iota-hornet" ]; then
     if [ "$ufw" = "true" ]; then
-        if [ "$proxyHornetPort" != "$proxySwarmDashboardPort" ] && [ "$proxyHornetPort" != "$proxyHornetShimmerPort" ] && [ "$proxyHornetPort" != "$proxyBeePort" ] && [ "$proxyHornetPort" != "$proxyGoshimmerPort" ] && [ "$proxyHornetPort" != "$proxyWaspDashboardPort" ] && [ "$proxyHornetPort" != "$proxyWaspApiPort" ]; then
-            sudo ufw delete allow $proxyHornetPort/tcp > /dev/null 2>&1
+        if [ "$proxyIotaHornetPort" != "$proxyShimmerHornetPort" ] && [ "$proxyIotaHornetPort" != "$proxyIotaBeePort" ] && [ "$proxyIotaHornetPort" != "$proxyGoshimmerPort" ] && [ "$proxyIotaHornetPort" != "$proxyWaspDashboardPort" ] && [ "$proxyIotaHornetPort" != "$proxyWaspApiPort" ]; then
+            sudo ufw delete allow $proxyIotaHornetPort/tcp > /dev/null 2>&1
         fi
     fi
-    sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetUrl=""/' $swarmConfigs/proxy.cfg
-    sudo rm -rf /etc/nginx/sites-enabled/hornet > /dev/null 2>&1
+    sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl=""/' $swarmConfigs/proxy.cfg
+    sudo rm -rf /etc/nginx/sites-enabled/iota-hornet > /dev/null 2>&1
     sudo systemctl reload nginx
+fi
+
+if [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/shimmer-hornet"]; then
+    if id hornet >/dev/null 2>&1; then
+        sudo deluser hornet >/dev/null
+    fi
 fi

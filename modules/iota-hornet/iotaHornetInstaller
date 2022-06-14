@@ -5,9 +5,9 @@ if ! id hornet >/dev/null 2>&1; then
     useradd --no-create-home --system hornet >/dev/null
 fi
 
-if [ ! -d "$hornetHome" ]; then
-    sudo mkdir -p $hornetHome > /dev/null 2>&1
-    sudo chown -R hornet:hornet $hornetHome > /dev/null 2>&1
+if [ ! -d "$iotaHornetHome" ]; then
+    sudo mkdir -p $iotaHornetHome > /dev/null 2>&1
+    sudo chown -R hornet:hornet $iotaHornetHome > /dev/null 2>&1
 fi
 
 # Install GO
@@ -16,21 +16,21 @@ if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
 fi
 
 # Create Service
-if [ ! -f "/lib/systemd/system/hornet.service" ]; then
-    sudo cp -rf $swarmHome/templates/hornet/hornet.service /lib/systemd/system/hornet.service
-    if [ ! -f "/etc/default/hornet" ]; then
-        if [ "$hornetNetwork" = "mainnet" ]; then 
-            echo "OPTIONS=\"--config config.json\"" > /etc/default/hornet
+if [ ! -f "/lib/systemd/system/iota-hornet.service" ]; then
+    sudo cp -rf $swarmHome/templates/iota-hornet/iota-hornet.service /lib/systemd/system/iota-hornet.service
+    if [ ! -f "/etc/default/iota-hornet" ]; then
+        if [ "$iotaHornetNetwork" = "mainnet" ]; then 
+            echo "OPTIONS=\"--config config.json\"" > /etc/default/iota-hornet
         fi
-        if [ "$hornetNetwork" = "comnet" ]; then 
-            echo "OPTIONS=\"--config config-comnet.json\"" > /etc/default/hornet
+        if [ "$iotaHornetNetwork" = "comnet" ]; then 
+            echo "OPTIONS=\"--config config-comnet.json\"" > /etc/default/iota-hornet
         fi
-        if [ "$hornetNetwork" = "devnet" ]; then 
-            echo "OPTIONS=\"--config config-devnet.json\"" > /etc/default/hornet
+        if [ "$iotaHornetNetwork" = "devnet" ]; then 
+            echo "OPTIONS=\"--config config-devnet.json\"" > /etc/default/iota-hornet
         fi
     fi
-    if [ ! -f "/etc/systemd/system/multi-user.target.wants/hornet.service" ]; then
-        sudo systemctl enable hornet > /dev/null 2>&1
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/iota-hornet.service" ]; then
+        sudo systemctl enable iota-hornet > /dev/null 2>&1
     fi
     sudo systemctl daemon-reload
 fi
@@ -38,42 +38,42 @@ fi
 ##############################################################################################################################################
 
 # Create dir if not exist
-sudo mkdir -p /tmp/hornet > /dev/null 2>&1
+sudo mkdir -p /tmp/iota-hornet > /dev/null 2>&1
 
 if [ "$osArchitecture" = "amd64" ]; then
-    hornetArchitecture="x86_64"
+    iotaHornetArchitecture="x86_64"
 fi
 if [ "$osArchitecture" = "arm64" ]; then
-    hornetArchitecture="ARM64"
+    iotaHornetArchitecture="ARM64"
 fi
 
-if [ ! -z "$hornetArchitecture" ]; then
+if [ ! -z "$iotaHornetArchitecture" ]; then
     # Download latest hornet
-    ( cd /tmp/hornet/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestHornetVersion}/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz )
-    if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz" ]; then
-        hornetDownloadChecksum=$(sudo shasum -a 256 /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz | awk '{ print $1 }')
+    ( cd /tmp/iota-hornet/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestIotaHornetVersion}/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture.tar.gz )
+    if [ -f "/tmp/iota-hornet/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture.tar.gz" ]; then
+        iotaHornetDownloadChecksum=$(sudo shasum -a 256 /tmp/iota-hornet/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture.tar.gz | awk '{ print $1 }')
     fi
     # Download checksum
-    ( cd /tmp/hornet/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestHornetVersion}/checksums.txt )
-    if [ -f "/tmp/hornet/checksums.txt" ]; then
-        hornetChecksum=$(sudo grep "HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz" /tmp/hornet/checksums.txt | awk '{ print $1 }')
-        echo $hornetChecksum > /tmp/hornet.checksum
+    ( cd /tmp/iota-hornet/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestIotaHornetVersion}/checksums.txt )
+    if [ -f "/tmp/iota-hornet/checksums.txt" ]; then
+        iotaHornetChecksum=$(sudo grep "HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture.tar.gz" /tmp/iota-hornet/checksums.txt | awk '{ print $1 }')
+        echo $iotaHornetChecksum > /tmp/iota-hornet.checksum
     fi
 
     # Unzip archive
-    if [ "$hornetDownloadChecksum" = "$hornetChecksum" ] && [ ! -z "$hornetDownloadChecksum" ] && [ ! -z "$hornetChecksum" ]; then
-        ( cd /tmp/hornet ; sudo tar -xzf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture.tar.gz ) > /dev/null 2>&1
+    if [ "$iotaHornetDownloadChecksum" = "$iotaHornetChecksum" ] && [ ! -z "$iotaHornetDownloadChecksum" ] && [ ! -z "$iotaHornetChecksum" ]; then
+        ( cd /tmp/iota-hornet ; sudo tar -xzf /tmp/iota-hornet/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture.tar.gz ) > /dev/null 2>&1
 
         # Copy binary
-        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/hornet" ]; then
-            hornetStatus="$(systemctl show -p ActiveState --value hornet)"
-            if [ "$hornetStatus" = "active" ]; then
-                sudo systemctl stop hornet > /dev/null 2>&1
+        if [ -f "/tmp/iota-hornet/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture/hornet" ]; then
+            iotaHornetStatus="$(systemctl show -p ActiveState --value iota-hornet)"
+            if [ "$iotaHornetStatus" = "active" ]; then
+                sudo systemctl stop iota-hornet > /dev/null 2>&1
             fi
 
-            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/hornet /usr/bin/hornet > /dev/null 2>&1
-            sudo chmod +x /usr/bin/hornet > /dev/null 2>&1
-            newHornetBinary=true
+            sudo cp -rf /tmp/iota-hornet/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture/hornet /usr/bin/iota-hornet > /dev/null 2>&1
+            sudo chmod +x /usr/bin/iota-hornet > /dev/null 2>&1
+            newIotaHornetBinary=true
         fi
     fi
 fi
@@ -81,50 +81,40 @@ fi
 
 ##############################################################################################################################################
 
-if [ "$newHornetBinary" = "true" ]; then
+if [ "$newIotaHornetBinary" = "true" ]; then
     ### Mainnet Config
-    if [ "$hornetNetwork" = "mainnet" ]; then
-        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config.json" ]; then
-            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config.json /var/lib/hornet/config.json > /dev/null 2>&1
+    if [ "$iotaHornetNetwork" = "mainnet" ]; then
+        if [ -f "/tmp/iota-hornet/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture/config.json" ]; then
+            sudo cp -rf /tmp/iota-hornet/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture/config.json /var/lib/iota-hornet/config.json > /dev/null 2>&1
         fi
-        if [ -s "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config.json" ]; then
-            newHornetConfig=true
-        fi
-    fi
-
-    ### Comnet Config
-    if [ "$hornetNetwork" = "comnet" ]; then
-        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-comnet.json" ]; then
-            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-comnet.json /var/lib/hornet/config-comnet.json > /dev/null 2>&1
-        fi
-        if [ -s "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-comnet.json" ]; then
-            newHornetConfig=true
+        if [ -s "/tmp/iota-hornet/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture/config.json" ]; then
+            newIotaHornetConfig=true
         fi
     fi
 
     ### Devnet Config
-    if [ "$hornetNetwork" = "devnet" ]; then
-        if [ -f "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-devnet.json" ]; then
-            sudo cp -rf /tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-devnet.json /var/lib/hornet/config-devnet.json > /dev/null 2>&1
+    if [ "$iotaHornetNetwork" = "devnet" ]; then
+        if [ -f "/tmp/iota-hornet/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture/config-devnet.json" ]; then
+            sudo cp -rf /tmp/iota-hornet/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture/config-devnet.json /var/lib/iota-hornet/config-devnet.json > /dev/null 2>&1
         fi
-        if [ -s "/tmp/hornet/HORNET-${latestHornetVersion}_Linux_$hornetArchitecture/config-devnet.json" ]; then
-            newHornetConfig=true
+        if [ -s "/tmp/iota-hornet/HORNET-${latestIotaHornetVersion}_Linux_$iotaHornetArchitecture/config-devnet.json" ]; then
+            newIotaHornetConfig=true
         fi
     fi
 fi
 
 ##############################################################################################################################################
 
-if [ "$newHornetConfig" = "true" ]; then
+if [ "$newIotaHornetConfig" = "true" ]; then
     # Run installer modules
-    sudo chown -R hornet:hornet $hornetHome > /dev/null 2>&1
+    sudo chown -R hornet:hornet $iotaHornetHome > /dev/null 2>&1
 
-    restartHornet=true
-    hornetUpdated=true
+    restartIotaHornet=true
+    iotaHornetUpdated=true
 fi
 
 # Remove temporary files
-sudo rm -rf /tmp/hornet > /dev/null 2>&1
+sudo rm -rf /tmp/iota-hornet > /dev/null 2>&1
 
 
-unset newHornetBinary newHornetConfig hornetDownloadChecksum
+unset newIotaHornetBinary newIotaHornetConfig iotaHornetDownloadChecksum
