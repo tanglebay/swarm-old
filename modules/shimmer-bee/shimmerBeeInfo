@@ -1,0 +1,84 @@
+#!/bin/bash
+
+if [ -f "/usr/bin/shimmer-bee" ]; then
+
+    source $swarmConfigs/shimmer-bee.cfg
+
+    shimmerBeeStatus=$(systemctl show -p ActiveState --value shimmer-bee)
+
+    # Bee version
+    if [ -f "/usr/bin/shimmer-bee" ]; then
+        shimmerBeeVersion=$(/usr/bin/shimmer-bee -v | tr -d 'v"')
+        if [[ $shimmerBeeVersion = *rc[0-9]* ]]; then
+            beeVersion=$(echo $shimmerBeeVersion | cut -f1,2 -d"-")
+        else
+            shimmerBeeVersion=$(echo $shimmerBeeVersion | cut -f1 -d"-")
+        fi
+    fi
+    if [ -z "$shimmerBeeVersion" ]; then
+        shimmerBeeVersion="N/A"
+    else
+        if [ "$shimmerBeeVersion" != "$latestShimmerBeeVersion" ] && [ ! -z "$latestShimmerBeeVersion" ]; then
+            shimmerBeeVersion="$shimmerBeeVersion (new version \"v$latestShimmerBeeVersion\" available!"
+        fi
+    fi
+
+    if [ "$shimmerBeeStatus" = "active" ]; then
+        shimmerBeeHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14268/api/v2/info" -H  "accept: application/json"|jq -r '.status.isHealthy' 2> /dev/null)"
+        if [ -z "$shimmerBeeHealthy" ]; then
+            shimmerBeeHealthy="N/A"
+        else
+            if [ "$shimmerBeeHealthy" = "true" ]; then
+                shimmerBeeHealthy="Yes"
+            else
+                shimmerBeeHealthy="No"
+            fi
+        fi
+    else
+        shimmerBeeHealthy="N/A"
+    fi
+
+    # DB size
+    if [ -d "$shimmerBeeHome/storage" ]; then
+        getCurrentDbSize="$(du -sb $shimmerBeeHome/storage | cut -f1)"
+        let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+        if [ $getCurrentDbSizeInMb -gt 999 ]; then
+            let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+            currentShimmerBeeDbSize="${getCurrentDbSizeInGb} GB"
+        else
+            currentShimmerBeeDbSize="${getCurrentDbSizeInMb} MB"
+        fi
+    else
+        currentShimmerBeeDbSize="N/A"
+    fi
+
+    if [ "$shimmerBeePruningEnabled" = "true" ]; then
+        shimmerBeePruningEnabledStatus=enabled
+    else
+        shimmerBeePruningEnabledStatus=disabled
+    fi
+
+    if [ "$shimmerBeePowEnabled" = "true" ]; then
+        shimmerBeePowEnabledStatus=enabled
+    else
+        shimmerBeePowEnabledStatus=disabled
+    fi
+
+    if [ -f "/etc/nginx/sites-enabled/shimmer-bee" ]; then
+        shimmerBeeProxyStatus=active
+    else
+        shimmerBeeProxyStatus=inactive
+    fi
+
+    if [ "$shimmerBeeAutopeeringEnabled" = "true" ]; then
+        shimmerBeeAutopeeringEnabledMenu=enabled
+    else
+        shimmerBeeAutopeeringEnabledMenu=disabled
+    fi
+
+    # OUTPUT
+    whiptail --scrolltext --title "Shimmer-Bee - Info" --msgbox "Bee: $shimmerBeeStatus\nVersion: v$shimmerBeeVersion\nHealthy: $shimmerBeeHealthy\nDB size: $currentShimmerBeeDbSize\nProxy: $shimmerBeeProxyStatus\n\nAlias: $shimmerBeeAlias\nPoW: $shimmerBeePowEnabledStatus\nLS Interval: $shimmerBeeSnapshotInterval milestones\n\nAutopeering: $shimmerBeeAutopeeringEnabledMenu\nMax unknown Peers: $shimmerBeeMaxUnknownPeers\nGossip Port: ${shimmerBeeGossipPort}/tcp\nAutopeering Port: $shimmerBeeAutopeeringPort/udp\n\nPruning: $shimmerBeePruningEnabledStatus\nPruning Delay: $shimmerBeePruningDelay milestones" 24 65
+else
+    # OUTPUT
+    whiptail --title "Shimmer-Bee - Info" --msgbox "Shimmer-Bee not installed!" 8 65
+fi

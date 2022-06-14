@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# General
+if ! id inx >/dev/null 2>&1; then
+    useradd --no-create-home --system inx >/dev/null
+fi
+
+if [ ! -d "$shimmerInxParticipationHome" ]; then
+    sudo mkdir -p $shimmerInxParticipationHome > /dev/null 2>&1
+    sudo chown -R inx:inx $shimmerInxParticipationHome > /dev/null 2>&1
+fi
+
+# Install GO
+if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    sudo snap install go --classic > /dev/null 2>&1
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/shimmer-inx-participation.service" ]; then
+    sudo cp -rf $swarmHome/templates/shimmer-inx/inx-participation.service /lib/systemd/system/shimmer-inx-participation.service
+    if [ ! -f "/etc/default/shimmer-inx-participation" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/shimmer-inx-participation
+    fi
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/shimmer-inx-participation.service" ]; then
+        sudo systemctl enable shimmer-inx-participation > /dev/null 2>&1
+    fi
+    sudo systemctl daemon-reload > /dev/null 2>&1
+fi
+
+##############################################################################################################################################
+
+# Create dir if not exist
+sudo mkdir -p /tmp/shimmer-inx-participation > /dev/null 2>&1
+
+if [ "$osArchitecture" = "amd64" ]; then
+    source $swarmModules/swarmAuth
+    if [ "$swarmAuth" = "200" ]; then
+        # Download latest inx-participation
+        ( cd /tmp/shimmer-inx-participation/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-participation/v${latestShimmerInxParticipationVersion}/inx-participation-v${latestShimmerInxParticipationVersion}_linux_$osArchitecture.tar.gz )
+        if [ -f "/tmp/shimmer/inx-participation/inx-participation-v${latestShimmerInxParticipationVersion}_linux_$osArchitecture.tar.gz" ]; then
+            shimmerInxParticipationDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-participation/inx-participation-v${latestShimmerInxParticipationVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        fi
+
+        # Download checksum
+        ( cd /tmp/inx-participation/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-participation/v${latestShimmerInxParticipationVersion}/checksums.txt )
+        shimmerInxParticipationChecksum=$(sudo grep "inx-participation-v${latestShimmerInxParticipationVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-participation/checksums.txt | awk '{ print $1 }')
+        echo $shimmerInxParticipationChecksum > /tmp/shimmer-inx-participation.checksum
+
+        # Unzip archive
+        if [ "$shimmerInxParticipationDownloadChecksum" = "$shimmerInxParticipationChecksum" ] && [ ! -z "$shimmerInxParticipationDownloadChecksum" ] && [ ! -z "$shimmerInxParticipationChecksum" ]; then
+            ( cd /tmp/shimmer-inx-participation ; sudo tar -xzf /tmp/shimmer-inx-participation/inx-participation-v${latestShimmerInxParticipationVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+
+            # Copy binary
+            if [ -f "/tmp/shimmer-inx-participation/inx-participation" ]; then
+                shimmerInxParticipationStatus="$(systemctl show -p ActiveState --value shimmer-inx-participation)"
+                if [ "$shimmerInxParticipationStatus" = "active" ]; then
+                    sudo systemctl stop shimmer-inx-participation > /dev/null 2>&1
+                fi
+
+                sudo cp -rf /tmp/shimmer-inx-participation/inx-participation /usr/bin/shimmer-inx-participation > /dev/null 2>&1
+                sudo chmod +x /usr/bin/shimmer-inx-participation > /dev/null 2>&1
+                newShimmerInxParticipationBinary=true
+            fi
+        fi
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newShimmerInxParticipationBinary" = "true" ]; then
+    if [ -f "/tmp/shimmer-inx-participation/config_template.json" ]; then
+        sudo cp -rf /tmp/shimmer-inx-participation/config_template.json /var/lib/shimmer-inx-participation/config.json > /dev/null 2>&1
+        newShimmerInxParticipationConfig=true
+    fi
+    if [ -f "/tmp/shimmer-inx-participation/config.json" ]; then
+        sudo cp -rf /tmp/inx-participation/config.json /var/lib/shimmer-inx-participation/config.json > /dev/null 2>&1
+        newShimmerInxParticipationConfig=true
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newShimmerInxParticipationConfig" = "true" ]; then
+    # Run installer modules
+    sudo chown -R inx:inx $shimmerInxParticipationHome > /dev/null 2>&1
+
+    restartShimmerInxParticipation=true
+    shimmerInxParticipationUpdated=true
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/shimmer-inx-participation > /dev/null 2>&1
+
+
+unset newShimmerInxParticipationBinary newShimmerInxParticipationConfig shimmerInxParticipationDownloadChecksum

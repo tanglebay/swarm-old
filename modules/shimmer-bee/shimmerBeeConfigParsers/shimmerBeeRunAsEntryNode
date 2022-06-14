@@ -1,0 +1,18 @@
+#!/bin/bash
+
+parser="$(jq '.autopeering.runAsEntryNode' $shimmerBeeHome/$shimmerBeeConfig.json)"
+if [ "$parser" != "$shimmerBeePowEnabled" ]; then
+    sudo jq '.autopeering.runAsEntryNode = '$shimmerBeeRunAsEntryNode'' $shimmerBeeHome/$shimmerBeeConfig.json|sponge $shimmerBeeHome/$shimmerBeeConfig.json
+    if [ "$shimmerBeeRunAsEntryNode" = "true" ]; then
+        parser="$(jq '.autopeering.enabled' $shimmerBeeHome/$shimmerBeeConfig.json)"
+        if [ "$parser" = "false" ]; then
+            shimmerBeeAutopeeringEnabled=true
+            sudo jq '.autopeering.enabled = '$shimmerBeeAutopeeringEnabled'' $shimmerBeeHome/$shimmerBeeConfig.json|sponge $shimmerBeeHome/$shimmerBeeConfig.json
+            sudo sed -i 's/^shimmerBeeAutopeeringEnabled=.*/shimmerBeeAutopeeringEnabled=true/' $swarmConfigs/shimmer-bee.cfg
+        fi
+    fi
+    restartShimmerBee=true
+    echo "shimmerBeeRunAsEntryNode" >> /tmp/shimmerBeeParsing
+fi
+
+unset parser

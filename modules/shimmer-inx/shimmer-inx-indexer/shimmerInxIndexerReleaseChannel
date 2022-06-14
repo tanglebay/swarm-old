@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Check if release is changed
+if [ "$shimmerInxIndexerRelease" != "$currentShimmerInxIndexerRelease" ]; then
+    {
+        echo 0
+        echo 20
+        source $shimmerInxIndexerModules/shimmerInxIndexerRemoval
+        echo 40
+        source $shimmerInxIndexerModules/shimmerInxIndexerInstaller
+        echo 60
+        source $shimmerInxIndexerModules/shimmerInxIndexerParser
+        echo 80
+        if [ "$shimmerInxIndexerUpdated" = "true" ] || [ "$restartShimmerInxIndexer" = "true" ]; then
+            sudo systemctl restart shimmer-inx-indexer
+            unset restartShimmerInxIndexer
+        fi
+        echo 100
+    } | whiptail --gauge "Please wait while INX-Indexer is prepared..." 8 65 0
+    whiptail --title "[SHIMMER] INX-Indexer - Configuration" --msgbox "New release channel ($shimmerInxIndexerRelease) applied and INX-Indexer was reinstalled!" 8 65
+fi
