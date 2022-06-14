@@ -1,0 +1,23 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYshimmerHornetApiPublicRoutes <<< "$shimmerHornetApiPublicRoutes"
+validateShimmerHornetApiPublicRoutes=$(echo "${shimmerHornetApiPublicRoutes: -1}")
+if [ "$validateShimmerHornetApiPublicRoutes" = "," ]; then
+    shimmerHornetApiPublicRoutes="${shimmerHornetApiPublicRoutes%?}"
+    sudo sed -i 's~^shimmerHornetApiPublicRoutes=.*~shimmerHornetApiPublicRoutes="'$shimmerHornetApiPublicRoutes'"~' $swarmConfigs/shimmer-hornet.cfg
+    shimmerHornetForceApiPublicRoutes=true
+fi
+
+parser="$(jq '.restAPI.publicRoutes' $shimmerHornetHome/$shimmerHornetConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+
+if [ "$parser" != "$shimmerHornetApiPublicRoutes" ] || [ "$shimmerHornetForceApiPublicRoutes" = "true" ]; then
+    sudo jq '.restAPI.publicRoutes |= []' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
+    for shimmerHornetApiPublicRoute in "${ARRAYshimmerHornetApiPublicRoutes[@]}"
+    do
+        sudo jq '.restAPI.publicRoutes |= .+ ["'$shimmerHornetApiPublicRoute'"]' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
+    done
+    restartShimmerHornet=true
+    echo "shimmerHornetApiPublicRoutes" >> /tmp/shimmerHornetParsing
+fi
+unset ARRAYshimmerHornetApiPublicRoutes shimmerHornetApiPublicRoute shimmerHornetForceApiPublicRoutes

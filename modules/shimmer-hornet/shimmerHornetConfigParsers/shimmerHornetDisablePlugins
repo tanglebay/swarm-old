@@ -1,0 +1,21 @@
+#!/bin/bash
+
+useShimmerHornetDisablePlugins=true
+source $shimmerHornetModules/shimmerHornetPlugins
+
+IFS=', ' read -r -a ARRAYshimmerHornetDisablePlugins <<< "$shimmerHornetDisablePlugins"
+
+parser="$(jq '.app.disablePlugins' $shimmerHornetHome/$shimmerHornetConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$shimmerHornetDisablePlugins" ]; then
+    sudo jq '.app.disablePlugins |= []' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
+    for shimmerHornetDisablePlugin in "${ARRAYshimmerHornetDisablePlugins[@]}"
+    do
+        if [ ! -z "$shimmerHornetDisablePlugin" ]; then
+            sudo jq '.app.disablePlugins |= .+ ["'$shimmerHornetDisablePlugin'"]' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
+        fi
+    done
+    restartHornetShimmer=true
+    echo "shimmerHornetDisablePlugins" >> /tmp/shimmerHornetParsing
+fi
+unset ARRAYshimmerHornetDisablePlugins shimmerHornetDisablePlugin useHornetShimmerDisablePlugins

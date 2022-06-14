@@ -1,0 +1,13 @@
+#!/bin/bash
+
+parser="$(jq '.snapshots.intervalSynced' $shimmerHornetHome/$shimmerHornetConfig.json)"
+if [ ! -z "$parser" ]; then
+    jq 'del(.snapshots.intervalSynced)' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
+fi
+parser="$(jq '.snapshots.interval' $shimmerHornetHome/$shimmerHornetConfig.json)"
+if [ "$shimmerHornetSnapshotInterval" != "$parser" ]; then
+    sudo jq '.snapshots.interval = '$shimmerHornetSnapshotInterval'' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
+    restartShimmerHornet=true
+    newShimmerHornetSnapshotInterval=true
+    echo "shimmerHornetSnapshotInterval" >> /tmp/shimmerHornetParsing
+fi
