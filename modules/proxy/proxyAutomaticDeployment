@@ -17,7 +17,7 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
         sudo chmod 644 /etc/nginx/extended-proxy.conf
     fi
 
-    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyHornetShimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeShimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
+    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
         if [ -d "/var/www/html/swarm-dashboard" ]; then
             sudo rm -rf /var/www/html/swarm-dashboard
         fi
@@ -28,7 +28,7 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
         if [ -f "/etc/nginx/sites-available/default > /dev/null 2>&1" ]; then
             sudo rm -rf /etc/nginx/sites-available/default > /dev/null 2>&1
         fi
-        sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/hornet* /etc/nginx/sites-enabled/bee* /etc/nginx/sites-enabled/goshimmer /etc/nginx/sites-enabled/wasp* /etc/nginx/sites-enabled/swarm* /etc/nginx/sites-enabled/landing > /dev/null 2>&1
+        sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/hornet* /etc/nginx/sites-enabled/bee* /etc/nginx/sites-enabled/goshimmer /etc/nginx/sites-enabled/wasp* /etc/nginx/sites-enabled/shimmer* /etc/nginx/sites-enabled/landing > /dev/null 2>&1
         sudo cp -rf $swarmTemplates/proxy/nginx_default.template /etc/nginx/sites-enabled/default
 
         #################################################################################################
@@ -47,15 +47,15 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
                 sudo ufw allow $proxyHornetPort/tcp > /dev/null 2>&1
             fi
         fi
-        if [ -f "/usr/bin/hornet-shimmer" ] && [ -f "/etc/letsencrypt/live/$proxyHornetShimmerDomain/fullchain.pem" ] && [ ! -z "$proxyHornetShimmerDomain" ] && [ ! -z "$proxyHornetShimmerPort" ]; then
+        if [ -f "/usr/bin/shimmer-hornet" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerHornetDomain" ] && [ ! -z "$proxyShimmerHornetPort" ]; then
             if [ -z "$defaultDomain" ]; then
-                defaultDomain="$proxyHornetShimmerDomain"
+                defaultDomain="$proxyShimmerHornetDomain"
             fi
-            sudo cp -rf $swarmTemplates/proxy/nginx_hornet-shimmer.template /etc/nginx/sites-enabled/hornet-shimmer
-            sudo sed -i 's/domain.tld/'$proxyHornetShimmerDomain'/g' /etc/nginx/sites-enabled/hornet-shimmer
-            sudo sed -i 's/443/'$proxyHornetShimmerPort'/g' /etc/nginx/sites-enabled/hornet-shimmer
+            sudo cp -rf $swarmTemplates/proxy/nginx_shimmer-hornet.template /etc/nginx/sites-enabled/shimmer-hornet
+            sudo sed -i 's/domain.tld/'$proxyShimmerHornetDomain'/g' /etc/nginx/sites-enabled/shimmer-hornet
+            sudo sed -i 's/443/'$proxyShimmerHornetPort'/g' /etc/nginx/sites-enabled/shimmer-hornet
             if [ "$ufw" = "true" ]; then
-                sudo ufw allow $proxyHornetShimmerPort/tcp > /dev/null 2>&1
+                sudo ufw allow $proxyShimmerHornetPort/tcp > /dev/null 2>&1
             fi
         fi
         if [ -f "/usr/bin/bee" ] && [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] && [ ! -z "$proxyBeeDomain" ] && [ ! -z "$proxyBeePort" ]; then
@@ -69,15 +69,15 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
                 sudo ufw allow $proxyBeePort/tcp > /dev/null 2>&1
             fi
         fi
-        if [ -f "/usr/bin/bee-shimmer" ] && [ -f "/etc/letsencrypt/live/$proxyBeeShimmerDomain/fullchain.pem" ] && [ ! -z "$proxyBeeShimmerDomain" ] && [ ! -z "$proxyBeeShimmerPort" ]; then
+        if [ -f "/usr/bin/shimmer-bee" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerBeeDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerBeeDomain" ] && [ ! -z "$proxyShimmerBeePort" ]; then
             if [ -z "$defaultDomain" ]; then
-                defaultDomain="$proxyBeeShimmerDomain"
+                defaultDomain="$proxyShimmerBeeDomain"
             fi
-            sudo cp -rf $swarmTemplates/proxy/nginx_bee-shimmer.template /etc/nginx/sites-enabled/bee-shimmer
-            sudo sed -i 's/domain.tld/'$proxyBeeShimmerDomain'/g' /etc/nginx/sites-enabled/bee-shimmer
-            sudo sed -i 's/443/'$proxyBeeShimmerPort'/g' /etc/nginx/sites-enabled/bee-shimmer
+            sudo cp -rf $swarmTemplates/proxy/nginx_shimmer-bee.template /etc/nginx/sites-enabled/shimmer-bee
+            sudo sed -i 's/domain.tld/'$proxyShimmerBeeDomain'/g' /etc/nginx/sites-enabled/shimmer-bee
+            sudo sed -i 's/443/'$proxyShimmerBeePort'/g' /etc/nginx/sites-enabled/shimmer-bee
             if [ "$ufw" = "true" ]; then
-                sudo ufw allow $proxyBeeShimmerPort/tcp > /dev/null 2>&1
+                sudo ufw allow $proxyShimmerBeePort/tcp > /dev/null 2>&1
             fi
         fi
         if [ -f "/usr/bin/goshimmer" ] && [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] && [ ! -z "$proxyGoshimmerDomain" ] && [ ! -z "$proxyGoshimmerPort" ]; then

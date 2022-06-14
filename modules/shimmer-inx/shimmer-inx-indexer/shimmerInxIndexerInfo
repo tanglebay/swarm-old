@@ -1,0 +1,43 @@
+#!/bin/bash
+if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
+
+    source $swarmConfigs/shimmer-inx-indexer.cfg
+    source $swarmConfigs/latest-versions.cfg
+
+    shimmerInxIndexerStatus=$(systemctl show -p ActiveState --value shimmer-inx-indexer)
+
+    shimmerInxIndexerVersion=$(/usr/bin/shimmer-inx-indexer -v | awk '{ print $2 }')
+    if [ -z "$shimmerInxIndexerVersion" ]; then
+        shimmerInxIndexerVersion="N/A"
+    else
+        if [ "$shimmerInxIndexerVersion" != "$latestShimmerInxIndexerVersion" ] && [ ! -z "$latestShimmerInxIndexerVersion" ]; then
+            shimmerInxIndexerVersion="$shimmerInxIndexerVersion (new version \"v$latestShimmerInxIndexerVersion\" available!)"
+        fi
+    fi
+
+    # DB size
+    if [ -d "$shimmerInxIndexerHome/database" ]; then
+        getCurrentDbSize="$(du -sb $shimmerInxIndexerHome/database | cut -f1)"
+        let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+        if [ $getCurrentDbSizeInMb -gt 999 ]; then
+            let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+            currentShimmerInxIndexerDbSize="${getCurrentDbSizeInGb} GB"
+        else
+            currentShimmerInxIndexerDbSize="${getCurrentDbSizeInMb} MB"
+        fi
+    else
+        currentShimmerInxIndexerDbSize="N/A"
+    fi
+
+    if [ "$shimmerInxIndexerUpdateCheck" = "true" ]; then
+        shimmerInxIndexerUpdateCheckStatus="enabled"
+    else
+        shimmerInxIndexerUpdateCheckStatus="disabled"
+    fi
+
+    # OUTPUT
+    whiptail --title "[SHIMMER] INX-Indexer - Info" --msgbox "INX-Indexer: $shimmerInxIndexerStatus\nVersion: v$shimmerInxIndexerVersion\nUpdate Check: $shimmerInxIndexerUpdateCheckStatus\nDB size: $currentInxIndexerDbSize\n\nEnabled Plugins: \"$shimmerInxIndexerEnablePlugins\"\nDisabled Plugins: \"$shimmerInxIndexerDisablePlugins\"" 24 65
+else
+    # OUTPUT
+    whiptail --title "[SHIMMER] INX-Indexer - Info" --msgbox "INX-Indexer not installed!" 8 65
+fi

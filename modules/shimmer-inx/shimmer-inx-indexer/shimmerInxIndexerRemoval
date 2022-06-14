@@ -1,0 +1,28 @@
+#!/bin/bash
+
+source $swarmConfigs/shimmer-inx-indexer.cfg
+
+if [ "$killall" = "true" ]; then
+    sudo killall -s SIGKILL shimmer-inx-indexer > /dev/null 2>&1
+else
+    sudo systemctl stop shimmer-inx-indexer > /dev/null 2>&1
+fi
+
+checkInxInstallatiions=$(ls /usr/bin/ | grep inx-)
+if [ -z "$checkInxInstallations" ]; then
+    if id inx >/dev/null 2>&1; then
+        sudo deluser inx >/dev/null
+    fi
+fi
+
+sudo systemctl disable shimmer-inx-indexer > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/shimmer-inx-indexer /var/lib/shimmer-inx-indexer /lib/systemd/system/shimmer-inx-indexer.service /etc/default/shimmer-inx-indexer > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+if [ -z "$checkInxInstallations" ] && [ ! -f "/usr/bin/hornet" ] && [ ! -f "/usr/bin/hornet-shimmer" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ]; then
+    sudo snap remove go > /dev/null 2>&1
+fi
+
+unset checkInxInstallatiions

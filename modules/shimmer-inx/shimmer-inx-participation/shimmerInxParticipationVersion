@@ -1,0 +1,30 @@
+#!/bin/bash
+source $swarmConfigs/latest-versions.cfg
+
+if [ -z "$latestShimmerInxParticipationVersion" ] || [ "$latestShimmerInxParticipationVersion" = "\"\"" ] || [ "$latestShimmerInxParticipationVersion" = "null" ]; then
+    if [ "$shimmerInxParticipationRelease" = "stable" ]; then
+        latestShimmerInxParticipationVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-participation/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxParticipationReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestShimmerInxParticipationVersion=$(echo $latestShimmerInxParticipationVersion | tr -d 'v"')
+    fi
+    if [ "$shimmerInxParticipationRelease" = "beta" ]; then
+        latestShimmerInxParticipationVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-participation/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxParticipationReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestShimmerInxParticipationVersion=$(echo $latestShimmerInxParticipationVersion | tr -d 'v"')
+    fi
+    if [ "$shimmerInxParticipationRelease" = "alpha" ]; then
+        latestShimmerInxParticipationVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-participation/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxParticipationReleaseVersion | head -n 1)
+        latestShimmerInxParticipationVersion=$(echo $latestShimmerInxParticipationVersion | tr -d 'v"')
+    fi
+    if [ ! -z "$latestShimmerInxParticipationVersion" ] && [ "$latestShimmerInxParticipationVersion" != "\"\"" ] && [ "$latestShimmerInxParticipationVersion" != "null" ]; then
+        sudo sed -i 's~^latestShimmerInxParticipationVersion=.*~latestShimmerInxParticipationVersion="'$latestShimmerInxParticipationVersion'"~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
+
+# Local node version
+if [ -f "/usr/bin/shimmer-inx-participation" ]; then
+    shimmerInxParticipationVersion=$(/usr/bin/shimmer-inx-participation -v | awk '{ print $2 }')
+fi
+
+# Replace var if empty
+if [ -z "$latestShimmerInxParticipationVersion" ] || [ "$latestShimmerInxParticipationVersion" = "null" ]; then
+    latestShimmerInxParticipationVersion=$shimmerInxParticipationVersion
+fi

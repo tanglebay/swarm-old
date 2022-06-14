@@ -1,0 +1,130 @@
+#!/bin/bash
+while [ $exitCode -lt 1 ]; do
+    clear
+    source $swarmConfigs/shimmer-inx-participation.cfg
+    if [ "$shimmerInxParticipationUpdateCheck" = "true" ]; then
+        menuShimmerInxParticipationUpdateCheck="Disable"
+    else
+        menuShimmerInxParticipationUpdateCheck="Enable"
+    fi
+    source $shimmerInxParticipationModules/shimmerInxParticipationConfigs
+    CHOICE=$(
+        whiptail --title "[SHIMMER] INX-Participation - Configurations" --menu "\nChoose an option" 24 65 0 \
+        "1)" "INX Address" \
+        "2)" "Enable Plugins" \
+        "3)" "Disable Plugins" \
+        "4)" "$menuShimmerInxParticipationUpdateCheck update check" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+        if [ "$restartShimmerInxParticipation" = "true" ] && [ -f "/usr/bin/shimmer-inx-participation" ]; then
+            if (whiptail --title "[SHIMMER] INX-Participation - Menu" --yesno "Would you like to apply the changes and restart INX-Participation?" 8 65); then
+                {
+                    echo 0
+                    echo 33
+                    source $shimmerInxParticipationModules/shimmerInxParticipationParser
+                    echo 50
+                    sudo systemctl restart shimmer-inx-participation > /dev/null 2>&1
+                    sleep 0.25
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while the changes are applied and INX-Participation is restarted..." 8 65 0
+                unset restartShimmerInxParticipation
+            fi
+        fi
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $swarmConfigs/shimmer-inx-participation.cfg
+            shimmerInxParticipationInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $shimmerInxParticipationInxAddress --title "[SHIMMER] INX-Participation - INX Address" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ $exitStatus != 1 ]; then
+                if [ ! -z "$shimmerInxParticipationInxAddress" ] && [[ $shimmerInxParticipationInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                    source $shimmerInxParticipationConfigParsers/shimmerInxParticipationInxAddress
+                    if [ "$newShimmerInxParticipationInxAddress" = "true" ]; then
+                        sudo sed -i 's/^shimmerInxParticipationInxAddress=.*/shimmerInxParticipationInxAddress="'$shimmerInxParticipationInxAddress'"/' $swarmConfigs/shimmer-inx-participation.cfg
+                        whiptail --title "[SHIMMER] INX-Participation - INX Address" --msgbox "New INX address \"$shimmerInxParticipationInxAddress\" applied!" 8 65
+                        unset newShimmerInxParticipationInxAddress
+                    else
+                        whiptail --title "[SHIMMER] INX-Participation - INX Address" --msgbox "No INX address change detected." 8 65
+                    fi
+                else
+                    whiptail --title "[SHIMMER] INX-Participation - INX Address" --msgbox "No valid INX address, please try again." 8 65
+                fi
+            fi
+        ;;
+        "2)")
+            useShimmerInxParticipationEnablePlugins=true
+            source $swarmConfigs/shimmer-inx-participation.cfg
+            currentShimmerInxParticipationEnablePlugins=$shimmerInxParticipationEnablePlugins
+            source $shimmerInxParticipationModules/shimmerInxParticipationPlugins
+            shimmerInxParticipationEnablePlugins=$(whiptail --title "[SHIMMER] INX-Participation - Plugins" --checklist "\nSelect (with spacebar) the INX-Participation plugins to be activated:" 24 65 1 \
+                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxParticipationPluginPrometheus 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            shimmerInxParticipationEnablePlugins=$(echo $shimmerInxParticipationEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$shimmerInxParticipationEnablePlugins" ] || [[ $shimmerInxParticipationEnablePlugins = *prometheus* ]]; then
+                if [ "$shimmerInxParticipationEnablePlugins" != "$currentShimmerInxParticipationEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/shimmer-inx-participation" ]; then
+                        source $shimmerInxParticipationConfigParsers/shimmerInxParticipationEnablePlugins
+                    fi
+                    sudo sed -i 's/^shimmerInxParticipationEnablePlugins=.*/shimmerInxParticipationEnablePlugins="'$shimmerInxParticipationEnablePlugins'"/' $swarmConfigs/shimmer-inx-participation.cfg
+                    if [ ! -z "$shimmerInxParticipationEnablePlugins" ]; then
+                        whiptail --title "[SHIMMER] INX-Participation - Plugins" --msgbox "The following plugins are enabled:\n$shimmerInxParticipationEnablePlugins" 14 65
+                    else
+                        whiptail --title "[SHIMMER] INX-Participation - Plugins" --msgbox "There are no plugins enabled for INX-Participation!" 8 65
+                    fi
+                fi
+                unset shimmerInxParticipationEnablePlugins
+            fi
+            unset useShimmerInxParticipationEnablePlugins
+        ;;
+        "3)")
+            useShimmerInxParticipationDisablePlugins=true
+            source $swarmConfigs/shimmer-inx-participation.cfg
+            currentShimmerInxParticipationDisablePlugins=$shimmerInxParticipationDisablePlugins
+            source $shimmerInxParticipationModules/shimmerInxParticipationPlugins
+            shimmerInxParticipationDisablePlugins=$(whiptail --title "[SHIMMER] INX-Participation - Plugins" --checklist "\nSelect (with spacebar) the INX-Participation plugins to be deactivated:" 24 65 1 \
+                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxParticipationPluginPrometheus 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            shimmerInxParticipationDisablePlugins=$(echo $shimmerInxParticipationDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$shimmerInxParticipationDisablePlugins" ] || [[ $shimmerInxParticipationDisablePlugins = *warpsync* ]]; then
+                if [ "$shimmerInxParticipationDisablePlugins" != "$currentShimmerInxParticipationDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/shimmer-inx-participation" ]; then
+                        source $shimmerInxParticipationConfigParsers/shimmerInxParticipationDisablePlugins
+                    fi
+                    sudo sed -i 's/^shimmerInxParticipationDisablePlugins=.*/shimmerInxParticipationDisablePlugins="'$shimmerInxParticipationDisablePlugins'"/' $swarmConfigs/shimmer-inx-participation.cfg
+                    if [ ! -z "$shimmerInxParticipationDisablePlugins" ]; then
+                        whiptail --title "[SHIMMER] INX-Participation - Plugins" --msgbox "The following plugins are disabled:\n$shimmerInxParticipationDisablePlugins" 14 65
+                    else
+                        whiptail --title "[SHIMMER] INX-Participation - Plugins" --msgbox "There are no plugins disabled for INX-Participation!" 8 65
+                    fi
+                fi
+            else
+                unset shimmerInxParticipationDisablePlugins
+            fi
+            unset useShimmerInxParticipationDisablePlugins
+        ;;
+        "4)")
+            source $swarmConfigs/shimmer-inx-participation.cfg
+            if [ "$shimmerInxParticipationUpdateCheck" = "true" ]; then
+                shimmerInxParticipationUpdateCheckStatus="enabled"
+            else
+                shimmerInxParticipationUpdateCheckStatus="disabled"
+            fi
+            if (whiptail --title "[SHIMMER] INX-Participation - Update Check" --yesno "Would you like to \"$shimmerInxParticipationUpdateCheckStatus\" update check?" 8 65); then
+                if [ "$shimmerInxParticipationUpdateCheck" = "true" ]; then
+                    shimmerInxParticipationUpdateCheck=false
+                else
+                    shimmerInxParticipationUpdateCheck=true
+                fi
+                source $shimmerInxParticipationConfigParsers/shimmerInxParticipationUpdateCheck
+                sudo sed -i 's~^shimmerInxParticipationUpdateCheck=.*~shimmerInxParticipationUpdateCheck='$shimmerInxParticipationUpdateCheck'~g' $swarmConfigs/shimmer-inx-participation.cfg
+            fi
+        ;;
+    esac
+done
+sudo chown -R inx:inx $shimmerInxParticipationHome/*.json
+exitCode=0

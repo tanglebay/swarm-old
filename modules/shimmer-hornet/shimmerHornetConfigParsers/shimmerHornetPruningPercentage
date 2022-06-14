@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ -z "$shimmerHornetPruningPercentage" ]; then
+    shimmerHornetPruningPercentage=5
+else
+    shimmerHornetPruningPercentage=$(echo ${shimmerHornetPruningPercentage%.*})
+fi
+
+if [ "$shimmerHornetPruning" = "true" ]; then
+    parser="$(jq '.pruning.size.thresholdPercentage' $shimmerHornetHome/$shimmerHornetConfig.json)"
+    if [ "$parser" != "$shimmerHornetPruningPercentage" ]; then
+        sudo jq '.pruning.size.thresholdPercentage = '$shimmerHornetPruningPercentage'' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
+        restartShimmerHornet=true
+        echo "shimmerHornetPruningPercentage" >> /tmp/shimmerHornetParsing
+    fi
+fi

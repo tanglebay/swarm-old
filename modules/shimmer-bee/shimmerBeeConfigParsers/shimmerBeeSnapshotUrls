@@ -1,0 +1,21 @@
+#!/bin/bash
+if [ "$shimmerBeeNetwork" = "mainnet" ] || [ "$shimmerBeeNetwork" = "alphanet" ]; then
+    shimmerBeeFullSnapshotOld="https://cdn.tanglebay.com/snapshots/shimmernet/full_snapshot.bin"
+    shimmerBeeDeltaSnapshotOld="https://cdn.tanglebay.com/snapshots/shimmernet/delta_snapshot.bin"
+    shimmerBeeFullSnapshot="https://cdn.tanglebay.com/snapshots/shimmer-mainnet/full_snapshot.bin"
+    shimmerBeeDeltaSnapshot="https://cdn.tanglebay.com/snapshots/shimmer-mainnet/delta_snapshot.bin"
+    parser="$(jq '.snapshots.downloadURLs' $shimmerBeeHome/config.json)"
+    if [[ $parser = *$shimmerBeeFullSnapshotOld* ]] && [[ $parser = *$shimmerBeeDeltaSnapshotOld* ]]; then
+        sudo sudo sed -i 's~'$shimmerBeeFullSnapshotOld'~'$shimmerBeeFullSnapshot'~g' $shimmerBeeHome/config.json
+        sudo sudo sed -i 's~'$shimmerBeeDeltaSnapshotOld'~'$shimmerBeeDeltaSnapshot'~g' $shimmerBeeHome/config.json
+        restartShimmerBee=true
+        echo "shimmerBeeSnapshotUrl" >> /tmp/shimmerBeeParsing
+    fi
+    parser="$(jq '.snapshots.downloadURLs' $shimmerBeeHome/config.json)"
+    if [[ $parser != *$shimmerBeeFullSnapshot* ]] && [[ $parser != *$shimmerBeeDeltaSnapshot* ]]; then
+        sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . + {"full": "'$shimmerBeeFullSnapshot'","delta": "'$shimmerBeeDeltaSnapshot'"}' $shimmerBeeHome/config.json|sponge $shimmerBeeHome/config.json
+        restartShimmerBee=true
+        echo "shimmerBeeSnapshotUrl" >> /tmp/shimmerBeeParsing
+    fi
+    unset parser shimmerBeeFullSnapshot
+fi
