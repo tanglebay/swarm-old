@@ -2,14 +2,14 @@
 source $swarmConfigs/watchdog.cfg
 
 # Hornet
-if [ -n "$hornetStatusCounter" ]; then
-    if [ $hornetStatusCounter -ne $hornetStatusCounter ] 2>/dev/null; then
-        hornetStatusCounter=0
-        sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $swarmConfigs/watchdog.cfg
+if [ -n "$iotaHornetStatusCounter" ]; then
+    if [ $iotaHornetStatusCounter -ne $iotaHornetStatusCounter ] 2>/dev/null; then
+        iotaHornetStatusCounter=0
+        sudo sed -i 's/^iotaHornetStatusCounter=.*/iotaHornetStatusCounter='$iotaHornetStatusCounter'/' $swarmConfigs/watchdog.cfg
     fi
 else
-    hornetStatusCounter=0
-    sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $swarmConfigs/watchdog.cfg
+    iotaHornetStatusCounter=0
+    sudo sed -i 's/^iotaHornetStatusCounter=.*/iotaHornetStatusCounter='$iotaHornetStatusCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
 # Shimmer-Hornet
@@ -103,35 +103,35 @@ fi
 ################################################################################################################################################
 
 # Hornet Status Check
-if [ "$hornetStatus" != "active" ] && [ -f "/usr/bin/hornet" ] && [ "$hornetServiceStatusCheck" = "true" ]; then
-    sudo systemctl stop hornet 2>/dev/null
+if [ "$iotaHornetStatus" != "active" ] && [ -f "/usr/bin/iota-hornet" ] && [ "$iotaHornetServiceStatusCheck" = "true" ]; then
+    sudo systemctl stop iota-hornet 2>/dev/null
     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-    if [[ $hornetPlugins = *participation* ]] && [ $hornetStatusCounter -ge 1 ] 2>/dev/null; then
-        sudo rm -rf $hornetHome/${hornetNetwork}db/participation 2>/dev/null
+    if [[ $iotaHornetPlugins = *participation* ]] && [ $iotaHornetStatusCounter -ge 1 ] 2>/dev/null; then
+        sudo rm -rf $iotaHornetHome/${iotaHornetNetwork}db/participation 2>/dev/null
     fi
-    if [ $hornetStatusCounter -ge 2 ] 2>/dev/null; then
-        if [ "$hornetAllowDbReset" = "true" ]; then
+    if [ $iotaHornetStatusCounter -ge 2 ] 2>/dev/null; then
+        if [ "$iotaHornetAllowDbReset" = "true" ]; then
             if [ "$killall" = "true" ]; then
-                sudo killall -s SIGKILL hornet 2>/dev/null
+                sudo killall -s SIGKILL iota-hornet 2>/dev/null
             fi
-            sudo rm -rf $hornetHome/${hornetNetwork}db $hornetHome/snapshots/${hornetNetwork}/*.bin
-            echo "$restartDate [WACHTDOG] HORNET ${hornetNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
-            telegramText="[$HOSTNAME] HORNET ${hornetNetwork}DB deleted because the maximum number of attempted restarts was reached."
+            sudo rm -rf $iotaHornetHome/${iotaHornetNetwork}db $iotaHornetHome/snapshots/${iotaHornetNetwork}/*.bin
+            echo "$restartDate [WACHTDOG] HORNET [IOTA] ${iotaHornetNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
+            telegramText="[$HOSTNAME] HORNET [IOTA] ${iotaHornetNetwork}DB deleted because the maximum number of attempted restarts was reached."
             source $watchdogModules/watchdogTelegram
         fi
-        hornetStatusCounter=0
+        iotaHornetStatusCounter=0
     else
-        let hornetStatusCounter=$hornetStatusCounter+1
+        let iotaHornetStatusCounter=$iotaHornetStatusCounter+1
     fi
-    sudo systemctl start hornet 2>/dev/null
-    sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $swarmConfigs/watchdog.cfg
-    echo "$restartDate [WACHTDOG] HORNET node was restarted because the service is not active." >> $swarmLogs/swarm.log
-    telegramText="[$HOSTNAME] HORNET node was restarted because the service is not active."
+    sudo systemctl start iota-hornet 2>/dev/null
+    sudo sed -i 's/^iotaHornetStatusCounter=.*/iotaHornetStatusCounter='$iotaHornetStatusCounter'/' $swarmConfigs/watchdog.cfg
+    echo "$restartDate [WACHTDOG] HORNET [SHIMMER] node was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$HOSTNAME] HORNET [SHIMMER] node was restarted because the service is not active."
     source $watchdogModules/watchdogTelegram
 else
-    if [ $hornetStatusCounter -gt 0 ] 2>/dev/null; then
-        let hornetStatusCounter=$hornetStatusCounter-1
-        sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $swarmConfigs/watchdog.cfg
+    if [ $iotaHornetStatusCounter -gt 0 ] 2>/dev/null; then
+        let iotaHornetStatusCounter=$iotaHornetStatusCounter-1
+        sudo sed -i 's/^iotaHornetStatusCounter=.*/iotaHornetStatusCounter='$iotaHornetStatusCounter'/' $swarmConfigs/watchdog.cfg
     fi
 fi
 

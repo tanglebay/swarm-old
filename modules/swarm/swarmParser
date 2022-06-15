@@ -6,208 +6,156 @@ fi
 
 ###########################################################################################################################
 
-if [ -f "$swarmTmp/hornet.cfg" ]; then
-    source $swarmTmp/hornet.cfg
+if [ -f "$swarmTmp/iota-hornet.cfg" ] || [ -f "$swarmTmp/hornet.cfg" ]; then
+    if [ -f "$swarmTmp/iota-hornet.cfg" ]; then
+        source $swarmTmp/iota-hornet.cfg
+    fi
+    source $swarmModules/swarmHornetMigration
 
     # Upater for Hornet.cfg
-    if [ ! -z "$release" ]; then
-        hornetRelease="$release"
+    if [ -z "$iotaHornetRelease" ]; then
+        sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease="stable"/' $swarmConfigs/iota-hornet.cfg
+    else
+        sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease="'$iotaHornetRelease'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ "$hornetRelease" = "testing" ]; then
-        hornetRelease="beta"
-    fi
-    if [ -z "$hornetRelease" ]; then
-        sudo sed -i 's/^hornetRelease=.*/hornetRelease="stable"/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetNetwork" ]; then
+        sudo sed -i 's/^iotaHornetNetwork=.*/iotaHornetNetwork="mainnet"/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetRelease=.*/hornetRelease="'$hornetRelease'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetNetwork=.*/iotaHornetNetwork="'$iotaHornetNetwork'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$network" ]; then
-        hornetNetwork="$network"
-    fi
-    if [ -z "$hornetNetwork" ]; then
-        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork="mainnet"/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetAlias" ]; then
+        sudo sed -i 's/^iotaHornetAlias=.*/iotaHornetAlias="Hornet"/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetNetwork=.*/hornetNetwork="'$hornetNetwork'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i "s~^iotaHornetAlias=.*~iotaHornetAlias=\"$iotaHornetAlias\"~g" $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$hornetNodeAlias" ]; then
-        hornetAlias="$hornetNodeAlias"
-    fi
-    if [ -z "$hornetAlias" ]; then
-        sudo sed -i 's/^hornetAlias=.*/hornetAlias="Hornet"/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetDisablePlugins" ]; then
+        sudo sed -i 's/^iotaHornetDisablePlugins=.*/iotaHornetDisablePlugins=""/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i "s~^hornetAlias=.*~hornetAlias=\"$hornetAlias\"~g" $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetDisablePlugins=.*/iotaHornetDisablePlugins="'$iotaHornetDisablePlugins'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$disablePlugins" ]; then
-        hornetDisablePlugins="$disablePlugins"
-    fi
-    if [ -z "$hornetDisablePlugins" ]; then
-        sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins=""/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetEnablePlugins" ]; then
+        sudo sed -i 's/^iotaHornetEnablePlugins=.*/iotaHornetEnablePlugins=""/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetDisablePlugins=.*/hornetDisablePlugins="'$hornetDisablePlugins'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetEnablePlugins=.*/iotaHornetEnablePlugins="'$iotaHornetEnablePlugins'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetEnablePlugins" ]; then
-        sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins=""/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetUnknownPeersLimit" ]; then
+        sudo sed -i 's/^iotaHornetUnknownPeersLimit=.*/iotaHornetUnknownPeersLimit=2/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetEnablePlugins=.*/hornetEnablePlugins="'$hornetEnablePlugins'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetUnknownPeersLimit=.*/iotaHornetUnknownPeersLimit='$iotaHornetUnknownPeersLimit'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$maxUnknownNeighbors" ]; then
-        hornetUnknownPeersLimit=$maxUnknownNeighbors
-    fi
-    if [ -z "$hornetUnknownPeersLimit" ]; then
-        sudo sed -i 's/^hornetUnknownPeersLimit=.*/hornetUnknownPeersLimit=2/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetSnapshotInterval" ]; then
+        sudo sed -i 's/^iotaHornetSnapshotInterval=.*/iotaHornetSnapshotInterval=360/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetUnknownPeersLimit=.*/hornetUnknownPeersLimit='$hornetUnknownPeersLimit'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetSnapshotInterval=.*/iotaHornetSnapshotInterval='$iotaHornetSnapshotInterval'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$snapshotInterval" ]; then
-        hornetSnapshotInterval=$snapshotInterval
-    fi
-    if [ -z "$hornetSnapshotInterval" ]; then
-        sudo sed -i 's/^hornetSnapshotInterval=.*/hornetSnapshotInterval=360/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetGossipPort" ]; then
+        sudo sed -i 's/^iotaHornetGossipPort=.*/iotaHornetGossipPort=15600/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetSnapshotInterval=.*/hornetSnapshotInterval='$hornetSnapshotInterval'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetGossipPort=.*/iotaHornetGossipPort='$iotaHornetGossipPort'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetGossipPort" ]; then
-        sudo sed -i 's/^hornetGossipPort=.*/hornetGossipPort=15600/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetAutopeeringPort" ]; then
+        sudo sed -i 's/^iotaHornetAutopeeringPort=.*/iotaHornetAutopeeringPort=14626/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetGossipPort=.*/hornetGossipPort='$hornetGossipPort'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetAutopeeringPort=.*/iotaHornetAutopeeringPort='$iotaHornetAutopeeringPort'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetAutopeeringPort" ]; then
-        sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort=14626/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPowEnabled" ]; then
+        sudo sed -i 's/^iotaHornetPowEnabled=.*/iotaHornetPowEnabled=false/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetAutopeeringPort=.*/hornetAutopeeringPort='$hornetAutopeeringPort'/' $swarmConfigs/hornet.cfg
-    fi
-    ####
-    if [ ! -z "$pow" ]; then
-        hornetPowEnabled="$pow"
-    fi
-    if [ -z "$hornetPowEnabled" ]; then
-        sudo sed -i 's/^hornetPowEnabled=.*/hornetPowEnabled=false/' $swarmConfigs/hornet.cfg
-    else
-        sudo sed -i 's/^hornetPowEnabled=.*/hornetPowEnabled='$hornetPowEnabled'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPowEnabled=.*/iotaHornetPowEnabled='$iotaHornetPowEnabled'/' $swarmConfigs/iota-hornet.cfg
     fi
     ###
-    if [ ! -z "$powWorkerCount" ]; then
-        hornetPowWorkerCount=$powWorkerCount
-    fi
-    if [ -z "$hornetPowWorkerCount" ]; then
-        sudo sed -i 's/^hornetPowWorkerCount=.*/hornetPowWorkerCount=1/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPowWorkerCount" ]; then
+        sudo sed -i 's/^iotaHornetPowWorkerCount=.*/iotaHornetPowWorkerCount=1/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPowWorkerCount=.*/hornetPowWorkerCount='$hornetPowWorkerCount'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPowWorkerCount=.*/iotaHornetPowWorkerCount='$iotaHornetPowWorkerCount'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$autoRevalidation" ]; then
-        hornetAutoRevalidation=$autoRevalidation
-    fi
-    if [ -z "$hornetAutoRevalidation" ]; then
-        sudo sed -i 's/^hornetAutoRevalidation=.*/hornetAutoRevalidation=false/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetAutoRevalidation" ]; then
+        sudo sed -i 's/^iotaHornetAutoRevalidation=.*/iotaHornetAutoRevalidation=false/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetAutoRevalidation=.*/hornetAutoRevalidation='$hornetAutoRevalidation'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetAutoRevalidation=.*/iotaHornetAutoRevalidation='$iotaHornetAutoRevalidation'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$pruning" ]; then
-        hornetPruningEnabled=$pruning
-    fi
-    if [ -z "$hornetPruningEnabled" ]; then
-        sudo sed -i 's/^hornetPruningEnabled=.*/hornetPruningEnabled=true/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPruningEnabled" ]; then
+        sudo sed -i 's/^iotaHornetPruningEnabled=.*/iotaHornetPruningEnabled=true/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPruningEnabled=.*/hornetPruningEnabled='$hornetPruningEnabled'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPruningEnabled=.*/iotaHornetPruningEnabled='$iotaHornetPruningEnabled'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$pruningDatabaseSize" ]; then
-        hornetPruningDatabaseSize=$pruningDatabaseSize
-    fi
-    if [ -z "$hornetPruningDatabaseSize" ]; then
-        sudo sed -i 's/^hornetPruningDatabaseSize=.*/hornetPruningDatabaseSize=/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPruningDatabaseSize" ]; then
+        sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize=/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPruningDatabaseSize=.*/hornetPruningDatabaseSize='$hornetPruningDatabaseSize'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$pruningPercentage" ]; then
-        hornetPruningPercentage=$pruningPercentage
-    fi
-    if [ -z "$hornetPruningPercentage" ]; then
-        sudo sed -i 's/^hornetPruningPercentage=.*/hornetPruningPercentage=5/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPruningPercentage" ]; then
+        sudo sed -i 's/^iotaHornetPruningPercentage=.*/iotaHornetPruningPercentage=5/' $swarmConfigs/iota-hornet.cfg
     else
-        hornetPruningPercentage=$(echo $hornetPruningPercentage | tr -d '%')
-        sudo sed -i 's/^hornetPruningPercentage=.*/hornetPruningPercentage='$hornetPruningPercentage'/' $swarmConfigs/hornet.cfg      
+        iotaHornetPruningPercentage=$(echo $iotaHornetPruningPercentage | tr -d '%')
+        sudo sed -i 's/^iotaHornetPruningPercentage=.*/iotaHornetPruningPercentage='$iotaHornetPruningPercentage'/' $swarmConfigs/iota-hornet.cfg      
     fi
     ####
-    if [ ! -z "$pruningCooldownTime" ]; then
-        hornetPruningCooldownTime=$pruningCooldownTime
-    fi
-    if [ -z "$hornetPruningCooldownTime" ]; then
-        sudo sed -i 's/^hornetPruningCooldownTime=.*/hornetPruningCooldownTime=5/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPruningCooldownTime" ]; then
+        sudo sed -i 's/^iotaHornetPruningCooldownTime=.*/iotaHornetPruningCooldownTime=5/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPruningCooldownTime=.*/hornetPruningCooldownTime='$hornetPruningCooldownTime'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPruningCooldownTime=.*/iotaHornetPruningCooldownTime='$iotaHornetPruningCooldownTime'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$username" ]; then
-        hornetUsername="$username"
-    fi
-    if [ -z "$hornetUsername" ]; then
-        sudo sed -i 's/^hornetUsername=.*/hornetUsername=""/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetUsername" ]; then
+        sudo sed -i 's/^iotaHornetUsername=.*/iotaHornetUsername=""/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetUsername=.*/hornetUsername="'$hornetUsername'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetUsername=.*/iotaHornetUsername="'$iotaHornetUsername'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$passwordHash" ]; then
-        hornetPasswordHash="$passwordHash"
-    fi
-    if [ -z "$hornetPasswordHash" ]; then
-        sudo sed -i 's/^hornetPasswordHash=.*/hornetPasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPasswordHash" ]; then
+        sudo sed -i 's/^iotaHornetPasswordHash=.*/iotaHornetPasswordHash="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPasswordHash=.*/hornetPasswordHash="'$hornetPasswordHash'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPasswordHash=.*/iotaHornetPasswordHash="'$iotaHornetPasswordHash'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$passwordSalt" ]; then
-        hornetPasswordSalt="$passwordSalt"
-    fi
-    if [ -z "$hornetPasswordSalt" ]; then
-        sudo sed -i 's/^hornetPasswordSalt=.*/hornetPasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetPasswordSalt" ]; then
+        sudo sed -i 's/^iotaHornetPasswordSalt=.*/iotaHornetPasswordSalt="0000000000000000000000000000000000000000000000000000000000000000"/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetPasswordSalt=.*/hornetPasswordSalt="'$hornetPasswordSalt'"/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetPasswordSalt=.*/iotaHornetPasswordSalt="'$iotaHornetPasswordSalt'"/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetIdentity" ]; then
-        sudo sed -i 's~^hornetIdentity=.*~hornetIdentity=""~' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetIdentity" ]; then
+        sudo sed -i 's~^iotaHornetIdentity=.*~iotaHornetIdentity=""~' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's~^hornetIdentity=.*~hornetIdentity="'$hornetIdentity'"~' $swarmConfigs/hornet.cfg
+        sudo sed -i 's~^iotaHornetIdentity=.*~iotaHornetIdentity="'$iotaHornetIdentity'"~' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ ! -z "$runAsEntryNode" ]; then
-        hornetRunAsEntryNode=$runAsEntryNode
-    fi
-    if [ -z "$hornetRunAsEntryNode" ]; then
-        sudo sed -i 's/^hornetRunAsEntryNode=.*/hornetRunAsEntryNode=false/' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetRunAsEntryNode" ]; then
+        sudo sed -i 's/^iotaHornetRunAsEntryNode=.*/iotaHornetRunAsEntryNode=false/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^hornetRunAsEntryNode=.*/hornetRunAsEntryNode='$hornetRunAsEntryNode'/' $swarmConfigs/hornet.cfg
+        sudo sed -i 's/^iotaHornetRunAsEntryNode=.*/iotaHornetRunAsEntryNode='$iotaHornetRunAsEntryNode'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetApiJwtSalt" ]; then
-        sudo sed -i 's~^hornetApiJwtSalt=.*~hornetApiJwtSalt="HORNET"~' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetApiJwtSalt" ]; then
+        sudo sed -i 's~^iotaHornetApiJwtSalt=.*~iotaHornetApiJwtSalt="HORNET"~' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's~^hornetApiJwtSalt=.*~hornetApiJwtSalt="'$hornetApiJwtSalt'"~' $swarmConfigs/hornet.cfg
+        sudo sed -i 's~^iotaHornetApiJwtSalt=.*~iotaHornetApiJwtSalt="'$iotaHornetApiJwtSalt'"~' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetApiJwtToken" ]; then
-        sudo sed -i 's~^hornetApiJwtToken=.*~hornetApiJwtToken=""~' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetApiJwtToken" ]; then
+        sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken=""~' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's~^hornetApiJwtToken=.*~hornetApiJwtToken="'$hornetApiJwtToken'"~' $swarmConfigs/hornet.cfg
+        sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'$iotaHornetApiJwtToken'"~' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$hornetApiPublicRoutes" ]; then
-        sudo sed -i 's~^hornetApiPublicRoutes=.*~hornetApiPublicRoutes="/health,/mqtt,/api/v1/info,/api/v1/tips,/api/v1/messages*,/api/v1/transactions*,/api/v1/milestones*,/api/v1/outputs*,/api/v1/addresses*,/api/v1/treasury,/api/v1/receipts*,/api/plugins/participation/events*,/api/plugins/participation/outputs*,/api/plugins/participation/addresses*"~' $swarmConfigs/hornet.cfg
+    if [ -z "$iotaHornetApiPublicRoutes" ]; then
+        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="/health,/mqtt,/api/v1/info,/api/v1/tips,/api/v1/messages*,/api/v1/transactions*,/api/v1/milestones*,/api/v1/outputs*,/api/v1/addresses*,/api/v1/treasury,/api/v1/receipts*,/api/plugins/participation/events*,/api/plugins/participation/outputs*,/api/plugins/participation/addresses*"~' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's~^hornetApiPublicRoutes=.*~hornetApiPublicRoutes="'$hornetApiPublicRoutes'"~' $swarmConfigs/hornet.cfg
+        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
     fi
 fi
 
@@ -1007,12 +955,18 @@ if [ -f "$swarmTmp/proxy.cfg" ]; then
     fi
     ####
     if [ ! -z "$proxyHornetDomain" ] && [ ! -z "$proxyHornetPort" ]; then
-        proxyHornetUrl="$proxyHornetDomain:$proxyHornetPort"
+        proxyIotaHornetUrl="$proxyHornetDomain:$proxyHornetPort"
     fi
-    if [ -z "$proxyHornetUrl" ]; then
-        sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetUrl=""/' $swarmConfigs/proxy.cfg
+    if [ ! -z "$proxyHornetUrl" ]; then
+        proxyIotaHornetUrl=$proxyHornetUrl
+    fi
+    if [ ! -z "$proxyIotaHornetDomain" ] && [ ! -z "$proxyIotaHornetPort" ]; then
+        proxyIotaHornetUrl="$proxyIotaHornetDomain:$proxyIotaHornetPort"
+    fi
+    if [ -z "$proxyIotaHornetUrl" ]; then
+        sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl=""/' $swarmConfigs/proxy.cfg
     else
-        sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetUrl="'$proxyHornetUrl'"/' $swarmConfigs/proxy.cfg
+        sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl="'$proxyHornetUrl'"/' $swarmConfigs/proxy.cfg
     fi
     ####
     if [ -z "$proxyShimmerHornetUrl" ]; then
@@ -1021,6 +975,12 @@ if [ -f "$swarmTmp/proxy.cfg" ]; then
         sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl="'$proxyShimmerHornetUrl'"/' $swarmConfigs/proxy.cfg
     fi
     #####
+    if [ ! -z "$proxyBeeDomain" ] && [ ! -z "$proxyBeePort" ]; then
+        proxyIotaBeeUrl="$proxyBeeDomain:$proxyBeePort"
+    fi
+    if [ ! -z "$proxyBeeUrl" ]; then
+        proxyIotaBeeUrl=$proxyBeeUrl
+    fi
     if [ ! -z "$proxyBeeDomain" ] && [ ! -z "$proxyBeePort" ]; then
         proxyBeeUrl="$proxyBeeDomain:$proxyBeePort"
     fi
@@ -1122,10 +1082,10 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's/^swarmAutoUpdate=.*/swarmAutoUpdate='$swarmAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
-    if [ -z "$hornetAutoUpdate" ]; then
-        sudo sed -i 's/^hornetAutoUpdate=.*/hornetAutoUpdate=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaHornetAutoUpdate" ]; then
+        sudo sed -i 's/^iotaHornetAutoUpdate=.*/iotaHornetAutoUpdate=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetAutoUpdate=.*/hornetAutoUpdate='$hornetAutoUpdate'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaHornetAutoUpdate=.*/iotaHornetAutoUpdate='$iotaHornetAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
 
     if [ -z "$shimmerHornetAutoUpdate" ]; then
@@ -1176,10 +1136,10 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's/^shimmerInxParticipationAutoUpdate=.*/shimmerInxParticipationAutoUpdate='$shimmerInxParticipationAutoUpdate'/' $swarmConfigs/swarm.cfg
     fi
     ####
-    if [ -z "$hornetAllowDbReset" ]; then
-        sudo sed -i 's/^hornetAllowDbReset=.*/hornetAllowDbReset=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaHornetAllowDbReset" ]; then
+        sudo sed -i 's/^iotaHornetAllowDbReset=.*/iotaHornetAllowDbReset=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetAllowDbReset=.*/hornetAllowDbReset='$hornetAllowDbReset'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaHornetAllowDbReset=.*/iotaHornetAllowDbReset='$iotaHornetAllowDbReset'/' $swarmConfigs/swarm.cfg
     fi
 
     if [ -z "$shimmerHornetAllowDbReset" ]; then
@@ -1260,10 +1220,10 @@ if [ -f "$swarmTmp/swarm.cfg" ]; then
         sudo sed -i 's~^goshimmerDbBackupDownload=.*~goshimmerDbBackupDownload='$goshimmerDbBackupDownload'~g' $swarmConfigs/goshimmer.cfg
     fi
     
-    if [ -z "$hornetServiceStatusCheck" ]; then
-        sudo sed -i 's/^hornetServiceStatusCheck=.*/hornetServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
+    if [ -z "$iotaHornetServiceStatusCheck" ]; then
+        sudo sed -i 's/^iotaHornetServiceStatusCheck=.*/iotaHornetServiceStatusCheck=true/' $swarmConfigs/swarm.cfg
     else
-        sudo sed -i 's/^hornetServiceStatusCheck=.*/hornetServiceStatusCheck='$hornetServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+        sudo sed -i 's/^iotaHornetServiceStatusCheck=.*/iotaHornetServiceStatusCheck='$iotaHornetServiceStatusCheck'/' $swarmConfigs/swarm.cfg
     fi
 
     if [ -z "$shimmerHornetServiceStatusCheck" ]; then
@@ -1309,12 +1269,10 @@ if [ -f "$swarmTmp/watchdog.cfg" ]; then
     source $swarmTmp/watchdog.cfg
 
     # Updater for watchdog.log
-    sudo sed -i 's/^hornetStatusCounter=.*/hornetStatusCounter='$hornetStatusCounter'/' $swarmConfigs/watchdog.cfg
-    sudo sed -i 's/^hornetSyncCounter=.*/hornetSyncCounter='$hornetSyncCounter'/' $swarmConfigs/watchdog.cfg
+    sudo sed -i 's/^iotaHornetStatusCounter=.*/iotaHornetStatusCounter='$iotaHornetStatusCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^shimmerHornetStatusCounter=.*/shimmerHornetStatusCounter='$shimmerHornetStatusCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^shimmerHornetSyncCounter=.*/shimmerHornetSyncCounter='$shimmerHornetSyncCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$beeStatusCounter'/' $swarmConfigs/watchdog.cfg
-    sudo sed -i 's/^beeSyncCounter=.*/beeSyncCounter='$beeSyncCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^shimmerBeeStatusCounter=.*/shimmerBeeStatusCounter='$shimmerBeeStatusCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^shimmerBeeSyncCounter=.*/shimmerBeeSyncCounter='$shimmerBeeSyncCounter'/' $swarmConfigs/watchdog.cfg
     sudo sed -i 's/^goshimmerStatusCounter=.*/goshimmerStatusCounter='$goshimmerStatusCounter'/' $swarmConfigs/watchdog.cfg
@@ -1336,7 +1294,7 @@ if [ -f "$swarmTmp/githubVersion" ] || [ -f "$swarmTmp/latest-versions.cfg" ]; t
 
     # Updater for latest-versions.cfg
     sudo sed -i 's~^latestSwarmVersion=.*~latestSwarmVersion="'$latestSwarmVersion'"~' $swarmConfigs/latest-versions.cfg
-    sudo sed -i 's~^latestHornetVersion=.*~latestHornetVersion="'$latestHornetVersion'"~' $swarmConfigs/latest-versions.cfg
+    sudo sed -i 's~^latestIotaHornetVersion=.*~latestIotaHornetVersion="'$latestIotaHornetVersion'"~' $swarmConfigs/latest-versions.cfg
     sudo sed -i 's~^latestShimmerHornetVersion=.*~latestShimmerHornetVersion="'$latestShimmerHornetVersion'"~' $swarmConfigs/latest-versions.cfg
     sudo sed -i 's~^latestBeeVersion=.*~latestBeeVersion="'$latestBeeVersion'"~' $swarmConfigs/latest-versions.cfg
     sudo sed -i 's~^latestShimmerBeeVersion=.*~latestShimmerBeeVersion="'$latestShimmerBeeVersion'"~' $swarmConfigs/latest-versions.cfg

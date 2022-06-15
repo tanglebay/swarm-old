@@ -1,0 +1,29 @@
+#!/bin/bash
+
+if [ ! -f "$iotaHornetHome/p2pstore/identity.key" ]; then
+    if [ -z "$iotaHornetIdentity" ]; then
+        sudo systemctl stop iota-hornet > /dev/null 2>&1
+        ( cd $iotaHornetHome ; sudo -u hornet /usr/bin/iota-hornet tools p2pidentity-gen )
+        iotaHornetIdentity=$(cat $iotaHornetHome/p2pstore/identity.key | sed -n '2 p')
+        sudo sed -i 's~^iotaHornetIdentity=.*~iotaHornetIdentity="'$iotaHornetIdentity'"~' $swarmConfigs/iota-hornet.cfg
+        sudo systemctl start iota-hornet > /dev/null 2>&1
+    else
+        sudo systemctl stop iota-hornet > /dev/null 2>&1
+        sudo rm -rf $iotaHornetHome/config*db $iotaHornetHome/db $iotaHornetHome/p2pstore/*.* 2>/dev/null
+        if [ ! -d "$iotaHornetHome/p2pstore" ]; then
+            sudo -u hornet mkdir -p $iotaHornetHome/p2pstore
+        fi
+        sudo -u hornet echo "-----BEGIN PRIVATE KEY-----" > $iotaHornetHome/p2pstore/identity.key
+        sudo -u hornet echo "$iotaHornetIdentity" >> $iotaHornetHome/p2pstore/identity.key
+        sudo -u hornet echo "-----END PRIVATE KEY-----" >> $iotaHornetHome/p2pstore/identity.key
+        sudo chown 660 $iotaHornetHome/p2pstore/identity.key
+        sudo systemctl start iota-hornet > /dev/null 2>&1
+    fi
+fi
+
+parser=$(cat $iotaHornetHome/p2pstore/identity.key | sed -n '2 p')
+if [ "$parser" != "$iotaHornetIdentity" ]; then
+    sed -i '2 s~.*~'$iotaHornetIdentity'~' $iotaHornetHome/p2pstore/identity.key
+    restartIotaHornet=true
+    echo "iotaHornetIdentity" >> /tmp/iotaHornetParsing
+fi

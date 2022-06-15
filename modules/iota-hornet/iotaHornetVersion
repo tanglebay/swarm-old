@@ -1,0 +1,30 @@
+#!/bin/bash
+source $swarmConfigs/latest-versions.cfg
+
+if [ -z "$latestIotaHornetVersion" ] || [ "$latestIotaHornetVersion" = "\"\"" ] || [ "$latestIotaHornetVersion" = "null" ]; then
+    if [ "$iotaHornetRelease" = "stable" ]; then
+        latestIotaHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $iotaHornetReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestIotaHornetVersion=$(echo $latestIotaHornetVersion | tr -d 'v"')
+    fi
+    if [ "$iotaHornetRelease" = "beta" ]; then
+        latestIotaHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $iotaHornetReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestIotaHornetVersion=$(echo $latestIotaHornetVersion | tr -d 'v"')
+    fi
+    if [ "$iotaHornetRelease" = "alpha" ]; then
+        latestIotaHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $iotaHornetReleaseVersion | head -n 1)
+        latestIotaHornetVersion=$(echo $latestIotaHornetVersion | tr -d 'v"')
+    fi
+    if [ ! -z "$latestIotaHornetVersion" ] && [ "$latestIotaHornetVersion" != "\"\"" ] && [ "$latestIotaHornetVersion" != "null" ]; then
+        sudo sed -i 's~^latestIotaHornetVersion=.*~latestIotaHornetVersion="'$latestIotaHornetVersion'"~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
+
+# Local node version
+if [ -f "/usr/bin/iota-hornet" ]; then
+    iotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }')
+fi
+
+# Replace var if empty
+if [ -z "$latestIotaHornetVersion" ] || [ "$latestIotaHornetVersion" = "null" ]; then
+    latestIotaHornetVersion=$iotaHornetVersion
+fi
