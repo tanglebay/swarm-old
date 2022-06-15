@@ -3,7 +3,8 @@
 if [ "$swarmManualUpdate" = "true" ]; then
     if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
         source $swarmModules/swarmAuth
-        if [ "$swarmAuth" = "200" ]; then
+        if [ "$swarmAuth" = "200" ] && [ ! -f "/tmp/watchdog.lock" ]; then
+            sudo touch /tmp/watchdog.lock
             {
                 echo 0
                 echo 10
@@ -140,11 +141,17 @@ if [ "$swarmManualUpdate" = "true" ]; then
             if [ -d "$swarmTmp" ]; then
                 sudo rm -rf $swarmTmp > /dev/null 2>&1
             fi
+            if [ -f "/tmp/watchdog.lock" ]; then
+                sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
+            fi
             clear
             exit 0
         else
             if [ -d "$swarmTmp" ]; then
                 sudo rm -rf $swarmTmp > /dev/null 2>&1
+            fi
+            if [ -f "/tmp/watchdog.lock" ]; then
+                sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
             fi
             unset swarmUpdated
             whiptail --title "SWARM Menu" --msgbox "SWARM update failed." 8 65
