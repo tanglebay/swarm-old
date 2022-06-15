@@ -1,0 +1,28 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYshimmerBeeApiPublicRoutes <<< "$shimmerBeeApiPublicRoutes"
+validateShimmerBeeApiPublicRoutes=$(echo "${shimmerBeeApiPublicRoutes: -1}")
+if [ "$validateShimmerBeeApiPublicRoutes" = "," ]; then
+    shimmerBeeApiPublicRoutes="${shimmerBeeApiPublicRoutes%?}"
+    sudo sed -i 's~^shimmerBeeApiPublicRoutes=.*~shimmerBeeApiPublicRoutes="'$shimmerBeeApiPublicRoutes'"~' $swarmConfigs/shimmer-bee.cfg
+    shimmerBeeForceApiPublicRoutes=true
+fi
+
+parser="$(jq '.restApi.publicRoutes' $shimmerBeeHome/$shimmerBeeConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+
+if [ "$parser" != "$shimmerBeeApiPublicRoutes" ] || [ "$shimmerBeeForceApiPublicRoutes" = "true" ]; then
+    sudo jq '.restApi.publicRoutes |= []' $shimmerBeeHome/$shimmerBeeConfig.json|sponge $shimmerBeeHome/$shimmerBeeConfig.json
+    for shimmerBeeApiPublicRoute in "${ARRAYshimmerBeeApiPublicRoutes[@]}"
+    do
+        sudo jq '.restApi.publicRoutes |= .+ ["'$shimmerBeeApiPublicRoute'"]' $shimmerBeeHome/$shimmerBeeConfig.json|sponge $shimmerBeeHome/$shimmerBeeConfig.json
+    done
+    restartShimmerBee=true
+    echo "shimmerBeeApiPublicRoutes" >> /tmp/shimmerBeeParsing
+fi
+
+if [ -z "$parser" ]; then
+    echo "Empty parsing shimmerBeeApiPublicRoutes" >> /tmp/shimmerBeeParsing
+fi
+
+unset ARRAYshimmerBeeApiPublicRoutes shimmerBeeApiPublicRoute shimmerBeeForceApiPublicRoutes

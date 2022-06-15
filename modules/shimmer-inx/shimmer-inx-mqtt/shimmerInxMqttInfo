@@ -1,0 +1,41 @@
+#!/bin/bash
+if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
+
+    source $swarmConfigs/shimmer-inx-mqtt.cfg
+    source $swarmConfigs/latest-versions.cfg
+
+    shimmerInxMqttStatus=$(systemctl show -p ActiveState --value shimmer-inx-mqtt)
+
+    shimmerInxMqttVersion=$(/usr/bin/shimmer-inx-mqtt -v | awk '{ print $2 }')
+    if [ -z "$shimmerInxMqttVersion" ]; then
+        shimmerInxMqttVersion="N/A"
+    else
+        if [ "$shimmerInxMqttVersion" != "$latestShimmerInxMqttVersion" ] && [ ! -z "$latestShimmerInxMqttVersion" ]; then
+            shimmerInxMqttVersion="$shimmerInxMqttVersion (new version \"v$latestShimmerInxMqttVersion\" available!)"
+        fi
+    fi
+
+    if [ "$shimmerInxMqttUpdateCheck" = "true" ]; then
+        shimmerInxMqttUpdateCheckStatus="enabled"
+    else
+        shimmerInxMqttUpdateCheckStatus="disabled"
+    fi
+
+    if [ "$shimmerInxMqttWebsocketEnabled" = "true" ]; then
+        shimmerInxMqttWebsocketEnabledStatus="enabled"
+    else
+        shimmerInxMqttWebsocketEnabledStatus="disabled"
+    fi
+
+    if [ "$shimmerInxMqttTcpEnabled" = "true" ]; then
+        shimmerInxMqttTcpEnabledStatus="enabled"
+    else
+        shimmerInxMqttTcpEnabledStatus="disabled"
+    fi
+
+    # OUTPUT
+    whiptail --title "[SHIMMER] INX-Mqtt - Info" --msgbox "INX-Mqtt: $shimmerInxMqttStatus\nVersion: v$shimmerInxMqttVersion\nUpdate Check: $shimmerInxMqttUpdateCheckStatus\nWebsocket: $shimmerInxMqttWebsocketEnabledStatus\nTCP: $shimmerInxMqttTcpEnabledStatus\n\nEnabled Plugins: \"$shimmerInxMqttEnablePlugins\"\nDisabled Plugins: \"$shimmerInxMqttDisablePlugins\"" 24 65
+else
+    # OUTPUT
+    whiptail --title "[SHIMMER] INX-Mqtt - Info" --msgbox "INX-Mqtt not installed!" 8 65
+fi

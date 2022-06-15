@@ -1,0 +1,30 @@
+#!/bin/bash
+source $swarmConfigs/latest-versions.cfg
+
+if [ -z "$latestShimmerHornetVersion" ] || [ "$latestShimmerHornetVersion" = "\"\"" ] || [ "$latestShimmerHornetVersion" = "null" ]; then
+    if [ "$shimmerHornetRelease" = "stable" ]; then
+        latestShimmerHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerHornetReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestShimmerHornetVersion=$(echo $latestShimmerHornetVersion | tr -d 'v"')
+    fi
+    if [ "$shimmerHornetRelease" = "beta" ]; then
+        latestShimmerHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerHornetReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestShimmerHornetVersion=$(echo $latestShimmerHornetVersion | tr -d 'v"')
+    fi
+    if [ "$shimmerHornetRelease" = "alpha" ]; then
+        latestShimmerHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerHornetReleaseVersion | head -n 1)
+        latestShimmerHornetVersion=$(echo $latestShimmerHornetVersion | tr -d 'v"')
+    fi
+    if [ ! -z "$latestShimmerHornetVersion" ] && [ "$latestShimmerHornetVersion" != "\"\"" ] && [ "$latestShimmerHornetVersion" != "null" ]; then
+        sudo sed -i 's~^latestShimmerHornetVersion=.*~latestShimmerHornetVersion="'$latestShimmerHornetVersion'"~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
+
+# Local node version
+if [ -f "/usr/bin/shimmer-hornet" ]; then
+    shimmerHornetVersion=$(/usr/bin/shimmer-hornet -v | awk '{ print $2 }')
+fi
+
+# Replace var if empty
+if [ -z "$latestShimmerHornetVersion" ] || [ "$latestShimmerHornetVersion" = "null" ]; then
+    latestShimmerHornetVersion=$shimmerHornetVersion
+fi

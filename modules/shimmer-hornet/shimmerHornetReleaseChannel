@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Check if release is changed
+if [ "$shimmerHornetRelease" != "$currentShimmerHornetRelease" ]; then
+    {
+        echo 0
+        echo 20
+        source $shimmerHornetModules/shimmerHornetRemoval
+        echo 40
+        source $shimmerHornetModules/shimmerHornetInstaller
+        echo 60
+        source $shimmerHornetModules/shimmerHornetParser
+        echo 80
+        if [ "$shimmerHornetUpdated" = "true" ] || [ "$restartShimmerHornet" = "true" ]; then
+            sudo systemctl restart shimmer-hornet
+            unset restartShimmerHornet
+        fi
+        echo 100
+    } | whiptail --gauge "Please wait while Hornet is prepared..." 8 65 0
+    whiptail --title "[SHIMMER] Hornet - Configuration" --msgbox "New release channel ($shimmerHornetRelease) applied and Hornet was reinstalled!" 8 65
+fi

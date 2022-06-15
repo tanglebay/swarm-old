@@ -1,0 +1,22 @@
+#!/bin/bash
+
+useShimmerInxParticipationEnablePlugins=true
+source $shimmerInxParticipationModules/shimmerInxParticipationPlugins
+
+IFS=', ' read -r -a ARRAYshimmerInxParticipationEnablePlugins <<< "$shimmerInxParticipationEnablePlugins"
+
+parser="$(jq '.app.enablePlugins' $shimmerInxParticipationHome/$shimmerInxParticipationConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$shimmerInxParticipationEnablePlugins" ]; then
+    sudo jq '.app.enablePlugins |= []' $shimmerInxParticipationHome/$shimmerInxParticipationConfig.json|sponge $shimmerInxParticipationHome/$shimmerInxParticipationConfig.json
+    for shimmerInxParticipationEnablePlugin in "${ARRAYshimmerInxParticipationEnablePlugins[@]}"
+    do
+        if [ ! -z "$shimmerInxParticipationEnablePlugin" ]; then
+            sudo jq '.app.enablePlugins |= .+ ["'$shimmerInxParticipationEnablePlugin'"]' $shimmerInxParticipationHome/$shimmerInxParticipationConfig.json|sponge $shimmerInxParticipationHome/$shimmerInxParticipationConfig.json
+        fi
+    done
+    restartShimmerInxParticipation=true
+    echo "shimmerInxParticipationEnablePlugins" >> /tmp/shimmerInxParticipationParsing
+fi
+
+unset ARRAYshimmerInxParticipationEnablePlugins shimmerInxParticipationEnablePlugin useShimmerInxParticipationEnablePlugins

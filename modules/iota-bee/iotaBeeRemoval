@@ -1,0 +1,37 @@
+#!/bin/bash
+
+source $swarmConfigs/iota-bee.cfg
+source $swarmConfigs/proxy.cfg
+source $proxyModules/proxyParser
+
+sudo systemctl stop iota-bee > /dev/null 2>&1
+
+sudo systemctl disable iota-bee > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/iota-bee /var/lib/iota-bee /lib/systemd/system/iota-bee.service /etc/default/iota-bee > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+if [ "$ufw" = "true" ]; then
+    sudo ufw delete allow $iotaBeeGossipPort/tcp > /dev/null 2>&1
+    sudo ufw delete allow $iotaBeeAutopeeringPort/udp > /dev/null 2>&1
+fi
+
+sudo rm -rf $iotaBeeHome > /dev/null 2>&1
+
+if [ ! -f "/usr/bin/iota-bee" ] || [ ! -f "/usr/bin/shimmer-bee" ]; then
+    if id bee > /dev/null 2>&1; then
+        sudo deluser bee > /dev/null 2>&1
+    fi
+fi
+
+if [ -f "/etc/nginx/sites-enabled/iota-bee" ]; then
+    if [ "$ufw" = "true" ]; then
+        if [ "$proxyIotaBeePort" != "$proxySwarmDashboardPort" ] && [ "$proxyIotaBeePort" != "$proxyHornetPort" ] && [ "$proxyIotaBeePort" != "$proxyShimmerHornetPort" ] && [ "$proxyIotaBeePort" != "$proxyShimmerBeePort" ] && [ "$proxyIotaBeePort" != "$proxyGoshimmerPort" ] && [ "$proxyIotaBeePort" != "$proxyWaspDashboardPort" ] && [ "$proxyIotaBeePort" != "$proxyWaspApiPort" ]; then
+            sudo ufw delete allow $proxyIotaBeePort/tcp > /dev/null 2>&1
+        fi
+    fi
+    sudo sed -i 's/^proxyIotaBeeUrl=.*/proxyIotaBeeUrl=/' $swarmConfigs/proxy.cfg
+    sudo rm -rf /etc/nginx/sites-enabled/bee > /dev/null 2>&1
+    sudo systemctl reload nginx
+fi

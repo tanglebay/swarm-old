@@ -22,15 +22,21 @@ while [ $exitCode -lt 1 ]; do
             while [ $exitCode -lt 1 ]; do
                 clear
                 proxyUrlRegex='[-A-Za-z0-9\+&@#/%?=~_|!:,.;]:[-A-Za-z0-9\+&@#/%=~_|]'
+                if [ "$proxySwarmEndpoint" = "true" ]; then
+                    menuProxySwarmEndpoint="Disable"
+                else
+                    menuProxySwarmEndpoint="Enable"
+                fi
                 CHOICE=$(
                     whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
-                    "1)" "Hornet proxy settings" \
-                    "2)" "Hornet-Shimmer proxy settings" \
-                    "3)" "Bee proxy settings" \
-                    "4)" "Bee-Shimmer proxy settings" \
-                    "5)" "GoShimmer proxy settings" \
-                    "6)" "WASP proxy settings" \
-                    "7)" "Advanced Settings" 3>&2 2>&1 1>&3
+                    "1)" "$menuProxySwarmEndpoint SWARM Endpoint" \
+                    "2)" "Hornet [IOTA] proxy settings" \
+                    "3)" "Hornet [SHIMMER] proxy settings" \
+                    "4)" "Bee [IOTA] proxy settings" \
+                    "5)" "Bee [SHIMMER] proxy settings" \
+                    "6)" "GoShimmer proxy settings" \
+                    "7)" "WASP proxy settings" \
+                    "8)" "Advanced Settings" 3>&2 2>&1 1>&3
                 )
 
                 exitStatus=$?
@@ -40,102 +46,114 @@ while [ $exitCode -lt 1 ]; do
 
                 case $CHOICE in
                     "1)")
-                        source $swarmConfigs/proxy.cfg
-                        currentProxyHornetUrl="$proxyHornetUrl"
-                        if [ -z "$proxyHornetUrl" ]; then
-                            proxyHornetUrl="my.example.com:443"
+                        if [ "$proxySwarmEndpoint" = "true" ]; then
+                            proxySwarmEndpoint=false
+                            proxySwarmEndpointMenu="disabled"
+                        else
+                            proxySwarmEndpoint=true
+                            proxySwarmEndpointMenu="enabled"
                         fi
-                        proxyHornetUrl=$(whiptail --inputbox "\nSet your domain and port for Hornet" 10 65 $proxyHornetUrl --title "Proxy - Hornet" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ "$proxyHornetUrl" = "my.example.com:443" ]; then
-                            unset proxyHornetUrl
-                        fi
-                        if [ "$exitStatus" != "1" ]; then
-                            if [[ $proxyHornetUrl =~ $proxyUrlRegex ]] || [ -z $proxyHornetUrl ]; then
-                                if [ "$currentProxyHornetUrl" != "$proxyHornetUrl" ]; then
-                                    sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetUrl="'$proxyHornetUrl'"/' $swarmConfigs/proxy.cfg
-                                    whiptail --title "Proxy - Hornet" --msgbox "URL for Hornet proxy set to \"$proxyHornetUrl\"." 8 65
-                                else
-                                    whiptail --title "Proxy - Hornet" --msgbox "No Hornet url change detected." 8 65
-                                fi
-                            else
-                                whiptail --title "Proxy - Hornet" --msgbox "No valid Hornet url." 8 65
-                            fi
-                        fi
+                        sudo sed -i 's/^proxySwarmEndpoint=.*/proxySwarmEndpoint='$proxySwarmEndpoint'/' $swarmConfigs/proxy.cfg
+                        source $proxyModules/proxySwarmEndpoint
+                        whiptail --title "Proxy - SWARM" --msgbox "SWARM endpoint $proxySwarmEndpointMenu." 8 65
                     ;;
                     "2)")
                         source $swarmConfigs/proxy.cfg
-                        currentProxyHornetShimmerUrl="$proxyHornetShimmerUrl"
-                        if [ -z "$proxyHornetShimmerUrl" ]; then
-                            proxyHornetShimmerUrl="my.example.com:443"
+                        currentProxyIotaHornetUrl="$proxyIotaHornetUrl"
+                        if [ -z "$proxyIotaHornetUrl" ]; then
+                            proxyIotaHornetUrl="my.example.com:443"
                         fi
-                        proxyHornetShimmerUrl=$(whiptail --inputbox "\nSet your domain and port for Hornet-Shimmer" 10 65 $proxyHornetShimmerUrl --title "Proxy - Hornet-Shimmer" 3>&1 1>&2 2>&3)
+                        proxyIotaHornetUrl=$(whiptail --inputbox "\nSet your domain and port for Hornet" 10 65 $proxyIotaHornetUrl --title "Proxy - Hornet [IOTA]" 3>&1 1>&2 2>&3)
                         exitStatus=$?
-                        if [ "$proxyHornetShimmerUrl" = "my.example.com:443" ]; then
-                            unset proxyHornetShimmerUrl
+                        if [ "$proxyIotaHornetUrl" = "my.example.com:443" ]; then
+                            unset proxyIotaHornetUrl
                         fi
                         if [ "$exitStatus" != "1" ]; then
-                            if [[ $proxyHornetShimmerUrl =~ $proxyUrlRegex ]] || [ -z $proxyHornetShimmerUrl ]; then
-                                if [ "$currentProxyHornetShimmerUrl" != "$proxyHornetShimmerUrl" ]; then
-                                    sudo sed -i 's/^proxyHornetShimmerUrl=.*/proxyHornetShimmerUrl="'$proxyHornetShimmerUrl'"/' $swarmConfigs/proxy.cfg
-                                    whiptail --title "Proxy - Hornet-Shimmer" --msgbox "URL for Hornet-Shimmer proxy set to \"$proxyHornetShimmerUrl\"." 8 65
+                            if [[ $proxyIotaHornetUrl =~ $proxyUrlRegex ]] || [ -z $proxyIotaHornetUrl ]; then
+                                if [ "$currentProxyIotaHornetUrl" != "$proxyIotaHornetUrl" ]; then
+                                    sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl="'$proxyIotaHornetUrl'"/' $swarmConfigs/proxy.cfg
+                                    whiptail --title "Proxy - Hornet [IOTA]" --msgbox "URL for Hornet proxy set to \"$proxyIotaHornetUrl\"." 8 65
                                 else
-                                    whiptail --title "Proxy - Hornet-Shimmer" --msgbox "No Hornet-Shimmer url change detected." 8 65
+                                    whiptail --title "Proxy - Hornet [IOTA]" --msgbox "No Hornet url change detected." 8 65
                                 fi
                             else
-                                whiptail --title "Proxy - Hornet-Shimmer" --msgbox "No valid Hornet-Shimmer url." 8 65
+                                whiptail --title "Proxy - Hornet [IOTA]" --msgbox "No valid Hornet url." 8 65
                             fi
                         fi
                     ;;
                     "3)")
                         source $swarmConfigs/proxy.cfg
-                        currentProxyBeeUrl="$proxyBeeUrl"
-                        if [ -z "$proxyBeeUrl" ]; then
-                            proxyBeeUrl="my.example.com:443"
+                        currentProxyShimmerHornetUrl="$proxyShimmerHornetUrl"
+                        if [ -z "$proxyShimmerHornetUrl" ]; then
+                            proxyShimmerHornetUrl="my.example.com:443"
                         fi
-                        proxyBeeUrl=$(whiptail --inputbox "\nSet your domain and port for Bee" 10 65 $proxyBeeUrl --title "Proxy - Bee" 3>&1 1>&2 2>&3)
+                        proxyShimmerHornetUrl=$(whiptail --inputbox "\nSet your domain and port for Hornet-Shimmer" 10 65 $proxyShimmerHornetUrl --title "Proxy - Hornet [Shimmer]" 3>&1 1>&2 2>&3)
                         exitStatus=$?
-                        if [ "$proxyBeeUrl" = "my.example.com:443" ]; then
-                            unset proxyBeeUrl
+                        if [ "$proxyShimmerHornetUrl" = "my.example.com:443" ]; then
+                            unset proxyShimmerHornetUrl
                         fi
                         if [ "$exitStatus" != "1" ]; then
-                            if [[ $proxyBeeUrl =~ $proxyUrlRegex ]] || [ -z $proxyBeeUrl ]; then
-                                if [ "$currentProxyBeeUrl" != "$proxyBeeUrl" ]; then
-                                    sudo sed -i 's/^proxyBeeUrl=.*/proxyBeeUrl="'$proxyBeeUrl'"/' $swarmConfigs/proxy.cfg
-                                    whiptail --title "Proxy - Bee" --msgbox "URL for Bee proxy set to \"$proxyBeeUrl\"" 8 65
+                            if [[ $proxyShimmerHornetUrl =~ $proxyUrlRegex ]] || [ -z $proxyShimmerHornetUrl ]; then
+                                if [ "$currentProxyShimmerHornetUrl" != "$proxyShimmerHornetUrl" ]; then
+                                    sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl="'$proxyShimmerHornetUrl'"/' $swarmConfigs/proxy.cfg
+                                    whiptail --title "Proxy - Hornet [Shimmer]" --msgbox "URL for Hornet-Shimmer proxy set to \"$proxyShimmerHornetUrl\"." 8 65
                                 else
-                                    whiptail --title "Proxy - Bee" --msgbox "No Bee url change detected." 8 65
+                                    whiptail --title "Proxy - Hornet [Shimmer]" --msgbox "No Hornet-Shimmer url change detected." 8 65
                                 fi
                             else
-                                whiptail --title "Proxy - Bee" --msgbox "No valid Bee url." 8 65
+                                whiptail --title "Proxy - Hornet [Shimmer]" --msgbox "No valid Hornet-Shimmer url." 8 65
                             fi
                         fi
                     ;;
                     "4)")
                         source $swarmConfigs/proxy.cfg
-                        currentProxyBeeShimmerUrl="$proxyBeeShimmerUrl"
-                        if [ -z "$proxyBeeShimmerUrl" ]; then
-                            proxyBeeShimmerUrl="my.example.com:443"
+                        currentProxyIotaBeeUrl="$proxyIotaBeeUrl"
+                        if [ -z "$proxyIotaBeeUrl" ]; then
+                            proxyIotaBeeUrl="my.example.com:443"
                         fi
-                        proxyBeeShimmerUrl=$(whiptail --inputbox "\nSet your domain and port for Bee-Shimmer" 10 65 $proxyBeeShimmerUrl --title "Proxy - Bee-Shimmer" 3>&1 1>&2 2>&3)
+                        proxyIotaBeeUrl=$(whiptail --inputbox "\nSet your domain and port for Bee" 10 65 $proxyIotaBeeUrl --title "Proxy - Bee [IOTA]" 3>&1 1>&2 2>&3)
                         exitStatus=$?
-                        if [ "$proxyBeeShimmerUrl" = "my.example.com:443" ]; then
-                            unset proxyBeeShimmerUrl
+                        if [ "$proxyIotaBeeUrl" = "my.example.com:443" ]; then
+                            unset proxyIotaBeeUrl
                         fi
                         if [ "$exitStatus" != "1" ]; then
-                            if [[ $proxyBeeShimmerUrl =~ $proxyUrlRegex ]] || [ -z $proxyBeeShimmerUrl ]; then
-                                if [ "$currentProxyBeeShimmerUrl" != "$proxyBeeShimmerUrl" ]; then
-                                    sudo sed -i 's/^proxyBeeShimmerUrl=.*/proxyBeeShimmerUrl="'$proxyBeeShimmerUrl'"/' $swarmConfigs/proxy.cfg
-                                    whiptail --title "Proxy - Bee-Shimmer" --msgbox "URL for Bee-Shimmer proxy set to \"$proxyBeeShimmerUrl\"" 8 65
+                            if [[ $proxyIotaBeeUrl =~ $proxyUrlRegex ]] || [ -z $proxyIotaBeeUrl ]; then
+                                if [ "$currentProxyIotaBeeUrl" != "$proxyIotaBeeUrl" ]; then
+                                    sudo sed -i 's/^proxyIotaBeeUrl=.*/proxyIotaBeeUrl="'$proxyIotaBeeUrl'"/' $swarmConfigs/proxy.cfg
+                                    whiptail --title "Proxy - Bee [IOTA]" --msgbox "URL for Bee proxy set to \"$proxyIotaBeeUrl\"" 8 65
                                 else
-                                    whiptail --title "Proxy - Bee-Shimmer" --msgbox "No Bee-Shimmer url change detected." 8 65
+                                    whiptail --title "Proxy - Bee [IOTA]" --msgbox "No Bee url change detected." 8 65
                                 fi
                             else
-                                whiptail --title "Proxy - Bee-Shimmer" --msgbox "No valid Bee-Shimmer url." 8 65
+                                whiptail --title "Proxy - Bee [IOTA]" --msgbox "No valid Bee url." 8 65
                             fi
                         fi
                     ;;
                     "5)")
+                        source $swarmConfigs/proxy.cfg
+                        currentProxyShimmerBeeUrl="$proxyShimmerBeeUrl"
+                        if [ -z "$proxyShimmerBeeUrl" ]; then
+                            proxyShimmerBeeUrl="my.example.com:443"
+                        fi
+                        proxyShimmerBeeUrl=$(whiptail --inputbox "\nSet your domain and port for Bee [Shimmer]" 10 65 $proxyShimmerBeeUrl --title "Proxy - Bee [Shimmer]" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$proxyShimmerBeeUrl" = "my.example.com:443" ]; then
+                            unset proxyShimmerBeeUrl
+                        fi
+                        if [ "$exitStatus" != "1" ]; then
+                            if [[ $proxyShimmerBeeUrl =~ $proxyUrlRegex ]] || [ -z $proxyShimmerBeeUrl ]; then
+                                if [ "$currentProxyShimmerBeeUrl" != "$proxyShimmerBeeUrl" ]; then
+                                    sudo sed -i 's/^proxyShimmerBeeUrl=.*/proxyShimmerBeeUrl="'$proxyShimmerBeeUrl'"/' $swarmConfigs/proxy.cfg
+                                    whiptail --title "Proxy - Bee [Shimmer]" --msgbox "URL for Bee-Shimmer proxy set to \"$proxyShimmerBeeUrl\"" 8 65
+                                else
+                                    whiptail --title "Proxy - Bee [Shimmer]" --msgbox "No Bee-Shimmer url change detected." 8 65
+                                fi
+                            else
+                                whiptail --title "Proxy - Bee [Shimmer]" --msgbox "No valid Bee-Shimmer url." 8 65
+                            fi
+                        fi
+                    ;;
+                    "6)")
                         source $swarmConfigs/proxy.cfg
                         currentProxyGoshimmerUrl="$proxyGoshimmerUrl"
                         if [ -z "$proxyGoshimmerUrl" ]; then
@@ -159,7 +177,7 @@ while [ $exitCode -lt 1 ]; do
                             fi
                         fi
                     ;;
-                    "6)")
+                    "7)")
                         while [ $exitCode -lt 1 ]; do
                             source $swarmConfigs/proxy.cfg
                             clear
@@ -225,7 +243,7 @@ while [ $exitCode -lt 1 ]; do
                         done
                         exitCode=0
                     ;;
-                    "7)")
+                    "8)")
                         while [ $exitCode -lt 1 ]; do
                             source $swarmConfigs/proxy.cfg
                             clear
@@ -328,7 +346,7 @@ while [ $exitCode -lt 1 ]; do
             )
             case $CHOICE in
                 "1)")
-                    if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/hornet-shimmer" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/bee-shimmer" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
+                    if [ -f "/usr/bin/hornet" ] || [ -f "/usr/bin/shimmer-hornet" ] || [ -f "/usr/bin/bee" ] || [ -f "/usr/bin/shimmer-bee" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
                         source $swarmConfigs/proxy.cfg
                         if (whiptail --title "Proxy - Deployment" --yesno --defaultno "Before deploying the proxy, please make sure that the domain and port are set for all nodes to be installed. If you use one domain for multiple nodes, please use different ports.\n\n\nAre you sure you want to continue?" 16 65); then
                             source $proxyModules/proxyDeployment
@@ -347,9 +365,9 @@ while [ $exitCode -lt 1 ]; do
                                 sudo ufw delete allow 80/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $proxySwarmDashboardPort/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $proxyHornetPort/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $proxyHornetShimmerPort/tcp > /dev/null 2>&1
+                                sudo ufw delete allow $proxyShimmerHornetPort/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $proxyBeePort/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $proxyBeeShimmerPort/tcp > /dev/null 2>&1
+                                sudo ufw delete allow $proxyShimmerBeePort/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $proxyWaspDashboardPort/tcp > /dev/null 2>&1
                                 sudo ufw delete allow $proxyWaspApiPort/tcp > /dev/null 2>&1
@@ -366,9 +384,9 @@ while [ $exitCode -lt 1 ]; do
                                 sudo rm -rf /etc/letsencrypt > /dev/null 2>&1
                             fi
                             sudo sed -i 's/^proxyHornetUrl=.*/proxyHornetDomain=""/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyHornetShimmerUrl=.*/proxyHornetShimmerDomain=""/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetDomain=""/' $swarmConfigs/proxy.cfg
                             sudo sed -i 's/^proxyBeeUrl=.*/proxyBeeUrl=""/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyBeeShimmerUrl=.*/proxyBeeShimmerUrl=""/' $swarmConfigs/proxy.cfg
+                            sudo sed -i 's/^proxyShimmerBeeUrl=.*/proxyShimmerBeeUrl=""/' $swarmConfigs/proxy.cfg
                             sudo sed -i 's/^proxyGoshimmerUrl=.*/proxyGoshimmerUrl=""/' $swarmConfigs/proxy.cfg
                             sudo sed -i 's/^proxyWaspDashboardUrl=.*/proxyWaspDashboardUrl=/' $swarmConfigs/proxy.cfg
                             sudo sed -i 's/^proxyWaspApiUrl=.*/proxyWaspApiUrl=/' $swarmConfigs/proxy.cfg
@@ -381,7 +399,7 @@ while [ $exitCode -lt 1 ]; do
                 "3)")
                     # Manual renew certificate if installed
                     source $proxyModules/proxyParser
-                    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyHornetShimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeShimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
+                    if [ -f "/etc/letsencrypt/live/$proxyHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
                         sudo certbot renew --force-renewal
                         echo ""
                         echo ""

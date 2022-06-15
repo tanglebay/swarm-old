@@ -1,0 +1,143 @@
+#!/bin/bash
+
+if [ -f "/usr/bin/hornet" ]; then
+    if [ ! -f "/tmp/watchdog.lock" ]; then
+            sudo touch /tmp/watchdog.lock
+    fi
+    if [ -f "/etc/systemd/system/multi-user.target.wants/hornet.service" ]; then
+        sudo systemctl disable hornet > /dev/null 2>&1
+    fi
+    hornetStatus=$(systemctl show -p ActiveState --value hornet)
+    if [ "$hornetStatus" = "active" ]; then
+        sudo systemctl stop hornet > /dev/null 2>&1
+    fi
+    if [ -f "/lib/systemd/system/hornet.service" ]; then
+        sudo rm -rf /lib/systemd/system/hornet.service
+    fi
+    if [ ! -f "/lib/systemd/system/iota-hornet.service" ]; then
+        sudo cp -rf $swarmHome/templates/iota-hornet/iota-hornet.service /lib/systemd/system/iota-hornet.service
+    fi
+    if [ -f "/usr/bin/hornet" ]; then
+        sudo mv /usr/bin/hornet /usr/bin/iota-hornet
+    fi
+    if [ -f "/etc/systemd/system/multi-user.target.wants/iota-hornet.service" ]; then
+        sudo systemctl enable iota-hornet > /dev/null 2>&1
+    fi
+    if [ -d "/var/lib/hornet" ]; then
+        sudo mv /var/lib/hornet /var/lib/iota-hornet > /dev/null 2>&1
+    fi
+    if [ -f "/etc/default/hornet" ]; then
+        sudo mv /etc/default/hornet /etc/default/iota-hornet
+    fi
+    iotaHornetStatus=$(systemctl show -p ActiveState --value iota-hornet)
+    if [ "$iotaHornetStatus" = "active" ]; then
+        sudo systemctl start iota-hornet > /dev/null 2>&1
+    fi
+    if [ -f "/etc/nginx/sites-enabled/hornet" ]; then
+        sudo mv /etc/nginx/sites-enabled/hornet /etc/nginx/sites-enabled/iota-hornet
+        sudo systemctl reload nginx > /dev/null 2>&1
+    fi
+    if [ -f "$swarmTmp/hornet.cfg" ]; then
+        source $swarmTmp/hornet.cfg
+
+        # Upater for Hornet.cfg
+        if [ ! -z "$hornetRelease" ]; then
+            iotaHornetRelease=$hornetRelease
+        fi
+        ####
+        if [ ! -z "$hornetNetwork" ]; then
+            iotaHornetNetwork=$hornetNetwork
+        fi
+        ####
+        if [ ! -z "$hornetAlias" ]; then
+            iotaHornetAlias=$hornetAlias
+        fi
+        ####
+        if [ ! -z "$hornetDisablePlugins" ]; then
+            iotaHornetDisablePlugins=$hornetDisablePlugins
+        fi
+        ####
+        if [ ! -z "$hornetEnablePlugins" ]; then
+            iotaHornetEnablePlugins=$hornetEnablePlugins
+        fi
+        ####
+        if [ ! -z "$hornetUnknownPeersLimit" ]; then
+            iotaHornetUnknownPeersLimit=$hornetUnknownPeersLimit
+        fi
+        ####
+        if [ ! -z "$hornetSnapshotInterval" ]; then
+            iotaHornetSnapshotInterval=$hornetSnapshotInterval
+        fi
+        ####
+        if [ ! -z "$hornetGossipPort" ]; then
+            iotaHornetGossipPort=$hornetGossipPort
+        fi
+        ####
+        if [ ! -z "$hornetAutopeeringPort" ]; then
+            iotaHornetAutopeeringPort=$hornetAutopeeringPort
+        fi
+        ####
+        if [ ! -z "$hornetPowEnabled" ]; then
+            iotaHornetPowEnabled=$hornetPowEnabled
+        fi
+        ###
+        if [ ! -z "$hornetPowWorkerCount" ]; then
+            iotaHornetPowWorkerCount=$hornetPowWorkerCount
+        fi
+        ####
+        if [ ! -z "$hornetAutoRevalidation" ]; then
+            iotaHornetAutoRevalidation=$hornetAutoRevalidation
+        fi
+        ####
+        if [ ! -z "$hornetPruningEnabled" ]; then
+            iotaHornetPruningEnabled=$hornetPruningEnabled
+        fi
+        ####
+        if [ ! -z "$hornetPruningDatabaseSize" ]; then
+            iotaHornetPruningDatabaseSize=$hornetPruningDatabaseSize
+        fi
+        ####
+        if [ ! -z "$hornetPruningPercentage" ]; then
+            iotaHornetPruningPercentage=$hornetPruningPercentage
+        fi
+        ####
+        if [ ! -z "$hornetPruningCooldownTime" ]; then
+            iotaHornetPruningCooldownTime=$hornetPruningCooldownTime
+        fi
+        ####
+        if [ ! -z "$hornetUsername" ]; then
+            iotaHornetUsername=$hornetUsername
+        fi
+        ####
+        if [ ! -z "$hornetPasswordHash" ]; then
+            iotaHornetPasswordHash=$hornetPasswordHash
+        fi
+        ####
+        if [ ! -z "$hornetPasswordSalt" ]; then
+            iotaHornetPasswordSalt=$hornetPasswordSalt
+        fi
+        ####
+        if [ ! -z "$hornetIdentity" ]; then
+            iotaHornetIdentity=$hornetIdentity
+        fi
+        ####
+        if [ ! -z "$hornetRunAsEntryNode" ]; then
+            iotaHornetRunAsEntryNode=$hornetRunAsEntryNode
+        fi
+        ####
+        if [ ! -z "$hornetApiJwtSalt" ]; then
+            iotaHornetApiJwtSalt=$hornetApiJwtSalt
+        fi
+        ####
+        if [ ! -z "$hornetApiJwtToken" ]; then
+            iotaHornetApiJwtToken=$hornetApiJwtToken
+        fi
+        ####
+        if [ ! -z "$hornetApiPublicRoutes" ]; then
+            iotaHornetApiPublicRoutes=$hornetApiPublicRoutes
+        fi
+    fi
+    if [ -f "/tmp/watchdog.lock" ]; then
+        sudo rm -rf /tmp/watchdog.lock
+    fi
+fi

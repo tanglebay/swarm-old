@@ -1,0 +1,43 @@
+#!/bin/bash
+
+source $swarmConfigs/shimmer-hornet.cfg
+source $swarmConfigs/proxy.cfg
+source $proxyModules/proxyParser
+
+if [ "$killall" = "true" ]; then
+    sudo killall -s SIGKILL shimmer-hornet > /dev/null 2>&1
+else
+    sudo systemctl stop shimmer-hornet > /dev/null 2>&1
+fi
+
+if [ ! -f "/usr/bin/hornet" ]; then
+    if id hornet >/dev/null 2>&1; then
+        sudo deluser hornet >/dev/null
+    fi
+fi
+
+sudo systemctl disable shimmer-hornet > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/shimmer-hornet /var/lib/shimmer-hornet /lib/systemd/system/shimmer-hornet.service /etc/default/shimmer-hornet > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+if [ "$ufw" = "true" ]; then
+    sudo ufw delete allow $shimmerHornetGossipPort/tcp > /dev/null 2>&1
+    sudo ufw delete allow $shimmerHornetAutopeeringPort/udp > /dev/null 2>&1
+fi
+
+if [ ! -f "/usr/bin/hornet" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ] && [ ! -f "/usr/bin/shimmer-inx-dashboard" ] && [ ! -f "/usr/bin/shimmer-inx-indexer" ] && [ ! -f "/usr/bin/shimmer-inx-mqtt" ] && [ ! -f "/usr/bin/shimmer-inx-participation" ]; then
+    sudo snap remove go > /dev/null 2>&1
+fi
+
+if [ -f "/etc/nginx/sites-enabled/shimmer-hornet" ]; then
+    if [ "$ufw" = "true" ]; then
+        if [ "$proxyShimmerHornetPort" != "$proxyHornetPort" ] && [ "$proxyShimmerHornetPort" != "$proxyBeePort" ] && [ "$proxyShimmerHornetPort" != "$proxyShimmerBeePort" ] && [ "$proxyShimmerHornetPort" != "$proxyGoshimmerPort" ] && [ "$proxyShimmerHornetPort" != "$proxyWaspDashboardPort" ] && [ "$proxyShimmerHornetPort" != "$proxyWaspApiPort" ]; then
+            sudo ufw delete allow $proxyShimmerHornetPort/tcp > /dev/null 2>&1
+        fi
+    fi
+    sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl=""/' $swarmConfigs/proxy.cfg
+    sudo rm -rf /etc/nginx/sites-enabled/shimmer-hornet > /dev/null 2>&1
+    sudo systemctl reload nginx
+fi
