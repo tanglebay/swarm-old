@@ -23,6 +23,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                     ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                     if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
+                        sudo touch /tmp/swarm-update.lock
                         sudo rm -rf $swarmHome > /dev/null 2>&1
                         sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
 
@@ -140,11 +141,17 @@ if [ "$swarmManualUpdate" = "true" ]; then
             if [ -d "$swarmTmp" ]; then
                 sudo rm -rf $swarmTmp > /dev/null 2>&1
             fi
+            if [ -f "/tmp/swarm-update.lock" ]; then
+                sudo rm -rf /tmp/swarm-update.lock > /dev/null 2>&1
+            fi
             clear
             exit 0
         else
             if [ -d "$swarmTmp" ]; then
                 sudo rm -rf $swarmTmp > /dev/null 2>&1
+            fi
+            if [ -f "/tmp/swarm-update.lock" ]; then
+                sudo rm -rf /tmp/swarm-update.lock > /dev/null 2>&1
             fi
             unset swarmUpdated
             whiptail --title "SWARM Menu" --msgbox "SWARM update failed." 8 65
@@ -169,6 +176,7 @@ else
             if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                 ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                 if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
+                    sudo touch /tmp/swarm-update.lock
                     sudo rm -rf $swarmHome > /dev/null 2>&1
                     sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
                     source $swarmModules/swarmUpdaterAfter
@@ -180,6 +188,9 @@ else
                 if [ -d "$swarmTmp" ]; then
                     sudo rm -rf $swarmTmp > /dev/null 2>&1
                 fi
+            fi
+            if [ -f "/tmp/swarm-update.lock" ]; then
+                sudo rm -rf /tmp/swarm-update.lock > /dev/null 2>&1
             fi
         fi
         unset swarmAuth swarmRemoteChecksum
