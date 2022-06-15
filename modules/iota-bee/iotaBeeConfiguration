@@ -1,0 +1,513 @@
+#!/bin/bash
+while [ $exitCode -lt 1 ]; do
+    clear
+    source $swarmConfigs/iota-bee.cfg
+    CHOICE=$(
+        whiptail --title "Bee [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
+        "1)" "Bee Peers" \
+        "2)" "API" \
+        "3)" "Dashboard" \
+        "4)" "Node Alias" \
+        "5)" "DB Pruning" \
+        "6)" "Proof of Work" \
+        "7)" "Local Snapshots" \
+        "8)" "Identity" \
+        "9)" "Autopeering" \
+        "10)" "Gossip Port" \
+        "11)" "Unknown Peers Limit" \
+        "12)" "IOTA Network" \
+        "13)" "Bee Release Channel" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+        if [ "$restartIotaBee" = "true" ] && [ -f "/usr/bin/iota-bee" ]; then
+            if (whiptail --title "Bee [IOTA] Menu" --yesno "Would you like to apply the changes and restart Bee?" 8 65); then
+                {
+                    echo 0
+                    echo 33
+                    source $iotaBeeParser
+                    echo 50
+                    sudo systemctl restart iota-bee > /dev/null 2>&1
+                    sleep 0.25
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while the changes are applied and Bee is restarted..." 8 65 0
+                unset restartIotaBee
+            fi
+        fi
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $iotaBeeModules/iotaBeePeersConfiguration
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $swarmConfigs/iota-bee.cfg
+                CHOICE=$(
+                    whiptail --title "Bee [IOTA] API" --menu "\nChoose an option" 16 65 0 \
+                    "1)" "API Routes" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        source $swarmConfigs/iota-bee.cfg
+                        iotaBeeApiRoutes="$iotaBeeApiProtectedRoutes"
+                        source $iotaBeeModules/iotaBeeApiRoutes
+                        iotaBeeApiRoutes=$(whiptail --title "Bee [IOTA] API routes" --checklist "\nSelect (using the spacebar) the Bee API routes that you want to protect. All routes not selected will be public:" 24 65 10 \
+                            "/health" "" $iotaBeeApiRoutesHealth \
+                            "/api/v1/info" "" $iotaBeeApiRoutesInfo \
+                            "/api/v1/tips" "" $iotaBeeApiRoutesTips \
+                            "/api/v1/messages*" "" $iotaBeeApiRoutesMessages \
+                            "/api/v1/transactions*" "" $iotaBeeApiRoutesTransactions \
+                            "/api/v1/milestones*" "" $iotaBeeApiRoutesMilestones \
+                            "/api/v1/outputs*" "" $iotaBeeApiRoutesOutputs \
+                            "/api/v1/addresses*" "" $iotaBeeApiRoutesAddresses \
+                            "/api/v1/treasury" "" $iotaBeeApiRoutesTreasury \
+                            "/api/v1/receipts*" "" $iotaBeeApiRoutesReceipts 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        iotaBeeApiRoutes=$(echo $iotaBeeApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+                        if [ "$exitStatus" != "1" ]; then
+                            iotaBeeUpdateApiRoutes=true
+                            source $iotaBeeModules/iotaBeeApiRoutes
+                            if [ -f "/usr/bin/iota-bee" ]; then
+                                source $iotaBeeConfigParsers/iotaBeeApiPublicRoutes
+                            fi
+                            unset iotaBeeUpdateApiRoutes
+                        fi
+                        unset iotaBeeApiRoutes
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $swarmConfigs/iota-bee.cfg
+                # Hornet Dashboard
+                CHOICE=$(
+                    whiptail --title "Bee [IOTA] Dashboard" --menu "\nChoose an option" 24 65 0 \
+                    "1)" "Dashboard Username" \
+                    "2)" "Dashboard Password" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/iota-bee" ]; then
+                            iotaBeeUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $iotaBeeUsername --title "Bee [IOTA] Dashboard" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$iotaBeeUsername" ]; then
+                                    source $iotaBeeConfigParsers/iotaBeeUsername
+                                    if [ "$newIotaBeeUsername" = "true" ]; then
+                                        sudo sed -i 's/^iotaBeeUsername=.*/iotaBeeUsername="'$iotaBeeUsername'"/' $swarmConfigs/iota-bee.cfg
+                                        whiptail --title "Bee [IOTA] Dashboard" --msgbox "New username \"$iotaBeeUsername\" applied!" 8 65
+                                        unset newIotaBeeUsername
+                                    else
+                                        whiptail --title "Bee [IOTA] Dashboard" --msgbox "No username change detected." 8 65
+                                    fi
+                                else
+                                    whiptail --title "Bee [IOTA] Dashboardn" --msgbox "No valid username, please try again." 8 65
+                                fi
+                            fi
+                        else
+                            whiptail --title "Bee [IOTA] Dashboardn" --msgbox "Please install Bee first." 8 65
+                        fi
+                    ;;
+                    "2)")
+                        if [ -f "/usr/bin/iota-bee" ]; then
+                            source $iotaBeeModules/iotaBeeDashboardPwdGen
+                        else
+                            whiptail --title "Bee [IOTA] Dashboardn" --msgbox "Please install Bee first." 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "4)")
+            if [ -f "/usr/bin/iota-bee" ]; then
+                iotaBeeAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $iotaBeeAlias --title "Bee [IOTA] Alias" 3>&1 1>&2 2>&3)
+                exitStatus=$?
+                if [ $exitStatus != 1 ]; then
+                    if [ ! -z "$iotaBeeAlias" ]; then
+                        source $iotaBeeConfigParsers/iotaBeeAlias
+                        if [ "$newIotaBeeAlias" = "true" ]; then
+                            sudo sed -i "s~^iotaBeeAlias=.*~iotaBeeAlias=\"$iotaBeeAlias\"~g" $swarmConfigs/iota-bee.cfg
+                            whiptail --title "Bee [IOTA] Configuration" --msgbox "New alias \"$iotaBeeAlias\" applied!" 8 65
+                            unset newIotaBeeAlias
+                        else
+                            whiptail --title "Bee [IOTA] Configuration" --msgbox "No node alias change detected!" 8 65
+                        fi
+                    fi
+                fi
+            else
+                whiptail --title "Bee [IOTA] Dashboardn" --msgbox "Please install Bee first." 8 65
+            fi
+        ;;
+        "5)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $swarmConfigs/iota-bee.cfg
+                # Hornet Pruning
+                if [ "$iotaBeePruningEnabled" = "true" ]; then
+                    iotaBeePruningEnabledStatus=enabled
+                else
+                    iotaBeePruningEnabledStatus=disabled
+                fi
+                CHOICE=$(
+                    whiptail --title "Bee [IOTA] Pruning" --menu "\nStatus: $iotaBeePruningEnabledStatus\n\nChoose an option" 24 65 0 \
+                    "1)" "Enable/Disable pruning" \
+                    "2)" "Set pruning after Milestones" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        CHOICE=$(
+                            whiptail --title "Bee [IOTA] Pruning" --menu "\nStatus: $iotaBeePruningEnabledStatus\n\nChoose an option" 24 65 0 \
+                            "1)" "Enable pruning" \
+                            "2)" "Disable pruning" 3>&2 2>&1 1>&3
+                        )
+                        case $CHOICE in
+                            "1)")
+                                iotaBeePruningEnabled=true
+                                if [ -f "/usr/bin/iota-bee" ]; then
+                                    source $iotaBeeConfigParsers/iotaBeePruningEnabled
+                                fi
+                                sudo sed -i 's/^iotaBeePruningEnabled=.*/iotaBeePruningEnabled='$iotaBeePruningEnabled'/' $swarmConfigs/iota-bee.cfg
+                                whiptail --title "Bee [IOTA] Pruning" --msgbox "Pruning was successfully activated!" 8 65
+                            ;;
+                            "2)")
+                                iotaBeePruningEnabled=false
+                                if [ -f "/usr/bin/iota-bee" ]; then
+                                    source $iotaBeeConfigParsers/iotaBeePruningEnabled
+                                fi
+                                sudo sed -i 's/^iotaBeePruningEnabled=.*/iotaBeePruningEnabled='$iotaBeePruningEnabled'/' $swarmConfigs/iota-bee.cfg
+                                whiptail --title "Bee [IOTA] Pruning" --msgbox "Pruning was successfully deactivated!" 8 65
+                            ;;
+                        esac
+                    ;;
+                    "2)")
+                        currentIotaBeePruningDelay=$iotaBeePruningDelay
+                        iotaBeePruningDelay=$(whiptail --inputbox "\nSet the interval (milestones) at which pruning is performed." 10 65 $iotaBeePruningDelay --title "Bee [IOTA] Pruning" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ $exitStatus != 1 ]; then
+                            if [ $iotaBeePruningDelay -gt 0 ] && [ $iotaBeePruningDelay -eq $iotaBeePruningDelay ] && [ $currentIotaBeePruningDelay -ne $iotaBeePruningDelay ]> /dev/null 2>&1; then
+                                if [ -f "/usr/bin/iota-bee" ]; then
+                                    source $iotaBeeConfigParsers/iotaBeePruningDelay
+                                fi
+                                sudo sed -i 's/^iotaBeePruningDelay=.*/iotaBeePruningDelay='$iotaBeePruningDelay'/' $swarmConfigs/iota-bee.cfg
+                                whiptail --title "Bee [IOTA] Pruning" --msgbox "Pruning delay set to ${iotaBeePruningDelay} milestones!" 8 65
+                            fi
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "6)")
+            source $swarmConfigs/iota-bee.cfg
+            if [ "$iotaBeePowEnabled" = "true" ]; then
+                iotaBeePowEnabledStatus=enabled
+            else
+                iotaBeePowEnabledStatus=disabled
+            fi
+            CHOICE=$(
+                whiptail --title "Bee [IOTA] PoW" --menu "\nPOW: $iotaBeePowEnabledStatus\n\nChoose an option" 24 65 0 \
+                "1)" "Enable PoW" \
+                "2)" "Disable PoW" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    iotaBeePowEnabled=true
+                    if [ -f "/usr/bin/iota-bee" ]; then
+                        source $iotaBeeConfigParsers/iotaBeePowEnabled
+                    fi
+                    sudo sed -i 's/^iotaBeePowEnabled=.*/iotaBeePowEnabled='$iotaBeePowEnabled'/' $swarmConfigs/iota-bee.cfg
+                    whiptail --title "Bee [IOTA] PoW" --msgbox "PoW has been enabled!" 8 65
+                ;;
+                "2)")
+                    iotaBeePowEnabled=false
+                    if [ -f "/usr/bin/iota-bee" ]; then
+                        source $iotaBeeConfigParsers/iotaBeePowEnabled
+                    fi
+                    sudo sed -i 's/^iotaBeePowEnabled=.*/iotaBeePowEnabled='$iotaBeePowEnabled'/' $swarmConfigs/iota-bee.cfg
+                    whiptail --title "Bee [IOTA] PoW" --msgbox "PoW has been disabeld!!" 8 65
+                ;;
+            esac
+        ;;
+        "7)")
+            source $swarmConfigs/iota-bee.cfg
+            currentIotaBeeSnapshotInterval=$iotaBeeSnapshotInterval
+            iotaBeeSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $iotaBeeSnapshotInterval --title "Bee [IOTA] Snapshots" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ $exitStatus != 1 ]; then
+                if [ ! -z "$iotaBeeSnapshotInterval" ] && [ $iotaBeeSnapshotInterval -eq $iotaBeeSnapshotInterval ] 2>/dev/null; then
+                    if [ -f "/usr/bin/iota-bee" ]; then
+                        source $iotaBeeConfigParsers/iotaBeeSnapshotInterval
+                    fi
+                    if [ "$currentIotaBeeSnapshotInterval" != "$iotaBeeSnapshotInterval" ]; then
+                        sudo sed -i 's/^iotaBeeSnapshotInterval=.*/iotaBeeSnapshotInterval='$iotaBeeSnapshotInterval'/' $swarmConfigs/iota-bee.cfg
+                        whiptail --title "Bee [IOTA] Snapshots" --msgbox "Snapshot interval changed to $iotaBeeSnapshotInterval milestones!" 8 65
+                    else
+                        whiptail --title "Bee [IOTA] Snapshots" --msgbox "No new snapshot interval detected!" 8 65
+                    fi
+                    unset newIotaBeeSnapshotInterval
+                fi
+            fi
+        ;;
+        "8)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $swarmConfigs/iota-bee.cfg
+                CHOICE=$(
+                    whiptail --title "Bee [IOTA] p2pIdentity" --menu "\nChoose an option" 24 65 0 \
+                    "1)" "Set p2pIdentity" \
+                    "2)" "Generate p2pIdentity" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        source $swarmConfigs/iota-bee.cfg
+                        currentIotaBeeIdentity=$iotaBeeIdentity
+                        iotaBeeIdentity=$(whiptail --inputbox "\nSet your own private key for the node identity" 10 65 --title "Bee [IOTA] Indentity" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ $exitStatus != 1 ]; then
+                            if [ "$iotaBeeIdentity" != "$currentIotaBeeIdentity" ] && [ ! -z "$iotaBeeIdentity" ]; then
+                                if [ -f "/usr/bin/iota-bee" ]; then
+                                    source $iotaBeeConfigParsers/iotaBeeIdentity
+                                fi
+                                sudo sed -i 's~^iotaBeeIdentity=.*~iotaBeeIdentity="'$iotaBeeIdentity'"~' $swarmConfigs/iota-bee.cfg
+                                whiptail --title "Bee [IOTA] p2pIdentity" --msgbox "The following Identity key was set: \n$iotaBeeIdentity!" 10 65
+                            fi
+                        fi
+                    ;;
+                    "2)")
+                        if [ -f "/usr/bin/iota-bee" ]; then
+                            if (whiptail --title "Bee [IOTA] Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
+                                iotaBeeResetIdentity=true
+                                source $iotaBeeConfigParsers/iotaBeeIdentity
+                                whiptail --title "Bee [IOTA] Identity" --msgbox "The following Identity key was set: \n$iotaBeeIdentity" 12 65
+                                source $swarmConfigs/iota-bee.cfg
+                                unset iotaBeeResetIdentity
+                            fi
+                        else
+                            whiptail --title "Bee [IOTA] Identity" --msgbox "Please install Bee first." 10 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "9)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $swarmConfigs/iota-bee.cfg
+                if [ "$iotaBeeAutopeeringEnabled" = "true" ]; then
+                    iotaBeeAutopeeringEnabledMenu="Disable"
+                else
+                    iotaBeeAutopeeringEnabledMenu="Enable"
+                fi
+                CHOICE=$(
+                    whiptail --title "Bee [IOTA] Autopeering" --menu "\nChoose an option" 24 65 0 \
+                    "1)" "$iotaBeeAutopeeringEnabledMenu autopeering" \
+                    "2)" "Set max discovered peers" \
+                    "3)" "Set autopeering port" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ "$iotaBeeAutopeeringEnabled" = "true" ]; then
+                            iotaBeeAutopeeringEnabledMenu="disable"
+                        else
+                            iotaBeeAutopeeringEnabledMenu="enable"
+                        fi
+                        if (whiptail --title "Bee [IOTA] Autopeering" --yesno --defaultno "Are you sure you want to $iotaBeeAutopeeringEnabledMenu autopeering?" 8 65); then
+                            if [ "$iotaBeeAutopeeringEnabled" = "true" ]; then
+                                iotaBeeAutopeeringEnabled=false
+                                sudo sed -i 's/^iotaBeeAutopeeringEnabled=.*/iotaBeeAutopeeringEnabled='$iotaBeeAutopeeringEnabled'/' $swarmConfigs/iota-bee.cfg
+                                if [ -f "/usr/bin/iota-bee" ]; then
+                                    source $iotaBeeConfigParsers/iotaBeeAutopeering
+                                fi
+                                whiptail --title "Bee [IOTA] Autopeering" --msgbox "Autopeering has been disabled." 8 65
+                            else
+                                iotaBeeAutopeeringEnabled=true
+                                sudo sed -i 's/^iotaBeeAutopeeringEnabled=.*/iotaBeeAutopeeringEnabled='$iotaBeeAutopeeringEnabled'/' $swarmConfigs/iota-bee.cfg
+                                if [ -f "/usr/bin/iota-bee" ]; then
+                                    source $iotaBeeConfigParsers/iotaBeeAutopeering
+                                fi
+                                whiptail --title "Bee [IOTA] Autopeering" --msgbox "Autopeering has been enabled." 8 65
+                            fi
+                        fi
+                    ;;
+                    "2)")
+                        source $swarmConfigs/iota-bee.cfg
+                        currentIotaBeeMaxDiscoveredPeers=$iotaBeeMaxDiscoveredPeers
+                        iotaBeeMaxDiscoveredPeers=$(whiptail --inputbox "\nSet the max amount of discovered peers via autopeering." 10 65 $iotaBeeMaxDiscoveredPeers --title "Bee [IOTA] Autopeering" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ $exitStatus != 1 ]; then
+                            if [ ! -z "$iotaBeeMaxDiscoveredPeers" ] && [ $currentIotaBeeMaxDiscoveredPeers -ne $iotaBeeMaxDiscoveredPeers ] && [ $iotaBeeMaxDiscoveredPeers -eq $iotaBeeMaxDiscoveredPeers ] 2>/dev/null; then
+                                if [ -f "/usr/bin/iota-bee" ]; then
+                                    source $iotaBeeConfigParsers/iotaBeeMaxDiscoveredPeers
+                                fi
+                                sudo sed -i 's/^iotaBeeMaxDiscoveredPeers=.*/iotaBeeMaxDiscoveredPeers='$iotaBeeMaxDiscoveredPeers'/' $swarmConfigs/iota-bee.cfg
+                                whiptail --title "Bee [IOTA] Autopeering" --msgbox "Max amount of autodiscovered peeers set to $iotaBeeMaxDiscoveredPeers." 8 65
+                            fi
+                        fi
+                    ;;
+                    "3)")
+                        source $swarmConfigs/iota-bee.cfg
+                        currentIotaBeeAutopeeringPort=$iotaBeeAutopeeringPort
+                        iotaBeeAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port." 10 65 $iotaBeeAutopeeringPort --title "Bee [IOTA] Autopeering" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ $exitStatus != 1 ]; then
+                            if [ ! -z "$iotaBeeAutopeeringPort" ] && [ $currentIotaBeeAutopeeringPort -ne $iotaBeeAutopeeringPort ] && [ $iotaBeeAutopeeringPort -eq $iotaBeeAutopeeringPort ] 2>/dev/null; then
+                                if [ -f "/usr/bin/iota-bee" ]; then
+                                    if [ "$ufw" = "true" ]; then
+                                        sudo ufw delete allow $currentIotaBeeAutopeeringPort/udp > /dev/null 2>&1
+                                        sudo ufw allow $iotaBeeAutopeeringPort/udp > /dev/null 2>&1
+                                    fi
+                                    source $iotaBeeConfigParsers/iotaBeeAutopeering
+                                fi
+                                sudo sed -i 's/^iotaBeeAutopeeringPort=.*/iotaBeeAutopeeringPort='$iotaBeeAutopeeringPort'/' $swarmConfigs/iota-bee.cfg
+                                whiptail --title "Bee [IOTA] Autopeering" --msgbox "Autopeering port set to \"$iotaBeeAutopeeringPort/udp\"!" 8 65
+                            fi
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "10)")
+            source $swarmConfigs/iota-bee.cfg
+            currentIotaBeeGossipPort=$iotaBeeGossipPort
+            iotaBeeGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $iotaBeeGossipPort --title "Bee [IOTA] Gossip" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ $exitStatus != 1 ]; then
+                if [ ! -z "$iotaBeeGossipPort" ] && [ $currentIotaBeeGossipPort -ne $iotaBeeGossipPort ] && [ $iotaBeeGossipPort -eq $iotaBeeGossipPort ] 2>/dev/null; then
+                    if [ -f "/usr/bin/iota-bee" ]; then
+                        if [ "$ufw" = "true" ]; then
+                            sudo ufw delete allow $currentIotaBeeGossipPort/tcp > /dev/null 2>&1
+                            sudo ufw allow $iotaBeeGossipPort/tcp > /dev/null 2>&1
+                        fi
+                        source $iotaBeeConfigParsers/iotaBeeGossipPort
+                    fi
+                    sudo sed -i 's/^iotaBeeGossipPort=.*/iotaBeeGossipPort='$iotaBeeGossipPort'/' $swarmConfigs/iota-bee.cfg
+                    whiptail --title "Bee [IOTA] Gossip" --msgbox "Gossip port set to \"$iotaBeeGossipPort/tcp\"!" 8 65
+                fi
+            fi
+        ;;
+        "11)")
+            source $swarmConfigs/iota-bee.cfg
+            currentIotaBeeMaxUnknownPeers=$iotaBeeMaxUnknownPeers
+            iotaBeeMaxUnknownPeers=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentIotaBeeMaxUnknownPeers --title "Bee [IOTA] Gossip" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ $exitStatus != 1 ]; then
+                if [ $currentIotaBeeMaxUnknownPeers -ne $iotaBeeMaxUnknownPeers ] && [ $iotaBeeMaxUnknownPeers -eq $iotaBeeMaxUnknownPeers ] 2>/dev/null; then
+                    if [ -f "/usr/bin/iota-bee" ]; then
+                        source $iotaBeeConfigParsers/iotaBeeMaxUnknownPeers
+                    fi
+                    sudo sed -i 's/^iotaBeeMaxUnknownPeers=.*/iotaBeeMaxUnknownPeers='$iotaBeeMaxUnknownPeers'/' $swarmConfigs/iota-bee.cfg
+                    whiptail --title "Bee [IOTA] Gossip" --msgbox "Maximum of unknown neighbors set to \"$iotaBeeMaxUnknownPeers\"!" 8 65
+                fi
+            fi
+        ;;
+        "12)")
+            source $swarmConfigs/iota-bee.cfg
+            # Bee Networks
+            CHOICE=$(
+                whiptail --title "Bee [IOTA] Network" --menu "\nCurrent network: $iotaBeeNetwork\n\nChoose an option" 24 65 0 \
+                "1)" "Mainnet (default)" \
+                "2)" "Testnet (dev)" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    if (whiptail --title "Bee [IOTA] Network" --yesno --defaultno "Are you sure you want to change the network to \"mainnet\" (the old database will be deleted)?" 8 65); then
+                        currentIotaBeeNetwork=$iotaBeeNetwork
+                        iotaBeeNetwork=mainnet
+                        sudo sed -i 's/^iotaBeeNetwork=.*/iotaBeeNetwork='$iotaBeeNetwork'/' $swarmConfigs/iota-bee.cfg
+                        if [ -f "/usr/bin/iota-bee" ]; then
+                            source $iotaBeeModules/iotaBeeNetwork
+                        fi
+                    fi
+                ;;
+                "2)")
+                    if (whiptail --title "Bee [IOTA] Network" --yesno --defaultno "Are you sure you want to change the network to \"testnet\" (the old database will be deleted)?" 8 65); then
+                        currentIotaBeeNetwork=$iotaBeeNetwork
+                        iotaBeeNetwork=testnet
+                        sudo sed -i 's/^iotaBeeNetwork=.*/iotaBeeNetwork='$iotaBeeNetwork'/' $swarmConfigs/iota-bee.cfg
+                        if [ -f "/usr/bin/iota-bee" ]; then
+                            source $iotaBeeModules/iotaBeeNetwork
+                        fi
+                    fi
+                ;;
+            esac
+        ;;
+        "13)")
+            source $swarmConfigs/iota-bee.cfg
+            # Bee release channel
+            CHOICE=$(
+                whiptail --title "Bee [IOTA] Release" --menu "\nSet \"stable\" for official release or \"beta\"/\"alpha\" for releases under development\n\nChoose an option" 24 65 0 \
+                "1)" "Stable Release Channel (default)" \
+                "2)" "Beta Release Channel" \
+                "3)" "Alpha Release Channel" 3>&2 2>&1 1>&3
+            )
+            case $CHOICE in
+                "1)")
+                    if (whiptail --title "Bee [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"stable\" (Bee will be reinstalled)?" 8 65); then
+                        currentIotaBeeRelease=$iotaBeeRelease
+                        iotaBeeRelease=stable
+                        sudo sed -i 's/^iotaBeeRelease=.*/iotaBeeRelease='$iotaBeeRelease'/' $swarmConfigs/iota-bee.cfg
+                        if [ -f "/usr/bin/iota-bee" ]; then
+                            source $iotaBeeModules/iotaBeeReleaseChannel
+                            source $iotaBeeModules/iotaBeeParser
+                        fi
+                    fi
+                ;;
+                "2)")
+                    if (whiptail --title "Bee [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"beta\" (Bee will be reinstalled)?" 8 65); then
+                        currentIotaBeeRelease=$iotaBeeRelease
+                        iotaBeeRelease=beta
+                        sudo sed -i 's/^iotaBeeRelease=.*/iotaBeeRelease='$iotaBeeRelease'/' $swarmConfigs/iota-bee.cfg
+                        if [ -f "/usr/bin/iota-bee" ]; then
+                            source $iotaBeeModules/iotaBeeReleaseChannel
+                            source $iotaBeeModules/iotaBeeParser
+                        fi
+                    fi
+                ;;
+                "3)")
+                    if (whiptail --title "Bee [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"alpha\" (Bee will be reinstalled)?" 8 65); then
+                        currentIotaBeeRelease=$iotaBeeRelease
+                        iotaBeeRelease=alpha
+                        sudo sed -i 's/^iotaBeeRelease=.*/iotaBeeRelease='$iotaBeeRelease'/' $swarmConfigs/iota-bee.cfg
+                        if [ -f "/usr/bin/iota-bee" ]; then
+                            source $iotaBeeModules/iotaBeeReleaseChannel
+                            source $iotaBeeModules/iotaBeeParser
+                        fi
+                    fi
+                ;;
+            esac
+        ;;
+    esac
+done
+sudo chown -R bee:bee $iotaBeeHome/config*.json
+exitCode=0

@@ -1,0 +1,163 @@
+#!/bin/bash
+
+if [ -f "/usr/bin/bee" ]; then
+    if [ ! -f "/tmp/watchdog.lock" ]; then
+            sudo touch /tmp/watchdog.lock
+    fi
+    if [ -f "/etc/systemd/system/multi-user.target.wants/bee.service" ]; then
+        sudo systemctl disable bee > /dev/null 2>&1
+    fi
+    beeStatus=$(systemctl show -p ActiveState --value bee)
+    if [ "$beeStatus" = "active" ]; then
+        sudo systemctl stop bee > /dev/null 2>&1
+    fi
+    if [ -f "/lib/systemd/system/bee.service" ]; then
+        sudo rm -rf /lib/systemd/system/bee.service
+    fi
+    if [ ! -f "/lib/systemd/system/iota-bee.service" ]; then
+        sudo cp -rf $swarmHome/templates/iota-bee/iota-bee.service /lib/systemd/system/iota-bee.service
+    fi
+    if [ -f "/usr/bin/bee" ]; then
+        sudo mv /usr/bin/bee /usr/bin/iota-bee
+    fi
+    if [ -f "/etc/systemd/system/multi-user.target.wants/iota-bee.service" ]; then
+        sudo systemctl enable iota-bee > /dev/null 2>&1
+    fi
+    if [ -d "/var/lib/bee" ]; then
+        sudo mv /var/lib/bee /var/lib/iota-bee > /dev/null 2>&1
+    fi
+    if [ -f "/etc/default/bee" ]; then
+        sudo mv /etc/default/bee /etc/default/iota-bee
+    fi
+    iotaBeeStatus=$(systemctl show -p ActiveState --value iota-bee)
+    if [ "$iotaBeeStatus" = "active" ]; then
+        sudo systemctl start iota-bee > /dev/null 2>&1
+    fi
+    if [ -f "/etc/nginx/sites-enabled/bee" ]; then
+        sudo mv /etc/nginx/sites-enabled/bee /etc/nginx/sites-enabled/iota-bee
+        sudo systemctl reload nginx > /dev/null 2>&1
+    fi
+    if [ -f "$swarmTmp/bee.cfg" ]; then
+        source $swarmTmp/bee.cfg
+
+            # Upater for Bee.cfg
+        if [ -z "$beeRelease" ]; then
+            iotaBeeRelease=$beeRelease
+        fi
+        ####
+        if [ -z "$beeNetwork" ]; then
+            iotaBeeNetwork=$beeNetwork
+        fi
+        ####
+        if [ -z "$beeAlias" ]; then
+            iotaBeeAlias=$beeAlias
+        fi
+        ####
+        if [ -z "$beeGossipPort" ]; then
+            iotaBeeGossipPort=$beeGossipPort
+        fi
+        ####
+        if [ -z "$beeIdentity" ]; then
+            iotaBeeIdentity=$beeIdentity
+        fi
+        ####
+        if [ -z "$beeMaxUnknownPeers" ]; then
+            iotaBeeMaxUnknownPeers=$beeMaxUnknownPeers
+        fi
+        ####
+        if [ -z "$beePasswordHash" ]; then
+            iotaBeePasswordHash=$beePasswordHash
+        fi
+        ####
+        if [ -z "$beePasswordSalt" ]; then
+            iotaBeePasswordSalt=$beePasswordSalt
+        fi
+        ####
+        if [ -z "$beePowEnabled" ]; then
+            iotaBeePowEnabled=$beePowEnabled
+        fi
+        ####
+        if [ -z "$beePruningDelay" ]; then
+            iotaBeePruningDelay=$beePruningDelay
+        fi
+        ####
+        if [ -z "$beePruningEnabled" ]; then
+            iotaBeePruningEnabled=$beePruningEnabled
+        fi
+        ####
+        if [ -z "$beeSnapshotInterval" ]; then
+            iotaBeeSnapshotInterval=$beeSnapshotInterval
+        fi
+        ####
+        if [ -z "$beeUsername" ]; then
+            iotaBeeUsername=$beeUsername
+        fi
+        ####
+        if [ -z "$beeAutopeeringEnabled" ]; then
+            iotaBeeAutopeeringEnabled=$beeAutopeeringEnabled
+        fi
+        ####
+        if [ -z "$beeAutopeeringPort" ]; then
+            iotaBeeAutopeeringPort=$beeAutopeeringPort
+        fi
+        ####
+        if [ -z "$beeRunAsEntryNode" ]; then
+            iotaBeeRunAsEntryNode=$beeRunAsEntryNode
+        fi
+        ####
+        if [ -z "$beeMaxDiscoveredPeers" ]; then
+            iotaBeeMaxDiscoveredPeers=$beeMaxDiscoveredPeers
+        fi
+        ####
+        if [ -z "$beeApiPublicRoutes" ]; then
+            iotaBeeApiPublicRoutes=$beeApiPublicRoutes
+        fi
+
+        ####
+        # BEE PEERS
+        if [ -z "$beePeer1" ]; then
+            iotaBeePeer1=$beePeer1
+        fi
+        if [ -z "$beePeerAlias1" ]; then
+            iotaBeePeerAlias1=$beePeerAlias1
+        fi
+        ####
+        if [ -z "$beePeer2" ]; then
+            iotaBeePeer2=$beePeer2
+        fi
+        if [ -z "$beePeerAlias2" ]; then
+            iotaBeePeerAlias=$beePeerAlias2
+        fi
+        ####
+        if [ -z "$beePeer3" ]; then
+            iotaBeePeer3=$beePeer3
+        fi
+        if [ -z "$beePeerAlias3" ]; then
+            iotaBeePeerAlias3=$beePeerAlias3
+        fi
+        ####
+        if [ -z "$beePeer4" ]; then
+            iotaBeePeer4=$beePeer4
+        fi
+        if [ -z "$beePeerAlias4" ]; then
+            iotaBeePeerAlias4=$beePeerAlias4
+        fi
+        ####
+        if [ -z "$beePeer5" ]; then
+            iotaBeePeer5=$beePeer5
+        fi
+        if [ -z "$beePeerAlias5" ]; then
+            iotaBeePeerAlias5=$beePeerAlias5
+        fi
+        ####
+        if [ -z "$beePeer6" ]; then
+            iotaBeePeer6=$beePeer6
+        fi
+        if [ -z "$beePeerAlias6" ]; then
+            iotaBeePeerAlias6=$beePeerAlias6
+        fi
+    fi
+    if [ -f "/tmp/watchdog.lock" ]; then
+        sudo rm -rf /tmp/watchdog.lock
+    fi
+fi

@@ -92,8 +92,8 @@ if [ -f "/usr/bin/shimmer-hornet" ] && [ ! -z "$proxyShimmerHornetUrl" ]; then
     fi
 fi
 
-if [ -f "/usr/bin/bee" ] && [ ! -z "$proxyBeeDomain" ]; then
-    if [ ! -d "/etc/letsencrypt/live/$proxyBeeDomain" ]; then
+if [ -f "/usr/bin/iota-bee" ] && [ ! -z "$proxyIotaBeeDomain" ]; then
+    if [ ! -d "/etc/letsencrypt/live/$proxyIotaBeeDomain" ]; then
         if [ -z "$emailAddress" ]; then
             emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
             exitStatus=$?
@@ -112,11 +112,11 @@ if [ -f "/usr/bin/bee" ] && [ ! -z "$proxyBeeDomain" ]; then
                     sudo systemctl restart nginx
                 fi
                 echo 50
-                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyBeeDomain -m $emailAddress > /dev/null 2>&1
+                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyIotaBeeDomain -m $emailAddress > /dev/null 2>&1
                 unset emailaddress
                 echo 100
             } | whiptail --gauge "Requesting SSL certificate for Bee..." 6 65 0
-            if [ ! -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ]; then
+            if [ ! -f "/etc/letsencrypt/live/$proxyIotaBeeDomain/fullchain.pem" ]; then
                 whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Bee not found!" 8 65
             fi
         fi
@@ -266,7 +266,7 @@ if [ ! -f "/etc/nginx/extended-proxy.conf" ]; then
 fi
 
 # Check if the certificate for the domain already exist
-if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
+if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyIotaBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
     {
     echo 0
     echo 10
@@ -313,16 +313,16 @@ if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "
         fi
     fi
     echo 40
-    if [ -f "/usr/bin/bee" ] && [ -f "/etc/letsencrypt/live/$proxyBeeDomain/fullchain.pem" ] && [ ! -z "$proxyBeeDomain" ] && [ ! -z "$proxyBeePort" ]; then
+    if [ -f "/usr/bin/iota-bee" ] && [ -f "/etc/letsencrypt/live/$proxyIotaBeeDomain/fullchain.pem" ] && [ ! -z "$proxyIotaBeeDomain" ] && [ ! -z "$proxyIotaBeePort" ]; then
         if [ -z "$defaultDomain" ]; then
-            defaultDomain="$proxyBeeDomain"
+            defaultDomain="$proxyIotaBeeDomain"
         fi
-        sudo cp -rf $swarmTemplates/proxy/nginx_bee.template /etc/nginx/sites-enabled/bee
-        sudo sed -i 's/domain.tld/'$proxyBeeDomain'/g' /etc/nginx/sites-enabled/bee
-        sudo sed -i 's/443/'$proxyBeePort'/g' /etc/nginx/sites-enabled/bee
+        sudo cp -rf $swarmTemplates/proxy/nginx_iota-bee.template /etc/nginx/sites-enabled/iota-bee
+        sudo sed -i 's/domain.tld/'$proxyIotaBeeDomain'/g' /etc/nginx/sites-enabled/iota-bee
+        sudo sed -i 's/443/'$proxyIotaBeePort'/g' /etc/nginx/sites-enabled/iota-bee
         # sudo sed -i 's/"bee\/dashboard"/"https:\/\/'$proxyBeeDomain':'$proxyBeePort'\/dashboard" target="_blank"/g' $proxySwarmDashboard
         if [ "$ufw" = "true" ]; then
-            sudo ufw allow $proxyBeePort/tcp > /dev/null 2>&1
+            sudo ufw allow $proxyIotaBeePort/tcp > /dev/null 2>&1
         fi
     fi
     echo 45

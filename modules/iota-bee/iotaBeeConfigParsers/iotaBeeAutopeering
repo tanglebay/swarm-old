@@ -1,0 +1,23 @@
+#!/bin/bash
+
+parser="$(jq '.autopeering.enabled' $iotaBeeHome/$iotaBeeConfig.json)"
+if [ "$parser" != "$iotaBeeAutopeeringEnabled" ] && [ ! -z "$iotaBeeAutopeeringEnabled" ]; then
+    sudo jq '.autopeering.enabled = '$iotaBeeAutopeeringEnabled'' $iotaBeeHome/$iotaBeeConfig.json|sponge $iotaBeeHome/$iotaBeeConfig.json
+    restartIotaBee=true
+    echo "iotaBeeAutopeering1" >> /tmp/iotaBeeParsing
+fi
+parser="$(jq '.autopeering.bindAddress' $iotaBeeHome/$iotaBeeConfig.json)"
+parser=$(echo $parser | tr -d '"')
+if [ "$parser" != "0.0.0.0:$iotaBeeAutopeeringPort" ]; then
+    sudo jq '.autopeering.bindAddress = "0.0.0.0:'$iotaBeeAutopeeringPort'"' $iotaBeeHome/$iotaBeeConfig.json|sponge $iotaBeeHome/$iotaBeeConfig.json
+    restartIotaBee=true
+    echo "iotaBeeAutopeering2" >> /tmp/iotaBeeParsing
+fi
+
+if [ "$iotaBeeAutopeeringEnabled" = "true" ] && [ "$ufw" = "true" ]; then
+    sudo ufw allow $iotaBeeAutopeeringPort/udp > /dev/null 2>&1
+else
+    sudo ufw delete allow $iotaBeeAutopeeringPort/udp > /dev/null 2>&1
+fi
+
+unset parser

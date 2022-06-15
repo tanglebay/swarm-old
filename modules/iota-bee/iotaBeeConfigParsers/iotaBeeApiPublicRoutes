@@ -1,0 +1,30 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYiotaBeeApiPublicRoutes <<< "$iotaBeeApiPublicRoutes"
+validateIotaBeeApiPublicRoutes=$(echo "${iotaBeeApiPublicRoutes: -1}")
+if [ "$validateIotaBeeApiPublicRoutes" = "," ]; then
+    iotaBeeApiPublicRoutes="${iotaBeeApiPublicRoutes%?}"
+    sudo sed -i 's~^iotaBeeApiPublicRoutes=.*~iotaBeeApiPublicRoutes="'$iotaBeeApiPublicRoutes'"~' $swarmConfigs/iota-bee.cfg
+    iotaBeeForceApiPublicRoutes=true
+    echo "iotaBeeApiPublicRoutes" >> /tmp/iotaBeeParsing
+fi
+
+parser="$(jq '.restApi.publicRoutes' $iotaBeeHome/$iotaBeeConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+
+
+if [ "$parser" != "$iotaBeeApiPublicRoutes" ] || [ "$iotaBeeForceApiPublicRoutes" = "true" ]; then
+    sudo jq '.restApi.publicRoutes |= []' $iotaBeeHome/$iotaBeeConfig.json|sponge $iotaBeeHome/$iotaBeeConfig.json
+    for iotaBeeApiPublicRoute in "${ARRAYiotaBeeApiPublicRoutes[@]}"
+    do
+        sudo jq '.restApi.publicRoutes |= .+ ["'$iotaBeeApiPublicRoute'"]' $iotaBeeHome/$iotaBeeConfig.json|sponge $iotaBeeHome/$iotaBeeConfig.json
+    done
+    restartIotaBee=true
+    echo "iotaBeeApiPublicRoutes2" >> /tmp/iotaBeeParsing
+fi
+
+if [ -z "$parser" ]; then
+    echo "Empty parsing iotaBeeApiPublicRoutes" >> /tmp/iotaBeeParsing
+fi
+
+unset ARRAYiotaBeeApiPublicRoutes iotaBeeApiPublicRoute iotaBeeForceApiPublicRoutes

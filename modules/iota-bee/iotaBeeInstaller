@@ -1,0 +1,105 @@
+#!/bin/bash
+
+# General
+if ! id bee >/dev/null 2>&1; then
+    useradd --no-create-home --system bee >/dev/null
+fi
+
+if [ ! -d "$iotaBeeHome" ]; then
+    sudo mkdir -p $iotaBeeHome > /dev/null 2>&1
+    sudo chown -R bee:bee $iotaBeeHome > /dev/null 2>&1
+fi
+
+# Install Unzip
+if ! [ -x "$(command -v unzip)" ] > /dev/null 2>&1; then
+    sudo apt -qq install unzip -y > /dev/null 2>&1
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/iota-bee.service" ]; then
+    sudo cp -rf $swarmHome/templates/iota-bee/iota-bee.service /lib/systemd/system/iota-bee.service
+    if [ ! -f "/etc/default/iota-bee" ]; then
+        if [ "$iotaBeeNetwork" = "mainnet" ]; then 
+            echo "OPTIONS=\"--config config.chrysalis-mainnet.json\"" > /etc/default/iota-bee
+        fi
+        if [ "$iotaBeeNetwork" = "comnet" ]; then 
+            echo "OPTIONS=\"--config config.chrysalis-comnet.json\"" > /etc/default/iota-bee
+        fi
+        if [ "$iotaBeeNetwork" = "devnet" ]; then 
+            echo "OPTIONS=\"--config config.chrysalis-devnet.json\"" > /etc/default/iota-bee
+        fi
+    fi
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/iota-bee.service" ]; then
+        sudo systemctl enable iota-bee > /dev/null 2>&1
+    fi
+    sudo systemctl daemon-reload
+fi
+
+##############################################################################################################################################
+
+# Create dir if not exist
+sudo mkdir -p /tmp/iota-bee > /dev/null 2>&1
+
+if [ "$osArchitecture" = "amd64" ]; then
+    # Download latest bee
+    sudo wget -q -O /tmp/iota-bee/bee-node-${latestIotaBeeVersion}-linux-x86-64.zip https://github.com/iotaledger/bee/releases/download/v${latestIotaBeeVersion}/bee-node-${latestIotaBeeVersion}-linux-x86-64.zip
+
+    # Unzip archive
+    if [ -f "/tmp/iota-bee/bee-node-${latestIotaBeeVersion}-linux-x86-64.zip" ]; then
+        sudo unzip /tmp/iota-bee/bee-node-${latestIotaBeeVersion}-linux-x86-64.zip -d /tmp/iota-bee > /dev/null 2>&1
+    fi
+
+    # Copy binary
+    if [ -f "/tmp/iota-bee/bee-node-${latestIotaBeeVersion}-linux-x86-64/bee" ]; then
+        iotaBeeStatus="$(systemctl show -p ActiveState --value iota-bee)"
+        if [ "$iotaBeeStatus" = "active" ]; then
+            sudo systemctl stop iota-bee
+        fi
+
+        sudo cp -rf /tmp/iota-bee/bee-node-${latestIotaBeeVersion}-linux-x86-64/bee /usr/bin/iota-bee > /dev/null 2>&1
+        sudo chmod +x /usr/bin/iota-bee
+        newIotaBeeBinary=true
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newIotaBeeBinary" = "true" ]; then
+    ## Download config
+    ### Mainnet Config
+    sudo wget -q -O /tmp/iota-bee/config.chrysalis-mainnet.json https://github.com/iotaledger/bee/releases/download/v${latestIotaBeeVersion}/config.chrysalis-mainnet.json
+    if [ ! -s "/tmp/iota-bee/config.chrysalis-mainnet.json" ]; then
+        sudo wget -q -O /tmp/iota-bee/config.chrysalis-mainnet.json https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-mainnet.json
+    fi
+    if [ -f "/tmp/iota-bee/config.chrysalis-mainnet.json" ]; then
+        sudo cp -rf /tmp/iota-bee/config.chrysalis-mainnet.json $iotaBeeHome/config.chrysalis-mainnet.json > /dev/null 2>&1
+        newIotaBeeConfig=true
+    fi
+
+    ### Devnet Config
+    sudo wget -q -O /tmp/iota-bee/config.chrysalis-devnet.json https://github.com/iotaledger/bee/releases/download/v${latestIotaBeeVersion}/config.chrysalis-devnet.json
+    if [ ! -s "/tmp/iota-bee/config.chrysalis-devnet.json" ]; then
+        sudo wget -q -O /tmp/iota-bee/config.chrysalis-devnet.json https://raw.githubusercontent.com/iotaledger/bee/chrysalis-pt-2/bee-node/config.chrysalis-devnet.json
+    fi
+    if [ -f "/tmp/iota-bee/config.chrysalis-devnet.json" ]; then
+        sudo cp -rf /tmp/iota-bee/config.chrysalis-devnet.json $iotaBeeHome/config.chrysalis-devnet.json > /dev/null 2>&1
+        newIotaBeeConfig=true
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newIotaBeeConfig" = "true" ]; then
+    # Run installer modules
+    sudo chown -R bee:bee $iotaBeeHome > /dev/null 2>&1
+
+    restartIotaBee=true
+    iotaBeeUpdated=true
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/iota-bee > /dev/null 2>&1
+
+
+unset newIotaBeeBinary
+unset newIotaBeeConfig

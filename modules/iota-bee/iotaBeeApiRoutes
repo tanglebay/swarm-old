@@ -1,0 +1,104 @@
+#!/bin/bash
+
+# Unset VARS
+unset iotaBeeApiPublicRoutes
+
+# /health
+if [[ $iotaBeeApiRoutes = */health* ]]; then
+    iotaBeeApiRoutesHealth=ON
+else
+    iotaBeeApiRoutesHealth=OFF
+    iotaBeeApiPublicRoutes="/health"
+fi
+
+# /mqtt
+if [[ $iotaBeeApiRoutes = */mqtt* ]]; then
+    iotaBeeApiRoutesMqtt=ON
+else
+    iotaBeeApiRoutesMqtt=OFF
+    iotaBeeApiPublicRoutes="$iotaBeeApiPublicRoutes,/mqtt"
+fi
+
+# /api/v1/info
+if [[ $iotaBeeApiRoutes = */api/v1/info* ]]; then
+    iotaBeeApiRoutesInfo=ON
+else
+    iotaBeeApiRoutesInfo=OFF
+    iotaBeeApiPublicRoutes=$(echo "$iotaBeeApiPublicRoutes,/api/v1/info")
+fi
+
+# /api/v1/tips
+if [[ $iotaBeeApiRoutes = */api/v1/tips* ]]; then
+    iotaBeeApiRoutesTips=ON
+else
+    iotaBeeApiRoutesTips=OFF
+    iotaBeeApiPublicRoutes=$(echo "$iotaBeeApiPublicRoutes,/api/v1/tips")
+fi
+
+# /api/v1/messages
+if [[ $iotaBeeApiRoutes = */api/v1/messages\** ]]; then
+    iotaBeeApiRoutesMessages=ON
+else
+    iotaBeeApiRoutesMessages=OFF
+    iotaBeeApiPublicRoutes=$(echo "$iotaBeeApiPublicRoutes,/api/v1/messages,/api/v1/messages/:messageId,/api/v1/messages/:messageId/metadata,/api/v1/messages/:messageId/raw,/api/v1/messages/:messageId/children")
+fi
+
+#/api/v1/transactions
+if [[ $iotaBeeApiRoutes = */api/v1/transactions\** ]]; then
+    iotaBeeApiRoutesTransactions=ON
+else
+    iotaBeeApiRoutesTransactions=OFF
+    iotaBeeApiPublicRoutes=$(echo "$iotaBeeApiPublicRoutes,/api/v1/transactions/:transactionId/included-message")
+fi
+
+#/api/v1/milestones
+if [[ $iotaBeeApiRoutes = */api/v1/milestones\** ]]; then
+    iotaBeeApiRoutesMilestones=ON
+else
+    iotaBeeApiRoutesMilestones=OFF
+    iotaBeeApiPublicRoutes=$(echo "$iotaBeeApiPublicRoutes,/api/v1/milestones/:milestoneIndex,/api/v1/milestones/:milestoneIndex/utxo-changes")
+fi
+
+#/api/v1/outputs
+if [[ $iotaBeeApiRoutes = */api/v1/outputs\** ]]; then
+    iotaBeeApiRoutesOutputs=ON
+else
+    iotaBeeApiRoutesOutputs=OFF
+    iotaBeeApiPublicRoutes=$(echo "$iotaBeeApiPublicRoutes,/api/v1/outputs/:outputId")
+fi
+
+#/api/v1/addresses
+if [[ $iotaBeeApiRoutes = */api/v1/addresses\** ]]; then
+    iotaBeeApiRoutesAddresses=ON
+else
+    iotaBeeApiRoutesAddresses=OFF
+    iotaBeeApiPublicRoutes=$(echo "$iotaBeeApiPublicRoutes,/api/v1/addresses/:address,/api/v1/addresses/ed25519/:address,/api/v1/addresses/:address/outputs,/api/v1/addresses/ed25519/:address/outputs")
+fi
+
+#/api/v1/treasury
+if [[ $iotaBeeApiRoutes = */api/v1/treasury* ]]; then
+    iotaBeeApiRoutesTreasury=ON
+else
+    iotaBeeApiRoutesTreasury=OFF
+    iotaBeeApiPublicRoutes=$(echo "$iotaBeeApiPublicRoutes,/api/v1/treasury")
+fi
+
+#/api/v1/receipts
+if [[ $iotaBeeApiRoutes = */api/v1/receipts\** ]]; then
+    iotaBeeApiRoutesReceipts=ON
+else
+    iotaBeeApiRoutesReceipts=OFF
+    iotaBeeApiPublicRoutes=$(echo "$iotaBeeApiPublicRoutes,/api/v1/receipts,/api/v1/receipts/:milestoneIndex")
+fi
+
+######
+
+iotaBeeApiPublicRoutes=$(echo "$iotaBeeApiPublicRoutes" | tr -s ',,' ',')
+validateIotaBeeApiPublicRoutes=$(echo "${iotaBeeApiPublicRoutes: -1}")
+if [ "$validateIotaBeeApiPublicRoutes" = "," ]; then
+    iotaBeeApiPublicRoutes="${iotaBeeApiPublicRoutes%?}"
+fi
+
+if [ "$iotaBeeUpdateApiRoutes" = "true" ]; then
+    sudo sed -i 's~^iotaBeeApiPublicRoutes=.*~iotaBeeApiPublicRoutes="'$iotaBeeApiPublicRoutes'"~' $swarmConfigs/iota-bee.cfg
+fi

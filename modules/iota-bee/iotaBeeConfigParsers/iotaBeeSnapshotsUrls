@@ -1,0 +1,21 @@
+#!/bin/bash
+if [ "$iotaBeeNetwork" = "mainnet" ] || [ "$iotaBeeNetwork" = "alphanet" ]; then
+    iotaBeeFullSnapshotOld="https://cdn.tanglebay.com/snapshots/mainnet/full_snapshot.bin"
+    iotaBeeDeltaSnapshotOld="https://cdn.tanglebay.com/snapshots/mainnet/delta_snapshot.bin"
+    iotaBeeFullSnapshot="https://cdn.tanglebay.com/snapshots/iota-mainnet/full_snapshot.bin"
+    iotaBeeDeltaSnapshot="https://cdn.tanglebay.com/snapshots/iota-mainnet/delta_snapshot.bin"
+    parser="$(jq '.snapshots.downloadURLs' $iotaBeeHome/config.json)"
+    if [[ $parser = *$iotaBeeFullSnapshotOld* ]] && [[ $parser = *$iotaBeeDeltaSnapshotOld* ]]; then
+        sudo sudo sed -i 's~'$iotaBeeFullSnapshotOld'~'$iotaBeeFullSnapshot'~g' $iotaBeeHome/config.json
+        sudo sudo sed -i 's~'$iotaBeeDeltaSnapshotOld'~'$iotaBeeDeltaSnapshot'~g' $iotaBeeHome/config.json
+        restartIotaBee=true
+        echo "iotaBeeSnapshotUrl" >> /tmp/iotaBeeParsing
+    fi
+    parser="$(jq '.snapshots.downloadURLs' $iotaBeeHome/config.json)"
+    if [[ $parser != *$iotaBeeFullSnapshot* ]] && [[ $parser != *$iotaBeeDeltaSnapshot* ]]; then
+        sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . + {"full": "'$iotaBeeFullSnapshot'","delta": "'$iotaBeeDeltaSnapshot'"}' $iotaBeeHome/config.json|sponge $iotaBeeHome/config.json
+        restartIotaBee=true
+        echo "iotaBeeSnapshotUrl" >> /tmp/iotaBeeParsing
+    fi
+    unset parser iotaBeeFullSnapshot
+fi
