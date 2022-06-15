@@ -1,0 +1,43 @@
+#!/bin/bash
+source $swarmConfigs/latest-versions.cfg
+
+if [ -z "$latestIotaBeeVersion" ] || [ "$latestIotaBeeVersion" = "null" ] || [ "$latestIotaBeeVersion" = "\"\"" ]; then
+    # Latest Bee version
+    if [ "$iotaBeeRelease" = "stable" ]; then
+        latestIotaBeeVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $iotaBeeReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestIotaBeeVersion=$(echo $latestIotaBeeVersion | tr -d 'v')
+    fi
+    if [ "$iotaBeeRelease" = "beta" ]; then
+        latestIotaBeeVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $iotaBeeReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestIotaBeeVersion=$(echo $latestIotaBeeVersion | tr -d 'v')
+    fi
+    if [ "$iotaBeeRelease" = "alpha" ]; then
+        latestIotaBeeVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/bee/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $iotaBeeReleaseVersion | head -n 1)
+        latestIotaBeeVersion=$(echo $latestIotaBeeVersion | tr -d 'v')
+    fi
+    if [ "$latestIotaBeeVersion" = "\"\"" ] || [ -z "$latestIotaBeeVersion" ] || [ "$latestIotaBeeVersion" = "null" ]; then
+        if [ -f "/usr/bin/iota-bee" ]; then
+            latestIotaBeeVersion=$(/usr/bin/iota-bee -v | awk '{ print $2 }')
+        fi
+    fi
+    sudo sed -i 's~^latestIotaBeeVersion=.*~latestIotaBeeVersion="'$latestIotaBeeVersion'"~' $swarmConfigs/latest-versions.cfg
+fi
+
+# Bee version
+if [ -f "/usr/bin/iota-bee" ]; then
+    iotaBeeVersion=$(/usr/bin/iota-bee -v | tr -d 'v"')
+    if [[ $iotaBeeVersion = *rc[0-9]* ]]; then
+        iotaBeeVersion=$(echo $iotaBeeVersion | cut -f1,2 -d"-")
+    else
+        iotaBeeVersion=$(echo $iotaBeeVersion | cut -f1 -d"-")
+    fi
+fi
+
+# Replace var if empty
+if [ -z "$latestIotaBeeVersion" ] || [ "$latestIotaBeeVersion" = "null" ]; then
+    latestIotaBeeVersion=$iotaBeeVersion
+fi
+
+if [ -z "$iotaBeeVersion" ]; then
+    iotaBeeVersion=$latestIotaBeeVersion
+fi
