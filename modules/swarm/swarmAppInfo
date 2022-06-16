@@ -3,44 +3,7 @@
 source $swarmConfigs/latest-versions.cfg
 
 # Get Service Status
-if [ -f "/usr/bin/iota-hornet" ]; then
-    iotaHornetStatus="$(systemctl show -p ActiveState --value iota-hornet)"
-fi
-if [ -f "/usr/bin/shimmer-hornet" ]; then
-    shimmerHornetStatus="$(systemctl show -p ActiveState --value shimmer-hornet)"
-fi
-if [ -f "/usr/bin/iota-bee" ]; then
-    iotaBeeStatus="$(systemctl show -p ActiveState --value iota-bee)"
-fi
-if [ -f "/usr/bin/shimmer-bee" ]; then
-    shimmerBeeStatus="$(systemctl show -p ActiveState --value shimmer-bee)"
-fi
-if [ -f "/usr/bin/goshimmer" ]; then
-    goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
-fi
-if [ -f "/usr/bin/wasp" ]; then
-    waspStatus="$(systemctl show -p ActiveState --value wasp)"
-fi
-
-if [ -f "/usr/bin/iota-inx-indexer" ]; then
-    iotaInxIndexerStatus="$(systemctl show -p ActiveState --value iota-inx-indexer)"
-fi
-if [ -f "/usr/bin/iota-inx-mqtt" ]; then
-    iotaInxMqttStatus="$(systemctl show -p ActiveState --value iota-inx-mqtt)"
-fi
-if [ -f "/usr/bin/iota-inx-participation" ]; then
-    iotaInxParticipationStatus="$(systemctl show -p ActiveState --value iota-inx-participation)"
-fi
-
-if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-    shimmerInxIndexerStatus="$(systemctl show -p ActiveState --value shimmer-inx-indexer)"
-fi
-if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
-    shimmerInxMqttStatus="$(systemctl show -p ActiveState --value shimmer-inx-mqtt)"
-fi
-if [ -f "/usr/bin/shimmer-inx-participation" ]; then
-    shimmerInxParticipationStatus="$(systemctl show -p ActiveState --value shimmer-inx-participation)"
-fi
+source $swarmModules/swarmAppStatus
 
 
 # Hornet Version
@@ -135,6 +98,20 @@ if [ -f "/usr/bin/wasp" ]; then
     fi
 else
     waspVersion="N/A"
+fi
+
+# INX-Dashboard version
+if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+    shimmerInxDashboardVersion=$(cd $shimmerInxDashboardHome ; /usr/bin/shimmer-inx-dashboard -v | awk '{print $2}' | tr -d 'v')
+    if [ -z "$shimmerInxDashboardVersion" ]; then
+        shimmerInxDashboardVersion="N/A"
+    else
+        if [ "$shimmerInxDashboardVersion" != "$latestShimmerInxDashboardVersion" ] && [ ! -z "$latestShimmerInxDashboardVersion" ]; then
+            shimmerInxDashboardVersion="$shimmerInxDashboardVersion (new version \"v$latestShimmerInxDashboardVersion\" available!"
+        fi
+    fi
+else
+    shimmerInxDashboardVersion="N/A"
 fi
 
 # INX-Indexer version
@@ -315,6 +292,10 @@ if [ -f "/usr/bin/wasp" ]; then
     waspAppInfo="WASP\nStatus: $waspStatus\nVersion: $waspVersion\nDatabase: $currentWaspDbSize\n\n"
 fi
 
+if [ -f "/usr/bin/iota-inx-dashboard" ]; then
+    iotaInxDashboardAppInfo="INX-Dashboard\nStatus: $iotaInxDashboardStatus\nVersion: $iotaInxDashboardVersion\n\n"
+fi
+
 if [ -f "/usr/bin/iota-inx-indexer" ]; then
     iotaInxIndexerAppInfo="INX-Indexer\nStatus: $iotaInxIndexerStatus\nVersion: $iotaInxIndexerVersion\nDatabase: $currentIotaInxIndexerDbSize\n\n"
 fi
@@ -325,6 +306,10 @@ fi
 
 if [ -f "/usr/bin/iota-inx-participation" ]; then
     iotaInxarticipationAppInfo="INX-Participation\nStatus: $iotaInxParticipationStatus\nVersion: $iotaInxParticipationVersion\nDatabase: $currentIotaInxParticipationDbSize\n\n"
+fi
+
+if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+    shimmerInxDashboardAppInfo="INX-Dashboard\nStatus: $shimmerInxDashboardStatus\nVersion: $shimmerInxDashboardVersion\n\n"
 fi
 
 if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
@@ -340,4 +325,4 @@ if [ -f "/usr/bin/shimmer-inx-participation" ]; then
 fi
 
 # OUTPUT
-whiptail --scrolltext --title "SWARM - App Info" --msgbox "\n${iotaHornetAppInfo}${shimmerHornetAppInfo}${iotaBeeAppInfo}${shimmerBeeAppInfo}${goshimmerAppInfo}${waspAppInfo}${shimmerInxIndexerAppInfo}${shimmerInxMqttAppInfo}${shimmerInxParticipationAppInfo}" 24 65
+whiptail --scrolltext --title "SWARM - App Info" --msgbox "\n${iotaHornetAppInfo}${shimmerHornetAppInfo}${iotaBeeAppInfo}${shimmerBeeAppInfo}${goshimmerAppInfo}${waspAppInfo}${shimmerInxDashboardAppInfo}${shimmerInxIndexerAppInfo}${shimmerInxMqttAppInfo}${shimmerInxParticipationAppInfo}" 24 65
