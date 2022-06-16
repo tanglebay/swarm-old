@@ -6,7 +6,7 @@ if [ "$exitstatus" != "1" ]; then
     shimmerInxDashboardPassword2=$(whiptail --passwordbox "\nPlease re-enter the password for your dashboard login:" 8 65 --title "INX [SHIMMER] Dashboard" 3>&1 1>&2 2>&3)
     exitstatus=$?
     if [ "$exitstatus" != "1" ]; then
-        if [ "$shimmerInxDashboardHornetPwdGen" = "true" ] && [ -f "/usr/bin/shimmer-hornet" ]; then
+        if [ "$shimmerInxDashboardHornetPwdGen" = "true" ]; then
             if [ ! -z "$shimmerInxDashboardPassword" ] && [ ! -z "$shimmerInxDashboardPassword2" ] && [ "$shimmerInxDashboardPassword" = "$shimmerInxDashboardPassword2" ]; then
                 {
                     echo 0
@@ -22,9 +22,13 @@ if [ "$exitstatus" != "1" ]; then
                     echo 50
                     sudo sed -i 's/^shimmerInxDashboardAuthPasswordSalt=.*/shimmerInxDashboardAuthPasswordSalt="'$shimmerInxDashboardAuthPasswordSalt'"/' $swarmConfigs/shimmer-inx-dashboard.cfg
                     echo 60
-                    source $shimmerInxDashboardConfigParsers/shimmerInxDashboardAuthPasswordHash
+                    if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+                        source $shimmerInxDashboardConfigParsers/shimmerInxDashboardAuthPasswordHash
+                    fi
                     echo 70
-                    source $shimmerInxDashboardConfigParsers/shimmerInxDashboardAuthPasswordSalt
+                    if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+                        source $shimmerInxDashboardConfigParsers/shimmerInxDashboardAuthPasswordSalt
+                    fi
                     echo 80
                     export HORNET_TOOL_PASSWORD=""
                     unset shimmerInxDashboardPassword
@@ -33,7 +37,7 @@ if [ "$exitstatus" != "1" ]; then
                     sleep 0.25
                 } | whiptail --gauge "Please wait while generating Dashboard login..." 8 65 0
                 whiptail --title "INX [SHIMMER] Dashboard" --msgbox "New password created successfully!" 8 65
-                restartShimmerHornet=true
+                restartShimmerInxDashboard=true
             else
                 whiptail --title "INX [SHIMMER] Dashboard" --msgbox "Aborted - Passwords do not match!" 8 65
             fi
