@@ -1,130 +1,130 @@
 #!/bin/bash
 while [ $exitCode -lt 1 ]; do
     clear
-    source $swarmConfigs/shimmer-inx-indexer.cfg
-    if [ "$shimmerInxIndexerUpdateCheck" = "true" ]; then
-        menuShimmerInxIndexerUpdateCheck="Disable"
+    source $swarmConfigs/shimmer-inx-dashboard.cfg
+    if [ "$shimmerInxDashboardUpdateCheck" = "true" ]; then
+        menuShimmerInxDashboardUpdateCheck="Disable"
     else
-        menuShimmerInxIndexerUpdateCheck="Enable"
+        menuShimmerInxDashboardUpdateCheck="Enable"
     fi
-    source $shimmerInxIndexerModules/shimmerInxIndexerConfigs
+    source $shimmerInxDashboardModules/shimmerInxDashboardConfigs
     CHOICE=$(
-        whiptail --title "INX-Indexer [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
+        whiptail --title "INX-Dashboard [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
         "1)" "INX Address" \
         "2)" "Enable Plugins" \
         "3)" "Disable Plugins" \
-        "4)" "$menuShimmerInxIndexerUpdateCheck update check" 3>&2 2>&1 1>&3
+        "4)" "$menuShimmerInxDashboardUpdateCheck update check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
-        if [ "$restartShimmerInxIndexer" = "true" ] && [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-            if (whiptail --title "INX-Indexer [SHIMMER] Menu" --yesno "Would you like to apply the changes and restart INX-Indexer?" 8 65); then
+        if [ "$restartShimmerInxDashboard" = "true" ] && [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+            if (whiptail --title "INX-Dashboard [SHIMMER] Menu" --yesno "Would you like to apply the changes and restart INX-Dashboard?" 8 65); then
                 {
                     echo 0
                     echo 33
-                    source $shimmerInxIndexerModules/shimmerInxIndexerParser
+                    source $shimmerInxDashboardModules/shimmerInxDashboardParser
                     echo 50
-                    sudo systemctl restart shimmer-inx-indexer > /dev/null 2>&1
+                    sudo systemctl restart shimmer-inx-dashboard > /dev/null 2>&1
                     sleep 0.25
                     echo 100
                     sleep 0.25
-                } | whiptail --gauge "Please wait while the changes are applied and INX-Indexer is restarted..." 8 65 0
-                unset restartShimmerInxIndexer
+                } | whiptail --gauge "Please wait while the changes are applied and INX-Dashboard is restarted..." 8 65 0
+                unset restartShimmerInxDashboard
             fi
         fi
     fi
 
     case $CHOICE in
         "1)")
-            source $swarmConfigs/shimmer-inx-indexer.cfg
-            shimmerInxIndexerInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $shimmerInxIndexerInxAddress --title "INX-Indexer [SHIMMER] INX Address" 3>&1 1>&2 2>&3)
+            source $swarmConfigs/shimmer-inx-dashboard.cfg
+            shimmerInxDashboardInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $shimmerInxDashboardInxAddress --title "INX-Dashboard [SHIMMER] INX Address" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
-                if [ ! -z "$shimmerInxIndexerInxAddress" ] && [[ $shimmerInxIndexerInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
-                    source $shimmerInxIndexerConfigParsers/shimmerInxIndexerInxAddress
-                    if [ "$newInxIndexerInxAddress" = "true" ]; then
-                        sudo sed -i 's/^shimmerInxIndexerInxAddress=.*/shimmerInxIndexerInxAddress="'$shimmerInxIndexerInxAddress'"/' $swarmConfigs/shimmer-inx-indexer.cfg
-                        whiptail --title "INX-Indexer [SHIMMER] INX Address" --msgbox "New INX address \"$shimmerInxIndexerInxAddress\" applied!" 8 65
-                        unset newShimmerInxIndexerInxAddress
+                if [ ! -z "$shimmerInxDashboardInxAddress" ] && [[ $shimmerInxDashboardInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                    source $shimmerInxDashboardConfigParsers/shimmerInxDashboardInxAddress
+                    if [ "$newInxDashboardInxAddress" = "true" ]; then
+                        sudo sed -i 's/^shimmerInxDashboardInxAddress=.*/shimmerInxDashboardInxAddress="'$shimmerInxDashboardInxAddress'"/' $swarmConfigs/shimmer-inx-dashboard.cfg
+                        whiptail --title "INX-Dashboard [SHIMMER] INX Address" --msgbox "New INX address \"$shimmerInxDashboardInxAddress\" applied!" 8 65
+                        unset newShimmerInxDashboardInxAddress
                     else
-                        whiptail --title "INX-Indexer [SHIMMER] INX Address" --msgbox "No INX address change detected." 8 65
+                        whiptail --title "INX-Dashboard [SHIMMER] INX Address" --msgbox "No INX address change detected." 8 65
                     fi
                 else
-                    whiptail --title "INX-Indexer [SHIMMER] INX Address" --msgbox "No valid INX address, please try again." 8 65
+                    whiptail --title "INX-Dashboard [SHIMMER] INX Address" --msgbox "No valid INX address, please try again." 8 65
                 fi
             fi
         ;;
         "2)")
-            useShimmerInxIndexerEnablePlugins=true
-            source $swarmConfigs/shimmer-inx-indexer.cfg
-            currentShimmerInxIndexerEnablePlugins=$shimmerInxIndexerEnablePlugins
-            source $shimmerInxIndexerModules/shimmerInxIndexerPlugins
-            shimmerInxIndexerEnablePlugins=$(whiptail --title "INX-Indexer [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the INX-Indexer plugins to be activated:" 24 65 1 \
-                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxIndexerPluginPrometheus 3>&1 1>&2 2>&3)
+            useShimmerInxDashboardEnablePlugins=true
+            source $swarmConfigs/shimmer-inx-dashboard.cfg
+            currentShimmerInxDashboardEnablePlugins=$shimmerInxDashboardEnablePlugins
+            source $shimmerInxDashboardModules/shimmerInxDashboardPlugins
+            shimmerInxDashboardEnablePlugins=$(whiptail --title "INX-Dashboard [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the INX-Dashboard plugins to be activated:" 24 65 1 \
+                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxDashboardPluginPrometheus 3>&1 1>&2 2>&3)
             exitStatus=$?
-            shimmerInxIndexerEnablePlugins=$(echo $shimmerInxIndexerEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$shimmerInxIndexerEnablePlugins" ] || [[ $shimmerInxIndexerEnablePlugins = *prometheus* ]]; then
-                if [ "$shimmerInxIndexerEnablePlugins" != "$currentShimmerInxIndexerEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-                        source $shimmerInxIndexerConfigParsers/shimmerInxIndexerEnablePlugins
+            shimmerInxDashboardEnablePlugins=$(echo $shimmerInxDashboardEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$shimmerInxDashboardEnablePlugins" ] || [[ $shimmerInxDashboardEnablePlugins = *prometheus* ]]; then
+                if [ "$shimmerInxDashboardEnablePlugins" != "$currentShimmerInxDashboardEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+                        source $shimmerInxDashboardConfigParsers/shimmerInxDashboardEnablePlugins
                     fi
-                    sudo sed -i 's/^shimmerInxIndexerEnablePlugins=.*/shimmerInxIndexerEnablePlugins="'$shimmerInxIndexerEnablePlugins'"/' $swarmConfigs/shimmer-inx-indexer.cfg
-                    if [ ! -z "$shimmerInxIndexerEnablePlugins" ]; then
-                        whiptail --title "INX-Indexer [SHIMMER] Plugins" --msgbox "The following plugins are enabled:\n$shimmerInxIndexerEnablePlugins" 14 65
+                    sudo sed -i 's/^shimmerInxDashboardEnablePlugins=.*/shimmerInxDashboardEnablePlugins="'$shimmerInxDashboardEnablePlugins'"/' $swarmConfigs/shimmer-inx-dashboard.cfg
+                    if [ ! -z "$shimmerInxDashboardEnablePlugins" ]; then
+                        whiptail --title "INX-Dashboard [SHIMMER] Plugins" --msgbox "The following plugins are enabled:\n$shimmerInxDashboardEnablePlugins" 14 65
                     else
-                        whiptail --title "INX-Indexer [SHIMMER] Plugins" --msgbox "There are no plugins enabled for INX-Indexer." 8 65
+                        whiptail --title "INX-Dashboard [SHIMMER] Plugins" --msgbox "There are no plugins enabled for INX-Dashboard." 8 65
                     fi
                 fi
-                unset shimmerInxIndexerEnablePlugins
+                unset shimmerInxDashboardEnablePlugins
             fi
-            unset useShimmerInxIndexerEnablePlugins
+            unset useShimmerInxDashboardEnablePlugins
         ;;
         "3)")
-            useShimmerInxIndexerDisablePlugins=true
-            source $swarmConfigs/shimmer-inx-indexer.cfg
-            currentShimmerInxIndexerDisablePlugins=$shimmerInxIndexerDisablePlugins
-            source $shimmerInxIndexerModules/shimmerInxIndexerPlugins
-            shimmerInxIndexerDisablePlugins=$(whiptail --title "INX-Indexer [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the INX-Indexer plugins to be deactivated:" 24 65 1 \
-                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxIndexerPluginPrometheus 3>&1 1>&2 2>&3)
+            useShimmerInxDashboardDisablePlugins=true
+            source $swarmConfigs/shimmer-inx-dashboard.cfg
+            currentShimmerInxDashboardDisablePlugins=$shimmerInxDashboardDisablePlugins
+            source $shimmerInxDashboardModules/shimmerInxDashboardPlugins
+            shimmerInxDashboardDisablePlugins=$(whiptail --title "INX-Dashboard [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the INX-Dashboard plugins to be deactivated:" 24 65 1 \
+                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxDashboardPluginPrometheus 3>&1 1>&2 2>&3)
             exitStatus=$?
-            shimmerInxIndexerDisablePlugins=$(echo $shimmerInxIndexerDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$shimmerInxIndexerDisablePlugins" ] || [[ $shimmerInxIndexerDisablePlugins = *warpsync* ]]; then
-                if [ "$shimmerInxIndexerDisablePlugins" != "$currentShimmerInxIndexerDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-                        source $shimmerInxIndexerConfigParsers/shimmerInxIndexerDisablePlugins
+            shimmerInxDashboardDisablePlugins=$(echo $shimmerInxDashboardDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$shimmerInxDashboardDisablePlugins" ] || [[ $shimmerInxDashboardDisablePlugins = *warpsync* ]]; then
+                if [ "$shimmerInxDashboardDisablePlugins" != "$currentShimmerInxDashboardDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+                        source $shimmerInxDashboardConfigParsers/shimmerInxDashboardDisablePlugins
                     fi
-                    sudo sed -i 's/^shimmerInxIndexerDisablePlugins=.*/shimmerInxIndexerDisablePlugins="'$shimmerInxIndexerDisablePlugins'"/' $swarmConfigs/shimmer-inx-indexer.cfg
-                    if [ ! -z "$shimmerInxIndexerDisablePlugins" ]; then
-                        whiptail --title "INX-Indexer [SHIMMER] Plugins" --msgbox "The following plugins are disabled:\n$shimmerInxIndexerDisablePlugins" 14 65
+                    sudo sed -i 's/^shimmerInxDashboardDisablePlugins=.*/shimmerInxDashboardDisablePlugins="'$shimmerInxDashboardDisablePlugins'"/' $swarmConfigs/shimmer-inx-dashboard.cfg
+                    if [ ! -z "$shimmerInxDashboardDisablePlugins" ]; then
+                        whiptail --title "INX-Dashboard [SHIMMER] Plugins" --msgbox "The following plugins are disabled:\n$shimmerInxDashboardDisablePlugins" 14 65
                     else
-                        whiptail --title "INX-Indexer [SHIMMER] Plugins" --msgbox "There are no plugins disabled for INX-Indexer." 8 65
+                        whiptail --title "INX-Dashboard [SHIMMER] Plugins" --msgbox "There are no plugins disabled for INX-Dashboard." 8 65
                     fi
                 fi
             else
-                unset shimmerInxIndexerDisablePlugins
+                unset shimmerInxDashboardDisablePlugins
             fi
-            unset useShimmerInxIndexerDisablePlugins
+            unset useShimmerInxDashboardDisablePlugins
         ;;
         "4)")
-            source $swarmConfigs/shimmer-inx-indexer.cfg
-            if [ "$shimmerInxIndexerUpdateCheck" = "true" ]; then
-                shimmerInxIndexerUpdateCheckStatus="enabled"
+            source $swarmConfigs/shimmer-inx-dashboard.cfg
+            if [ "$shimmerInxDashboardUpdateCheck" = "true" ]; then
+                shimmerInxDashboardUpdateCheckStatus="enabled"
             else
-                shimmerInxIndexerUpdateCheckStatus="disabled"
+                shimmerInxDashboardUpdateCheckStatus="disabled"
             fi
-            if (whiptail --title "INX-Indexer [SHIMMER] Update Check" --yesno "Would you like to \"$shimmerInxIndexerUpdateCheckStatus\" update check?" 8 65); then
-                if [ "$shimmerInxIndexerUpdateCheck" = "true" ]; then
-                    shimmerInxIndexerUpdateCheck=false
+            if (whiptail --title "INX-Dashboard [SHIMMER] Update Check" --yesno "Would you like to \"$shimmerInxDashboardUpdateCheckStatus\" update check?" 8 65); then
+                if [ "$shimmerInxDashboardUpdateCheck" = "true" ]; then
+                    shimmerInxDashboardUpdateCheck=false
                 else
-                    shimmerInxIndexerUpdateCheck=true
+                    shimmerInxDashboardUpdateCheck=true
                 fi
-                source $shimmerInxIndexerConfigParsers/shimmerInxIndexerUpdateCheck
-                sudo sed -i 's~^shimmerInxIndexerUpdateCheck=.*~shimmerInxIndexerUpdateCheck='$shimmerInxIndexerUpdateCheck'~g' $swarmConfigs/shimmer-inx-indexer.cfg
+                source $shimmerInxDashboardConfigParsers/shimmerInxDashboardUpdateCheck
+                sudo sed -i 's~^shimmerInxDashboardUpdateCheck=.*~shimmerInxDashboardUpdateCheck='$shimmerInxDashboardUpdateCheck'~g' $swarmConfigs/shimmer-inx-dashboard.cfg
             fi
         ;;
     esac
 done
-sudo chown -R inx:inx $shimmerInxIndexerHome/*.json
+sudo chown -R inx:inx $shimmerInxDashboardHome/*.json
 exitCode=0
