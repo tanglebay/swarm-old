@@ -1,0 +1,48 @@
+#!/bin/bash
+
+shimmerInxDashboardPassword=$(whiptail --passwordbox "\nPlease enter a secure password for your dashboard login:" 8 65 --title "INX [SHIMMER] Dashboard" 3>&1 1>&2 2>&3)
+exitstatus=$?
+if [ "$exitstatus" != "1" ]; then
+    shimmerInxDashboardPassword2=$(whiptail --passwordbox "\nPlease re-enter the password for your dashboard login:" 8 65 --title "INX [SHIMMER] Dashboard" 3>&1 1>&2 2>&3)
+    exitstatus=$?
+    if [ "$exitstatus" != "1" ]; then
+        if [ "$shimmerInxDashboardHornetPwdGen" = "true" ]; then
+            if [ ! -z "$shimmerInxDashboardPassword" ] && [ ! -z "$shimmerInxDashboardPassword2" ] && [ "$shimmerInxDashboardPassword" = "$shimmerInxDashboardPassword2" ]; then
+                {
+                    echo 0
+                    export HORNET_TOOL_PASSWORD="$shimmerInxDashboardPassword"
+                    echo 10
+                    shimmerInxDashboardPwdHash=$(/usr/bin/shimmer-hornet tools pwd-hash)
+                    echo 20
+                    shimmerInxDashboardAuthPasswordHash=$(echo $shimmerInxDashboardPwdHash | grep -o "Your hash:.*" | awk '{print $3}')
+                    echo 30
+                    shimmerInxDashboardAuthPasswordSalt=$(echo $shimmerInxDashboardPwdHash | grep -o "Your salt:.*" | awk '{print $3}')
+                    echo 40
+                    sudo sed -i 's/^shimmerInxDashboardAuthPasswordHash=.*/shimmerInxDashboardAuthPasswordHash="'$shimmerInxDashboardAuthPasswordHash'"/' $swarmConfigs/shimmer-inx-dashboard.cfg
+                    echo 50
+                    sudo sed -i 's/^shimmerInxDashboardAuthPasswordSalt=.*/shimmerInxDashboardAuthPasswordSalt="'$shimmerInxDashboardAuthPasswordSalt'"/' $swarmConfigs/shimmer-inx-dashboard.cfg
+                    echo 60
+                    if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+                        source $shimmerInxDashboardConfigParsers/shimmerInxDashboardAuthPasswordHash
+                    fi
+                    echo 70
+                    if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+                        source $shimmerInxDashboardConfigParsers/shimmerInxDashboardAuthPasswordSalt
+                    fi
+                    echo 80
+                    export HORNET_TOOL_PASSWORD=""
+                    unset shimmerInxDashboardPassword
+                    unset shimmerInxDashboardPassword2
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while generating Dashboard login..." 8 65 0
+                whiptail --title "INX [SHIMMER] Dashboard" --msgbox "New password created successfully!" 8 65
+                restartShimmerInxDashboard=true
+            else
+                whiptail --title "INX [SHIMMER] Dashboard" --msgbox "Aborted - Passwords do not match!" 8 65
+            fi
+        fi
+    fi
+fi
+
+unset exitstatus
