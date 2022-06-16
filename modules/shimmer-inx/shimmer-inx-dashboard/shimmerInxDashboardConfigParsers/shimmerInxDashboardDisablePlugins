@@ -1,0 +1,21 @@
+#!/bin/bash
+
+useShimmerInxDashboardDisablePlugins=true
+source $shimmerInxDashboardModules/shimmerInxDashboardPlugins
+
+IFS=', ' read -r -a ARRAYshimmerInxDashboardDisablePlugins <<< "$shimmerInxDashboardDisablePlugins"
+
+parser="$(jq '.app.disablePlugins' $shimmerInxDashboardHome/$shimmerInxDashboardConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$shimmerInxDashboardDisablePlugins" ]; then
+    sudo jq '.app.disablePlugins |= []' $shimmerInxDashboardHome/$shimmerInxDashboardConfig.json|sponge $shimmerInxDashboardHome/$shimmerInxDashboardConfig.json
+    for shimmerInxDashboardDisablePlugin in "${ARRAYshimmerInxDashboardDisablePlugins[@]}"
+    do
+        if [ ! -z "$shimmerInxDashboardDisablePlugin" ]; then
+            sudo jq '.app.disablePlugins |= .+ ["'$shimmerInxDashboardDisablePlugin'"]' $shimmerInxDashboardHome/$shimmerInxDashboardConfig.json|sponge $shimmerInxDashboardHome/$shimmerInxDashboardConfig.json
+        fi
+    done
+    restartShimmerInxDashboard=true
+    echo "shimmerInxDashboardDisablePlugins" >> /tmp/shimmerInxDashboardParsing
+fi
+unset ARRAYshimmerInxDashboardDisablePlugins shimmerInxDashboardDisablePlugin useShimmerInxDashboardDisablePlugins
