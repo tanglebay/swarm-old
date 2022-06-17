@@ -1,17 +1,18 @@
 #!/bin/bash
 while [ $exitCode -lt 1 ]; do
     clear
+    source $swarmConfigs/iota-hornet.cfg
     source $iotaHornetModules/iotaHornetConfigs
     CHOICE=$(
         whiptail --title "Hornet [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
         "1)" "Dashboard" \
         "2)" "API & JWT" \
-        "3)" "Node Alias" \
-        "4)" "DB Pruning" \
-        "5)" "Proof of Work" \
-        "6)" "Local Snapshots" \
-        "7)" "Enable Plugins" \
-        "8)" "Disable Plugins" \
+        "3)" "Enable Plugins" \
+        "4)" "Disable Plugins" \
+        "5)" "Node Alias" \
+        "6)" "DB Pruning" \
+        "7)" "Proof of Work" \
+        "8)" "Local Snapshots" \
         "9)" "P2P Identity" \
         "10)" "Database Revalidation" \
         "11)" "Gossip Port" \
@@ -198,23 +199,81 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "3)")
-            if [ -f "/usr/bin/iota-hornet" ]; then
-                iotaHornetAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 $iotaHornetAlias --title "Hornet [IOTA] Alias" 3>&1 1>&2 2>&3)
-                if [ ! -z "$iotaHornetAlias" ]; then
-                    source $iotaHornetConfigParsers/iotaHornetAlias
-                    if [ "$newIotaHornetAlias" = "true" ]; then
-                        sudo sed -i 's~^iotaHornetAlias=.*~iotaHornetAlias="'$iotaHornetAlias'"~' $swarmConfigs/iota-hornet.cfg
-                        whiptail --title "Hornet [IOTA] Alias" --msgbox "New alias \"$iotaHornetAlias\" applied!" 8 65
-                        unset newIotaHornetAlias
+            useIotaHornetEnablePlugins=true
+            source $swarmConfigs/iota-hornet.cfg
+            currentIotaHornetEnablePlugins=$iotaHornetEnablePlugins
+            source $iotaHornetModules/iotaHornetPlugins
+            iotaHornetEnablePlugins=$(whiptail --title "Hornet [IOTA] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be activated:" 24 65 4 \
+                "Autopeering" "plugin for automatic peering" $iotaHornetPluginAutopeering \
+                "Participation" "plugin for voting/staking" $iotaHornetPluginParticipation \
+                "MQTT" "plugin to stream messages" $iotaHornetPluginMqtt \
+                "Prometheus" "plugin is used for metrics e.g. in Grafana" $iotaHornetPluginPrometheus 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            iotaHornetEnablePlugins=$(echo $iotaHornetEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$iotaHornetEnablePlugins" ] || [[ $iotaHornetEnablePlugins = *autopeering* ]] || [[ $iotaHornetEnablePlugins = *participation* ]] || [[ $iotaHornetEnablePlugins = *mqtt* ]] || [[ $iotaHornetEnablePlugins = *prometheus* ]]; then
+                if [ "$iotaHornetEnablePlugins" != "$currentIotaHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/iota-hornet" ]; then
+                        source $iotaHornetConfigParsers/iotaHornetEnablePlugins
+                    fi
+                    sudo sed -i 's/^iotaHornetEnablePlugins=.*/iotaHornetEnablePlugins="'$iotaHornetEnablePlugins'"/' $swarmConfigs/iota-hornet.cfg
+                    if [ ! -z "$iotaHornetEnablePlugins" ]; then
+                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "The following plugins are enabled:\n$iotaHornetEnablePlugins" 14 65
                     else
-                        whiptail --title "Hornet [IOTA] Alias" --msgbox "No node alias change detected!" 8 65
+                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "There are no plugins enabled for Hornet!" 8 65
+                    fi
+                fi
+                unset iotaHornetEnablePlugins
+            fi
+            unset useIotaHornetEnablePlugins
+        ;;
+        "4)")
+            useIotaHornetDisablePlugins=true
+            source $swarmConfigs/iota-hornet.cfg
+            currentIotaHornetDisablePlugins=$iotaHornetDisablePlugins
+            source $iotaHornetModules/iotaHornetPlugins
+            iotaHornetDisablePlugins=$(whiptail --title "Hornet [IOTA] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be deactivated:" 24 65 1 \
+                "Warpsync" "plugin to sync more faster" $iotaHornetPluginWarpsync 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            iotaHornetDisablePlugins=$(echo $iotaHornetDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$iotaHornetDisablePlugins" ] || [[ $iotaHornetDisablePlugins = *warpsync* ]]; then
+                if [ "$iotaHornetDisablePlugins" != "$currentIotaHornetDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/iota-hornet" ]; then
+                        source $iotaHornetConfigParsers/iotaHornetDisablePlugins
+                    fi
+                    sudo sed -i 's/^iotaHornetDisablePlugins=.*/iotaHornetDisablePlugins="'$iotaHornetDisablePlugins'"/' $swarmConfigs/iota-hornet.cfg
+                    if [ ! -z "$iotaHornetDisablePlugins" ]; then
+                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "The following plugins are disabled:\n$iotaHornetDisablePlugins" 14 65
+                    else
+                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "There are no plugins disabled for Hornet!" 8 65
+                    fi
+                fi
+            else
+                unset iotaHornetDisablePlugins
+            fi
+            unset useIotaHornetDisablePlugins
+        ;;
+        "5)")
+            if [ -f "/usr/bin/iota-hornet" ]; then
+                iotaHornetAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 --title "Hornet [IOTA] Alias" 3>&1 1>&2 2>&3)
+                if [ ! -z "$iotaHornetAlias" ]; then
+                    sudo sed -i 's~^iotaHornetAlias=.*~iotaHornetAlias="'"$iotaHornetAlias"'"~' $swarmConfigs/iota-hornet.cfg
+                    if [ -f "/usr/bin/iota-hornet" ]; then
+                        source $iotaHornetConfigParsers/iotaHornetAlias
+                        if [ "$newIotaHornetAlias" = "true" ]; then
+                            whiptail --title "Hornet [IOTA] Alias" --msgbox "New alias \"$iotaHornetAlias\" applied!" 8 65
+                            unset newIotaHornetAlias
+                        else
+                            whiptail --title "Hornet [IOTA] Alias" --msgbox "No node alias change detected!" 8 65
+                        fi
+                    else
+                        whiptail --title "Hornet [IOTA] Alias" --msgbox "Alias \"$iotaHornetAlias\" applied!" 8 65
                     fi
                 fi
             else
                 whiptail --title "Hornet [IOTA] Alias" --msgbox "Please install Hornet (IOTA) first." 8 65
             fi
         ;;
-        "4)")
+        "6)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/iota-hornet.cfg
@@ -312,7 +371,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "5)")
+        "7)")
             source $swarmConfigs/iota-hornet.cfg
             if [ "$iotaHornetPowEnabled" = "true" ]; then
                 iotaHornetPowEnabledStatus=enabled
@@ -347,7 +406,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
-        "6)")
+        "8)")
             source $swarmConfigs/iota-hornet.cfg
             currentIotaHornetSnapshotInterval=$iotaHornetSnapshotInterval
             iotaHornetSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $iotaHornetSnapshotInterval --title "Hornet [IOTA] Snapshots" 3>&1 1>&2 2>&3)
@@ -365,60 +424,6 @@ while [ $exitCode -lt 1 ]; do
                     fi
                 fi
             fi
-        ;;
-        "7)")
-            useIotaHornetEnablePlugins=true
-            source $swarmConfigs/iota-hornet.cfg
-            currentIotaHornetEnablePlugins=$iotaHornetEnablePlugins
-            source $iotaHornetModules/iotaHornetPlugins
-            iotaHornetEnablePlugins=$(whiptail --title "Hornet [IOTA] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be activated:" 24 65 4 \
-                "Autopeering" "plugin for automatic peering" $iotaHornetPluginAutopeering \
-                "Participation" "plugin for voting/staking" $iotaHornetPluginParticipation \
-                "MQTT" "plugin to stream messages" $iotaHornetPluginMqtt \
-                "Prometheus" "plugin is used for metrics e.g. in Grafana" $iotaHornetPluginPrometheus 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            iotaHornetEnablePlugins=$(echo $iotaHornetEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$iotaHornetEnablePlugins" ] || [[ $iotaHornetEnablePlugins = *autopeering* ]] || [[ $iotaHornetEnablePlugins = *participation* ]] || [[ $iotaHornetEnablePlugins = *mqtt* ]] || [[ $iotaHornetEnablePlugins = *prometheus* ]]; then
-                if [ "$iotaHornetEnablePlugins" != "$currentIotaHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/iota-hornet" ]; then
-                        source $iotaHornetConfigParsers/iotaHornetEnablePlugins
-                    fi
-                    sudo sed -i 's/^iotaHornetEnablePlugins=.*/iotaHornetEnablePlugins="'$iotaHornetEnablePlugins'"/' $swarmConfigs/iota-hornet.cfg
-                    if [ ! -z "$iotaHornetEnablePlugins" ]; then
-                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "The following plugins are enabled:\n$iotaHornetEnablePlugins" 14 65
-                    else
-                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "There are no plugins enabled for Hornet!" 8 65
-                    fi
-                fi
-                unset iotaHornetEnablePlugins
-            fi
-            unset useIotaHornetEnablePlugins
-        ;;
-        "8)")
-            useIotaHornetDisablePlugins=true
-            source $swarmConfigs/iota-hornet.cfg
-            currentIotaHornetDisablePlugins=$iotaHornetDisablePlugins
-            source $iotaHornetModules/iotaHornetPlugins
-            iotaHornetDisablePlugins=$(whiptail --title "Hornet [IOTA] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be deactivated:" 24 65 1 \
-                "Warpsync" "plugin to sync more faster" $iotaHornetPluginWarpsync 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            iotaHornetDisablePlugins=$(echo $iotaHornetDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$iotaHornetDisablePlugins" ] || [[ $iotaHornetDisablePlugins = *warpsync* ]]; then
-                if [ "$iotaHornetDisablePlugins" != "$currentIotaHornetDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/iota-hornet" ]; then
-                        source $iotaHornetConfigParsers/iotaHornetDisablePlugins
-                    fi
-                    sudo sed -i 's/^iotaHornetDisablePlugins=.*/iotaHornetDisablePlugins="'$iotaHornetDisablePlugins'"/' $swarmConfigs/iota-hornet.cfg
-                    if [ ! -z "$iotaHornetDisablePlugins" ]; then
-                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "The following plugins are disabled:\n$iotaHornetDisablePlugins" 14 65
-                    else
-                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "There are no plugins disabled for Hornet!" 8 65
-                    fi
-                fi
-            else
-                unset iotaHornetDisablePlugins
-            fi
-            unset useIotaHornetDisablePlugins
         ;;
         "9)")
             while [ $exitCode -lt 1 ]; do
