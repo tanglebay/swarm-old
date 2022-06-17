@@ -1,6 +1,7 @@
 #!/bin/bash
 while [ $exitCode -lt 1 ]; do
     clear
+    source $swarmConfigs/shimmer-hornet.cfg
     source $shimmerHornetModules/shimmerHornetConfigs
     CHOICE=$(
         whiptail --title "Hornet [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
@@ -161,11 +162,16 @@ while [ $exitCode -lt 1 ]; do
                 "Indexer" "(INX) plugin to index the ledger" $shimmerHornetPluginIndexer \
                 "Participation" "(INX) plugin for voting/staking" $shimmerHornetPluginParticipation \
                 "MQTT" "(INX) plugin to stream messages" $shimmerHornetPluginMqtt \
-                "Prometheus" "plugin for metrics e.g. Grafana" $shimmerHornetPluginPrometheus 3>&1 1>&2 2>&3)
+                "Prometheus" "plugin is used for metrics e.g. in Grafana" $shimmerHornetPluginPrometheus 3>&1 1>&2 2>&3)
             exitStatus=$?
             shimmerHornetEnablePlugins=$(echo $shimmerHornetEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            source $shimmerHornetModules/shimmerHornetPlugins
             if [ -z "$shimmerHornetEnablePlugins" ] || [[ $shimmerHornetEnablePlugins = *autopeering* ]] || [[ $shimmerHornetEnablePlugins = *inx* ]] || [[ $shimmerHornetEnablePlugins = *dashboard* ]] || [[ $shimmerHornetEnablePlugins = *indexer* ]] || [[ $shimmerHornetEnablePlugins = *participation* ]] || [[ $shimmerHornetEnablePlugins = *mqtt* ]] || [[ $shimmerHornetEnablePlugins = *prometheus* ]]; then
+                if [[ $shimmerHornetEnablePlugins = *dashboard* ]]; then
+                    source $proxyModules/proxyShimmerDashboard
+                fi
+                if [[ $shimmerHornetEnablePlugins = *mqtt* ]]; then
+                    source $proxyModules/proxyShimmerMqtt
+                fi
                 if [ "$shimmerHornetEnablePlugins" != "$currentShimmerHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
                     if [ -f "/usr/bin/shimmer-hornet" ]; then
                         source $shimmerHornetConfigParsers/shimmerHornetEnablePlugins
