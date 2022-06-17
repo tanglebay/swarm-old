@@ -1,7 +1,6 @@
 #!/bin/bash
 while [ $exitCode -lt 1 ]; do
     clear
-    source $swarmConfigs/shimmer-hornet.cfg
     source $shimmerHornetModules/shimmerHornetConfigs
     CHOICE=$(
         whiptail --title "Hornet [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
@@ -165,19 +164,21 @@ while [ $exitCode -lt 1 ]; do
                 "Prometheus" "plugin is used for metrics e.g. in Grafana" $shimmerHornetPluginPrometheus 3>&1 1>&2 2>&3)
             exitStatus=$?
             shimmerHornetEnablePlugins=$(echo $shimmerHornetEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            source $shimmerHornetModules/shimmerHornetPlugins
-            if [ "$shimmerHornetEnablePlugins" != "$currentShimmerHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; 
-                sudo sed -i 's/^shimmerHornetEnablePlugins=.*/shimmerHornetEnablePlugins="'$shimmerHornetEnablePlugins'"/' $swarmConfigs/shimmer-hornet.cfg
-                if [ -f "/usr/bin/shimmer-hornet" ]; then
-                    source $shimmerHornetConfigParsers/shimmerHornetEnablePlugins
+            if [ -z "$shimmerHornetEnablePlugins" ] || [[ $shimmerHornetEnablePlugins = *autopeering* ]] || [[ $shimmerHornetEnablePlugins = *inx* ]] || [[ $shimmerHornetEnablePlugins = *dashboard* ]] || [[ $shimmerHornetEnablePlugins = *indexer* ]] || [[ $shimmerHornetEnablePlugins = *participation* ]] || [[ $shimmerHornetEnablePlugins = *mqtt* ]] || [[ $shimmerHornetEnablePlugins = *prometheus* ]]; then
+                if [ "$shimmerHornetEnablePlugins" != "$currentShimmerHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/shimmer-hornet" ]; then
+                        source $shimmerHornetConfigParsers/shimmerHornetEnablePlugins
+                    fi
+                    sudo sed -i 's/^shimmerHornetEnablePlugins=.*/shimmerHornetEnablePlugins="'$shimmerHornetEnablePlugins'"/' $swarmConfigs/shimmer-hornet.cfg
+                    if [ ! -z "$shimmerHornetEnablePlugins" ]; then
+                        whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "The following plugins are enabled:\n$shimmerHornetEnablePlugins" 24 65
+                    else
+                        whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "There are no plugins enabled for Hornet." 8 65
+                    fi
                 fi
-                if [ ! -z "$shimmerHornetEnablePlugins" ]; then
-                    whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "The following plugins are enabled:\n$shimmerHornetEnablePlugins" 24 65
-                else
-                    whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "There are no plugins enabled for Hornet." 8 65
-                fi
+                unset shimmerHornetEnablePlugins
             fi
-            unset shimmerHornetEnablePlugins
+            unset useShimmerHornetEnablePlugins
         ;;
         "3)")
             useShimmerHornetDisablePlugins=true
@@ -491,9 +492,9 @@ while [ $exitCode -lt 1 ]; do
             fi
         ;;
         "12)")
-            shimmerHornetAlias=$(whiptail --inputbox "\nDefine an alias of your node" 10 65 --title "Hornet [SHIMMER] Alias" 3>&1 1>&2 2>&3)
+            shimmerHornetAlias=$(whiptail --inputbox "\nDefine an alias of your node" 10 65 $shimmerHornetAlias --title "Hornet [SHIMMER] Alias" 3>&1 1>&2 2>&3)
             if [ ! -z "$shimmerHornetAlias" ]; then
-                sudo sed -i 's~^shimmerHornetAlias=.*~shimmerHornetAlias="'"$shimmerHornetAlias"'"~' $swarmConfigs/shimmer-hornet.cfg
+                sudo sed -i 's~^shimmerHornetAlias=.*~shimmerHornetAlias="'$shimmerHornetAlias'"~' $swarmConfigs/shimmer-hornet.cfg
                 if [ -f "/usr/bin/shimmer-hornet" ]; then
                     source $shimmerHornetConfigParsers/shimmerHornetAlias
                     if [ "$newShimmerHornetAlias" = "true" ]; then
@@ -505,8 +506,6 @@ while [ $exitCode -lt 1 ]; do
                 else
                     whiptail --title "Hornet [SHIMMER] Alias" --msgbox "Alias \"$shimmerHornetAlias\" applied." 8 65
                 fi
-            else
-                unset shimmerHornetAlias
             fi
         ;;
         "13)")
@@ -588,4 +587,3 @@ while [ $exitCode -lt 1 ]; do
     esac
 done
 sudo chown -R hornet:hornet $shimmerHornetHome/*.json
-exitCode=0
