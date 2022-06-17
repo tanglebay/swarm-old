@@ -1,6 +1,12 @@
 #!/bin/bash
 
 if [ -f "/usr/sbin/nginx" ]; then
+    if [ ! -d "/etc/nginx/swarm" ]; then
+        sudo mkdir -p /etc/nginx/swarm
+    fi
+    if [ -f "/etc/nginx/swarm.conf" ]; then
+        sudo mv /etc/nginx/swarm.conf /etc/nginx/swarm/
+    fi
     if [ "$proxySwarmEndpoint" = "true" ]; then
         if [ ! -s /var/www/swarm.json ]; then
             sudo cp -rf $swarmTemplates/swarm/swarm.json /var/www/swarm.json 2>/dev/null
@@ -11,13 +17,13 @@ if [ -f "/usr/sbin/nginx" ]; then
         if [ "$parser" != "$version" ]; then
             sudo jq '.swarm.version = "'$version'"' /var/www/swarm.json|sponge /var/www/swarm.json 2>/dev/null
         fi
-        if [ ! -s /etc/nginx/swarm.conf ]; then
-            sudo cp -rf $swarmTemplates/proxy/nginx_swarm-endpoint.template /etc/nginx/swarm.conf 2>/dev/null
+        if [ ! -s /etc/nginx/swarm/swarm.conf ]; then
+            sudo cp -rf $swarmTemplates/proxy/nginx_swarm-endpoint.template /etc/nginx/swarm/swarm.conf 2>/dev/null
             sudo systemctl reload nginx 2>/dev/null
         fi
     else
-        if [ -s /etc/nginx/swarm.conf ]; then
-            echo -n > /etc/nginx/swarm.conf
+        if [ -s /etc/nginx/swarm/swarm.conf ]; then
+            echo -n > /etc/nginx/swarm/swarm.conf
             sudo systemctl reload nginx 2>/dev/null
         fi
     fi

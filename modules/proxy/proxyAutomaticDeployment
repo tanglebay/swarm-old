@@ -2,19 +2,28 @@
 if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
     # LOAD DOMAIN AND PORT
     source $proxyModules/proxyParser
+    if [ ! -d "/etc/nginx/swarm" ]; then
+        sudo mkdir -p /etc/nginx/swarm
+    fi
 
     # TANGLEBAY stuff
     if [ -f "/etc/nginx/tb-lbs.conf" ]; then
         sudo mv /etc/nginx/tb-lbs.conf /etc/nginx/tb-srv.conf
         sudo chmod 644 /etc/nginx/tb-srv.conf
     fi
-    if [ ! -f "/etc/nginx/tb-srv.conf" ]; then
-        sudo touch /etc/nginx/tb-srv.conf
-        sudo chmod 644 /etc/nginx/tb-srv.conf
+    if [ -f "/etc/nginx/tb-srv.conf" ]; then
+        sudo mv /etc/nginx/tb-srv.conf /etc/nginx/swarm/tb-srv.conf
     fi
-    if [ ! -f "/etc/nginx/extended-proxy.conf" ]; then
-        sudo touch /etc/nginx/extended-proxy.conf
-        sudo chmod 644 /etc/nginx/extended-proxy.conf
+    if [ -f "/etc/nginx/extended-proxy.conf" ]; then
+        sudo mv /etc/nginx/extended-proxy.conf /etc/nginx/swarm/extended-proxy.conf
+    fi
+    if [ ! -f "/etc/nginx/swarm/tb-srv.conf" ]; then
+        sudo touch /etc/nginx/swarm/tb-srv.conf
+        sudo chmod 644 /etc/nginx/swarm/tb-srv.conf
+    fi
+    if [ ! -f "/etc/nginx/swarm/extended-proxy.conf" ]; then
+        sudo touch /etc/nginx/swarm/extended-proxy.conf
+        sudo chmod 644 /etc/nginx/swarm/extended-proxy.conf
     fi
 
     if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyIotaBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerBeeDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
@@ -85,14 +94,17 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
             if [ -z "$defaultDomain" ]; then
                 defaultDomain="$proxyGoshimmerDomain"
             fi
-            if [ ! -d "/etc/nginx/goshimmer" ]; then
-                sudo mkdir -p /etc/nginx/goshimmer
+            if [ -d "/etc/nginx/goshimmer" ]; then
+                sudo mv /etc/nginx/goshimmer /etc/nginx/swarm/goshimmer
             fi
-            if [ ! -f "/etc/nginx/goshimmer/dashboardauth.conf" ]; then
-                sudo echo "" > /etc/nginx/goshimmer/dashboardauth.conf > /dev/null 2>&1
+            if [ ! -d "/etc/nginx/swarm/goshimmer" ]; then
+                sudo mkdir -p /etc/nginx/swarm/goshimmer
             fi
-            if [ ! -f "/etc/nginx/goshimmer/webapiauth.conf" ]; then
-                sudo echo "" > /etc/nginx/goshimmer/webapiauth.conf > /dev/null 2>&1
+            if [ -f "/etc/nginx/swarm/goshimmer/dashboardauth.conf" ]; then
+                sudo echo "" > /etc/nginx/swarm/goshimmer/dashboardauth.conf > /dev/null 2>&1
+            fi
+            if [ ! -f "/etc/nginx/swarm/goshimmer/webapiauth.conf" ]; then
+                sudo echo "" > /etc/nginx/swarm/goshimmer/webapiauth.conf > /dev/null 2>&1
             fi
             sudo cp -rf $swarmTemplates/proxy/nginx_goshimmer.template /etc/nginx/sites-enabled/goshimmer
             sudo sed -i 's/domain.tld/'$proxyGoshimmerDomain'/g' /etc/nginx/sites-enabled/goshimmer
@@ -118,11 +130,15 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
             if [ -z "$defaultDomain" ]; then
                 defaultDomain="$proxyWaspApiDomain"
             fi
-            if [ ! -d "/etc/nginx/wasp" ]; then
-                sudo mkdir -p /etc/nginx/wasp
+            if [ -d "/etc/nginx/wasp" ]; then
+                sudo mkdir -p /etc/nginx/swarm/
+                sudo mv /etc/nginx/wasp /etc/nginx/swarm/wasp
             fi
-            if [ ! -f "/etc/nginx/wasp/webapiauth.conf" ]; then
-                sudo echo "" > /etc/nginx/wasp/webapiauth.conf > /dev/null 2>&1
+            if [ ! -d "/etc/nginx/swarm/wasp" ]; then
+                sudo mkdir -p /etc/nginx/swarm/wasp
+            fi
+            if [ ! -f "/etc/nginx/swarm/wasp/webapiauth.conf" ]; then
+                sudo echo "" > /etc/nginx/wasp/swarm/webapiauth.conf > /dev/null 2>&1
             fi
             sudo cp -rf $swarmTemplates/proxy/nginx_wasp-api.template /etc/nginx/sites-enabled/wasp-api
             sudo sed -i 's/domain.tld/'$proxyWaspApiDomain'/g' /etc/nginx/sites-enabled/wasp-api
@@ -135,9 +151,15 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
         sudo sed -i 's/# server_tokens off;/server_tokens off;/g' /etc/nginx/nginx.conf
         sudo sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
         sudo sed -i 's/domain.tld/'$defaultDomain'/g' /etc/nginx/sites-enabled/default
-        if [ ! -f /etc/nginx/swarm.conf ]; then
-            sudo touch /etc/nginx/swarm.conf > /dev/null 2>&1
+        if [ -f /etc/nginx/swarm.conf ]; then
+            sudo mv /etc/nginx/swarm.conf /etc/nginx/swarm/swarm.conf
+        else
+            if [ ! -f "/etc/nginx/swarm/swarm.conf" ]; then
+                sudo touch /etc/nginx/swarm/swarm.conf > /dev/null 2>&1
+            fi
         fi
+        source $proxyModules/proxyShimmerDashboard
+        source $proxyModules/proxyShimmerMqtt
         source $proxyModules/proxySwarmEndpoint
         sudo systemctl restart nginx > /dev/null 2>&1
     fi
