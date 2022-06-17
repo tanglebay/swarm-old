@@ -5,18 +5,19 @@ while [ $exitCode -lt 1 ]; do
     CHOICE=$(
         whiptail --title "Hornet [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
         "1)" "API & JWT" \
-        "2)" "DB Pruning" \
-        "3)" "Proof of Work" \
-        "4)" "Local Snapshots" \
-        "5)" "Enable Plugins" \
-        "6)" "Disable Plugins" \
+        "2)" "Enable Plugins" \
+        "3)" "Disable Plugins" \
+        "4)" "DB Pruning" \
+        "5)" "Proof of Work" \
+        "6)" "Local Snapshots" \
         "7)" "P2P Identity" \
         "8)" "Database Revalidation" \
         "9)" "Gossip Port" \
         "10)" "Autopeering Port" \
         "11)" "Unknown Peers Limit" \
-        "12)" "IOTA Network" \
-        "13)" "Hornet release Channel" 3>&2 2>&1 1>&3
+        "12)" "Node Alias" \
+        "13)" "IOTA Network" \
+        "14)" "Hornet release Channel" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -149,6 +150,63 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "2)")
+            useShimmerHornetEnablePlugins=true
+            source $swarmConfigs/shimmer-hornet.cfg
+            currentShimmerHornetEnablePlugins=$shimmerHornetEnablePlugins
+            source $shimmerHornetModules/shimmerHornetPlugins
+            shimmerHornetEnablePlugins=$(whiptail --title "Hornet [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be activated:" 24 65 7 \
+                "INX" "plugin to run sub-plugins" $shimmerHornetPluginInx \
+                "Autopeering" "plugin for automatic peering" $shimmerHornetPluginAutopeering \
+                "Dashboard" "(INX) plugin for node webinterface" $shimmerHornetPluginDashboard \
+                "Indexer" "(INX) plugin to index the ledger" $shimmerHornetPluginIndexer \
+                "Participation" "(INX) plugin for voting/staking" $shimmerHornetPluginParticipation \
+                "MQTT" "(INX) plugin to stream messages" $shimmerHornetPluginMqtt \
+                "Prometheus" "plugin is used for metrics e.g. in Grafana" $shimmerHornetPluginPrometheus 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            shimmerHornetEnablePlugins=$(echo $shimmerHornetEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$shimmerHornetEnablePlugins" ] || [[ $shimmerHornetEnablePlugins = *autopeering* ]] || [[ $shimmerHornetEnablePlugins = *inx* ]] || [[ $shimmerHornetEnablePlugins = *dashboard* ]] || [[ $shimmerHornetEnablePlugins = *indexer* ]] || [[ $shimmerHornetEnablePlugins = *participation* ]] || [[ $shimmerHornetEnablePlugins = *mqtt* ]] || [[ $shimmerHornetEnablePlugins = *prometheus* ]]; then
+                if [ "$shimmerHornetEnablePlugins" != "$currentShimmerHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/shimmer-hornet" ]; then
+                        source $shimmerHornetConfigParsers/shimmerHornetEnablePlugins
+                    fi
+                    sudo sed -i 's/^shimmerHornetEnablePlugins=.*/shimmerHornetEnablePlugins="'$shimmerHornetEnablePlugins'"/' $swarmConfigs/shimmer-hornet.cfg
+                    if [ ! -z "$shimmerHornetEnablePlugins" ]; then
+                        whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "The following plugins are enabled:\n$shimmerHornetEnablePlugins" 24 65
+                    else
+                        whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "There are no plugins enabled for Hornet." 8 65
+                    fi
+                fi
+                unset shimmerHornetEnablePlugins
+            fi
+            unset useShimmerHornetEnablePlugins
+        ;;
+        "3)")
+            useShimmerHornetDisablePlugins=true
+            source $swarmConfigs/shimmer-hornet.cfg
+            currentShimmerHornetDisablePlugins=$shimmerHornetDisablePlugins
+            source $shimmerHornetModules/shimmerHornetPlugins
+            shimmerHornetDisablePlugins=$(whiptail --title "Hornet [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be deactivated:" 10 78 1 \
+                "Warpsync" "plugin to sync more faster" $shimmerHornetPluginWarpsync 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            shimmerHornetDisablePlugins=$(echo $shimmerHornetDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ -z "$shimmerHornetDisablePlugins" ] || [[ $shimmerHornetDisablePlugins = *warpsync* ]]; then
+                if [ "$shimmerHornetDisablePlugins" != "$currentShimmerHornetDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                    if [ -f "/usr/bin/shimmer-hornet" ]; then
+                        source $shimmerHornetConfigParsers/shimmerHornetDisablePlugins
+                    fi
+                    sudo sed -i 's/^shimmerHornetDisablePlugins=.*/shimmerHornetDisablePlugins="'$shimmerHornetDisablePlugins'"/' $swarmConfigs/shimmer-hornet.cfg
+                    if [ ! -z "$shimmerHornetDisablePlugins" ]; then
+                        whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "The following plugins are disabled:\n$shimmerHornetDisablePlugins" 24 65
+                    else
+                        whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "There are no plugins disabled for Hornet." 8 65
+                    fi
+                fi
+            else
+                unset shimmerHornetDisablePlugins
+            fi
+            unset useShimmerHornetDisablePlugins
+        ;;
+        "4)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/shimmer-hornet.cfg
@@ -246,7 +304,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "3)")
+        "5)")
             source $swarmConfigs/shimmer-hornet.cfg
             if [ "$shimmerHornetPowEnabled" = "true" ]; then
                 shimmerHornetPowEnabledStatus=enabled
@@ -281,7 +339,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
-        "4)")
+        "6)")
             source $swarmConfigs/shimmer-hornet.cfg
             currentShimmerHornetSnapshotInterval=$shimmerHornetSnapshotInterval
             shimmerHornetSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $shimmerHornetSnapshotInterval --title "Hornet [SHIMMER] Snapshots" 3>&1 1>&2 2>&3)
@@ -299,63 +357,6 @@ while [ $exitCode -lt 1 ]; do
                     fi
                 fi
             fi
-        ;;
-        "5)")
-            useShimmerHornetEnablePlugins=true
-            source $swarmConfigs/shimmer-hornet.cfg
-            currentShimmerHornetEnablePlugins=$shimmerHornetEnablePlugins
-            source $shimmerHornetModules/shimmerHornetPlugins
-            shimmerHornetEnablePlugins=$(whiptail --title "Hornet [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be activated:" 24 65 7 \
-                "INX" "plugin to run sub-plugins" $shimmerHornetPluginInx \
-                "Autopeering" "plugin for automatic peering" $shimmerHornetPluginAutopeering \
-                "Dashboard" "(INX) plugin for node webinterface" $shimmerHornetPluginDashboard \
-                "Indexer" "(INX) plugin to index the ledger" $shimmerHornetPluginIndexer \
-                "Participation" "(INX) plugin for voting/staking" $shimmerHornetPluginParticipation \
-                "MQTT" "(INX) plugin to stream messages" $shimmerHornetPluginMqtt \
-                "Prometheus" "plugin is used for metrics e.g. in Grafana" $shimmerHornetPluginPrometheus 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            shimmerHornetEnablePlugins=$(echo $shimmerHornetEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$shimmerHornetEnablePlugins" ] || [[ $shimmerHornetEnablePlugins = *autopeering* ]] || [[ $shimmerHornetEnablePlugins = *inx* ]] || [[ $shimmerHornetEnablePlugins = *dashboard* ]] || [[ $shimmerHornetEnablePlugins = *indexer* ]] || [[ $shimmerHornetEnablePlugins = *participation* ]] || [[ $shimmerHornetEnablePlugins = *mqtt* ]] || [[ $shimmerHornetEnablePlugins = *prometheus* ]]; then
-                if [ "$shimmerHornetEnablePlugins" != "$currentShimmerHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/shimmer-hornet" ]; then
-                        source $shimmerHornetConfigParsers/shimmerHornetEnablePlugins
-                    fi
-                    sudo sed -i 's/^shimmerHornetEnablePlugins=.*/shimmerHornetEnablePlugins="'$shimmerHornetEnablePlugins'"/' $swarmConfigs/shimmer-hornet.cfg
-                    if [ ! -z "$shimmerHornetEnablePlugins" ]; then
-                        whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "The following plugins are enabled:\n$shimmerHornetEnablePlugins" 24 65
-                    else
-                        whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "There are no plugins enabled for Hornet." 8 65
-                    fi
-                fi
-                unset shimmerHornetEnablePlugins
-            fi
-            unset useShimmerHornetEnablePlugins
-        ;;
-        "6)")
-            useShimmerHornetDisablePlugins=true
-            source $swarmConfigs/shimmer-hornet.cfg
-            currentShimmerHornetDisablePlugins=$shimmerHornetDisablePlugins
-            source $shimmerHornetModules/shimmerHornetPlugins
-            shimmerHornetDisablePlugins=$(whiptail --title "Hornet [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be deactivated:" 10 78 1 \
-                "Warpsync" "plugin to sync more faster" $shimmerHornetPluginWarpsync 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            shimmerHornetDisablePlugins=$(echo $shimmerHornetDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$shimmerHornetDisablePlugins" ] || [[ $shimmerHornetDisablePlugins = *warpsync* ]]; then
-                if [ "$shimmerHornetDisablePlugins" != "$currentShimmerHornetDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/shimmer-hornet" ]; then
-                        source $shimmerHornetConfigParsers/shimmerHornetDisablePlugins
-                    fi
-                    sudo sed -i 's/^shimmerHornetDisablePlugins=.*/shimmerHornetDisablePlugins="'$shimmerHornetDisablePlugins'"/' $swarmConfigs/shimmer-hornet.cfg
-                    if [ ! -z "$shimmerHornetDisablePlugins" ]; then
-                        whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "The following plugins are disabled:\n$shimmerHornetDisablePlugins" 24 65
-                    else
-                        whiptail --title "Hornet [SHIMMER] Plugins" --msgbox "There are no plugins disabled for Hornet." 8 65
-                    fi
-                fi
-            else
-                unset shimmerHornetDisablePlugins
-            fi
-            unset useShimmerHornetDisablePlugins
         ;;
         "7)")
             while [ $exitCode -lt 1 ]; do
@@ -491,6 +492,23 @@ while [ $exitCode -lt 1 ]; do
             fi
         ;;
         "12)")
+            shimmerHornetAlias=$(whiptail --inputbox "\nDefine an alias of your node" 10 65 $shimmerHornetAlias --title "Hornet [SHIMMER] Alias" 3>&1 1>&2 2>&3)
+            if [ ! -z "$shimmerHornetAlias" ]; then
+                sudo sed -i 's~^shimmerHornetAlias=.*~shimmerHornetAlias="'$shimmerHornetAlias'"~' $swarmConfigs/shimmer-hornet.cfg
+                if [ -f "/usr/bin/shimmer-hornet" ]; then
+                    source $shimmerHornetConfigParsers/shimmerHornetAlias
+                    if [ "$newShimmerHornetAlias" = "true" ]; then
+                        whiptail --title "Hornet [SHIMMER] Alias" --msgbox "New alias \"$shimmerHornetAlias\" applied." 8 65
+                        unset newShimmerHornetAlias
+                    else
+                        whiptail --title "Hornet [SHIMMER] Alias" --msgbox "No node alias change detected." 8 65
+                    fi
+                else
+                    whiptail --title "Hornet [SHIMMER] Alias" --msgbox "Alias \"$shimmerHornetAlias\" applied." 8 65
+                fi
+            fi
+        ;;
+        "13)")
             source $shimmerHornetModules/shimmerHornetConfigs
             # Hornet Networks
             CHOICE=$(
@@ -521,7 +539,7 @@ while [ $exitCode -lt 1 ]; do
                 ;;
             esac
         ;;
-        "13)")
+        "14)")
             source $swarmConfigs/shimmer-hornet.cfg
             # Hornet release channel
             CHOICE=$(
