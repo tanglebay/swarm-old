@@ -1,0 +1,22 @@
+#!/bin/bash
+
+useShimmerInxPoiEnablePlugins=true
+source $shimmerInxPoiModules/shimmerInxPoiPlugins
+
+IFS=', ' read -r -a ARRAYshimmerInxPoiEnablePlugins <<< "$shimmerInxPoiEnablePlugins"
+
+parser="$(jq '.app.enablePlugins' $shimmerInxPoiHome/$shimmerInxPoiConfig.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$shimmerInxPoiEnablePlugins" ]; then
+    sudo jq '.app.enablePlugins |= []' $shimmerInxPoiHome/$shimmerInxPoiConfig.json|sponge $shimmerInxPoiHome/$shimmerInxPoiConfig.json
+    for shimmerInxPoiEnablePlugin in "${ARRAYshimmerInxPoiEnablePlugins[@]}"
+    do
+        if [ ! -z "$shimmerInxPoiEnablePlugin" ]; then
+            sudo jq '.app.enablePlugins |= .+ ["'$shimmerInxPoiEnablePlugin'"]' $shimmerInxPoiHome/$shimmerInxPoiConfig.json|sponge $shimmerInxPoiHome/$shimmerInxPoiConfig.json
+        fi
+    done
+    restartShimmerInxPoi=true
+    echo "shimmerInxPoiEnablePlugins" >> /tmp/shimmerInxPoiParsing
+fi
+
+unset ARRAYshimmerInxPoiEnablePlugins shimmerInxPoiEnablePlugin useShimmerInxPoiEnablePlugins

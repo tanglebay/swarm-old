@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# General
+if ! id inx >/dev/null 2>&1; then
+    useradd --no-create-home --system inx >/dev/null
+fi
+
+if [ ! -d "$shimmerInxPoiHome" ]; then
+    sudo mkdir -p $shimmerInxPoiHome > /dev/null 2>&1
+    sudo chown -R inx:inx $shimmerInxPoiHome > /dev/null 2>&1
+fi
+
+# Install GO
+if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    sudo snap install go --classic > /dev/null 2>&1
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/shimmer-inx-poi.service" ]; then
+    sudo cp -rf $swarmHome/templates/shimmer-inx/shimmer-inx-poi.service /lib/systemd/system/shimmer-inx-poi.service
+    if [ ! -f "/etc/default/shimmer-inx-poi" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/shimmer-inx-poi
+    fi
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/shimmer-inx-poi.service" ]; then
+        sudo systemctl enable shimmer-inx-poi > /dev/null 2>&1
+    fi
+    sudo systemctl daemon-reload > /dev/null 2>&1
+fi
+
+##############################################################################################################################################
+
+# Create dir if not exist
+sudo mkdir -p /tmp/shimmer-inx-poi > /dev/null 2>&1
+
+if [ "$osArchitecture" = "amd64" ]; then
+    source $swarmModules/swarmAuth
+    if [ "$swarmAuth" = "200" ]; then
+        # Download latest inx-poi
+        ( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-poi/v${latestShimmerInxPoiVersion}/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz )
+        if [ -f "/tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" ]; then
+            shimmerInxPoiDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        fi
+
+        # Download checksum
+        ( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-poi/v${latestShimmerInxPoiVersion}/checksums.txt )
+        shimmerInxPoiChecksum=$(sudo grep "inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-poi/checksums.txt | awk '{ print $1 }')
+        echo $shimmerInxPoiChecksum > /tmp/shimmer-inx-poi.checksum
+
+        # Unzip archive
+        if [ "$shimmerInxPoiDownloadChecksum" = "$shimmerInxPoiChecksum" ] && [ ! -z "$shimmerInxPoiDownloadChecksum" ] && [ ! -z "$shimmerInxPoiChecksum" ]; then
+            ( cd /tmp/shimmer-inx-poi ; sudo tar -xzf /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+
+            # Copy binary
+            if [ -f "/tmp/shimmer-inx-poi/inx-poi" ]; then
+                shimmerInxPoiStatus="$(systemctl show -p ActiveState --value shimmer-inx-poi)"
+                if [ "$shimmerInxPoiStatus" = "active" ]; then
+                    sudo systemctl stop shimmer-inx-poi > /dev/null 2>&1
+                fi
+
+                sudo cp -rf /tmp/shimmer-inx-poi/inx-poi /usr/bin/shimmer-inx-poi > /dev/null 2>&1
+                sudo chmod +x /usr/bin/shimmer-inx-poi > /dev/null 2>&1
+                newShimmerInxPoiBinary=true
+            fi
+        fi
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newShimmerInxPoiBinary" = "true" ]; then
+    if [ -f "/tmp/shimmer-inx-poi/config_template.json" ]; then
+        sudo cp -rf /tmp/shimmer-inx-poi/config_template.json /var/lib/shimmer-inx-poi/config.json > /dev/null 2>&1
+        sudo chmod +x 644 /var/lib/shimmer-inx-poi/config.json
+        newShimmerInxPoiConfig=true
+    fi
+    if [ -f "/tmp/inx-poi/config.json" ]; then
+        sudo cp -rf /tmp/shimmer-inx-poi/config.json /var/lib/shimmer-inx-poi/config.json > /dev/null 2>&1
+        sudo chmod +x 644 /var/lib/shimmer-inx-poi/config.json
+        newShimmerInxPoiConfig=true
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newShimmerInxPoiConfig" = "true" ]; then
+    # Run installer modules
+    sudo chown -R inx:inx $shimmerInxPoiHome > /dev/null 2>&1
+
+    restartShimmerInxPoi=true
+    shimmerInxPoiUpdated=true
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/shimmer-inx-poi > /dev/null 2>&1
+
+
+unset newShimmerInxPoiBinary newShimmerInxPoiConfig shimmerInxPoiDownloadChecksum

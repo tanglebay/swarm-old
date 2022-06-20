@@ -79,7 +79,7 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 # CALL MODULE CONFIGPARSER
                 source $shimmerInxParticipationModules/shimmerInxParticipationParser
                 if [ "$restartShimmerInxParticipation" = "true" ]; then
-                    sudo systemctl restart shimmer-inx-indexer > /dev/null 2>&1
+                    sudo systemctl restart shimmer-inx-participation > /dev/null 2>&1
                     sleep 5
                 fi
                 echo "$restartDate [AUTOUPDATE] New Version ($latestShimmerInxParticipationVersion) of [SHIMMER] INX-Participation installed. Checksum: $shimmerInxParticipationChecksum" >> $swarmLogs/swarm.log
@@ -88,5 +88,27 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             fi
         fi
         unset currentShimmerInxParticipationVersion shimmerInxParticipationUpdated shimmerInxParticipationChecksum
+    fi
+
+    if [ "$shimmerInxPoiAutoUpdate" = "true" ] && [ -f "/usr/bin/shimmer-inx-poi" ]; then
+        source $shimmerInxPoiModules/shimmerInxPoiVersion
+        currentShimmerInxPoiVersion="$shimmerInxPoiVersion"
+        if [ "$latestShimmerInxPoiVersion" != "$shimmerInxPoiVersion" ]; then
+            source $shimmerInxPoiModules/shimmerInxPoiInstaller
+            source $shimmerInxPoiModules/shimmerInxPoiVersion
+            if [ "$currentShimmerInxPoiVersion" != "$shimmerInxPoiVersion" ] || [ "$shimmerInxPoiUpdated" = "true" ]; then
+                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                # CALL MODULE CONFIGPARSER
+                source $shimmerInxPoiModules/shimmerInxPoiParser
+                if [ "$restartShimmerInxPoi" = "true" ]; then
+                    sudo systemctl restart shimmer-inx-poi > /dev/null 2>&1
+                    sleep 5
+                fi
+                echo "$restartDate [AUTOUPDATE] New Version ($latestShimmerInxPoiVersion) of [SHIMMER] INX-POI installed. Checksum: $shimmerInxPoiChecksum" >> $swarmLogs/swarm.log
+                telegramText="[$HOSTNAME] New Version ($latestShimmerInxPoiVersion) of [SHIMMER] INX-POI installed. Checksum: $shimmerInxPoiChecksum"
+                source $watchdogModules/watchdogTelegram
+            fi
+        fi
+        unset currentShimmerInxPoiVersion shimmerInxPoiUpdated shimmerInxPoiChecksum
     fi
 fi

@@ -416,3 +416,27 @@ else
         sudo sed -i 's/^shimmerInxParticipationStatusCounter=.*/shimmerInxParticipationStatusCounter='$shimmerInxParticipationStatusCounter'/' $swarmConfigs/watchdog.cfg
     fi
 fi
+
+# INX-POI Status Check
+if [ "$shimmerInxPoiStatus" != "active" ] && [ -f "/usr/bin/shimmer-inx-poi" ] && [ "$shimmerInxPoiServiceStatusCheck" = "true" ]; then
+    sudo systemctl stop shimmer-inx-poi 2>/dev/null
+    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+    if [ $shimmerInxPoiStatusCounter -ge 2 ] 2>/dev/null; then
+        if [ "$killall" = "true" ]; then
+            sudo killall -s SIGKILL shimmer-inx-poi 2>/dev/null
+        fi
+        shimmerInxPoiStatusCounter=0
+    else
+        let shimmerInxPoiStatusCounter=$shimmerInxPoiStatusCounter+1
+    fi
+    sudo systemctl start shimmer-inx-poi 2>/dev/null
+    sudo sed -i 's/^shimmerInxPoiStatusCounter=.*/shimmerInxPoiStatusCounter='$shimmerInxPoiStatusCounter'/' $swarmConfigs/watchdog.cfg
+    echo "$restartDate [WACHTDOG] INX-POI [SHIMMER] was restarted because the service is not active." >> $swarmLogs/swarm.log
+    telegramText="[$HOSTNAME] INX-POI [SHIMMER] was restarted because the service is not active."
+    source $watchdogModules/watchdogTelegram
+else
+    if [ $shimmerInxPoiStatusCounter -gt 0 ] 2>/dev/null; then
+        let shimmerInxPoiStatusCounter=$shimmerInxPoiStatusCounter-1
+        sudo sed -i 's/^shimmerInxPoiStatusCounter=.*/shimmerInxPoiStatusCounter='$shimmerInxPoiStatusCounter'/' $swarmConfigs/watchdog.cfg
+    fi
+fi
