@@ -1,0 +1,30 @@
+#!/bin/bash
+if [ -f "/usr/bin/shimmer-inx-poi" ]; then
+
+    source $swarmConfigs/shimmer-inx-poi.cfg
+    source $swarmConfigs/latest-versions.cfg
+
+    shimmerInxPoiStatus=$(systemctl show -p ActiveState --value shimmer-inx-poi)
+
+    shimmerInxPoiVersion=$(/usr/bin/shimmer-inx-poi -v | awk '{ print $2 }')
+    if [ -z "$shimmerInxPoiVersion" ]; then
+        shimmerInxPoiVersion="N/A"
+    else
+        if [ "$shimmerInxPoiVersion" != "$latestShimmerInxPoiVersion" ] && [ ! -z "$latestShimmerInxPoiVersion" ]; then
+            shimmerInxPoiVersion="$shimmerInxPoiVersion (new version \"v$latestShimmerInxPoiVersion\" available!)"
+        fi
+    fi
+
+    if [ "$shimmerInxPoiUpdateCheck" = "true" ]; then
+        shimmerInxPoiUpdateCheckStatus="enabled"
+    else
+        shimmerInxPoiUpdateCheckStatus="disabled"
+    fi
+
+
+    # OUTPUT
+    whiptail --title "INX-POI [SHIMMER] Info" --msgbox "INX-POI: $shimmerInxPoiStatus\nVersion: v$shimmerInxPoiVersion\nUpdate Check: $shimmerInxPoiUpdateCheckStatus\n\nEnabled Plugins: \"$shimmerInxPoiEnablePlugins\"\nDisabled Plugins: \"$shimmerInxPoiDisablePlugins\"" 24 65
+else
+    # OUTPUT
+    whiptail --title "INX-POI [SHIMMER] Info" --msgbox "INX-POI not installed!" 8 65
+fi

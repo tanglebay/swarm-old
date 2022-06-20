@@ -1,0 +1,30 @@
+#!/bin/bash
+source $swarmConfigs/latest-versions.cfg
+
+if [ -z "$latestShimmerInxPoiVersion" ] || [ "$latestShimmerInxPoiVersion" = "\"\"" ] || [ "$latestShimmerInxPoiVersion" = "null" ]; then
+    if [ "$shimmerInxPoiRelease" = "stable" ]; then
+        latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-poi/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxPoiReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v"')
+    fi
+    if [ "$shimmerInxPoiRelease" = "beta" ]; then
+        latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-poi/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxPoiReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v"')
+    fi
+    if [ "$shimmerInxPoiRelease" = "alpha" ]; then
+        latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-poi/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxPoiReleaseVersion | head -n 1)
+        latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v"')
+    fi
+    if [ ! -z "$latestShimmerInxPoiVersion" ] && [ "$latestShimmerInxPoiVersion" != "\"\"" ] && [ "$latestShimmerInxPoiVersion" != "null" ]; then
+        sudo sed -i 's~^latestShimmerInxPoiVersion=.*~latestShimmerInxPoiVersion="'$latestShimmerInxPoiVersion'"~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
+
+# Local node version
+if [ -f "/usr/bin/shimmer-inx-poi" ]; then
+    shimmerInxPoiVersion=$(/usr/bin/shimmer-inx-poi -v | awk '{ print $2 }')
+fi
+
+# Replace var if empty
+if [ -z "$latestShimmerInxPoiVersion" ] || [ "$latestShimmerInxPoiVersion" = "null" ]; then
+    latestShimmerInxPoiVersion=$shimmerInxPoiVersion
+fi

@@ -1,0 +1,316 @@
+#!/bin/bash
+
+while [ $exitCode -lt 1 ]; do
+    source $swarmConfigs/shimmer-inx-poi.cfg
+    clear
+    CHOICE=$(
+        whiptail --title "INX [SHIMMER] POI" --menu "\nChoose an option" 24 65 0 \
+        "1)" "INX-POI Info" \
+        "2)" "INX-POI Configuration" \
+        "3)" "INX-POI Management" \
+        "4)" "INX-POI Installer" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $shimmerInxPoiModules/shimmerInxPoiInfo
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                CHOICE=$(
+                    whiptail --title "INX-POI [SHIMMER] Configuration" --menu "\nChoose an option" 24 65 0 \
+                    "1)" "INX-POI Configuration" \
+                    "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
+                )
+
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        source $shimmerInxPoiModules/shimmerInxPoiConfiguration
+                    ;;
+                    "2)")
+                        while [ $exitCode -lt 1 ]; do
+                            clear
+                            CHOICE=$(
+                                whiptail --title "INX-POI [SHIMMER] Configuration" --menu "\nChoose an option" 24 65 0 \
+                                "1)" "config.json" \
+                                "2)" "shimmer-inx-poi.cfg (SWARM)" 3>&2 2>&1 1>&3
+                            )
+
+                            exitstatus=$?
+                            if [ "$exitstatus" = "1" ]; then
+                                exitCode=1
+                            fi
+
+                            case $CHOICE in
+                                "1)")
+                                    if [ -f "$shimmerInxPoiHome/config.json" ]; then
+                                        sudo $swarmCLEditor $shimmerInxPoiHome/config.json
+                                        if (whiptail --title "INX-POI [SHIMMER] Configuration" --yesno --defaultno "Would you like to restart INX-POI now?" 8 65); then
+                                            {
+                                                echo 0
+                                                echo 50
+                                                sudo systemctl restart shimmer-inx-poi > /dev/null 2>&1
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while INX-POI is restarting..." 8 65 0
+                                        fi
+                                    else
+                                        whiptail --title "INX-POI [SHIMMER] Configuration" --msgbox "INX-POI is not installed." 8 65
+                                    fi
+                                ;;
+                                "2)")
+                                    sudo $swarmCLEditor $swarmConfigs/shimmer-inx-poi.cfg
+                                    if [ -f "/usr/bin/shimmer-inx-poi" ]; then
+                                        if (whiptail --title "INX-POI [SHIMMER] Configuration" --yesno --defaultno "Would you like to restart INX-POI now?" 8 65); then
+                                            {
+                                                echo 0
+                                                source $shimmerInxPoiModules/shimmerInxPoiParser
+                                                echo 50
+                                                sudo systemctl restart shimmer-inx-poi > /dev/null 2>&1
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while INX-POI is restarting..." 8 65 0
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            if [ -f "/usr/bin/shimmer-inx-poi" ]; then
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    CHOICE=$(
+                        whiptail --title "INX-POI [SHIMMER] Management" --menu "\nChoose an option" 24 65 0 \
+                        "1)" "Show INX-POI log" \
+                        "2)" "Stop/Start INX-POI" \
+                        "3)" "Reset INX-POI config" 3>&2 2>&1 1>&3
+                    )
+
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+
+                    case $CHOICE in
+                        "1)")
+                            # Display last 65 lines of log
+                            sudo journalctl -fu shimmer-inx-poi | less -FRSXM
+                            clear
+                        ;;
+                        "2)")
+                            CHOICE=$(
+                                whiptail --title "INX-POI [SHIMMER] Management" --menu "\nChoose your option" 24 65 0 \
+                                "1)" "Restart INX-POI" \
+                                "2)" "Start INX-POI" \
+                                "3)" "Stop INX-POI" \
+                                "4)" "Status INX-POI" 3>&2 2>&1 1>&3
+                            )
+                            case $CHOICE in
+                                "1)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl restart shimmer-inx-poi > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-POI is restarting..." 8 65 0
+                                    whiptail --title "INX-POI [SHIMMER] Management" --msgbox "INX-POI successfully restarted." 8 65
+                                ;;
+                                "2)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl start shimmer-inx-poi > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-POI is starting..." 8 65 0
+                                    whiptail --title "INX-POI [SHIMMER] Management" --msgbox "INX-POI successfully started." 8 65
+                                ;;
+                                "3)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl stop shimmer-inx-poi > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-POI is stopping..." 8 65 0
+                                    whiptail --title "INX-POI [SHIMMER] Management" --msgbox "INX-POI successfully stopped." 8 65
+                                ;;
+                                "4)")
+                                    shimmerInxPoiStatus="$(sudo systemctl status shimmer-inx-poi)"
+                                    whiptail --title "INX-POI [SHIMMER] Management" --msgbox "$shimmerInxPoiStatus" 15 65
+                                ;;
+                            esac
+                        ;;
+                        "3)")
+                            if (whiptail --title "INX-POI [SHIMMER] Management" --yesno --defaultno "Are you sure you want to reset the INX-POI config file?" 8 65); then
+                                source $swarmConfigs/shimmer-inx-poi.cfg
+                                {
+                                    echo 0
+                                    echo 20
+                                    sudo systemctl stop shimmer-inx-poi > /dev/null 2>&1
+                                    echo 40
+                                    sudo -u inx wget -q -O $shimmerInxPoiHome/config.json https://raw.githubusercontent.com/iotaledger/inx-poi/develop/config_template.json
+                                    echo 60
+                                    source $shimmerInxPoiModules/shimmerInxPoiParser
+                                    echo 80
+                                    sudo systemctl start shimmer-inx-poi > /dev/null 2>&1
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the config reset is running (this may take a while)..." 8 65 0
+                                whiptail --title "INX-POI [SHIMMER] Debugging" --msgbox "INX-POI config successfully reset." 8 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            else
+                whiptail --title "INX [SHIMMER] POI" --msgbox "Sorry, but INX-POI is not installed." 8 65
+            fi
+        ;;
+        "4)")
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "INX-POI [SHIMMER] Installer" --menu "\nChoose your option" 24 65 0 \
+                    "1)" "Update INX-POI" \
+                    "2)" "Install INX-POI" \
+                    "3)" "Remove INX-POI" 3>&2 2>&1 1>&3
+                )
+
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/shimmer-inx-poi" ]; then
+                            if (whiptail --title "INX-POI [SHIMMER] Installer" --yesno --defaultno "Do you really want to update INX-POI?" 8 65); then
+                                # Update INX-POI
+                                source $shimmerInxPoiModules/shimmerInxPoiVersion
+                                if [ "$latestShimmerInxPoiVersion" != "$shimmerInxPoiVersion" ]; then
+                                    {
+                                        echo 0
+                                        echo 33
+                                        source $shimmerInxPoiModules/shimmerInxPoiVersion
+                                        echo 66
+                                        source $shimmerInxPoiModules/shimmerInxPoiInstaller                      
+                                        echo 100
+                                        sleep 0.5
+                                    } | whiptail --gauge "Please wait while INX-POI is updated..." 8 65 0
+                                    newShimmerInxPoiVersion=$(/usr/bin/shimmer-inx-poi -v | awk '{ print $2 }')
+                                    if [ "$shimmerInxPoiVersion" != "$newShimmerInxPoiVersion" ]; then
+                                        {
+                                            # CALL MODULE CONFIGPARSER
+                                            source $shimmerInxPoiModules/shimmerInxPoiParser
+                                            sudo systemctl restart shimmer-inx-poi 2>/dev/null
+                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                    fi
+                                    whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "INX-POI successfully updated.\n\nChecksum: $shimmerInxPoiChecksum" 10 65
+                                else
+                                    whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "Congratulations, you have already installed the latest version of INX-POI." 8 65
+                                fi
+                                unset shimmerInxPoiChecksum
+                            fi
+                        else
+                            whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "Sorry, but INX-POI is not installed." 8 65
+                        fi
+                    ;;
+                    "2)")
+                        if [ -f "/usr/bin/shimmer-hornet" ]; then
+                            # INSTALL INX-POI
+                            if [ ! -f "/usr/bin/shimmer-inx-poi" ]; then
+                                source $swarmConfigs/shimmer-inx-poi.cfg
+                                source $shimmerInxPoiModules/shimmerInxPoiVersion
+                                {
+                                    echo 0
+                                    echo 10
+                                    echo 30
+                                    source $shimmerInxPoiModules/shimmerInxPoiInstaller
+                                    echo 50
+                                    if [ -f "/usr/bin/shimmer-inx-poi" ]; then
+                                        source $swarmConfigs/shimmer-inx-poi.cfg
+                                        echo 60
+                                        # CALL MODULE CONFIGPARSER
+                                        source $shimmerInxPoiModules/shimmerInxPoiParser
+                                        echo 70
+                                        sudo systemctl start shimmer-inx-poi > /dev/null 2>&1
+                                        echo 80
+                                        sleep 2
+                                        shimmerInxPoiStatus="$(systemctl show -p ActiveState --value shimmer-inx-poi)"
+                                        if [ "$shimmerInxPoiStatus" != "active" ]; then
+                                            sudo systemctl restart shimmer-inx-poi > /dev/null 2>&1
+                                        fi
+                                        echo 100
+                                    fi
+                                } | whiptail --gauge "Please wait while installing INX-POI..." 8 65 0
+                                if [ -f "/usr/bin/shimmer-inx-poi" ]; then
+                                    if [ -f "/tmp/shimmer-inx-poi.checksum" ]; then
+                                        shimmerInxPoiChecksum=$(cat /tmp/shimmer-inx-poi.checksum)
+                                    fi
+                                    whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "INX-POI installation finished!\n\nChecksum: $shimmerInxPoiChecksum" 17 65
+                                    if [ -f "/tmp/shimmer-inx-poi.checksum" ]; then
+                                        sudo rm -rf /tmp/shimmer-inx-poi.checksum > /dev/null 2>&1
+                                    fi
+                                else
+                                    {
+                                        echo 0
+                                        echo 25
+                                        source $swarmConfigs/shimmer-inx-poi.cfg
+                                        echo 50
+                                        source $shimmerInxPoiModules/shimmerInxPoiRemoval
+                                        echo 75
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while the INX-POI files are removed...." 8 65 0
+                                    whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "Error while installing INX-POI! Please try again later." 8 65
+                                fi
+                            else
+                                if [ -f "/usr/bin/shimmer-inx-poi" ]; then
+                                    whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "INX-POI already installed." 8 65
+                                else
+                                    if [ "$shimmerInxPoiSkipInstallation" = "true" ]; then
+                                        whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "Installation of INX-POI aborted." 8 65
+                                    fi
+                                fi
+                            fi
+                            unset shimmerInxPoiSkipInstallation shimmerInxPoiChecksum
+                        else
+                            whiptail --title "INX [SHIMMER] POI" --msgbox "To be able to install INX-POI, a compatible node must be installed first." 8 65
+                        fi
+                    ;;
+                    "3)")
+                        if (whiptail --title "INX-POI [SHIMMER] Installer" --yesno --defaultno "Do you really want to remove INX-POI?" 8 65); then
+                            {
+                                echo 0
+                                echo 50
+                                source $shimmerInxPoiModules/shimmerInxPoiRemoval
+                                echo 100
+                                sleep 0.5
+                            } | whiptail --gauge "Please wait while INX-POI will be removed..." 8 65 0
+                            whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "INX-POI successfully removed." 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+    esac
+done
+exitCode=0
