@@ -13,14 +13,13 @@ while [ $exitCode -lt 1 ]; do
     fi
 
     CHOICE=$(
-        whiptail --title "Watchdog - Configuration" --menu "\nWachtdog: $watchdogStatus\n\nChoose an option" 24 65 0 \
+        whiptail --title "Watchdog - Configuration" --menu "\nChoose an option" 24 65 0 \
         "1)" "Hornet [Watchdog]" \
-        "2)" "Bee [Watchdog]" \
+        "2)" "INX [Watchdog]" \
         "3)" "GoShimmer [Watchdog]" \
         "4)" "WASP [Watchdog]" \
-        "5)" "INX [Watchdog]" \
-        "6)" "Telegram Notifications [Watchdog]" \
-        "7)" "Update Watchdog" 3>&2 2>&1 1>&3
+        "5)" "Telegram Notifications [Watchdog]" \
+        "6)" "Update Watchdog" 3>&2 2>&1 1>&3
     )
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
@@ -180,281 +179,12 @@ while [ $exitCode -lt 1 ]; do
         "2)")
             while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
-                    whiptail --title "SWARM - Bee" --menu "\nChoose an option" 24 65 0 \
-                    "1)" "Bee [IOTA]" \
-                    "2)" "Bee [SHIMMER]" 3>&2 2>&1 1>&3
-                )
-                exitStatus=$?
-                if [ "$exitStatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/swarm.cfg
-                            if [ "$iotaBeeAutoUpdate" = "true" ]; then
-                                iotaBeeAutoUpdateMenu="Disable"
-                            else
-                                iotaBeeAutoUpdateMenu="Enable"
-                            fi
-                            if [ "$iotaBeeAllowDbReset" = "true" ]; then
-                                iotaBeeAllowDbResetMenu="Forbid"
-                            else
-                                iotaBeeAllowDbResetMenu="Allow"
-                            fi
-                            if [ "$iotaBeeServiceStatusCheck" = "true" ]; then
-                                iotaBeeServiceStatusCheckMenu="Disable"
-                            else
-                                iotaBeeServiceStatusCheckMenu="Enable"
-                            fi
-                            CHOICE=$(
-                                whiptail --title "SWARM [IOTA] Bee" --menu "\nChoose an option" 24 65 0 \
-                                "1)" "$iotaBeeAutoUpdateMenu Bee AutoUpdater" \
-                                "2)" "$iotaBeeAllowDbResetMenu Bee database reset" \
-                                "3)" "$iotaBeeServiceStatusCheckMenu Bee service status check" 3>&2 2>&1 1>&3
-                            )
-                            exitStatus=$?
-                            if [ "$exitStatus" = "1" ]; then
-                                exitCode=1
-                            fi
-                            case $CHOICE in
-                                "1)")
-                                    if [ "$iotaBeeAutoUpdate" = "true" ]; then
-                                        iotaBeeAutoUpdate=false
-                                        iotaBeeAutoUpdateMenu="disabled"
-                                    else
-                                        iotaBeeAutoUpdate=true
-                                        iotaBeeAutoUpdateMenu="enabled"
-                                    fi
-                                    sudo sed -i 's/^iotaBeeAutoUpdate=.*/iotaBeeAutoUpdate='$iotaBeeAutoUpdate'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "Watchdog [IOTA] Bee" --msgbox "Bee AutoUpdater $iotaBeeAutoUpdateMenu!" 8 65
-                                ;;
-                                "2)")
-                                    if [ "$iotaBeeAllowDbReset" = "true" ]; then
-                                        iotaBeeAllowDbReset=false
-                                        iotaBeeAllowDbResetMenu="disabled"
-                                    else
-                                        iotaBeeAllowDbReset=true
-                                        iotaBeeAllowDbResetMenu="enabled"
-                                    fi
-                                    sudo sed -i 's/^iotaBeeAllowDbReset=.*/iotaBeeAllowDbReset='$iotaBeeAllowDbReset'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "SWARM [IOTA] Bee" --msgbox "Delete Bee database $iotaBeeAllowDbResetMenu for Watchdog!" 8 65
-                                ;;
-                                "3)")
-                                    if [ "$iotaBeeServiceStatusCheck" = "true" ]; then
-                                        iotaBeeServiceStatusCheck=false
-                                        iotaBeeServiceStatusCheckMenu="disabled"
-                                    else
-                                        iotaBeeServiceStatusCheck=true
-                                        iotaBeeServiceStatusCheckMenu="enabled"
-                                    fi
-                                    sudo sed -i 's/^iotaBeeServiceStatusCheck=.*/iotaBeeServiceStatusCheck='$iotaBeeServiceStatusCheck'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "SWARM [IOTA] Bee" --msgbox "Watchdog Bee service check $iotaBeeServiceStatusCheckMenu!" 8 65
-                                ;;
-                            esac
-                        done
-                        exitCode=0
-                    ;;
-                    "2)")
-                        while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/swarm.cfg
-                            if [ "$shimmerBeeAutoUpdate" = "true" ]; then
-                                shimmerBeeAutoUpdateMenu="Disable"
-                            else
-                                shimmerBeeAutoUpdateMenu="Enable"
-                            fi
-                            if [ "$shimmerBeeAllowDbReset" = "true" ]; then
-                                shimmerBeeAllowDbResetMenu="Forbid"
-                            else
-                                shimmerBeeAllowDbResetMenu="Allow"
-                            fi
-                            if [ "$shimmerBeeServiceStatusCheck" = "true" ]; then
-                                shimmerBeeServiceStatusCheckMenu="Disable"
-                            else
-                                shimmerBeeServiceStatusCheckMenu="Enable"
-                            fi
-
-                            CHOICE=$(
-                                whiptail --title "Bee [SHIMMER] Watchdog" --menu "\nChoose an option" 24 65 0 \
-                                "1)" "$shimmerBeeAutoUpdateMenu Bee AutoUpdater" \
-                                "2)" "$shimmerBeeAllowDbResetMenu Bee database reset" \
-                                "3)" "$shimmerBeeServiceStatusCheckMenu Bee service status check" 3>&2 2>&1 1>&3
-                            )
-                            exitStatus=$?
-                            if [ "$exitStatus" = "1" ]; then
-                                exitCode=1
-                            fi
-                            case $CHOICE in
-                                "1)")
-                                    if [ "$shimmerBeeAutoUpdate" = "true" ]; then
-                                        shimmerBeeAutoUpdate=false
-                                        shimmerBeeAutoUpdateMenu="disabled"
-                                    else
-                                        shimmerBeeAutoUpdate=true
-                                        shimmerBeeAutoUpdateMenu="enabled"
-                                    fi
-                                    sudo sed -i 's/^shimmerBeeAutoUpdate=.*/shimmerBeeAutoUpdate='$shimmerBeeAutoUpdate'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "Bee [SHIMMER] Watchdog" --msgbox "Bee AutoUpdater $shimmerBeeAutoUpdateMenu!" 8 65
-                                ;;
-                                "2)")
-                                    if [ "$shimmerBeeAllowDbReset" = "true" ]; then
-                                        shimmerBeeAllowDbReset=false
-                                        shimmerBeeAllowDbResetMenu="disabled"
-                                    else
-                                        shimmerBeeAllowDbReset=true
-                                        shimmerBeeAllowDbResetMenu="enabled"
-                                    fi
-                                    sudo sed -i 's/^shimmerBeeAllowDbReset=.*/shimmerBeeAllowDbReset='$shimmerBeeAllowDbReset'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "Bee [SHIMMER] Watchdog" --msgbox "Delete Bee- database $shimmerBeeAllowDbResetMenu for Watchdog!" 8 65
-                                ;;
-                                "3)")
-                                    if [ "$shimmerBeeServiceStatusCheck" = "true" ]; then
-                                        shimmerBeeServiceStatusCheck=false
-                                        shimmerBeeServiceStatusCheckMenu="disabled"
-                                    else
-                                        shimmerBeeServiceStatusCheck=true
-                                        shimmerBeeServiceStatusCheckMenu="enabled"
-                                    fi
-                                    sudo sed -i 's/^shimmerBeeServiceStatusCheck=.*/shimmerBeeServiceStatusCheck='$shimmerBeeServiceStatusCheck'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "Bee [SHIMMER] Watchdog" --msgbox "Watchdog Bee service check $shimmerBeeServiceStatusCheckMenu!" 8 65
-                                ;;
-                            esac
-                        done
-                        exitCode=0
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-        "3)")
-            while [ $exitCode -lt 1 ]; do
-                source $swarmConfigs/swarm.cfg
-                if [ "$goshimmerAutoUpdate" = "true" ]; then
-                    goshimmerAutoUpdateMenu="Disable"
-                else
-                    goshimmerAutoUpdateMenu="Enable"
-                fi
-                if [ "$goshimmerDbReset" = "true" ]; then
-                    goshimmerDbResetMenu="Forbid"
-                else
-                    goshimmerDbResetMenu="Allow"
-                fi
-                if [ "$goshimmerCheckSync" = "true" ]; then
-                    goshimmerCheckSyncMenu="Disable"
-                else
-                    goshimmerCheckSyncMenu="Enable"
-                fi
-                if [ "$goshimmerDbBackupDownload" = "true" ]; then
-                    goshimmerDbBackupDownloadMenu="Disable"
-                else
-                    goshimmerDbBackupDownloadMenu="Enable"
-                fi
-                CHOICE=$(
-                    whiptail --title "SWARM - GoShimmer" --menu "\nChoose an option" 24 65 0 \
-                    "1)" "$goshimmerAutoUpdateMenu GoShimmer AutoUpdater" \
-                    "2)" "$goshimmerDbBackupDownloadMenu GoShimmer DB backup download" \
-                    "3)" "$goshimmerDbResetMenu GoShimmer database reset" 3>&2 2>&1 1>&3
-                )
-                exitStatus=$?
-                if [ "$exitStatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        if [ "$goshimmerAutoUpdate" = "true" ]; then
-                            goshimmerAutoUpdate=false
-                            goshimmerAutoUpdateMenu="disabled"
-                        else
-                            goshimmerAutoUpdate=true
-                            goshimmerAutoUpdateMenu="enabled"
-                        fi
-                        sudo sed -i 's/^goshimmerAutoUpdate=.*/goshimmerAutoUpdate='$goshimmerAutoUpdate'/' $swarmConfigs/swarm.cfg
-                        whiptail --title "Watchdog - GoShimmer" --msgbox "GoShimmer AutoUpdater $goshimmerAutoUpdateMenu!" 8 65
-                    ;;
-                    "2)")
-                        if [ "$goshimmerDbBackupDownload" = "true" ]; then
-                            goshimmerDbBackupDownload=false
-                            sudo sed -i 's/^goshimmerDbBackupDownload=.*/goshimmerDbBackupDownload=false/' $swarmConfigs/swarm.cfg
-                            whiptail --title "GoShimmer - DB Download" --msgbox "GoShimmer DB backup download disabled." 8 65
-                        else
-                            goshimmerDbBackupDownload=true
-                            sudo sed -i 's/^goshimmerDbBackupDownload=.*/goshimmerDbBackupDownload=true/' $swarmConfigs/swarm.cfg
-                            whiptail --title "GoShimmer - DB Download" --msgbox "GoShimmer DB download enabled." 8 65
-                        fi
-                    ;;
-                    "3)")
-                        if [ "$goshimmerDbReset" = "true" ]; then
-                            goshimmerDbReset=false
-                            goshimmerDbResetMenu="disabled"
-                        else
-                            goshimmerDbReset=true
-                            goshimmerDbResetMenu="enabled"
-                        fi
-                        sudo sed -i 's/^goshimmerDbReset=.*/goshimmerDbReset='$goshimmerDbReset'/' $swarmConfigs/swarm.cfg
-                        whiptail --title "SWARM - GoShimmer" --msgbox "Delete GoShimmer database $goshimmerDbResetMenu for Watchdog!" 8 65
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-        "4)")
-            while [ $exitCode -lt 1 ]; do
-                source $swarmConfigs/swarm.cfg
-                if [ "$waspAutoUpdate" = "true" ]; then
-                    waspAutoUpdateMenu="Disable"
-                else
-                    waspAutoUpdateMenu="Enable"
-                fi
-                if [ "$waspAllowDbReset" = "true" ]; then
-                    waspAllowDbResetMenu="Forbid"
-                else
-                    waspAllowDbResetMenu="Allow"
-                fi
-
-                CHOICE=$(
-                    whiptail --title "SWARM - WASP" --menu "\nChoose an option" 24 65 0 \
-                    "1)" "$waspAutoUpdateMenu WASP AutoUpdater" \
-                    "2)" "$waspAllowDbResetMenu WASP database reset" 3>&2 2>&1 1>&3
-                )
-                exitStatus=$?
-                if [ "$exitStatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        if [ "$waspAutoUpdate" = "true" ]; then
-                            waspAutoUpdate=false
-                            waspAutoUpdateMenu="disabled"
-                        else
-                            waspAutoUpdate=true
-                            waspAutoUpdateMenu="enabled"
-                        fi
-                        sudo sed -i 's/^waspAutoUpdate=.*/waspAutoUpdate='$waspAutoUpdate'/' $swarmConfigs/swarm.cfg
-                        whiptail --title "Watchdog - WASP" --msgbox "WASP AutoUpdater $waspAutoUpdateMenu!" 8 65
-                    ;;
-                    "2)")
-                        if [ "$waspAllowDbReset" = "true" ]; then
-                            waspAllowDbReset=false
-                            waspAllowDbResetMenu="disabled"
-                        else
-                            waspAllowDbReset=true
-                            waspAllowDbResetMenu="enabled"
-                        fi
-                        sudo sed -i 's/^waspAllowDbReset=.*/waspAllowDbReset='$waspAllowDbReset'/' $swarmConfigs/swarm.cfg
-                        whiptail --title "SWARM - WASP" --msgbox "Delete WASP database $waspAllowDbResetMenu for Watchdog!" 8 65
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-        "5)")
-            while [ $exitCode -lt 1 ]; do
-                CHOICE=$(
                     whiptail --title "SWARM [SWARM] INX" --menu "\nChoose an option" 24 65 0 \
                     "1)" "INX-Dashboard" \
                     "2)" "INX-Indexer" \
                     "3)" "INX-MQTT" \
-                    "4)" "INX-Participation" 3>&2 2>&1 1>&3
+                    "4)" "INX-Participation" \
+                    "5)" "INX-POI" 3>&2 2>&1 1>&3
                 )
                 exitStatus=$?
                 if [ "$exitStatus" = "1" ]; then
@@ -499,7 +229,7 @@ while [ $exitCode -lt 1 ]; do
                                 "2)")
                                     if [ "$shimmerInxDashboardServiceStatusCheck" = "true" ]; then
                                         shimmerInxDashboardServiceStatusCheck=false
-                                        shimmerInxMDashboardServiceStatusCheckMenu="disabled"
+                                        shimmerInxDashboardServiceStatusCheckMenu="disabled"
                                     else
                                         shimmerInxDashboardServiceStatusCheck=true
                                         shimmerInxDashboardServiceStatusCheckMenu="enabled"
@@ -731,12 +461,12 @@ while [ $exitCode -lt 1 ]; do
                                     whiptail --title "INX-POI [SHIMMER] Watchdog" --msgbox "INX-POI AutoUpdater $shimmerInxPoiAutoUpdateMenu!" 8 65
                                 ;;
                                 "2)")
-                                    if [ "$shimmerInxParticipationServiceStatusCheck" = "true" ]; then
-                                        shimmerInxParticipationServiceStatusCheck=false
-                                        shimmerInxParticipationServiceStatusCheckMenu="disabled"
+                                    if [ "$shimmerInxPoiServiceStatusCheck" = "true" ]; then
+                                        shimmerInxPoiServiceStatusCheck=false
+                                        shimmerInxPoiServiceStatusCheckMenu="disabled"
                                     else
-                                        shimmerInxParticipationServiceStatusCheck=true
-                                        shimmerInxParticipationServiceStatusCheckMenu="enabled"
+                                        shimmerInxPoiServiceStatusCheck=true
+                                        shimmerInxPoiServiceStatusCheckMenu="enabled"
                                     fi
                                     sudo sed -i 's/^shimmerInxPoiServiceStatusCheck=.*/shimmerInxPoiServiceStatusCheck='$shimmerInxPoiServiceStatusCheck'/' $swarmConfigs/swarm.cfg
                                     whiptail --title "INX-POI [SHIMMER] Watchdog" --msgbox "Watchdog INX-POI service check $shimmerInxPoiServiceStatusCheckMenu!" 8 65
@@ -749,7 +479,305 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "6)")
+        # "2)")
+        #     while [ $exitCode -lt 1 ]; do
+        #         CHOICE=$(
+        #             whiptail --title "SWARM - Bee" --menu "\nChoose an option" 24 65 0 \
+        #             "1)" "Bee [IOTA]" \
+        #             "2)" "Bee [SHIMMER]" 3>&2 2>&1 1>&3
+        #         )
+        #         exitStatus=$?
+        #         if [ "$exitStatus" = "1" ]; then
+        #             exitCode=1
+        #         fi
+        #         case $CHOICE in
+        #             "1)")
+        #                 while [ $exitCode -lt 1 ]; do
+        #                     source $swarmConfigs/swarm.cfg
+        #                     if [ "$iotaBeeAutoUpdate" = "true" ]; then
+        #                         iotaBeeAutoUpdateMenu="Disable"
+        #                     else
+        #                         iotaBeeAutoUpdateMenu="Enable"
+        #                     fi
+        #                     if [ "$iotaBeeAllowDbReset" = "true" ]; then
+        #                         iotaBeeAllowDbResetMenu="Forbid"
+        #                     else
+        #                         iotaBeeAllowDbResetMenu="Allow"
+        #                     fi
+        #                     if [ "$iotaBeeServiceStatusCheck" = "true" ]; then
+        #                         iotaBeeServiceStatusCheckMenu="Disable"
+        #                     else
+        #                         iotaBeeServiceStatusCheckMenu="Enable"
+        #                     fi
+        #                     CHOICE=$(
+        #                         whiptail --title "SWARM [IOTA] Bee" --menu "\nChoose an option" 24 65 0 \
+        #                         "1)" "$iotaBeeAutoUpdateMenu Bee AutoUpdater" \
+        #                         "2)" "$iotaBeeAllowDbResetMenu Bee database reset" \
+        #                         "3)" "$iotaBeeServiceStatusCheckMenu Bee service status check" 3>&2 2>&1 1>&3
+        #                     )
+        #                     exitStatus=$?
+        #                     if [ "$exitStatus" = "1" ]; then
+        #                         exitCode=1
+        #                     fi
+        #                     case $CHOICE in
+        #                         "1)")
+        #                             if [ "$iotaBeeAutoUpdate" = "true" ]; then
+        #                                 iotaBeeAutoUpdate=false
+        #                                 iotaBeeAutoUpdateMenu="disabled"
+        #                             else
+        #                                 iotaBeeAutoUpdate=true
+        #                                 iotaBeeAutoUpdateMenu="enabled"
+        #                             fi
+        #                             sudo sed -i 's/^iotaBeeAutoUpdate=.*/iotaBeeAutoUpdate='$iotaBeeAutoUpdate'/' $swarmConfigs/swarm.cfg
+        #                             whiptail --title "Watchdog [IOTA] Bee" --msgbox "Bee AutoUpdater $iotaBeeAutoUpdateMenu!" 8 65
+        #                         ;;
+        #                         "2)")
+        #                             if [ "$iotaBeeAllowDbReset" = "true" ]; then
+        #                                 iotaBeeAllowDbReset=false
+        #                                 iotaBeeAllowDbResetMenu="disabled"
+        #                             else
+        #                                 iotaBeeAllowDbReset=true
+        #                                 iotaBeeAllowDbResetMenu="enabled"
+        #                             fi
+        #                             sudo sed -i 's/^iotaBeeAllowDbReset=.*/iotaBeeAllowDbReset='$iotaBeeAllowDbReset'/' $swarmConfigs/swarm.cfg
+        #                             whiptail --title "SWARM [IOTA] Bee" --msgbox "Delete Bee database $iotaBeeAllowDbResetMenu for Watchdog!" 8 65
+        #                         ;;
+        #                         "3)")
+        #                             if [ "$iotaBeeServiceStatusCheck" = "true" ]; then
+        #                                 iotaBeeServiceStatusCheck=false
+        #                                 iotaBeeServiceStatusCheckMenu="disabled"
+        #                             else
+        #                                 iotaBeeServiceStatusCheck=true
+        #                                 iotaBeeServiceStatusCheckMenu="enabled"
+        #                             fi
+        #                             sudo sed -i 's/^iotaBeeServiceStatusCheck=.*/iotaBeeServiceStatusCheck='$iotaBeeServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+        #                             whiptail --title "SWARM [IOTA] Bee" --msgbox "Watchdog Bee service check $iotaBeeServiceStatusCheckMenu!" 8 65
+        #                         ;;
+        #                     esac
+        #                 done
+        #                 exitCode=0
+        #             ;;
+        #             "2)")
+        #                 while [ $exitCode -lt 1 ]; do
+        #                     source $swarmConfigs/swarm.cfg
+        #                     if [ "$shimmerBeeAutoUpdate" = "true" ]; then
+        #                         shimmerBeeAutoUpdateMenu="Disable"
+        #                     else
+        #                         shimmerBeeAutoUpdateMenu="Enable"
+        #                     fi
+        #                     if [ "$shimmerBeeAllowDbReset" = "true" ]; then
+        #                         shimmerBeeAllowDbResetMenu="Forbid"
+        #                     else
+        #                         shimmerBeeAllowDbResetMenu="Allow"
+        #                     fi
+        #                     if [ "$shimmerBeeServiceStatusCheck" = "true" ]; then
+        #                         shimmerBeeServiceStatusCheckMenu="Disable"
+        #                     else
+        #                         shimmerBeeServiceStatusCheckMenu="Enable"
+        #                     fi
+
+        #                     CHOICE=$(
+        #                         whiptail --title "Bee [SHIMMER] Watchdog" --menu "\nChoose an option" 24 65 0 \
+        #                         "1)" "$shimmerBeeAutoUpdateMenu Bee AutoUpdater" \
+        #                         "2)" "$shimmerBeeAllowDbResetMenu Bee database reset" \
+        #                         "3)" "$shimmerBeeServiceStatusCheckMenu Bee service status check" 3>&2 2>&1 1>&3
+        #                     )
+        #                     exitStatus=$?
+        #                     if [ "$exitStatus" = "1" ]; then
+        #                         exitCode=1
+        #                     fi
+        #                     case $CHOICE in
+        #                         "1)")
+        #                             if [ "$shimmerBeeAutoUpdate" = "true" ]; then
+        #                                 shimmerBeeAutoUpdate=false
+        #                                 shimmerBeeAutoUpdateMenu="disabled"
+        #                             else
+        #                                 shimmerBeeAutoUpdate=true
+        #                                 shimmerBeeAutoUpdateMenu="enabled"
+        #                             fi
+        #                             sudo sed -i 's/^shimmerBeeAutoUpdate=.*/shimmerBeeAutoUpdate='$shimmerBeeAutoUpdate'/' $swarmConfigs/swarm.cfg
+        #                             whiptail --title "Bee [SHIMMER] Watchdog" --msgbox "Bee AutoUpdater $shimmerBeeAutoUpdateMenu!" 8 65
+        #                         ;;
+        #                         "2)")
+        #                             if [ "$shimmerBeeAllowDbReset" = "true" ]; then
+        #                                 shimmerBeeAllowDbReset=false
+        #                                 shimmerBeeAllowDbResetMenu="disabled"
+        #                             else
+        #                                 shimmerBeeAllowDbReset=true
+        #                                 shimmerBeeAllowDbResetMenu="enabled"
+        #                             fi
+        #                             sudo sed -i 's/^shimmerBeeAllowDbReset=.*/shimmerBeeAllowDbReset='$shimmerBeeAllowDbReset'/' $swarmConfigs/swarm.cfg
+        #                             whiptail --title "Bee [SHIMMER] Watchdog" --msgbox "Delete Bee- database $shimmerBeeAllowDbResetMenu for Watchdog!" 8 65
+        #                         ;;
+        #                         "3)")
+        #                             if [ "$shimmerBeeServiceStatusCheck" = "true" ]; then
+        #                                 shimmerBeeServiceStatusCheck=false
+        #                                 shimmerBeeServiceStatusCheckMenu="disabled"
+        #                             else
+        #                                 shimmerBeeServiceStatusCheck=true
+        #                                 shimmerBeeServiceStatusCheckMenu="enabled"
+        #                             fi
+        #                             sudo sed -i 's/^shimmerBeeServiceStatusCheck=.*/shimmerBeeServiceStatusCheck='$shimmerBeeServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+        #                             whiptail --title "Bee [SHIMMER] Watchdog" --msgbox "Watchdog Bee service check $shimmerBeeServiceStatusCheckMenu!" 8 65
+        #                         ;;
+        #                     esac
+        #                 done
+        #                 exitCode=0
+        #             ;;
+        #         esac
+        #     done
+        #     exitCode=0
+        # ;;
+        "3)")
+            while [ $exitCode -lt 1 ]; do
+                source $swarmConfigs/swarm.cfg
+                if [ "$goshimmerAutoUpdate" = "true" ]; then
+                    goshimmerAutoUpdateMenu="Disable"
+                else
+                    goshimmerAutoUpdateMenu="Enable"
+                fi
+                if [ "$goshimmerDbReset" = "true" ]; then
+                    goshimmerDbResetMenu="Forbid"
+                else
+                    goshimmerDbResetMenu="Allow"
+                fi
+                if [ "$goshimmerServiceStatusCheck" = "true" ]; then
+                    goshimmerServiceStatusCheckMenu="Disable"
+                else
+                    goshimmerServiceStatusCheckMenu="Enable"
+                fi
+                if [ "$goshimmerDbBackupDownload" = "true" ]; then
+                    goshimmerDbBackupDownloadMenu="Disable"
+                else
+                    goshimmerDbBackupDownloadMenu="Enable"
+                fi
+                CHOICE=$(
+                    whiptail --title "SWARM - GoShimmer" --menu "\nChoose an option" 24 65 0 \
+                    "1)" "$goshimmerAutoUpdateMenu GoShimmer AutoUpdater" \
+                    "2)" "$goshimmerDbBackupDownloadMenu GoShimmer DB backup download" \
+                    "3)" "$goshimmerDbResetMenu GoShimmer database reset" \
+                    "4)" "$goshimmerServiceStatusCheckMenu GoShimmer status check" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ "$goshimmerAutoUpdate" = "true" ]; then
+                            goshimmerAutoUpdate=false
+                            goshimmerAutoUpdateMenu="disabled"
+                        else
+                            goshimmerAutoUpdate=true
+                            goshimmerAutoUpdateMenu="enabled"
+                        fi
+                        sudo sed -i 's/^goshimmerAutoUpdate=.*/goshimmerAutoUpdate='$goshimmerAutoUpdate'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "Watchdog - GoShimmer" --msgbox "GoShimmer AutoUpdater $goshimmerAutoUpdateMenu!" 8 65
+                    ;;
+                    "2)")
+                        if [ "$goshimmerDbBackupDownload" = "true" ]; then
+                            goshimmerDbBackupDownload=false
+                            sudo sed -i 's/^goshimmerDbBackupDownload=.*/goshimmerDbBackupDownload=false/' $swarmConfigs/swarm.cfg
+                            whiptail --title "GoShimmer - DB Download" --msgbox "GoShimmer DB backup download disabled." 8 65
+                        else
+                            goshimmerDbBackupDownload=true
+                            sudo sed -i 's/^goshimmerDbBackupDownload=.*/goshimmerDbBackupDownload=true/' $swarmConfigs/swarm.cfg
+                            whiptail --title "GoShimmer - DB Download" --msgbox "GoShimmer DB download enabled." 8 65
+                        fi
+                    ;;
+                    "3)")
+                        if [ "$goshimmerDbReset" = "true" ]; then
+                            goshimmerDbReset=false
+                            goshimmerDbResetMenu="disabled"
+                        else
+                            goshimmerDbReset=true
+                            goshimmerDbResetMenu="enabled"
+                        fi
+                        sudo sed -i 's/^goshimmerDbReset=.*/goshimmerDbReset='$goshimmerDbReset'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - GoShimmer" --msgbox "Delete GoShimmer database $goshimmerDbResetMenu for Watchdog!" 8 65
+                    ;;
+                    "4)")
+                        if [ "$goshimmerServiceStatusCheck" = "true" ]; then
+                            goshimmerServiceStatusCheck=false
+                            goshimmerServiceStatusCheckMenu="disabled"
+                        else
+                            goshimmerServiceStatusCheck=true
+                            goshimmerServiceStatusCheckMenu="enabled"
+                        fi
+                        sudo sed -i 's/^goshimmerServiceStatusCheck=.*/goshimmerServiceStatusCheck='$goshimmerServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - GoShimmer" --msgbox "GoShimmer status check $goshimmerServiceStatusCheckMenu." 8 65
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "4)")
+            while [ $exitCode -lt 1 ]; do
+                source $swarmConfigs/swarm.cfg
+                if [ "$waspAutoUpdate" = "true" ]; then
+                    waspAutoUpdateMenu="Disable"
+                else
+                    waspAutoUpdateMenu="Enable"
+                fi
+                if [ "$waspAllowDbReset" = "true" ]; then
+                    waspAllowDbResetMenu="Forbid"
+                else
+                    waspAllowDbResetMenu="Allow"
+                fi
+                if [ "$waspServiceStatusCheck" = "true" ]; then
+                    waspServiceStatusCheckMenu="disabled"
+                else
+                    waspServiceStatusCheckMenu="enabled"
+                fi
+                CHOICE=$(
+                    whiptail --title "SWARM - WASP" --menu "\nChoose an option" 24 65 0 \
+                    "1)" "$waspAutoUpdateMenu WASP AutoUpdater" \
+                    "2)" "$waspAllowDbResetMenu WASP database reset" \
+                    "3)" "$waspServiceStatusCheckMenu WASP status check" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ "$waspAutoUpdate" = "true" ]; then
+                            waspAutoUpdate=false
+                            waspAutoUpdateMenu="disabled"
+                        else
+                            waspAutoUpdate=true
+                            waspAutoUpdateMenu="enabled"
+                        fi
+                        sudo sed -i 's/^waspAutoUpdate=.*/waspAutoUpdate='$waspAutoUpdate'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "Watchdog - WASP" --msgbox "WASP AutoUpdater $waspAutoUpdateMenu!" 8 65
+                    ;;
+                    "2)")
+                        if [ "$waspAllowDbReset" = "true" ]; then
+                            waspAllowDbReset=false
+                            waspAllowDbResetMenu="disabled"
+                        else
+                            waspAllowDbReset=true
+                            waspAllowDbResetMenu="enabled"
+                        fi
+                        sudo sed -i 's/^waspAllowDbReset=.*/waspAllowDbReset='$waspAllowDbReset'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - WASP" --msgbox "Delete WASP database $waspAllowDbResetMenu for Watchdog!" 8 65
+                    ;;
+                    "3)")
+                        if [ "$waspServiceStatusCheck" = "true" ]; then
+                            waspServiceStatusCheck=false
+                            waspServiceStatusCheckMenu="disabled"
+                        else
+                            waspServiceStatusCheck=true
+                            waspServiceStatusCheckMenu="enabled"
+                        fi
+                        sudo sed -i 's/^waspServiceStatusCheck=.*/waspServiceStatusCheck='$waspServiceStatusCheck'/' $swarmConfigs/swarm.cfg
+                        whiptail --title "SWARM - WASP" --msgbox "WASP status check $waspServiceStatusCheckMenu." 8 65
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "5)")
             while [ $exitCode -lt 1 ]; do
                 source $swarmConfigs/swarm.cfg
                 if [ "$telegramNotifications" = "true" ]; then
@@ -805,7 +833,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "7)")
+        "6)")
             if (whiptail --title "Watchdog - Update" --yesno --defaultno "Do you really want to update Watchdog?" 8 65); then
                 ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
                 ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
