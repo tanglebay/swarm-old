@@ -17,6 +17,11 @@ if [ -f "/usr/sbin/nginx" ]; then
         if [ "$parser" != "$version" ]; then
             sudo jq '.swarm.version = "'$version'"' /var/www/swarm.json|sponge /var/www/swarm.json 2>/dev/null
         fi
+        parser=$(jq '.swarm.build' /var/www/swarm.json)
+        parser=$(echo $parser | tr -d '"')
+        if [ "$parser" != "$build" ]; then
+            sudo jq '.swarm.build = '$build'' /var/www/swarm.json|sponge /var/www/swarm.json 2>/dev/null
+        fi
         if [ ! -s /etc/nginx/swarm/swarm.conf ]; then
             sudo cp -rf $swarmTemplates/proxy/nginx_swarm-endpoint.template /etc/nginx/swarm/swarm.conf 2>/dev/null
             sudo systemctl reload nginx 2>/dev/null
