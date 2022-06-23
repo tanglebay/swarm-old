@@ -23,28 +23,6 @@ else
     sudo sed -i 's/^shimmerHornetStatusCounter=.*/shimmerHornetStatusCounter='$shimmerHornetStatusCounter'/' $swarmConfigs/watchdog.cfg
 fi
 
-# Bee
-if [ -n "$iotaBeeStatusCounter" ]; then
-    if [ $iotaBeeStatusCounter -ne $iotaBeeStatusCounter ] 2>/dev/null; then
-        beeStatusCounter=0
-        sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$iotaBeeStatusCounter'/' $swarmConfigs/watchdog.cfg
-    fi
-else
-    beeStatusCounter=0
-    sudo sed -i 's/^beeStatusCounter=.*/beeStatusCounter='$iotaBeeStatusCounter'/' $swarmConfigs/watchdog.cfg
-fi
-
-# Shimmer-Bee
-if [ -n "$shimmerBeeStatusCounter" ]; then
-    if [ $shimmerBeeStatusCounter -ne $shimmerBeeStatusCounter ] 2>/dev/null; then
-        shimmerBeeStatusCounter=0
-        sudo sed -i 's/^shimmerBeeStatusCounter=.*/shimmerBeeStatusCounter='$shimmerBeeStatusCounter'/' $swarmConfigs/watchdog.cfg
-    fi
-else
-    shimmerBeeStatusCounter=0
-    sudo sed -i 's/^shimmerBeeStatusCounter=.*/shimmerBeeStatusCounter='$shimmerBeeStatusCounter'/' $swarmConfigs/watchdog.cfg
-fi
-
 # GoShimmer
 if [ -n "$goshimmerStatusCounter" ]; then
     if [ $goshimmerStatusCounter -ne $goshimmerStatusCounter ] 2>/dev/null; then
@@ -173,66 +151,6 @@ else
     if [ $shimmerHornetStatusCounter -gt 0 ] 2>/dev/null; then
         let shimmerHornetStatusCounter=$shimmerHornetStatusCounter-1
         sudo sed -i 's/^shimmerHornetStatusCounter=.*/shimmerHornetStatusCounter='$shimmerHornetStatusCounter'/' $swarmConfigs/watchdog.cfg
-    fi
-fi
-
-# Bee Status Check
-if [ "$iotaBeeStatus" != "active" ] && [ -f "/usr/bin/iota-bee" ] && [ "$iotaBeeServiceStatusCheck" = "true" ]; then
-    sudo systemctl stop iota-bee 2>/dev/null
-    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-    if [ $iotaBeeStatusCounter -ge 2 ] 2>/dev/null; then
-        if [ "$iotaBeeAllowDbReset" = "true" ]; then
-            if [ "$killall" = "true" ]; then
-                sudo killall -s SIGKILL iota-bee 2>/dev/null
-            fi
-            sudo rm -rf $iotaBeeHome/storage/$iotaBeeNetwork $iotaBeeHome/snapshots/$iotaBeeNetwork
-            echo "$restartDate [WACHTDOG] BEE [IOTA] ${iotaBeeNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
-            telegramText="[$HOSTNAME] BEE [IOTA] ${iotaBeeNetwork}DB deleted because the maximum number of attempted restarts was reached."
-            source $watchdogModules/watchdogTelegram
-        fi
-        iotaBeeStatusCounter=0
-    else
-        let iotaBeeStatusCounter=$iotaBeeStatusCounter+1
-    fi
-    sudo systemctl start iota-bee 2>/dev/null
-    sudo sed -i 's/^iotaBeeStatusCounter=.*/iotaBeeStatusCounter='$iotaBeeStatusCounter'/' $swarmConfigs/watchdog.cfg
-    echo "$restartDate [WACHTDOG] BEE [IOTA] node was restarted because the service is not active." >> $swarmLogs/swarm.log
-    telegramText="[$HOSTNAME] BEE [IOTA] node was restarted because the service is not active."
-    source $watchdogModules/watchdogTelegram
-else
-    if [ $iotaBeeStatusCounter -gt 0 ] 2>/dev/null; then
-        let iotaBeeStatusCounter=$iotaBeeStatusCounter-1
-        sudo sed -i 's/^iotaBeeStatusCounter=.*/iotaBeeStatusCounter='$iotaBeeStatusCounter'/' $swarmConfigs/watchdog.cfg
-    fi
-fi
-
-# Shimmer-Bee Status Check
-if [ "$shimmerBeeStatus" != "active" ] && [ -f "/usr/bin/shimmer-bee" ] && [ "$shimmerBeeServiceStatusCheck" = "true" ]; then
-    sudo systemctl stop shimmer-bee 2>/dev/null
-    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-    if [ $shimmerBeeStatusCounter -ge 2 ] 2>/dev/null; then
-        if [ "$shimmerBeeAllowDbReset" = "true" ]; then
-            if [ "$killall" = "true" ]; then
-                sudo killall -s SIGKILL shimmer-bee 2>/dev/null
-            fi
-            sudo rm -rf $shimmerBeeHome/storage/$shimmerBeeNetwork $shimmerBeeHome/snapshots/$shimmerBeeNetwork
-            echo "$restartDate [WACHTDOG] BEE [SHIMMER] ${shimmerBeeNetwork}DB deleted because the maximum number of attempted restarts was reached." >> $swarmLogs/swarm.log
-            telegramText="[$HOSTNAME] BEE [SHIMMER] ${shimmerBeeNetwork}DB deleted because the maximum number of attempted restarts was reached."
-            source $watchdogModules/watchdogTelegram
-        fi
-        shimmerBeeStatusCounter=0
-    else
-        let shimmerBeeStatusCounter=$shimmerBeeStatusCounter+1
-    fi
-    sudo systemctl start shimmer-bee 2>/dev/null
-    sudo sed -i 's/^shimmerBeeStatusCounter=.*/shimmerBeeStatusCounter='$shimmerBeeStatusCounter'/' $swarmConfigs/watchdog.cfg
-    echo "$restartDate [WACHTDOG] BEE [SHIMMER] node was restarted because the service is not active." >> $swarmLogs/swarm.log
-    telegramText="[$HOSTNAME] BEE [SHIMMER] node was restarted because the service is not active."
-    source $watchdogModules/watchdogTelegram
-else
-    if [ $shimmerBeeStatusCounter -gt 0 ] 2>/dev/null; then
-        let shimmerBeeStatusCounter=$shimmerBeeStatusCounter-1
-        sudo sed -i 's/^shimmerBeeStatusCounter=.*/shimmerBeeStatusCounter='$shimmerBeeStatusCounter'/' $swarmConfigs/watchdog.cfg
     fi
 fi
 
