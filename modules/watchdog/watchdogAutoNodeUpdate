@@ -44,74 +44,7 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
         fi
         unset currentShimmerHornetVersion shimmerHornetUpdated shimmerHornetChecksum
     fi
-
-    # Bee AutoUpdater
-    if [ "$iotaBeeAutoUpdate" = "true" ] && [ -f "/usr/bin/iota-bee" ]; then
-        source $iotaBeeModules/iotaBeeVersion
-        currentIotaBeeVersion="$iotaBeeVersion"
-        if [ "$latestIotaBeeVersion" != "$iotaBeeVersion" ]; then
-            source $iotaBeeModules/iotaBeeInstaller
-            source $iotaBeeModules/iotaBeeVersion
-            if [ "$currentIotaBeeVersion" != "$iotaBeeVersion" ] || [ "$iotaBeeUpdated" = "true" ]; then
-                source $iotaBeeModules/iotaBeeParser
-                if [ "$restartIotaBee" = "true" ]; then
-                    sudo systemctl restart iota-bee > /dev/null 2>&1
-                    sleep 5
-                    unset restartIotaBee
-                fi
-                if [ "$iotaBeeAutopeeringEnabled" = "true" ]; then
-                    if [ "$ufw" = "true" ]; then
-                        sudo ufw allow $iotaBeeAutopeeringPort/udp > /dev/null 2>&1
-                    fi
-                else
-                    if [ "$ufw" = "true" ]; then
-                        sudo ufw delete allow $iotaBeeAutopeeringPort/udp > /dev/null 2>&1
-                    fi
-                fi
-                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                consoleLog="[AUTOUPDATE] New version ($latestIotaBeeVersion) of Bee [IOTA] installed."
-                echo "$restartDate $consoleLog" >> $swarmLogs/swarm.log
-                telegramText="[$HOSTNAME] New version ($latestIotaBeeVersion) of Bee [IOTA] installed."
-                source $watchdogModules/watchdogTelegram
-                unset iotaBeeUpdated
-            fi
-        fi
-        unset currentIotaBeeVersion
-    fi
-
-    # Shimmer-Bee AutoUpdater
-    if [ "$shimmerBeeAutoUpdate" = "true" ] && [ -f "/usr/bin/shimmer-bee" ]; then
-        source $shimmerBeeModules/shimmerBeeVersion
-        currentShimmerBeeVersion="$shimmerBeeVersion"
-        if [ "$latestShimmerBeeVersion" != "$shimmerBeeVersion" ]; then
-            source $shimmerBeeModules/shimmerBeeInstaller
-            source $shimmerBeeModules/shimmerBeeVersion
-            if [ "currentShimmerBeeVersion" != "$shimmerBeeVersion" ] || [ "$shimmerBeeUpdated" = "true" ]; then
-                source $shimmerBeeModules/shimmerBeeParser
-                if [ "$restartShimmerBee" = "true" ]; then
-                    sudo systemctl restart shimmer-bee > /dev/null 2>&1
-                    sleep 5
-                    unset restartShimmerBee
-                fi
-                if [ "$shimmerBeeAutopeeringEnabled" = "true" ]; then
-                    if [ "$ufw" = "true" ]; then
-                        sudo ufw allow $shimmerBeeAutopeeringPort/udp > /dev/null 2>&1
-                    fi
-                else
-                    if [ "$ufw" = "true" ]; then
-                        sudo ufw delete allow $shimmerBeeAutopeeringPort/udp > /dev/null 2>&1
-                    fi
-                fi
-                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                consoleLog="[AUTOUPDATE] New version ($latestShimmerBeeVersion) of Bee [SHIMMER] installed."
-                echo "$restartDate $consoleLog" >> $swarmLogs/swarm.log
-                telegramText="[$HOSTNAME] New version ($latestShimmerBeeVersion) of Bee [SHIMMER] installed."
-                source $watchdogModules/watchdogTelegram
-            fi
-        fi
-        unset currentShimmerBeeVersion shimmerBeeUpdated
-    fi
-
+    
     # GoShimmer AutoUpdater
     if [ "$goshimmerAutoUpdate" = "true" ] && [ -f "/usr/bin/goshimmer" ] && [ ! -f "/tmp/goshimmer.lock" ]; then
         source $goshimmerModules/goshimmerVersion
