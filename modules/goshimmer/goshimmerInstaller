@@ -70,6 +70,46 @@ if [ "$osArchitecture" = "amd64" ]; then
     fi
 fi
 
+if [ "$osArchitecture" = "arm64" ]; then
+    source $swarmModules/swarmAuth
+    if [ "$swarmAuth" = "200" ]; then
+        # Download latest inx-indexer
+        ( cd /tmp/goshimmer/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/goshimmer/v${latestGoshimmerVersion}/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz )
+        if [ -f "/tmp/goshimmer/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz" ]; then
+            goshimmerDownloadChecksum=$(sudo shasum -a 512 /tmp/goshimmer/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        fi
+
+        # Download checksum
+        ( cd /tmp/goshimmer/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/goshimmer/v${latestGoshimmerVersion}/checksums.txt )
+        goshimmerChecksum=$(sudo grep "goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz" /tmp/goshimmer/checksums.txt | awk '{ print $1 }')
+        echo $goshimmerChecksum > /tmp/goshimmer.checksum
+
+        # Unzip archive
+        if [ "$goshimmerDownloadChecksum" = "$goshimmerChecksum" ] && [ ! -z "$goshimmerDownloadChecksum" ] && [ ! -z "$goshimmerChecksum" ]; then
+            ( cd /tmp/goshimmer ; sudo tar -xzf /tmp/goshimmer/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+
+            # Copy files for goshimmer
+            if [ -f "/tmp/goshimmer/goshimmer" ]; then
+                if [ ! -f "/tmp/goshimmer/config.json" ]; then
+                    sudo wget -q -O /tmp/goshimmer/config.json https://raw.githubusercontent.com/iotaledger/goshimmer/master/config.default.json
+                fi
+                goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+                if [ "$goshimmerStatus" = "active" ]; then
+                    sudo systemctl stop goshimmer > /dev/null 2>&1
+                fi
+                sudo cp -rf /tmp/goshimmer/goshimmer /usr/bin/goshimmer > /dev/null 2>&1
+                sudo cp -rf /tmp/goshimmer/config.json $goshimmerHome/config.json > /dev/null 2>&1
+
+                # Download db/snapshot
+                source $goshimmerModules/goshimmerDbDownload
+
+                restartGoshimmer=true
+                goshimmerUpdated=true
+            fi
+        fi
+    fi
+fi
+
 # Remove temporary files
 sudo rm -rf /tmp/goshimmer > /dev/null 2>&1
 

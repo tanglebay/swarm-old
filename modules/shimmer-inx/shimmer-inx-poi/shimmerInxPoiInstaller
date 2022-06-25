@@ -32,35 +32,33 @@ fi
 # Create dir if not exist
 sudo mkdir -p /tmp/shimmer-inx-poi > /dev/null 2>&1
 
-if [ "$osArchitecture" = "amd64" ]; then
-    source $swarmModules/swarmAuth
-    if [ "$swarmAuth" = "200" ]; then
-        # Download latest inx-poi
-        ( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-poi/v${latestShimmerInxPoiVersion}/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz )
-        if [ -f "/tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" ]; then
-            shimmerInxPoiDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-        fi
+source $swarmModules/swarmAuth
+if [ "$swarmAuth" = "200" ]; then
+    # Download latest inx-poi
+    ( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-poi/v${latestShimmerInxPoiVersion}/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz )
+    if [ -f "/tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" ]; then
+        shimmerInxPoiDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+    fi
 
-        # Download checksum
-        ( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-poi/v${latestShimmerInxPoiVersion}/checksums.txt )
-        shimmerInxPoiChecksum=$(sudo grep "inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-poi/checksums.txt | awk '{ print $1 }')
-        echo $shimmerInxPoiChecksum > /tmp/shimmer-inx-poi.checksum
+    # Download checksum
+    ( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-poi/v${latestShimmerInxPoiVersion}/checksums.txt )
+    shimmerInxPoiChecksum=$(sudo grep "inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-poi/checksums.txt | awk '{ print $1 }')
+    echo $shimmerInxPoiChecksum > /tmp/shimmer-inx-poi.checksum
 
-        # Unzip archive
-        if [ "$shimmerInxPoiDownloadChecksum" = "$shimmerInxPoiChecksum" ] && [ ! -z "$shimmerInxPoiDownloadChecksum" ] && [ ! -z "$shimmerInxPoiChecksum" ]; then
-            ( cd /tmp/shimmer-inx-poi ; sudo tar -xzf /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+    # Unzip archive
+    if [ "$shimmerInxPoiDownloadChecksum" = "$shimmerInxPoiChecksum" ] && [ ! -z "$shimmerInxPoiDownloadChecksum" ] && [ ! -z "$shimmerInxPoiChecksum" ]; then
+        ( cd /tmp/shimmer-inx-poi ; sudo tar -xzf /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
-            # Copy binary
-            if [ -f "/tmp/shimmer-inx-poi/inx-poi" ]; then
-                shimmerInxPoiStatus="$(systemctl show -p ActiveState --value shimmer-inx-poi)"
-                if [ "$shimmerInxPoiStatus" = "active" ]; then
-                    sudo systemctl stop shimmer-inx-poi > /dev/null 2>&1
-                fi
-
-                sudo cp -rf /tmp/shimmer-inx-poi/inx-poi /usr/bin/shimmer-inx-poi > /dev/null 2>&1
-                sudo chmod +x /usr/bin/shimmer-inx-poi > /dev/null 2>&1
-                newShimmerInxPoiBinary=true
+        # Copy binary
+        if [ -f "/tmp/shimmer-inx-poi/inx-poi" ]; then
+            shimmerInxPoiStatus="$(systemctl show -p ActiveState --value shimmer-inx-poi)"
+            if [ "$shimmerInxPoiStatus" = "active" ]; then
+                sudo systemctl stop shimmer-inx-poi > /dev/null 2>&1
             fi
+
+            sudo cp -rf /tmp/shimmer-inx-poi/inx-poi /usr/bin/shimmer-inx-poi > /dev/null 2>&1
+            sudo chmod +x /usr/bin/shimmer-inx-poi > /dev/null 2>&1
+            newShimmerInxPoiBinary=true
         fi
     fi
 fi
