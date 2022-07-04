@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ ! -f "/tmp/watchdog.lock" ]; then
+    goshimmerWatchdogLock=true
+    sudo touch /tmp/watchdog.lock
+fi
+
 if [ -d "/var/lib/goshimmer/mainnetdb" ]; then
     sudo rm -rf /var/lib/goshimmer/mainnetdb > /dev/null 2>&1
 fi
@@ -37,4 +42,8 @@ sudo chown -R goshimmer:goshimmer /var/lib/goshimmer
 # Cleanup
 sudo rm -rf /tmp/goshimmer
 
-unset goshimmerAllowDbDownload
+if [ "$goshimmerWatchdogLock" = "true" ]; then
+    sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
+fi
+
+unset goshimmerAllowDbDownload goshimmerWatchdogLock
