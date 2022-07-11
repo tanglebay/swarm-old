@@ -17,7 +17,7 @@ fi
 
 # Create Service
 if [ ! -f "/lib/systemd/system/shimmer-inx-mqtt.service" ]; then
-    sudo cp -rf $swarmHome/templates/shimmer-inx/shimmer-inx-mqtt.service /lib/systemd/system/shimmer-inx-mqtt.service
+    sudo cp -rf $swarmHome/templates/shimmer-inx/shimmer-inx-mqtt.service /lib/systemd/system/shimmer-inx-mqtt.service > /dev/null 2>&1
     if [ ! -f "/etc/default/shimmer-inx-mqtt" ]; then
         echo "OPTIONS=\"--config config.json\"" > /etc/default/shimmer-inx-mqtt
     fi
@@ -35,13 +35,13 @@ sudo mkdir -p /tmp/shimmer-inx-mqtt > /dev/null 2>&1
 source $swarmModules/swarmAuth
 if [ "$swarmAuth" = "200" ]; then
     # Download latest inx-mqtt
-    ( cd /tmp/shimmer-inx-mqtt/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-mqtt/v${latestShimmerInxMqttVersion}/inx-mqtt-v${latestShimmerInxMqttVersion}_linux_$osArchitecture.tar.gz )
+    ( cd /tmp/shimmer-inx-mqtt/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-mqtt/v${latestShimmerInxMqttVersion}/inx-mqtt-v${latestShimmerInxMqttVersion}_linux_$osArchitecture.tar.gz )
     if [ -f "/tmp/shimmer-inx-mqtt/inx-mqtt-v${latestShimmerInxMqttVersion}_linux_$osArchitecture.tar.gz" ]; then
         shimmerInxMqttDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-mqtt/inx-mqtt-v${latestShimmerInxMqttVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
     fi
 
     # Download checksum
-    ( cd /tmp/shimmer-inx-mqtt/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/shimmer/inx/inx-mqtt/v${latestShimmerInxMqttVersion}/checksums_linux_$osArchitecture.txt )
+    ( cd /tmp/shimmer-inx-mqtt/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$swarmUrl/download/inx/inx-mqtt/v${latestShimmerInxMqttVersion}/checksums_linux_$osArchitecture.txt )
     shimmerInxMqttChecksum=$(sudo grep "inx-mqtt-v${latestShimmerInxMqttVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-mqtt/checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
     echo $shimmerInxMqttChecksum > /tmp/shimmer-inx-mqtt.checksum
 
@@ -76,6 +76,11 @@ if [ "$newShimmerInxMqttBinary" = "true" ]; then
         sudo chmod 644 /var/lib/shimmer-inx-mqtt/*.json > /dev/null 2>&1
         newShimmerInxMqttConfig=true
     fi
+fi
+
+if [ "$newShimmerInxMqttConfig" = "true" ]; then
+    sudo cp -rf $swarmHome/templates/shimmer-inx/shimmer-inx-mqtt.service /lib/systemd/system/shimmer-inx-mqtt.service > /dev/null 2>&1
+    sudo systemctl daemon-reload > /dev/null 2>&1
 fi
 
 ##############################################################################################################################################

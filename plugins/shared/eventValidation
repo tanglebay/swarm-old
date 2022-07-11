@@ -60,24 +60,14 @@ if [ ! -z "$nodeJwtToken" ] && [[ $eventList = *$eventId* ]] && [ "$eventType" =
         whiptail --title "$nodeId - Event Validation" --msgbox "The event could not be found in the database." 8 65
     else
         if [[ $eventStatus = *ended* ]]; then
-            sudo curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 --http1.1 -s -X GET -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
-
-            eventSymbol=$(printf "Symbol:          %s\n" "$(jq '.symbol' ${eventDataLog})")
-            eventMilestone=$(printf "Milestone index: %s\n" "$(jq '.milestoneIndex' ${eventDataLog})")
-            eventTotalRewards=$(printf "Total rewards:   %s\n" "$(jq '.totalRewards' ${eventDataLog})")
-            eventChecksum=$(printf "Checksum:        %s\n" "$(jq '.checksum' ${eventDataLog})")
-            echo $eventSymbol > $eventLogFile
-            echo $eventMilestone >> $eventLogFile
-            echo $eventTotalRewards >> $eventLogFile
-            echo $eventChecksum >> $eventLogFile
-            if [ -f "$eventDataLog" ]; then
-                sudo rm -rf $eventDataLog 2>/dev/null
-            fi
-            whiptail --title "$nodeId - Event Validation" --msgbox "$eventSymbol\n$eventMilestone\n$eventTotalRewards\n\n$eventChecksum" 16 65
+            ballotChecksum=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 --http1.1 -s -X GET -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
+            echo "Ballot ID: \"$eventId\"" > $eventLogFile
+            echo "Checksum: $ballotChecksum" >> $eventLogFile
+            whiptail --title "$nodeId - Event Validation" --msgbox "\nBallot ID: \"$eventId\"\n\nChecksum: $ballotChecksum" 16 65
         else
             whiptail --title "$nodeId - Event Validation" --msgbox "The event is not yet completed and therefore cannot be validated." 8 65
         fi
     fi
 fi
 
-unset eventList nodeId nodeApiPort nodeJwtToken eventId eventStatus eventData eventSymbol eventMilestone eventTotalRewards eventChecksum eventChecksum eventType
+unset eventList nodeId nodeApiPort nodeJwtToken eventId eventStatus eventData eventSymbol eventMilestone eventTotalRewards eventChecksum eventChecksum eventType ballotChecksum
