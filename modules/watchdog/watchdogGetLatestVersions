@@ -5,227 +5,223 @@ source $swarmConfigs/latest-versions.cfg
 timeFrame=`date '+%M'`
 
 # GET LATEST VERSIONS
-if [ "$timeFrame" = "07" ] || [ "$timeFrame" = "22" ] || [ "$timeFrame" = "37" ] || [ "$timeFrame" = "52" ]; then
+if [ "$timeFrame" = "00" ] || [ "$timeFrame" = "15" ] || [ "$timeFrame" = "30" ] || [ "$timeFrame" = "45" ]; then
     # Latest SWARM version
     latestSwarmVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/TangleBay/swarm-releases/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
     latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
     sudo sed -i 's~^latestSwarmVersion=.*~latestSwarmVersion="'$latestSwarmVersion'"~' $swarmConfigs/latest-versions.cfg
 fi
 
-if [ "$timeFrame" = "15" ] || [ "$timeFrame" = "45" ]; then
-    if [ -f "/usr/bin/iota-hornet" ]; then
-        # Latest Hornet version
-        if [ "$iotaHornetRelease" = "stable" ]; then
-            latestIotaHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $iotaHornetReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
-            latestIotaHornetVersion=$(echo $latestIotaHornetVersion | tr -d 'v')
-        fi
-        if [ "$iotaHornetRelease" = "beta" ]; then
-            latestIotaHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $iotaHornetReleaseVersion | awk '!/-alpha/' | head -n 1)
-            latestIotaHornetVersion=$(echo $latestIotaHornetVersion | tr -d 'v')
-        fi
-        if [ "$iotaHornetRelease" = "alpha" ]; then
-            latestIotaHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $iotaHornetReleaseVersion | head -n 1)
-            latestIotaHornetVersion=$(echo $latestIotaHornetVersion | tr -d 'v')
-        fi
-        if [ "$latestIotaHornetVersion" = "\"\"" ] || [ -z "$latestIotaHornetVersion" ] || [ "$latestIotaHornetVersion" = "null" ]; then
-            if [ -f "/usr/bin/iota-hornet" ]; then
-                latestIotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }')
-            fi
-        fi
-        sudo sed -i 's~^latestIotaHornetVersion=.*~latestIotaHornetVersion="'$latestIotaHornetVersion'"~' $swarmConfigs/latest-versions.cfg
-    else
-        if [ ! -z "$latestIotaHornetVersion" ]; then
-            sudo sed -i 's~^latestIotaHornetVersion=.*~latestIotaHornetVersion=""~' $swarmConfigs/latest-versions.cfg
+if [ -f "/usr/bin/iota-hornet" ]; then
+    # Latest Hornet version
+    if [ "$iotaHornetRelease" = "stable" ]; then
+        latestIotaHornetVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/hornet | grep $iotaHornetReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestIotaHornetVersion=$(echo $latestIotaHornetVersion | tr -d 'v')
+    fi
+    if [ "$iotaHornetRelease" = "beta" ]; then
+        latestIotaHornetVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/hornet | grep $iotaHornetReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestIotaHornetVersion=$(echo $latestIotaHornetVersion | tr -d 'v')
+    fi
+    if [ "$iotaHornetRelease" = "alpha" ]; then
+        latestIotaHornetVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/hornet | grep $iotaHornetReleaseVersion | head -n 1)
+        latestIotaHornetVersion=$(echo $latestIotaHornetVersion | tr -d 'v')
+    fi
+    if [ "$latestIotaHornetVersion" = "\"\"" ] || [ -z "$latestIotaHornetVersion" ] || [ "$latestIotaHornetVersion" = "null" ]; then
+        if [ -f "/usr/bin/iota-hornet" ]; then
+            latestIotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }')
         fi
     fi
-
-    if [ -f "/usr/bin/shimmer-hornet" ]; then
-        # Latest Shimmer-Hornet version
-        if [ "$shimmerHornetRelease" = "stable" ]; then
-            latestShimmerHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerHornetReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
-            latestShimmerHornetVersion=$(echo $latestShimmerHornetVersion | tr -d 'v')
-        fi
-        if [ "$shimmerHornetRelease" = "beta" ]; then
-            latestShimmerHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerHornetReleaseVersion | awk '!/-alpha/' | head -n 1)
-            latestShimmerHornetVersion=$(echo $latestShimmerHornetVersion | tr -d 'v')
-        fi
-        if [ "$shimmerHornetRelease" = "alpha" ]; then
-            latestShimmerHornetVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/hornet/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerHornetReleaseVersion | head -n 1)
-            latestShimmerHornetVersion=$(echo $latestShimmerHornetVersion | tr -d 'v')
-        fi
-        if [ "$latestShimmerHornetVersion" = "\"\"" ] || [ -z "$latestShimmerHornetVersion" ] || [ "$latestShimmerHornetVersion" = "null" ]; then
-            if [ -f "/usr/bin/shimmer-hornet" ]; then
-                latestShimmerHornetVersion=$(/usr/bin/shimmer-hornet -v | awk '{ print $2 }')
-            fi
-        fi
-        sudo sed -i 's~^latestShimmerHornetVersion=.*~latestShimmerHornetVersion="'$latestShimmerHornetVersion'"~' $swarmConfigs/latest-versions.cfg
-    else
-        if [ ! -z "$latestShimmerHornetVersion" ]; then
-            sudo sed -i 's~^latestShimmerHornetVersion=.*~latestShimmerHornetVersion=""~' $swarmConfigs/latest-versions.cfg
-        fi
-    fi
-
-    if [ -f "/usr/bin/goshimmer" ]; then
-        # Latest GoShimmer version
-        latestGoshimmerVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/goshimmer/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-        latestGoshimmerVersion=$(echo $latestGoshimmerVersion | tr -d 'v')
-        if [ "$latestGoshimmerVersion" = "\"\"" ] || [ -z "$latestGoshimmerVersion" ] || [ "$latestGoshimmerVersion" = "null" ]; then
-            if [ -f "/usr/bin/goshimmer" ]; then
-                latestGoshimmerVersion=$(cd $goshimmerHome ; /usr/bin/goshimmer -v | awk '{print $2}' | tr -d 'v')
-            fi
-        fi
-        sudo sed -i 's~^latestGoshimmerVersion=.*~latestGoshimmerVersion="'$latestGoshimmerVersion'"~' $swarmConfigs/latest-versions.cfg
-    else
-        if [ ! -z "$latestGoshimmerVersion" ]; then
-            sudo sed -i 's~^latestGoshimmerVersion=.*~latestGoshimmerVersion=""~' $swarmConfigs/latest-versions.cfg
-        fi
-    fi
-
-    if [ -f "/usr/bin/wasp" ]; then
-        # Latest WASP version
-        latestWaspVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/wasp/releases/latest | grep -oP '"tag_name": "\K(.*)(?=")')
-        latestWaspVersion=$(echo $latestWaspVersion | tr -d 'v')
-        if [ "$latestWaspVersion" = "\"\"" ] || [ -z "$latestWaspVersion" ] || [ "$latestWaspVersion" = "null" ]; then
-            if [ -f "/usr/bin/wasp" ]; then
-                latestWaspVersion=$(cd $waspHome ; /usr/bin/wasp -v | awk '{print $2}' | tr -d 'v')
-            fi
-        fi
-        sudo sed -i 's~^latestWaspVersion=.*~latestWaspVersion="'$latestWaspVersion'"~' $swarmConfigs/latest-versions.cfg
-    else
-        if [ ! -z "$latestWaspVersion" ]; then
-            sudo sed -i 's~^latestWaspVersion=.*~latestWaspVersion=""~' $swarmConfigs/latest-versions.cfg
-        fi
+    sudo sed -i 's~^latestIotaHornetVersion=.*~latestIotaHornetVersion="'$latestIotaHornetVersion'"~' $swarmConfigs/latest-versions.cfg
+else
+    if [ ! -z "$latestIotaHornetVersion" ]; then
+        sudo sed -i 's~^latestIotaHornetVersion=.*~latestIotaHornetVersion=""~' $swarmConfigs/latest-versions.cfg
     fi
 fi
 
-if [ "$timeFrame" = "00" ] || [ "$timeFrame" = "30" ]; then
-    if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
-        # Latest INX-Dashboard version
-        if [ "$shimmerInxDashboardRelease" = "stable" ]; then
-            latestShimmerInxDashboardVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-dashboard/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxDashboardReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
-            latestShimmerInxDashboardVersion=$(echo $latestShimmerInxDashboardVersion | tr -d 'v')
-        fi
-        if [ "$shimmerInxDashboardRelease" = "beta" ]; then
-            latestShimmerInxDashboardVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-dashboard/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxDashboardReleaseVersion | awk '!/-alpha/' | head -n 1)
-            latestShimmerInxDashboardVersion=$(echo $latestShimmerInxDashboardVersion | tr -d 'v')
-        fi
-        if [ "$shimmerInxDashboardRelease" = "alpha" ]; then
-            latestShimmerInxDashboardVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-dashboard/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxDashboardReleaseVersion | head -n 1)
-            latestShimmerInxDashboardVersion=$(echo $latestShimmerInxDashboardVersion | tr -d 'v')
-        fi
-        if [ "$latestShimmerInxDashboardVersion" = "\"\"" ] || [ -z "$latestShimmerInxDashboardVersion" ] || [ "$latestShimmerInxDashboardVersion" = "null" ]; then
-            if [ -f "/usr/bin/inx-dashboard" ]; then
-                latestShimmerInxDashboardVersion=$(/usr/bin/shimmer-inx-dashboard -v | awk '{ print $2 }')
-            fi
-        fi
-        sudo sed -i 's~^latestShimmerInxDashboardVersion=.*~latestShimmerInxDashboardVersion="'$latestShimmerInxDashboardVersion'"~' $swarmConfigs/latest-versions.cfg
-    else
-        if [ ! -z "$latestShimmerInxDashboardVersion" ]; then
-            sudo sed -i 's~^latestShimmerInxDashboardVersion=.*~latestShimmerInxDashboardVersion=""~' $swarmConfigs/latest-versions.cfg
+if [ -f "/usr/bin/shimmer-hornet" ]; then
+    # Latest Shimmer-Hornet version
+    if [ "$shimmerHornetRelease" = "stable" ]; then
+        latestShimmerHornetVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/hornet | grep $shimmerHornetReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestShimmerHornetVersion=$(echo $latestShimmerHornetVersion | tr -d 'v')
+    fi
+    if [ "$shimmerHornetRelease" = "beta" ]; then
+        latestShimmerHornetVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/hornet | grep $shimmerHornetReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestShimmerHornetVersion=$(echo $latestShimmerHornetVersion | tr -d 'v')
+    fi
+    if [ "$shimmerHornetRelease" = "alpha" ]; then
+        latestShimmerHornetVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/hornet | grep $shimmerHornetReleaseVersion | head -n 1)
+        latestShimmerHornetVersion=$(echo $latestShimmerHornetVersion | tr -d 'v')
+    fi
+    if [ "$latestShimmerHornetVersion" = "\"\"" ] || [ -z "$latestShimmerHornetVersion" ] || [ "$latestShimmerHornetVersion" = "null" ]; then
+        if [ -f "/usr/bin/shimmer-hornet" ]; then
+            latestShimmerHornetVersion=$(/usr/bin/shimmer-hornet -v | awk '{ print $2 }')
         fi
     fi
+    sudo sed -i 's~^latestShimmerHornetVersion=.*~latestShimmerHornetVersion="'$latestShimmerHornetVersion'"~' $swarmConfigs/latest-versions.cfg
+else
+    if [ ! -z "$latestShimmerHornetVersion" ]; then
+        sudo sed -i 's~^latestShimmerHornetVersion=.*~latestShimmerHornetVersion=""~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
 
-    if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-        # Latest INX-Indexer version
-        if [ "$shimmerInxIndexerRelease" = "stable" ]; then
-            latestShimmerInxIndexerVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-indexer/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxIndexerReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
-            latestShimmerInxIndexerVersion=$(echo $latestShimmerInxIndexerVersion | tr -d 'v')
-        fi
-        if [ "$shimmerInxIndexerRelease" = "beta" ]; then
-            latestShimmerInxIndexerVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-indexer/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxIndexerReleaseVersion | awk '!/-alpha/' | head -n 1)
-            latestShimmerInxIndexerVersion=$(echo $latestShimmerInxIndexerVersion | tr -d 'v')
-        fi
-        if [ "$shimmerInxIndexerRelease" = "alpha" ]; then
-            latestShimmerInxIndexerVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-indexer/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxIndexerReleaseVersion | head -n 1)
-            latestShimmerInxIndexerVersion=$(echo $latestShimmerInxIndexerVersion | tr -d 'v')
-        fi
-        if [ "$latestShimmerInxIndexerVersion" = "\"\"" ] || [ -z "$latestShimmerInxIndexerVersion" ] || [ "$latestShimmerInxIndexerVersion" = "null" ]; then
-            if [ -f "/usr/bin/inx-indexer" ]; then
-                latestShimmerInxIndexerVersion=$(/usr/bin/shimmer-inx-indexer -v | awk '{ print $2 }')
-            fi
-        fi
-        sudo sed -i 's~^latestShimmerInxIndexerVersion=.*~latestShimmerInxIndexerVersion="'$latestShimmerInxIndexerVersion'"~' $swarmConfigs/latest-versions.cfg
-    else
-        if [ ! -z "$latestShimmerInxIndexerVersion" ]; then
-            sudo sed -i 's~^latestShimmerInxIndexerVersion=.*~latestShimmerInxIndexerVersion=""~' $swarmConfigs/latest-versions.cfg
+if [ -f "/usr/bin/goshimmer" ]; then
+    # Latest GoShimmer version
+    latestGoshimmerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/goshimmer | awk '!/(-rc|-alpha)/' | head -n 1)
+    latestGoshimmerVersion=$(echo $latestGoshimmerVersion | tr -d 'v')
+    if [ "$latestGoshimmerVersion" = "\"\"" ] || [ -z "$latestGoshimmerVersion" ] || [ "$latestGoshimmerVersion" = "null" ]; then
+        if [ -f "/usr/bin/goshimmer" ]; then
+            latestGoshimmerVersion=$(cd $goshimmerHome ; /usr/bin/goshimmer -v | awk '{print $2}' | tr -d 'v')
         fi
     fi
+    sudo sed -i 's~^latestGoshimmerVersion=.*~latestGoshimmerVersion="'$latestGoshimmerVersion'"~' $swarmConfigs/latest-versions.cfg
+else
+    if [ ! -z "$latestGoshimmerVersion" ]; then
+        sudo sed -i 's~^latestGoshimmerVersion=.*~latestGoshimmerVersion=""~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
 
-    if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
-        # Latest INX-MQTT version
-        if [ "$shimmerInxMqttRelease" = "stable" ]; then
-            latestShimmerInxMqttVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-mqtt/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxMqttReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
-            latestShimmerInxMqttVersion=$(echo $latestShimmerInxMqttVersion | tr -d 'v')
-        fi
-        if [ "$shimmerInxMqttRelease" = "beta" ]; then
-            latestShimmerInxMqttVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-mqtt/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxMqttReleaseVersion | awk '!/-alpha/' | head -n 1)
-            latestShimmerInxMqttVersion=$(echo $latestShimmerInxMqttVersion | tr -d 'v')
-        fi
-        if [ "$shimmerInxMqttRelease" = "alpha" ]; then
-            latestShimmerInxMqttVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-mqtt/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxMqttReleaseVersion | head -n 1)
-            latestShimmerInxMqttVersion=$(echo $latestShimmerInxMqttVersion | tr -d 'v')
-        fi
-        if [ "$latestShimmerInxMqttVersion" = "\"\"" ] || [ -z "$latestShimmerInxMqttVersion" ] || [ "$latestShimmerInxMqttVersion" = "null" ]; then
-            if [ -f "/usr/bin/inx-mqtt" ]; then
-                latestShimmerInxMqttVersion=$(/usr/bin/shimmer-inx-mqtt -v | awk '{ print $2 }')
-            fi
-        fi
-        sudo sed -i 's~^latestShimmerInxMqttVersion=.*~latestShimmerInxMqttVersion="'$latestShimmerInxMqttVersion'"~' $swarmConfigs/latest-versions.cfg
-    else
-        if [ ! -z "$latestShimmerInxMqttVersion" ]; then
-            sudo sed -i 's~^latestShimmerInxMqttVersion=.*~latestShimmerInxMqttVersion=""~' $swarmConfigs/latest-versions.cfg
+if [ -f "/usr/bin/wasp" ]; then
+    # Latest WASP version
+    latestWaspVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/goshimmer | awk '!/(-rc|-alpha)/' | head -n 1)
+    latestWaspVersion=$(echo $latestWaspVersion | tr -d 'v')
+    if [ "$latestWaspVersion" = "\"\"" ] || [ -z "$latestWaspVersion" ] || [ "$latestWaspVersion" = "null" ]; then
+        if [ -f "/usr/bin/wasp" ]; then
+            latestWaspVersion=$(cd $waspHome ; /usr/bin/wasp -v | awk '{print $2}' | tr -d 'v')
         fi
     fi
+    sudo sed -i 's~^latestWaspVersion=.*~latestWaspVersion="'$latestWaspVersion'"~' $swarmConfigs/latest-versions.cfg
+else
+    if [ ! -z "$latestWaspVersion" ]; then
+        sudo sed -i 's~^latestWaspVersion=.*~latestWaspVersion=""~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
 
-    if [ -f "/usr/bin/shimmer-inx-participation" ]; then
-        # Latest INX-Participation version
-        if [ "$shimmerInxParticipationRelease" = "stable" ]; then
-            latestShimmerInxParticipationVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-participation/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxParticipationReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
-            latestShimmerInxParticipationVersion=$(echo $latestShimmerInxParticipationVersion | tr -d 'v')
-        fi
-        if [ "$shimmerInxParticipationRelease" = "beta" ]; then
-            latestShimmerInxParticipationVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-participation/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxParticipationReleaseVersion | awk '!/-alpha/' | head -n 1)
-            latestShimmerInxParticipationVersion=$(echo $latestShimmerInxParticipationVersion | tr -d 'v')
-        fi
-        if [ "$shimmerInxParticipationRelease" = "alpha" ]; then
-            latestShimmerInxParticipationVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-participation/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxParticipationReleaseVersion | head -n 1)
-            latestShimmerInxParticipationVersion=$(echo $latestShimmerInxParticipationVersion | tr -d 'v')
-        fi
-        if [ "$latestShimmerInxParticipationVersion" = "\"\"" ] || [ -z "$latestShimmerInxParticipationVersion" ] || [ "$latestShimmerInxParticipationVersion" = "null" ]; then
-            if [ -f "/usr/bin/inx-participation" ]; then
-                latestShimmerInxParticipationVersion=$(/usr/bin/shimmer-inx-participation -v | awk '{ print $2 }')
-            fi
-        fi
-        sudo sed -i 's~^latestShimmerInxParticipationVersion=.*~latestShimmerInxParticipationVersion="'$latestShimmerInxParticipationVersion'"~' $swarmConfigs/latest-versions.cfg
-    else
-        if [ ! -z "$latestShimmerInxParticipationVersion" ]; then
-            sudo sed -i 's~^latestShimmerInxParticipationVersion=.*~latestShimmerInxParticipationVersion=""~' $swarmConfigs/latest-versions.cfg
+if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+    # Latest INX-Dashboard version
+    if [ "$shimmerInxDashboardRelease" = "stable" ]; then
+        latestShimmerInxDashboardVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-dashboard | grep $shimmerInxDashboardReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestShimmerInxDashboardVersion=$(echo $latestShimmerInxDashboardVersion | tr -d 'v')
+    fi
+    if [ "$shimmerInxDashboardRelease" = "beta" ]; then
+        latestShimmerInxDashboardVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-dashboard | grep $shimmerInxDashboardReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestShimmerInxDashboardVersion=$(echo $latestShimmerInxDashboardVersion | tr -d 'v')
+    fi
+    if [ "$shimmerInxDashboardRelease" = "alpha" ]; then
+        latestShimmerInxDashboardVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-dashboard | grep $shimmerInxDashboardReleaseVersion | head -n 1)
+        latestShimmerInxDashboardVersion=$(echo $latestShimmerInxDashboardVersion | tr -d 'v')
+    fi
+    if [ "$latestShimmerInxDashboardVersion" = "\"\"" ] || [ -z "$latestShimmerInxDashboardVersion" ] || [ "$latestShimmerInxDashboardVersion" = "null" ]; then
+        if [ -f "/usr/bin/inx-dashboard" ]; then
+            latestShimmerInxDashboardVersion=$(/usr/bin/shimmer-inx-dashboard -v | awk '{ print $2 }')
         fi
     fi
+    sudo sed -i 's~^latestShimmerInxDashboardVersion=.*~latestShimmerInxDashboardVersion="'$latestShimmerInxDashboardVersion'"~' $swarmConfigs/latest-versions.cfg
+else
+    if [ ! -z "$latestShimmerInxDashboardVersion" ]; then
+        sudo sed -i 's~^latestShimmerInxDashboardVersion=.*~latestShimmerInxDashboardVersion=""~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
 
-    if [ -f "/usr/bin/shimmer-inx-poi" ]; then
-        # Latest INX-POI version
-        if [ "$shimmerInxPoiRelease" = "stable" ]; then
-            latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-poi/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxPoiReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
-            latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v')
+if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
+    # Latest INX-Indexer version
+    if [ "$shimmerInxIndexerRelease" = "stable" ]; then
+        latestShimmerInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-indexer | grep $shimmerInxIndexerReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestShimmerInxIndexerVersion=$(echo $latestShimmerInxIndexerVersion | tr -d 'v')
+    fi
+    if [ "$shimmerInxIndexerRelease" = "beta" ]; then
+        latestShimmerInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-indexer | grep $shimmerInxIndexerReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestShimmerInxIndexerVersion=$(echo $latestShimmerInxIndexerVersion | tr -d 'v')
+    fi
+    if [ "$shimmerInxIndexerRelease" = "alpha" ]; then
+        latestShimmerInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-indexer | grep $shimmerInxIndexerReleaseVersion | head -n 1)
+        latestShimmerInxIndexerVersion=$(echo $latestShimmerInxIndexerVersion | tr -d 'v')
+    fi
+    if [ "$latestShimmerInxIndexerVersion" = "\"\"" ] || [ -z "$latestShimmerInxIndexerVersion" ] || [ "$latestShimmerInxIndexerVersion" = "null" ]; then
+        if [ -f "/usr/bin/inx-indexer" ]; then
+            latestShimmerInxIndexerVersion=$(/usr/bin/shimmer-inx-indexer -v | awk '{ print $2 }')
         fi
-        if [ "$shimmerInxPoiRelease" = "beta" ]; then
-            latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-poi/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxPoiReleaseVersion | awk '!/-alpha/' | head -n 1)
-            latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v')
+    fi
+    sudo sed -i 's~^latestShimmerInxIndexerVersion=.*~latestShimmerInxIndexerVersion="'$latestShimmerInxIndexerVersion'"~' $swarmConfigs/latest-versions.cfg
+else
+    if [ ! -z "$latestShimmerInxIndexerVersion" ]; then
+        sudo sed -i 's~^latestShimmerInxIndexerVersion=.*~latestShimmerInxIndexerVersion=""~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
+
+if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
+    # Latest INX-MQTT version
+    if [ "$shimmerInxMqttRelease" = "stable" ]; then
+        latestShimmerInxMqttVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-mqtt | grep $shimmerInxMqttReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestShimmerInxMqttVersion=$(echo $latestShimmerInxMqttVersion | tr -d 'v')
+    fi
+    if [ "$shimmerInxMqttRelease" = "beta" ]; then
+        latestShimmerInxMqttVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-mqtt | grep $shimmerInxMqttReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestShimmerInxMqttVersion=$(echo $latestShimmerInxMqttVersion | tr -d 'v')
+    fi
+    if [ "$shimmerInxMqttRelease" = "alpha" ]; then
+        latestShimmerInxMqttVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-mqtt | grep $shimmerInxMqttReleaseVersion | head -n 1)
+        latestShimmerInxMqttVersion=$(echo $latestShimmerInxMqttVersion | tr -d 'v')
+    fi
+    if [ "$latestShimmerInxMqttVersion" = "\"\"" ] || [ -z "$latestShimmerInxMqttVersion" ] || [ "$latestShimmerInxMqttVersion" = "null" ]; then
+        if [ -f "/usr/bin/inx-mqtt" ]; then
+            latestShimmerInxMqttVersion=$(/usr/bin/shimmer-inx-mqtt -v | awk '{ print $2 }')
         fi
-        if [ "$shimmerInxPoiRelease" = "alpha" ]; then
-            latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://api.github.com/repos/iotaledger/inx-poi/releases | grep -oP '"tag_name": "\K(.*)(?=")' | grep $shimmerInxPoiReleaseVersion | head -n 1)
-            latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v')
+    fi
+    sudo sed -i 's~^latestShimmerInxMqttVersion=.*~latestShimmerInxMqttVersion="'$latestShimmerInxMqttVersion'"~' $swarmConfigs/latest-versions.cfg
+else
+    if [ ! -z "$latestShimmerInxMqttVersion" ]; then
+        sudo sed -i 's~^latestShimmerInxMqttVersion=.*~latestShimmerInxMqttVersion=""~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
+
+if [ -f "/usr/bin/shimmer-inx-participation" ]; then
+    # Latest INX-Participation version
+    if [ "$shimmerInxParticipationRelease" = "stable" ]; then
+        latestShimmerInxParticipationVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-participation | grep $shimmerInxParticipationReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestShimmerInxParticipationVersion=$(echo $latestShimmerInxParticipationVersion | tr -d 'v')
+    fi
+    if [ "$shimmerInxParticipationRelease" = "beta" ]; then
+        latestShimmerInxParticipationVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-participation | grep $shimmerInxParticipationReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestShimmerInxParticipationVersion=$(echo $latestShimmerInxParticipationVersion | tr -d 'v')
+    fi
+    if [ "$shimmerInxParticipationRelease" = "alpha" ]; then
+        latestShimmerInxParticipationVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-participation | grep $shimmerInxParticipationReleaseVersion | head -n 1)
+        latestShimmerInxParticipationVersion=$(echo $latestShimmerInxParticipationVersion | tr -d 'v')
+    fi
+    if [ "$latestShimmerInxParticipationVersion" = "\"\"" ] || [ -z "$latestShimmerInxParticipationVersion" ] || [ "$latestShimmerInxParticipationVersion" = "null" ]; then
+        if [ -f "/usr/bin/inx-participation" ]; then
+            latestShimmerInxParticipationVersion=$(/usr/bin/shimmer-inx-participation -v | awk '{ print $2 }')
         fi
-        if [ "$latestShimmerInxPoiVersion" = "\"\"" ] || [ -z "$latestShimmerInxPoiVersion" ] || [ "$latestShimmerInxPoiVersion" = "null" ]; then
-            if [ -f "/usr/bin/inx-poi" ]; then
-                latestShimmerInxPoiVersion=$(/usr/bin/shimmer-inx-poi -v | awk '{ print $2 }')
-            fi
+    fi
+    sudo sed -i 's~^latestShimmerInxParticipationVersion=.*~latestShimmerInxParticipationVersion="'$latestShimmerInxParticipationVersion'"~' $swarmConfigs/latest-versions.cfg
+else
+    if [ ! -z "$latestShimmerInxParticipationVersion" ]; then
+        sudo sed -i 's~^latestShimmerInxParticipationVersion=.*~latestShimmerInxParticipationVersion=""~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
+
+if [ -f "/usr/bin/shimmer-inx-poi" ]; then
+    # Latest INX-POI version
+    if [ "$shimmerInxPoiRelease" = "stable" ]; then
+        latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-poi | grep $shimmerInxPoiReleaseVersion | awk '!/(-rc|-alpha)/' | head -n 1)
+        latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v')
+    fi
+    if [ "$shimmerInxPoiRelease" = "beta" ]; then
+        latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-poi | grep $shimmerInxPoiReleaseVersion | awk '!/-alpha/' | head -n 1)
+        latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v')
+    fi
+    if [ "$shimmerInxPoiRelease" = "alpha" ]; then
+        latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/inx-poi | grep $shimmerInxPoiReleaseVersion | head -n 1)
+        latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v')
+    fi
+    if [ "$latestShimmerInxPoiVersion" = "\"\"" ] || [ -z "$latestShimmerInxPoiVersion" ] || [ "$latestShimmerInxPoiVersion" = "null" ]; then
+        if [ -f "/usr/bin/inx-poi" ]; then
+            latestShimmerInxPoiVersion=$(/usr/bin/shimmer-inx-poi -v | awk '{ print $2 }')
         fi
-        sudo sed -i 's~^latestShimmerInxPoiVersion=.*~latestShimmerInxPoiVersion="'$latestShimmerInxPoiVersion'"~' $swarmConfigs/latest-versions.cfg
-    else
-        if [ ! -z "$latestShimmerInxPoiVersion" ]; then
-            sudo sed -i 's~^latestShimmerInxPoiVersion=.*~latestShimmerInxPoiVersion=""~' $swarmConfigs/latest-versions.cfg
-        fi
+    fi
+    sudo sed -i 's~^latestShimmerInxPoiVersion=.*~latestShimmerInxPoiVersion="'$latestShimmerInxPoiVersion'"~' $swarmConfigs/latest-versions.cfg
+else
+    if [ ! -z "$latestShimmerInxPoiVersion" ]; then
+        sudo sed -i 's~^latestShimmerInxPoiVersion=.*~latestShimmerInxPoiVersion=""~' $swarmConfigs/latest-versions.cfg
     fi
 fi
