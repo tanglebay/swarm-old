@@ -1,0 +1,14 @@
+#!/bin/bash
+
+shimmerHornetInxPowWorkerCount=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
+let shimmerHornetInxPowWorkerCount=$shimmerHornetInxPowWorkerCount-1
+
+if [ "$shimmerHornetInxPowWorkerCount" -ge 1 ] 2>/dev/null; then
+    parser="$(jq '.inx.pow.WorkerCount' $shimmerHornetHome/$shimmerHornetConfig.json)"
+    if [ "$parser" != "$shimmerHornetPowWorkerCount" ]; then
+        sudo jq '.inx.pow.WorkerCount = '$shimmerHornetInxPowWorkerCount'' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
+        sudo sed -i 's/^shimmerHornetInxPowWorkerCount=.*/shimmerHornetInxPowWorkerCount='$shimmerHornetInxPowWorkerCount'/' $swarmConfigs/shimmer-hornet.cfg
+        restartShimmerHornet=true
+        echo "shimmerHornetInxPowWorkerCount" >> /tmp/shimmerHornetParsing
+    fi
+fi
