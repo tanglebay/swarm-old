@@ -69,16 +69,20 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        source $swarmConfigs/shimmer-hornet.cfg
-                        if [ "$shimmerHornetApiEnabled" = "true" ]; then
-                            shimmerHornetApiEnabled=false
-                            menuShimmerHornetApiEnabled="disabled"
-                        else
-                            shimmerHornetApiEnabled=false
-                            menuShimmerHornetApiEnabled="disabled"
+                        menuShimmerHornetApiEnabled=$(echo $menuShimmerHornetApiEnabled | awk '{print tolower($0)}')
+                        if (whiptail --title "Hornet [SHIMMER] API" --yesno --defaultno "Are you sure you want to $menuShimmerHornetApiEnabled the Hornet API?" 8 65); then
+                            source $swarmConfigs/shimmer-hornet.cfg
+                            if [ "$shimmerHornetApiEnabled" = "true" ]; then
+                                shimmerHornetApiEnabled=false
+                                menuShimmerHornetApiEnabled="disabled"
+                            else
+                                shimmerHornetApiEnabled=false
+                                menuShimmerHornetApiEnabled="disabled"
+                            fi
+                            restartShimmerHornet=true
+                            sudo sed -i 's~^shimmerHornetApiEnabled=.*~shimmerHornetApiEnabled='$shimmerHornetApiEnabled'~' $swarmConfigs/shimmer-hornet.cfg
+                            whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "Hornet API $menuShimmerHornetApiEnabled." 8 65
                         fi
-                        sudo sed -i 's~^shimmerHornetApiEnabled=.*~shimmerHornetApiEnabled='$shimmerHornetApiEnabled'~' $swarmConfigs/shimmer-hornet.cfg
-                        whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "Hornet API $menuShimmerHornetApiEnabled." 8 65
                     ;;
                     "2)")
                         source $swarmConfigs/shimmer-hornet.cfg
@@ -194,17 +198,21 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        source $swarmConfigs/shimmer-hornet.cfg
-                        if [ "$shimmerHornetInxEnabled" = "true" ]; then
-                            shimmerHornetInxEnabled=false
-                            menuShimmerHornetInxEnabled="disabled"
-                            sudo sed -i 's/^shimmerHornetInxEnabled=.*/shimmerHornetInxEnabled='$shimmerHornetInxEnabled'/' $swarmConfigs/shimmer-hornet.cfg
-                        else
-                            shimmerHornetInxEnabled=true
-                            menuShimmerHornetInxEnabled="enabled"
-                            sudo sed -i 's/^shimmerHornetInxEnabled=.*/shimmerHornetInxEnabled='$shimmerHornetInxEnabled'/' $swarmConfigs/shimmer-hornet.cfg
+                        menuShimmerHornetInxEnabled=$(echo $menuShimmerHornetInxEnabled | awk '{print tolower($0)}')
+                        if (whiptail --title "Hornet [SHIMMER] INX" --yesno --defaultno "Are you sure you want to $menuShimmerHornetInxEnabled INX interface?" 8 65); then
+                            source $swarmConfigs/shimmer-hornet.cfg
+                            if [ "$shimmerHornetInxEnabled" = "true" ]; then
+                                shimmerHornetInxEnabled=false
+                                menuShimmerHornetInxEnabled="disabled"
+                                sudo sed -i 's/^shimmerHornetInxEnabled=.*/shimmerHornetInxEnabled='$shimmerHornetInxEnabled'/' $swarmConfigs/shimmer-hornet.cfg
+                            else
+                                shimmerHornetInxEnabled=true
+                                menuShimmerHornetInxEnabled="enabled"
+                                sudo sed -i 's/^shimmerHornetInxEnabled=.*/shimmerHornetInxEnabled='$shimmerHornetInxEnabled'/' $swarmConfigs/shimmer-hornet.cfg
+                            fi
+                            restartShimmerHornet=true
+                            whiptail --title "Hornet [SHIMMER] INX" --msgbox "INX interface $menuShimmerHornetInxEnabled." 8 65
                         fi
-                        whiptail --title "Hornet [SHIMMER] INX" --msgbox "INX interface $menuShimmerHornetInxEnabled." 8 65
                     ;;
                     "2)")
                         source $swarmConfigs/shimmer-hornet.cfg
@@ -214,6 +222,7 @@ while [ $exitCode -lt 1 ]; do
                         if [ $exitStatus != 1 ]; then
                             if [ ! -z "$shimmerHornetInxPowWorkerCount" ] && [ "$currentShimmerHornetInxPowWorkerCount" != "$shimmerHornetInxPowWorkerCount" ] && [ $shimmerHornetInxPowWorkerCount -eq $shimmerHornetInxPowWorkerCount ] 2>/dev/null; then
                                 sudo sed -i 's/^shimmerHornetInxPowWorkerCount=.*/shimmerHornetInxPowWorkerCount='$shimmerHornetInxPowWorkerCount'/' $swarmConfigs/shimmer-hornet.cfg
+                                restartShimmerHornet=true
                             fi
                         fi
                         whiptail --title "Hornet [SHIMMER] INX" --msgbox "INX pow worker counter set to $shimmerHornetInxPowWorkerCount." 8 65
@@ -244,17 +253,21 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        source $swarmConfigs/shimmer-hornet.cfg
-                        if [ "$shimmmerHornetAutopeeringEnabled" = "true" ]; then
-                            shimmmerHornetAutopeeringEnabled=false
-                            menuShimmerHornetAutopeeringEnabled="disabled"
-                            sudo sed -i 's/^shimmerHornetAutopeeringEnabled=.*/shimmerHornetAutopeeringEnabled='$shimmerHornetAutopeeringEnabled'/' $swarmConfigs/shimmer-hornet.cfg
-                        else
-                            shimmmerHornetAutopeeringEnabled=true
-                            menuShimmerHornetAutopeeringEnabled="enabled"
-                            sudo sed -i 's/^shimmerHornetAutopeeringEnabled=.*/shimmerHornetAutopeeringEnabled='$shimmerHornetAutopeeringEnabled'/' $swarmConfigs/shimmer-hornet.cfg
+                        menuShimmerHornetAutopeeringEnabled=$(echo $menuShimmerHornetAutopeeringEnabled | awk '{print tolower($0)}')
+                        if (whiptail --title "Hornet [SHIMMER] Autopeering" --yesno --defaultno "Are you sure you want to $menuShimmerHornetAutopeeringEnabled autopeering?" 8 65); then
+                            source $swarmConfigs/shimmer-hornet.cfg
+                            if [ "$shimmmerHornetAutopeeringEnabled" = "true" ]; then
+                                shimmmerHornetAutopeeringEnabled=false
+                                menuShimmerHornetAutopeeringEnabled="disabled"
+                                sudo sed -i 's/^shimmerHornetAutopeeringEnabled=.*/shimmerHornetAutopeeringEnabled='$shimmerHornetAutopeeringEnabled'/' $swarmConfigs/shimmer-hornet.cfg
+                            else
+                                shimmmerHornetAutopeeringEnabled=true
+                                menuShimmerHornetAutopeeringEnabled="enabled"
+                                sudo sed -i 's/^shimmerHornetAutopeeringEnabled=.*/shimmerHornetAutopeeringEnabled='$shimmerHornetAutopeeringEnabled'/' $swarmConfigs/shimmer-hornet.cfg
+                            fi
+                            restartShimmerHornet=true
+                            whiptail --title "Hornet [SHIMMER] Autopeering" --msgbox "Autopeering $menuShimmerHornetAutopeeringEnabled." 8 65
                         fi
-                        whiptail --title "Hornet [SHIMMER] Autopeering" --msgbox "Autopeering $menuShimmerHornetAutopeeringEnabled." 8 65
                     ;;
                     "2)")
                         source $swarmConfigs/shimmer-hornet.cfg
@@ -626,17 +639,21 @@ while [ $exitCode -lt 1 ]; do
             esac
         ;;
         "12)")
-            source $swarmConfigs/shimmer-hornet.cfg
-            if [ "$shimmerHornetUpdateCheck" = "true" ]; then
-                shimmerHornetUpdateCheck=false
-                menuShimmerHornetUpdateCheck="disabled"
-                sudo sed -i 's/^shimmerHornetUpdateCheck=.*/shimmerHornetUpdateCheck='$shimmerHornetUpdateCheck'/' $swarmConfigs/shimmer-hornet.cfg
-            else
-                shimmerHornetUpdateCheck=true
-                menuShimmerHornetUpdateCheck="enabled"
-                sudo sed -i 's/^shimmerHornetUpdateCheck=.*/shimmerHornetUpdateCheck='$shimmerHornetUpdateCheck'/' $swarmConfigs/shimmer-hornet.cfg
+            menuShimmerHornetUpdateCheck=$(echo $menuShimmerHornetUpdateCheck | awk '{print tolower($0)}')
+            if (whiptail --title "Hornet [SHIMMER] Update Check" --yesno --defaultno "Are you sure you want to $menuShimmerHornetUpdateCheck the Hornet update check?" 8 65); then
+                source $swarmConfigs/shimmer-hornet.cfg
+                if [ "$shimmerHornetUpdateCheck" = "true" ]; then
+                    shimmerHornetUpdateCheck=false
+                    menuShimmerHornetUpdateCheck="disabled"
+                    sudo sed -i 's/^shimmerHornetUpdateCheck=.*/shimmerHornetUpdateCheck='$shimmerHornetUpdateCheck'/' $swarmConfigs/shimmer-hornet.cfg
+                else
+                    shimmerHornetUpdateCheck=true
+                    menuShimmerHornetUpdateCheck="enabled"
+                    sudo sed -i 's/^shimmerHornetUpdateCheck=.*/shimmerHornetUpdateCheck='$shimmerHornetUpdateCheck'/' $swarmConfigs/shimmer-hornet.cfg
+                fi
+                restartShimmerHornet=true
+                whiptail --title "Hornet [SHIMMER] Update Check" --msgbox "Hornet update check $menuShimmerHornetUpdateCheck." 8 65
             fi
-            whiptail --title "Hornet [SHIMMER] Update Check" --msgbox "Hornet update check $menuShimmerHornetUpdateCheck." 8 65
         ;;
     esac
 done
