@@ -1,29 +1,28 @@
 #!/bin/bash
 
-eventList=$(cat $swarmTemplates/events/officialEvents)
-eventDataLog="/tmp/eventValidiation.log"
-eventLogFile="$swarmLogs/officialEvent.log"
+eventDataLog="/tmp/participation-event.log"
+eventLogFile="$swarmLogs/participation-event.log"
 
-if [ "$nodeId" = "Iota-Hornet" ]; then
+if [ "$eventNetwork" = "iota" ]; then
     nodeApiPort=14265
     nodeJwtToken="$iotaHornetApiJwtToken"
 fi
 
-if [ "$nodeId" = "Shimmer-Hornet" ]; then
-    nodeApiPort=14267
+if [ "$eventNetwork" = "shimmer" ]; then
+    nodeApiPort=14266
     nodeJwtToken="$shimmerHornetApiJwtToken"
 fi
 
 ##################################################################################################################################
 
-if [ ! -z "$nodeJwtToken" ] && [[ $eventList = *$eventId* ]] && [ "$eventType" = "staking" ]; then
-    eventStatus=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 --http1.1 -s -X GET -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
+if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "staking" ]; then
+    eventStatus=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
 
     if [ -z "$eventStatus" ] || [ "$eventStatus" = "null" ] || [ "$eventStatus" = "\"null\"" ]; then
-        whiptail --title "$nodeId - Event Validation" --msgbox "The event could not be found in the database." 8 65
+        whiptail --title "SWARM - Events" --msgbox "The event could not be found in the database." 8 65
     else
         if [[ $eventStatus = *ended* ]]; then
-            sudo curl http://localhost:$nodeApiPort/api/plugins/participation/admin/events/${eventId}/rewards --max-time 5 --http1.1 -s -X GET -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
+            sudo curl http://localhost:$nodeApiPort/api/plugins/participation/admin/events/${eventId}/rewards --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
 
             eventSymbol=$(printf "Symbol:          %s\n" "$(jq '.symbol' ${eventDataLog})")
             eventMilestone=$(printf "Milestone index: %s\n" "$(jq '.milestoneIndex' ${eventDataLog})")
@@ -36,28 +35,29 @@ if [ ! -z "$nodeJwtToken" ] && [[ $eventList = *$eventId* ]] && [ "$eventType" =
             if [ -f "$eventDataLog" ]; then
                 sudo rm -rf $eventDataLog 2>/dev/null
             fi
-            whiptail --title "$nodeId - Event Validation" --msgbox "$eventSymbol\n$eventMilestone\n$eventTotalRewards\n\n$eventChecksum" 16 65
+            
+            whiptail --title "SWARM - Events" --msgbox "$eventSymbol\n$eventMilestone\n$eventTotalRewards\n\n$eventChecksum" 24 65
         else
-            whiptail --title "$nodeId - Event Validation" --msgbox "The event is not yet completed and therefore cannot be validated." 8 65
+            whiptail --title "SWARM - Events" --msgbox "The event is not yet completed and therefore cannot be validated." 8 65
         fi
     fi
 fi
 
-if [ ! -z "$nodeJwtToken" ] && [[ $eventList = *$eventId* ]] && [ "$eventType" = "ballot" ]; then
-    eventStatus=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 --http1.1 -s -X GET -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
+if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "ballot" ]; then
+    eventStatus=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
 
     if [ -z "$eventStatus" ] || [ "$eventStatus" = "null" ] || [ "$eventStatus" = "\"null\"" ]; then
-        whiptail --title "$nodeId - Event Validation" --msgbox "The event could not be found in the database." 8 65
+        whiptail --title "SWARM - Events" --msgbox "The event could not be found in the database." 8 65
     else
         if [[ $eventStatus = *ended* ]]; then
-            ballotChecksum=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 --http1.1 -s -X GET -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
+            ballotChecksum=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
             echo "Ballot ID: \"$eventId\"" > $eventLogFile
             echo "Checksum: $ballotChecksum" >> $eventLogFile
-            whiptail --title "$nodeId - Event Validation" --msgbox "\nBallot ID: \"$eventId\"\n\nChecksum: $ballotChecksum" 16 65
+            whiptail --title "SWARM - Events" --msgbox "\nBallot ID: \"$eventId\"\n\nChecksum: $ballotChecksum" 24 65
         else
-            whiptail --title "$nodeId - Event Validation" --msgbox "The event is not yet completed and therefore cannot be validated." 8 65
+            whiptail --title "SWARM - Events" --msgbox "The event is not yet completed and therefore cannot be validated." 8 65
         fi
     fi
 fi
 
-unset eventList nodeId nodeApiPort nodeJwtToken eventId eventStatus eventData eventSymbol eventMilestone eventTotalRewards eventChecksum eventChecksum eventType ballotChecksum
+unset nodeId nodeApiPort nodeJwtToken eventId eventStatus eventData eventSymbol eventMilestone eventTotalRewards eventChecksum eventChecksum eventType ballotChecksum
