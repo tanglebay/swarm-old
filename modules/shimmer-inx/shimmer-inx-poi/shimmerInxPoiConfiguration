@@ -12,9 +12,7 @@ while [ $exitCode -lt 1 ]; do
         whiptail --title "INX-POI [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
         "1)" "POI Address" \
         "2)" "INX Address" \
-        "3)" "Enable Plugins" \
-        "4)" "Disable Plugins" \
-        "5)" "$menuShimmerInxPoiUpdateCheck update check" 3>&2 2>&1 1>&3
+        "3)" "$menuShimmerInxPoiUpdateCheck update check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -77,57 +75,6 @@ while [ $exitCode -lt 1 ]; do
             fi
         ;;
         "3)")
-            useShimmerInxPoiEnablePlugins=true
-            source $swarmConfigs/shimmer-inx-poi.cfg
-            currentShimmerInxPoiEnablePlugins=$shimmerInxPoiEnablePlugins
-            source $shimmerInxPoiModules/shimmerInxPoiPlugins
-            shimmerInxPoiEnablePlugins=$(whiptail --title "INX-POI [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the INX-POI plugins to be activated:" 24 65 1 \
-                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxPoiPluginPrometheus 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            shimmerInxPoiEnablePlugins=$(echo $shimmerInxPoiEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$shimmerInxPoiEnablePlugins" ] || [[ $shimmerInxPoiEnablePlugins = *prometheus* ]]; then
-                if [ "$shimmerInxPoiEnablePlugins" != "$currentShimmerInxPoiEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/shimmer-inx-poi" ]; then
-                        source $shimmerInxPoiConfigParsers/shimmerInxPoiEnablePlugins
-                    fi
-                    sudo sed -i 's/^shimmerInxPoiEnablePlugins=.*/shimmerInxPoiEnablePlugins="'$shimmerInxPoiEnablePlugins'"/' $swarmConfigs/shimmer-inx-poi.cfg
-                    if [ ! -z "$shimmerInxPoiEnablePlugins" ]; then
-                        whiptail --title "INX-POI [SHIMMER] Plugins" --msgbox "The following plugins are enabled:\n$shimmerInxPoiEnablePlugins" 14 65
-                    else
-                        whiptail --title "INX-POI [SHIMMER] Plugins" --msgbox "There are no plugins enabled for INX-POI." 8 65
-                    fi
-                fi
-                unset shimmerInxPoiEnablePlugins
-            fi
-            unset useShimmerInxPoiEnablePlugins
-        ;;
-        "4)")
-            useShimmerInxPoiDisablePlugins=true
-            source $swarmConfigs/shimmer-inx-poi.cfg
-            currentShimmerInxPoiDisablePlugins=$shimmerInxPoiDisablePlugins
-            source $shimmerInxPoiModules/shimmerInxPoiPlugins
-            shimmerInxPoiDisablePlugins=$(whiptail --title "INX-POI [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the INX-POI plugins to be deactivated:" 24 65 1 \
-                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxPoiPluginPrometheus 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            shimmerInxPoiDisablePlugins=$(echo $shimmerInxPoiDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$shimmerInxPoiDisablePlugins" ] || [[ $shimmerInxPoiDisablePlugins = *warpsync* ]]; then
-                if [ "$shimmerInxPoiDisablePlugins" != "$currentShimmerInxPoiDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/shimmer-inx-poi" ]; then
-                        source $shimmerInxPoiConfigParsers/shimmerInxPoiDisablePlugins
-                    fi
-                    sudo sed -i 's/^shimmerInxPoiDisablePlugins=.*/shimmerInxPoiDisablePlugins="'$shimmerInxPoiDisablePlugins'"/' $swarmConfigs/shimmer-inx-poi.cfg
-                    if [ ! -z "$shimmerInxPoiDisablePlugins" ]; then
-                        whiptail --title "INX-POI [SHIMMER] Plugins" --msgbox "The following plugins are disabled:\n$shimmerInxPoiDisablePlugins" 14 65
-                    else
-                        whiptail --title "INX-POI [SHIMMER] Plugins" --msgbox "There are no plugins disabled for INX-POI." 8 65
-                    fi
-                fi
-            else
-                unset shimmerInxPoiDisablePlugins
-            fi
-            unset useShimmerInxPoiDisablePlugins
-        ;;
-        "5)")
             source $swarmConfigs/shimmer-inx-poi.cfg
             if [ "$shimmerInxPoiUpdateCheck" = "true" ]; then
                 shimmerInxPoiUpdateCheckStatus="enabled"

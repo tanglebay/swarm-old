@@ -12,9 +12,7 @@ while [ $exitCode -lt 1 ]; do
         whiptail --title "INX-MQTT [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
         "1)" "MQTT Settings" \
         "2)" "INX Address" \
-        "3)" "Enable Plugins" \
-        "4)" "Disable Plugins" \
-        "5)" "$menuShimmerInxMqttUpdateCheck update check" 3>&2 2>&1 1>&3
+        "3)" "$menuShimmerInxMqttUpdateCheck update check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -191,57 +189,6 @@ while [ $exitCode -lt 1 ]; do
             fi
         ;;
         "3)")
-            useShimmerInxMqttEnablePlugins=true
-            source $swarmConfigs/shimmer-inx-mqtt.cfg
-            currentShimmerInxMqttEnablePlugins=$shimmerInxMqttEnablePlugins
-            source $shimmerInxMqttModules/shimmerInxMqttPlugins
-            shimmerInxMqttEnablePlugins=$(whiptail --title "INX-MQTT [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the INX-MQTT plugins to be activated:" 24 65 1 \
-                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxMqttPluginPrometheus 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            shimmerInxMqttEnablePlugins=$(echo $shimmerInxMqttEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$shimmerInxMqttEnablePlugins" ] || [[ $shimmerInxMqttEnablePlugins = *prometheus* ]]; then
-                if [ "$shimmerInxMqttEnablePlugins" != "$currentShimmerInxMqttEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
-                        source $shimmerInxMqttConfigParsers/shimmerInxMqttEnablePlugins
-                    fi
-                    sudo sed -i 's/^shimmerInxMqttEnablePlugins=.*/shimmerInxMqttEnablePlugins="'$shimmerInxMqttEnablePlugins'"/' $swarmConfigs/shimmer-inx-mqtt.cfg
-                    if [ ! -z "$shimmerInxMqttEnablePlugins" ]; then
-                        whiptail --title "INX-MQTT [SHIMMER] Plugins" --msgbox "The following plugins are enabled:\n$shimmerInxMqttEnablePlugins" 14 65
-                    else
-                        whiptail --title "INX-MQTT [SHIMMER] Plugins" --msgbox "There are no plugins enabled for INX-MQTT." 8 65
-                    fi
-                fi
-                unset shimmerInxMqttEnablePlugins
-            fi
-            unset useShimmerInxMqttEnablePlugins
-        ;;
-        "4)")
-            useShimmerInxMqttDisablePlugins=true
-            source $swarmConfigs/shimmer-inx-mqtt.cfg
-            currentShimmerInxMqttDisablePlugins=$shimmerInxMqttDisablePlugins
-            source $shimmerInxMqttModules/shimmerInxMqttPlugins
-            shimmerInxMqttDisablePlugins=$(whiptail --title "INX-MQTT [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the INX-MQTT plugins to be deactivated:" 24 65 1 \
-                "Prometheus" "plugin for metrics (e.g. Grafana)" $shimmerInxMqttPluginPrometheus 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            shimmerInxMqttDisablePlugins=$(echo $shimmerInxMqttDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$shimmerInxMqttDisablePlugins" ] || [[ $shimmerInxMqttDisablePlugins = *warpsync* ]]; then
-                if [ "$shimmerInxMqttDisablePlugins" != "$currentShimmerInxMqttDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
-                        source $shimmerInxMqttConfigParsers/shimmerInxMqttDisablePlugins
-                    fi
-                    sudo sed -i 's/^shimmerInxMqttDisablePlugins=.*/shimmerInxMqttDisablePlugins="'$shimmerInxMqttDisablePlugins'"/' $swarmConfigs/shimmer-inx-mqtt.cfg
-                    if [ ! -z "$shimmerInxMqttDisablePlugins" ]; then
-                        whiptail --title "INX-MQTT [SHIMMER] Plugins" --msgbox "The following plugins are disabled:\n$shimmerInxMqttDisablePlugins" 14 65
-                    else
-                        whiptail --title "INX-MQTT [SHIMMER] Plugins" --msgbox "There are no plugins disabled for INX-MQTT." 8 65
-                    fi
-                fi
-            else
-                unset shimmerInxMqttDisablePlugins
-            fi
-            unset useShimmerInxMqttDisablePlugins
-        ;;
-        "5)")
             source $swarmConfigs/shimmer-inx-mqtt.cfg
             if [ "$shimmerInxMqttUpdateCheck" = "true" ]; then
                 shimmerInxMqttUpdateCheckStatus="enabled"
