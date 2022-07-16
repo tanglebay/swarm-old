@@ -1,7 +1,6 @@
 #!/bin/bash
 
 eventDataLog="/tmp/participation-event.log"
-eventLogFile="$swarmLogs/participation-event.log"
 
 if [ "$eventNetwork" = "iota" ]; then
     nodeApiPort=14265
@@ -28,13 +27,10 @@ if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "staking" ]; then
             eventMilestone=$(printf "Milestone index: %s\n" "$(jq '.milestoneIndex' ${eventDataLog})")
             eventTotalRewards=$(printf "Total rewards:   %s\n" "$(jq '.totalRewards' ${eventDataLog})")
             eventChecksum=$(printf "Checksum:        %s\n" "$(jq '.checksum' ${eventDataLog})")
-            echo $eventSymbol > $eventLogFile
-            echo $eventMilestone >> $eventLogFile
-            echo $eventTotalRewards >> $eventLogFile
-            echo $eventChecksum >> $eventLogFile
-            if [ -f "$eventDataLog" ]; then
-                sudo rm -rf $eventDataLog 2>/dev/null
-            fi
+            echo $eventSymbol > $eventDataLog
+            echo $eventMilestone >> $eventDataLog
+            echo $eventTotalRewards >> $eventDataLog
+            echo $eventChecksum >> $eventDataLog
 
             whiptail --title "SWARM - Events" --msgbox "$eventSymbol\n$eventMilestone\n$eventTotalRewards\n\n$eventChecksum" 24 65
         else
@@ -51,8 +47,8 @@ if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "ballot" ]; then
     else
         if [[ $eventStatus = *ended* ]]; then
             ballotChecksum=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
-            echo "Ballot ID: \"$eventId\"" > $eventLogFile
-            echo "Checksum: $ballotChecksum" >> $eventLogFile
+            echo "Ballot ID: \"$eventId\"" > $eventDataLog
+            echo "Checksum: $ballotChecksum" >> $eventDataLog
             whiptail --title "SWARM - Events" --msgbox "\nBallot ID: \"$eventId\"\n\nChecksum: $ballotChecksum" 24 65
         else
             whiptail --title "SWARM - Events" --msgbox "The event is not yet completed and therefore cannot be validated." 8 65
