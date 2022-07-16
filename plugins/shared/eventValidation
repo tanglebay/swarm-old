@@ -15,13 +15,13 @@ fi
 ##################################################################################################################################
 
 if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "staking" ]; then
-    eventStatus=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
+    eventStatus=$(curl -Ls http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
 
     if [ -z "$eventStatus" ] || [ "$eventStatus" = "null" ] || [ "$eventStatus" = "\"null\"" ]; then
         whiptail --title "SWARM - Events" --msgbox "The event could not be found in the database." 8 65
     else
         if [[ $eventStatus = *ended* ]]; then
-            sudo curl http://localhost:$nodeApiPort/api/plugins/participation/admin/events/${eventId}/rewards --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
+            sudo curl -Ls http://localhost:$nodeApiPort/api/plugins/participation/admin/events/${eventId}/rewards --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
 
             eventSymbol=$(printf "Symbol:          %s\n" "$(jq '.symbol' ${eventDataLog})")
             eventMilestone=$(printf "Milestone index: %s\n" "$(jq '.milestoneIndex' ${eventDataLog})")
@@ -40,13 +40,13 @@ if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "staking" ]; then
 fi
 
 if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "ballot" ]; then
-    eventStatus=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
+    eventStatus=$(curl -Ls http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
 
     if [ -z "$eventStatus" ] || [ "$eventStatus" = "null" ] || [ "$eventStatus" = "\"null\"" ]; then
         whiptail --title "SWARM - Events" --msgbox "The event could not be found in the database." 8 65
     else
         if [[ $eventStatus = *ended* ]]; then
-            ballotChecksum=$(curl http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
+            ballotChecksum=$(curl -Ls http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
             echo "Ballot ID: \"$eventId\"" > $eventDataLog
             echo "Checksum: $ballotChecksum" >> $eventDataLog
             whiptail --title "SWARM - Events" --msgbox "\nBallot ID: \"$eventId\"\n\nChecksum: $ballotChecksum" 24 65
