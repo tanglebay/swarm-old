@@ -12,8 +12,14 @@ if [ "$shimmerHornetNetwork" != "$currentHornetShimmerNetwork" ]; then
         echo "OPTIONS=\"--config config_alphanet.json\"" > /etc/default/shimmer-hornet
     fi
     sudo rm -rf $shimmerHornetHome/$currentHornetShimmerNetwork
-    source $shimmerHornetConfigParsers/shimmerHornetIdentity
-    restartShimmerHornet=true
+    sudo systemctl stop shimmer-hornet > /dev/null 2>&1
+    source $shimmerHornetModules/shimmerHornetParser
+    if [ -f "/usr/bin/shimmer-hornet" ]; then
+        shimmerHornetStatus="$(systemctl show -p ActiveState --value shimmer-hornet)"
+    fi
+    if [ "$shimmerHornetStatus" != "active" ]; then
+        sudo systemctl start shimmer-hornet > /dev/null 2>&1
+    fi
     newShimmerHornetApiJwtToken=true
     whiptail --title "[SHIMMER] Hornet - Configuration" --msgbox "Hornet was successfully changed to the $shimmerHornetNetwork network!" 8 65
 fi
