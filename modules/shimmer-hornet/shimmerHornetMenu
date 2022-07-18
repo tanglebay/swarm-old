@@ -45,8 +45,9 @@ while [ $exitCode -lt 1 ]; do
                                 whiptail --title "Hornet [SHIMMER] Configuration" --menu "\nChoose an option" 24 65 0 \
                                 "1)" "Peering.json" \
                                 "2)" "Config_Mainnet.json" \
-                                "3)" "Config_Alphanet.json" \
-                                "4)" "Shimmer-Hornet.cfg (SWARM)" 3>&2 2>&1 1>&3
+                                "3)" "Config_Testnet.json" \
+                                "4)" "Config_Alphanet.json" \
+                                "5)" "Shimmer-Hornet.cfg (SWARM)" 3>&2 2>&1 1>&3
                             )
 
                             exitstatus=$?
@@ -80,7 +81,7 @@ while [ $exitCode -lt 1 ]; do
                                     fi
                                 ;;
                                 "3)")
-                                    sudo $swarmCLEditor $shimmerHornetHome/config_alphanet.json
+                                    sudo $swarmCLEditor $shimmerHornetHome/config_testnet.json
                                     if (whiptail --title "Hornet [SHIMMER] Configuration" --yesno --defaultno "Would you like to restart Hornet now?" 8 65); then
                                         {
                                             echo 0
@@ -92,6 +93,18 @@ while [ $exitCode -lt 1 ]; do
                                     fi
                                 ;;
                                 "4)")
+                                    sudo $swarmCLEditor $shimmerHornetHome/config_alphanet.json
+                                    if (whiptail --title "Hornet [SHIMMER] Configuration" --yesno --defaultno "Would you like to restart Hornet now?" 8 65); then
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl restart shimmer-hornet > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
+                                    fi
+                                ;;
+                                "5)")
                                     sudo $swarmCLEditor $swarmConfigs/shimmer-hornet.cfg
                                     if (whiptail --title "Hornet [SHIMMER] Configuration" --yesno --defaultno "Would you like to restart Hornet now?" 8 65); then
                                         {
@@ -287,12 +300,13 @@ while [ $exitCode -lt 1 ]; do
                         "6)")
                             if (whiptail --title "Hornet [SHIMMER] Management" --yesno --defaultno "Are you sure you want to reset the hornet config file?" 8 65); then
                                 source $swarmConfigs/shimmer-hornet.cfg
+                                source $shimmerHornetModules/shimmerHornetConfigs
                                 {
                                     echo 0
                                     echo 20
                                     sudo systemctl stop shimmer-hornet > /dev/null 2>&1
                                     echo 40
-                                    sudo -u hornet wget -q -O $shimmerHornetHome/config_$shimmerHornetNetwork.json https://raw.githubusercontent.com/iotaledger/hornet/develop/config_defaults.json
+                                    sudo -u hornet wget -q -O $shimmerHornetHome/$shimmerHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/develop/config_defaults.json
                                     echo 60
                                     source $shimmerHornetModules/shimmerHornetParser
                                     echo 80
@@ -442,6 +456,7 @@ while [ $exitCode -lt 1 ]; do
                         if (whiptail --title "Hornet [SHIMMER] Installer" --yesno --defaultno "Do you really want to remove Hornet?" 8 65); then
                             {
                                 echo 0
+                                shimmerHornetRemoval=true
                                 echo 50
                                 source $shimmerHornetModules/shimmerHornetRemoval
                                 echo 100

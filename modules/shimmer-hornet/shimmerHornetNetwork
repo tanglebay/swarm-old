@@ -1,16 +1,29 @@
 #!/bin/bash
 
 # Check if network changed
-if [ "$shimmerHornetNetwork" != "$currentHornetShimmerNetwork" ]; then
-    if [ "$shimmerHornetNetwork" = "mainnet" ] || [ "$shimmerHornetNetwork" = "alphanet" ]; then
-        echo "OPTIONS=\"--config config.json\"" > /etc/default/shimmer-hornet
+if [ "$shimmerHornetNetwork" != "$currentShimmerHornetNetwork" ]; then
+    if [ "$shimmerHornetNetwork" = "mainnet" ]; then
+        echo "OPTIONS=\"--config config_mainnet.json\"" > /etc/default/shimmer-hornet
     fi
-    if [ "$shimmerHornetNetwork" = "devnet" ]; then
-        echo "OPTIONS=\"--config config_devnet.json\"" > /etc/default/shimmer-hornet
+    if [ "$shimmerHornetNetwork" = "testnet" ]; then
+        echo "OPTIONS=\"--config config_testnet.json\"" > /etc/default/shimmer-hornet
     fi
-    sudo rm -rf $shimmerHornetHome/$currentHornetShimmerNetwork
-    source $shimmerHornetConfigParsers/shimmerHornetIdentity
-    restartShimmerHornet=true
+    if [ "$shimmerHornetNetwork" = "alphanet" ]; then
+        echo "OPTIONS=\"--config config_alphanet.json\"" > /etc/default/shimmer-hornet
+    fi
+    sudo systemctl stop shimmer-hornet > /dev/null 2>&1
+    sudo rm -rf $shimmerHornetHome/$currentShimmerHornetNetwork
+    if [ ! -d "$shimmerHornetHome/$shimmerHornetNetwork" ]; then
+        sudo -u hornet mkdir -p $shimmerHornetHome/$shimmerHornetNetwork
+        sudo chmod 700 $shimmerHornetHome/$shimmerHornetNetwork
+    fi
+    source $shimmerHornetModules/shimmerHornetParser
+    if [ -f "/usr/bin/shimmer-hornet" ]; then
+        shimmerHornetStatus="$(systemctl show -p ActiveState --value shimmer-hornet)"
+    fi
+    if [ "$shimmerHornetStatus" != "active" ]; then
+        sudo systemctl start shimmer-hornet > /dev/null 2>&1
+    fi
     newShimmerHornetApiJwtToken=true
     whiptail --title "[SHIMMER] Hornet - Configuration" --msgbox "Hornet was successfully changed to the $shimmerHornetNetwork network!" 8 65
 fi

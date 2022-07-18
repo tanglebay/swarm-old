@@ -10,29 +10,37 @@ else
     sudo systemctl stop shimmer-hornet > /dev/null 2>&1
 fi
 
-if [ ! -f "/usr/bin/iota-hornet" ] || [ ! -f "/usr/bin/shimmer-hornet" ]; then
-    if id hornet >/dev/null 2>&1; then
-        sudo deluser hornet >/dev/null
+if [ "$shimmerHornetRemoval" = "true" ]; then
+    if [ ! -f "/usr/bin/iota-hornet" ] || [ ! -f "/usr/bin/shimmer-hornet" ]; then
+        if id hornet >/dev/null 2>&1; then
+            sudo deluser hornet >/dev/null
+        fi
     fi
 fi
 
 sudo systemctl disable shimmer-hornet > /dev/null 2>&1
 
-sudo rm -rf /usr/bin/shimmer-hornet /var/lib/shimmer-hornet /lib/systemd/system/shimmer-hornet.service /etc/default/shimmer-hornet > /dev/null 2>&1
+if [ "$shimmerHornetRemoval" = "true" ]; then
+    sudo rm -rf /usr/bin/shimmer-hornet /var/lib/shimmer-hornet /lib/systemd/system/shimmer-hornet.service /etc/default/shimmer-hornet > /dev/null 2>&1
+else
+    sudo rm -rf /usr/bin/shimmer-hornet /etc/default/shimmer-hornet > /dev/null 2>&1
+fi
 
 sudo systemctl daemon-reload > /dev/null 2>&1
 
-if [ "$ufw" = "true" ]; then
+if [ "$ufw" = "true" ] && [ "$shimmerHornetRemoval" = "true" ]; then
     sudo ufw delete allow $shimmerHornetGossipPort/tcp > /dev/null 2>&1
     sudo ufw delete allow $shimmerHornetAutopeeringPort/udp > /dev/null 2>&1
 fi
 
-getInxInstallations=$(ls /usr/bin/ | grep -E 'dashboard|indexer|mqtt|participation')
-if [ -z "$getInxInstallations" ] && [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ]; then
-    sudo snap remove go > /dev/null 2>&1
+if [ "$shimmerHornetRemoval" = "true" ]; then
+    getInxInstallations=$(ls /usr/bin/ | grep -E 'dashboard|indexer|mqtt|participation')
+    if [ "$shimmerHornetRemoval" = "true" ] && [ -z "$getInxInstallations" ] && [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ]; then
+        sudo snap remove go > /dev/null 2>&1
+    fi
 fi
 
-if [ -f "/etc/nginx/sites-enabled/shimmer-hornet" ]; then
+if [ -f "/etc/nginx/sites-enabled/shimmer-hornet" ] && [ "$shimmerHornetRemoval" = "true" ]; then
     if [ "$ufw" = "true" ]; then
         if [ "$proxyShimmerHornetPort" != "$proxyIotaHornetPort" ] && [ "$proxyShimmerHornetPort" != "$proxyIotaBeePort" ] && [ "$proxyShimmerHornetPort" != "$proxyShimmerBeePort" ] && [ "$proxyShimmerHornetPort" != "$proxyGoshimmerPort" ] && [ "$proxyShimmerHornetPort" != "$proxyWaspDashboardPort" ] && [ "$proxyShimmerHornetPort" != "$proxyWaspApiPort" ]; then
             sudo ufw delete allow $proxyShimmerHornetPort/tcp > /dev/null 2>&1
@@ -43,4 +51,4 @@ if [ -f "/etc/nginx/sites-enabled/shimmer-hornet" ]; then
     sudo systemctl reload nginx
 fi
 
-unset getInxInstallations
+unset shimmerHornetRemoval getInxInstallations
