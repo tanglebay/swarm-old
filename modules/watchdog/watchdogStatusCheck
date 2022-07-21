@@ -96,8 +96,11 @@ if [ "$iotaHornetStatus" != "active" ] && [ -f "/usr/bin/iota-hornet" ] && [ "$i
     if [ $iotaHornetStatusCounter -ge 1 ] 2>/dev/null; then
         sudo systemctl stop iota-hornet 2>/dev/null
         restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-        if [[ $iotaHornetPlugins = *participation* ]] && [ $iotaHornetStatusCounter -ge 2 ] 2>/dev/null; then
+        if [ "$iotaHornetAllowDbReset" = "true" ] && [[ $iotaHornetPlugins = *participation* ]] && [ $iotaHornetStatusCounter -ge 2 ] 2>/dev/null; then
             sudo rm -rf $iotaHornetHome/${iotaHornetNetwork}db/participation 2>/dev/null
+            echo "$restartDate [WACHTDOG] Hornet (IOTA) - Participation database reset because of too many failed restarts." >> $swarmLogs/swarm.log
+            telegramText="Host: $HOSTNAME%0AApp: Hornet (IOTA)%0A%0AAction: Participation database reset because of too many failed restarts."
+            source $watchdogModules/watchdogTelegram
         fi
         if [ $iotaHornetStatusCounter -ge 3 ] 2>/dev/null; then
             if [ "$iotaHornetAllowDbReset" = "true" ]; then
