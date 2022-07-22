@@ -391,17 +391,21 @@ while [ $exitCode -lt 1 ]; do
         "5)")
             source $swarmConfigs/shimmer-hornet.cfg
             if [ "$shimmerHornetPowEnabled" = "true" ]; then
-                shimmerHornetPowEnabledStatus=enabled
+                shimmerHornetPowEnabledStatus="disable"
             else
-                shimmerHornetPowEnabledStatus=disabled
+                shimmerHornetPowEnabledStatus="enable"
             fi
-            CHOICE=$(
-                whiptail --title "Hornet [SHIMMER] PoW" --menu "\nPOW: $shimmerHornetPowEnabledStatus\n\nChoose an option" 24 65 0 \
-                "1)" "Enable PoW" \
-                "2)" "Disable PoW" 3>&2 2>&1 1>&3
-            )
-            case $CHOICE in
-                "1)")
+            if (whiptail --title "Hornet [SHIMMER] Proof of Work" --yesno --defaultno "Do you really want to $shimmerHornetPowEnabledStatus proof of work?" 8 65); then
+                if [ "$shimmerHornetPowEnabled" = "true" ]; then
+                    shimmerHornetPowEnabled=false
+                    if [ -f "/usr/bin/shimmer-hornet" ]; then
+                        source $shimmerHornetConfigParsers/shimmerHornetPowEnabled
+                        source $shimmerHornetConfigParsers/shimmerHornetPowWorkerCount
+                        sudo sed -i 's/^shimmerHornetPowWorkerCount=.*/shimmerHornetPowWorkerCount='$shimmerHornetPowWorkerCount'/' $swarmConfigs/shimmer-hornet.cfg
+                    fi
+                    sudo sed -i 's/^shimmerHornetPowEnabled=.*/shimmerHornetPowEnabled='$shimmerHornetPowEnabled'/' $swarmConfigs/shimmer-hornet.cfg
+                    whiptail --title "Hornet [SHIMMER] PoW" --msgbox "PoW has been disabled." 8 65
+                else
                     shimmerHornetPowEnabled=true
                     if [ -f "/usr/bin/shimmer-hornet" ]; then
                         source $shimmerHornetConfigParsers/shimmerHornetPowEnabled
@@ -410,18 +414,8 @@ while [ $exitCode -lt 1 ]; do
                     fi
                     sudo sed -i 's/^shimmerHornetPowEnabled=.*/shimmerHornetPowEnabled='$shimmerHornetPowEnabled'/' $swarmConfigs/shimmer-hornet.cfg
                     whiptail --title "Hornet [SHIMMER] PoW" --msgbox "PoW has been enabled." 8 65
-                ;;
-                "2)")
-                    shimmerHornetPowEnabled=false
-                    if [ -f "/usr/bin/shimmer-hornet" ]; then
-                        source $shimmerHornetConfigParsers/shimmerHornetPowEnabled
-                        source $shimmerHornetConfigParsers/shimmerHornetPowWorkerCount
-                        sudo sed -i 's/^shimmerHornetPowWorkerCount=.*/shimmerHornetPowWorkerCount='$shimmerHornetPowWorkerCount'/' $swarmConfigs/shimmer-hornet.cfg
-                    fi
-                    sudo sed -i 's/^shimmerHornetPowEnabled=.*/shimmerHornetPowEnabled='$shimmerHornetPowEnabled'/' $swarmConfigs/shimmer-hornet.cfg
-                    whiptail --title "Hornet [SHIMMER] PoW" --msgbox "PoW has been disabeld." 8 65
-                ;;
-            esac
+                fi
+            fi
         ;;
         "6)")
             source $swarmConfigs/shimmer-hornet.cfg
