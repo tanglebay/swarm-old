@@ -205,7 +205,7 @@ while [ $exitCode -lt 1 ]; do
                             if (whiptail --title "INX-Dashboard [SHIMMER] Installer" --yesno --defaultno "Do you really want to update INX-Dashboard?" 8 65); then
                                 # Update INX-Dashboard
                                 source $shimmerInxDashboardModules/shimmerInxDashboardVersion
-                                if [ "$latestShimmerInxDashboardVersion" != "$shimmerInxDashboardVersion" ]; then
+                                if [ ! -z "$latestShimmerInxDashboardVersion" ]; then
                                     {
                                         echo 0
                                         echo 33
@@ -215,19 +215,20 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.5
                                     } | whiptail --gauge "Please wait while INX-Dashboard is updated..." 8 65 0
-                                    newShimmerInxDashboardVersion=$(/usr/bin/shimmer-inx-dashboard -v | awk '{ print $2 }')
-                                    if [ "$shimmerInxDashboardVersion" != "$newShimmerInxDashboardVersion" ]; then
-                                        {
-                                            # CALL MODULE CONFIGPARSER
-                                            source $shimmerInxDashboardModules/shimmerInxDashboardParser
-                                            sudo systemctl restart shimmer-inx-dashboard 2>/dev/null
-                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
-                                    fi
+                                    {
+                                        # CALL MODULE CONFIGPARSER
+                                        source $shimmerInxDashboardModules/shimmerInxDashboardParser
+                                        sudo systemctl restart shimmer-inx-dashboard 2>/dev/null
+                                    } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                    shimmerInxDashboardChecksum=$(cat /tmp/shimmer-inx-dashboard.checksum 2>/dev/null)
                                     whiptail --title "INX-Dashboard [SHIMMER] Installer" --msgbox "INX-Dashboard successfully updated.\n\nChecksum: $shimmerInxDashboardChecksum" 10 65
+                                    if [ -f "/tmp/shimmer-inx-dashboard.checksum" ]; then
+                                        sudo rm -rf /tmp/shimmer-inx-dashboard.checksum 2>/dev/null
+                                        unset shimmerInxDashboardChecksum
+                                    fi
                                 else
-                                    whiptail --title "INX-Dashboard [SHIMMER] Installer" --msgbox "Congratulations, you have already installed the latest version of INX-Dashboard." 8 65
+                                    whiptail --title "INX-Dashboard [SHIMMER] Installer" --msgbox "Sorry, but INX-Dashboard update aborted." 8 65
                                 fi
-                                unset shimmerInxDashboardChecksum
                             fi
                         else
                             whiptail --title "INX-Dashboard [SHIMMER] Installer" --msgbox "Sorry, but INX-Dashboard is not installed." 8 65

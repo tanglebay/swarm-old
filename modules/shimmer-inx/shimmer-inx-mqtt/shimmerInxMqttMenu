@@ -205,7 +205,7 @@ while [ $exitCode -lt 1 ]; do
                             if (whiptail --title "INX-MQTT [SHIMMER] Installer" --yesno --defaultno "Do you really want to update INX-MQTT?" 8 65); then
                                 # Update INX-Mqtt
                                 source $shimmerInxMqttModules/shimmerInxMqttVersion
-                                if [ "$latestShimmerInxMqttVersion" != "$shimmerInxMqttVersion" ]; then
+                                if [ ! -z "$latestShimmerInxMqttVersion" ]; then
                                     {
                                         echo 0
                                         echo 33
@@ -215,19 +215,20 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.5
                                     } | whiptail --gauge "Please wait while INX-MQTT is updated..." 8 65 0
-                                    newShimmerInxMqttVersion=$(/usr/bin/shimmer-inx-mqtt -v | awk '{ print $2 }')
-                                    if [ "$shimmerInxMqttVersion" != "$newShimmerInxMqttVersion" ]; then
-                                        {
-                                            # CALL MODULE CONFIGPARSER
-                                            source $shimmerInxMqttModules/shimmerInxMqttParser
-                                            sudo systemctl restart shimmer-inx-mqtt 2>/dev/null
-                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                    {
+                                        # CALL MODULE CONFIGPARSER
+                                        source $shimmerInxMqttModules/shimmerInxMqttParser
+                                        sudo systemctl restart shimmer-inx-mqtt 2>/dev/null
+                                    } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                    shimmerInxMqttChecksum=$(cat /tmp/shimmer-inx-mqtt.checksum 2>/dev/null)
+                                    whiptail --title "INX-Mqtt [SHIMMER] Installer" --msgbox "INX-Mqtt successfully updated.\n\nChecksum: $shimmerInxMqttChecksum" 10 65
+                                    if [ -f "/tmp/shimmer-inx-mqtt.checksum" ]; then
+                                        sudo rm -rf /tmp/shimmer-inx-mqtt.checksum 2>/dev/null
+                                        unset shimmerInxMqttChecksum
                                     fi
-                                    whiptail --title "INX-MQTT [SHIMMER] Installer" --msgbox "INX-MQTT successfully updated.\n\nChecksum: $shimmerInxMqttChecksum" 10 65
                                 else
-                                    whiptail --title "INX-MQTT [SHIMMER] Installer" --msgbox "Congratulations, you have already installed the latest version of INX-MQTT." 8 65
+                                    whiptail --title "INX [SHIMMER] MQTT" --msgbox "Sorry, but INX-MQTT update aborted." 8 65
                                 fi
-                                unset shimmerInxMqttChecksum
                             fi
                         else
                             whiptail --title "INX [SHIMMER] MQTT" --msgbox "Sorry, but INX-MQTT is not installed." 8 65

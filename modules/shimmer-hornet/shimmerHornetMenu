@@ -331,7 +331,7 @@ while [ $exitCode -lt 1 ]; do
                             if (whiptail --title "Hornet [SHIMMER] Installer" --yesno --defaultno "Do you really want to update Hornet?" 8 65); then
                                 # Update HORNET
                                 source $shimmerHornetModules/shimmerHornetVersion
-                                if [ "$latestHornetShimmerVersion" != "$shimmerHornetVersion" ]; then
+                                if [ ! -z "$latestShimmerHornetVersion" ]; then
                                     {
                                         echo 0
                                         echo 33
@@ -341,23 +341,20 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.5
                                     } | whiptail --gauge "Please wait while Hornet is updated..." 8 65 0
-                                    newShimmerHornetVersion=$(/usr/bin/shimmer-hornet -v | awk '{ print $2 }')
-                                    if [ "$shimmerHornetVersion" != "$newShimmerHornetVersion" ]; then
-                                        {
-                                            # CALL MODULE CONFIGPARSER
-                                            source $shimmerHornetModules/shimmerHornetParser
-                                            sudo systemctl restart shimmer-hornet 2>/dev/null
-                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
-                                    fi
-                                    shimmerHornetChecksum=$(cat /tmp/shimmer-hornet.checksum)
+                                    {
+                                        # CALL MODULE CONFIGPARSER
+                                        source $shimmerHornetModules/shimmerHornetParser
+                                        sudo systemctl restart shimmer-hornet 2>/dev/null
+                                    } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                    shimmerHornetChecksum=$(cat /tmp/shimmer-hornet.checksum 2>/dev/null)
                                     whiptail --title "Hornet [SHIMMER] Installer" --msgbox "Hornet successfully updated.\n\nChecksum: $shimmerHornetChecksum" 10 65
+                                    if [ -f "/tmp/shimmer-hornet.checksum" ]; then
+                                        sudo rm -rf /tmp/shimmer-hornet.checksum > /dev/null 2>&1
+                                        unset shimmerHornetChecksum
+                                    fi
                                 else
-                                    whiptail --title "Hornet [SHIMMER] Installer" --msgbox "Congratulations, you have already installed the latest version of Hornet." 8 65
+                                    whiptail --title "Hornet [SHIMMER] Installer" --msgbox "Sorry, but Hornet update aborted." 10 65
                                 fi
-                                if [ -f "/tmp/shimmer-hornet.checksum" ]; then
-                                    sudo rm -rf /tmp/shimmer-hornet.checksum > /dev/null 2>&1
-                                fi
-                                unset shimmerHornetChecksum
                             fi
                         else
                             whiptail --title "Hornet [SHIMMER] Installer" --msgbox "Sorry, but Hornet is not installed." 8 65
