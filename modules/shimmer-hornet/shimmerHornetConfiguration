@@ -296,13 +296,13 @@ while [ $exitCode -lt 1 ]; do
                 source $swarmConfigs/shimmer-hornet.cfg
                 # Hornet Pruning
                 if [ "$shimmerHornetPruningEnabled" = "true" ]; then
-                    menuShimmerHornetPruningEnabled="Enable"
+                    shimmerHornetPruningEnabledStatus="Enable"
                 else
-                    menuShimmerHornetPruningEnabled="Disable"
+                    shimmerHornetPruningEnabledStatus="Disable"
                 fi
                 CHOICE=$(
                     whiptail --title "Hornet [SHIMMER] Pruning" --menu "\nChoose an option" 24 65 0 \
-                    "1)" "$menuShimmerHornetPruningEnabled pruning" \
+                    "1)" "$shimmerHornetPruningEnabledStatus pruning" \
                     "2)" "Set database size" \
                     "3)" "Set pruning cooldown" \
                     "4)" "Set pruning percentage" 3>&2 2>&1 1>&3
@@ -313,32 +313,37 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        menuShimmerHornetPruningEnabled=$(echo $menuShimmerHornetPruningEnabled | awk '{print tolower($0)}')
-                        if (whiptail --title "Hornet [SHIMMER] Pruning" --yesno --defaultno "Are you sure you want to $menuShimmerHornetPruningEnabled pruning?" 8 65); then
-                            source $swarmConfigs/shimmer-hornet.cfg
+                        shimmerHornetPruningEnabledStatus=$(echo $shimmerHornetPruningEnabledStatus | awk '{print tolower($0)}')
+                        if (whiptail --title "Hornet [SHIMMER] Pruning" --yesno --defaultno "Are you sure you want to $shimmerHornetPruningEnabledStatus pruning?" 8 65); then
                             if [ "$shimmerHornetPruningEnabled" = "true" ]; then
                                 shimmerHornetPruningEnabled=false
-                                menuShimmerHornetPruningEnabled="disabled"
+                                shimmerHornetPruningEnabledStatus="disabled"
                             else
                                 shimmerHornetPruningEnabled=true
-                                menuShimmerHornetPruningEnabled="enabled"
+                                shimmerHornetPruningEnabledStatus="enabled"
                             fi
                             restartShimmerHornet=true
                             sudo sed -i 's/^shimmerHornetPruningEnabled=.*/shimmerHornetPruningEnabled='$shimmerHornetPruningEnabled'/' $swarmConfigs/shimmer-hornet.cfg
-                            whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "Pruning $menuShimmerHornetInxEnabled." 8 65
+                            whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "Pruning of the database $shimmerHornetPruningEnabledStatus." 8 65
                         fi
                     ;;
                     "2)")
-                        shimmerHornetPruningDatabaseSize=$(whiptail --inputbox "\nSet the maximum size of the database in gigabyte." 10 65 $shimmerHornetPruningDatabaseSize --title "Hornet [SHIMMER] Pruning" 3>&1 1>&2 2>&3)
+                        if [[ $shimmerHornetPruningDatabaseSize = *-* ]]; then
+                            unset shimmerHornetPruningDatabaseSize
+                        fi
+                        currentShimmerHornetPruningDatabaseSize=$shimmerHornetPruningDatabaseSize
+                        shimmerHornetPruningDatabaseSize=$(whiptail --inputbox "\nSet the maximum size of the database in gigabytes." 10 65 $currentShimmerHornetPruningDatabaseSize --title "Hornet [SHIMMER] Pruning" 3>&1 1>&2 2>&3)
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
                             shimmerHornetPruningDatabaseSize=${shimmerHornetPruningDatabaseSize//[!0-9]/}
-                            if [ ! -z "$shimmerHornetPruningDatabaseSize" ] && [ $shimmerHornetPruningDatabaseSize -eq $shimmerHornetPruningDatabaseSize ] 2>/dev/null; then
+                            if [ $shimmerHornetPruningDatabaseSize -gt 0 ] && [ $currentShimmerHornetPruningDatabaseSize -ne $shimmerHornetPruningDatabaseSize ] 2>/dev/null; then
                                 if [ -f "/usr/bin/shimmer-hornet" ]; then
                                     source $shimmerHornetConfigParsers/shimmerHornetPruningDatabaseSize
                                 fi
                                 sudo sed -i 's/^shimmerHornetPruningDatabaseSize=.*/shimmerHornetPruningDatabaseSize='$shimmerHornetPruningDatabaseSize'/' $swarmConfigs/shimmer-hornet.cfg
-                                whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "Pruning of the database set to ${shimmerHornetPruningDatabaseSize}GB." 8 65
+                                whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "The database size has been limited to ${shimmerHornetPruningDatabaseSize} GB." 8 65
+                            else
+                                whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "Aborted - No change was made to the database size." 8 65
                             fi
                         fi
                     ;;
@@ -348,7 +353,7 @@ while [ $exitCode -lt 1 ]; do
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
                             shimmerHornetPruningCooldownTime=${shimmerHornetPruningCooldownTime//[!0-9]/}
-                            if [ $shimmerHornetPruningCooldownTime -gt 0 ] && [ $shimmerHornetPruningCooldownTime -lt 60 ]; then
+                            if [ $shimmerHornetPruningCooldownTime -gt 0 ] && [ $shimmerHornetPruningCooldownTime -lt 60 ] 2>/dev/null; then
                                 if [ -f "/usr/bin/shimmer-hornet" ]; then
                                     source $shimmerHornetConfigParsers/shimmerHornetPruningCooldownTime
                                 fi
@@ -361,7 +366,7 @@ while [ $exitCode -lt 1 ]; do
                         shimmerHornetPruningPercentage=$(whiptail --inputbox "\nSet how much percent of history should be pruned from the database" 10 65 $shimmerHornetPruningPercentage --title "Hornet [SHIMMER] Pruning" 3>&1 1>&2 2>&3)
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
-                            if [ ! -z "$shimmerHornetPruningPercentage" ] && [ $shimmerHornetPruningPercentage -eq $shimmerHornetPruningPercentage ]; then
+                            if [ ! -z "$shimmerHornetPruningPercentage" ] && [ $shimmerHornetPruningPercentage -eq $shimmerHornetPruningPercentage ] 2>/dev/null; then
                                 if [ -f "/usr/bin/shimmer-hornet" ]; then
                                     source $shimmerHornetConfigParsers/shimmerHornetPruningPercentage
                                 fi
