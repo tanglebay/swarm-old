@@ -1,0 +1,20 @@
+#!/bin/bash
+
+apps=(iota-hornet shimmer-hornet goshimmer wasp shimmer-inx-dashboard shimmer-inx-indexer shimmer-inx-mqtt shimmer-inx-participation shimmer-inx-poi)
+for app in ${apps[@]}
+do
+    if [ -f "/usr/bin/$app" ]; then
+        serviceVersion=$(grep "# Version" /lib/systemd/system/$app.service | awk '{ print $3 }')
+        latestServiceVersion=$(grep "Version" $swarmTemplates/app-service/$app.service | awk '{ print $3 }')
+        if [ "$serviceVersion" != "$latestServiceVersion" ] && [ ! -z "$latestServiceVersion" ] 2>/dev/null; then
+            sudo cp -rf $swarmTemplates/app-service/$app.service /lib/systemd/system/$app.service 2>/dev/null
+            systemDaemonRestart=true
+        fi
+    fi
+done
+
+if [ "$systemDaemonRestart" = "true" ]; then
+    sudo systemctl daemon-reload 2>/dev/null
+fi
+
+unset apps app serviceVersion latestServiceVersion systemDaemonRestart

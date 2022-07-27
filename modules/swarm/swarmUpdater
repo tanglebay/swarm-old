@@ -17,7 +17,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                     sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
                 fi
 
-                echo 30
+                echo 25
                 swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/checksum.txt)
                 sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
                 swarmChecksum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
@@ -28,16 +28,20 @@ if [ "$swarmManualUpdate" = "true" ]; then
                         sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
 
                         sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
-                        echo 30
+                        echo 25
 
                         # Load new env
                         source /var/lib/swarm/environment
 
                         source $swarmModules/swarmParser
 
-                        echo 35
+                        echo 30
                         ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
                         ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
+
+                        echo 35
+
+                        source $swarmModules/swarmUpdaterAppService
 
                         echo 40
                         # Remove Hornet apt
