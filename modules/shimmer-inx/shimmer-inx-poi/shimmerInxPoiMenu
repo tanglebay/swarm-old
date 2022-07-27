@@ -205,7 +205,7 @@ while [ $exitCode -lt 1 ]; do
                             if (whiptail --title "INX-POI [SHIMMER] Installer" --yesno --defaultno "Do you really want to update INX-POI?" 8 65); then
                                 # Update INX-POI
                                 source $shimmerInxPoiModules/shimmerInxPoiVersion
-                                if [ "$latestShimmerInxPoiVersion" != "$shimmerInxPoiVersion" ]; then
+                                if [ ! -z "$latestShimmerInxPoiVersion" ]; then
                                     {
                                         echo 0
                                         echo 33
@@ -215,19 +215,16 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.5
                                     } | whiptail --gauge "Please wait while INX-POI is updated..." 8 65 0
-                                    newShimmerInxPoiVersion=$(/usr/bin/shimmer-inx-poi -v | awk '{ print $2 }')
-                                    if [ "$shimmerInxPoiVersion" != "$newShimmerInxPoiVersion" ]; then
-                                        {
-                                            # CALL MODULE CONFIGPARSER
-                                            source $shimmerInxPoiModules/shimmerInxPoiParser
-                                            sudo systemctl restart shimmer-inx-poi 2>/dev/null
-                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
-                                    fi
+                                    {
+                                        # CALL MODULE CONFIGPARSER
+                                        source $shimmerInxPoiModules/shimmerInxPoiParser
+                                        sudo systemctl restart shimmer-inx-poi 2>/dev/null
+                                    } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
                                     whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "INX-POI successfully updated.\n\nChecksum: $shimmerInxPoiChecksum" 10 65
+                                    unset shimmerInxPoiChecksum
                                 else
-                                    whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "Congratulations, you have already installed the latest version of INX-POI." 8 65
+                                    whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "Sorry, but INX-POI update aborted." 8 65
                                 fi
-                                unset shimmerInxPoiChecksum
                             fi
                         else
                             whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "Sorry, but INX-POI is not installed." 8 65

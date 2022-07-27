@@ -376,7 +376,7 @@ while [ $exitCode -lt 1 ]; do
                             if (whiptail --title "Hornet [IOTA] Installer" --yesno --defaultno "Do you really want to update Hornet?" 8 65); then
                                 # Update HORNET
                                 source $iotaHornetModules/iotaHornetVersion
-                                if [ "$latestIotaHornetVersion" != "$iotaHornetVersion" ]; then
+                                if [ ! -z "$latestIotaHornetVersion" ]; then
                                     {
                                         echo 0
                                         echo 33
@@ -386,20 +386,17 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.5
                                     } | whiptail --gauge "Please wait while Hornet is updated..." 8 65 0
-                                    newIotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }')
-                                    if [ "$newIotaHornetVersion" != "$iotaHornetVersion" ]; then
-                                        {
-                                            echo 0
-                                            echo 33
-                                            sudo systemctl restart iota-hornet
-                                            echo 66
-                                            echo 100
-                                        } | whiptail --gauge "Please wait while restarting Hornet..." 8 65 0
-                                    fi
+                                    {
+                                        echo 0
+                                        echo 33
+                                        sudo systemctl restart iota-hornet
+                                        echo 66
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while restarting Hornet..." 8 65 0
                                     unset newHornetVersion
                                     whiptail --title "Hornet [IOTA] Installer" --msgbox "Hornet successfully updated.\n\nChecksum: $iotaHornetChecksum" 10 65
                                 else
-                                    whiptail --title "Hornet [IOTA] Installer" --msgbox "Congratulations, you have already installed the latest version of Hornet." 8 65
+                                    whiptail --title "Hornet [IOTA] Installer" --msgbox "Sorry, but Hornet update aborted." 10 65
                                 fi
                             fi
                             unset iotaHornetChecksum

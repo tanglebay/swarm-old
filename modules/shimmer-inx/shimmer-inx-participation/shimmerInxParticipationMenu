@@ -223,7 +223,7 @@ while [ $exitCode -lt 1 ]; do
                             if (whiptail --title "INX-Participation [SHIMMER] Installer" --yesno --defaultno "Do you really want to update INX-Participation?" 8 65); then
                                 # Update INX-Participation
                                 source $shimmerInxParticipationModules/shimmerInxParticipationVersion
-                                if [ "$latestShimmerInxParticipationVersion" != "$shimmerInxParticipationVersion" ]; then
+                                if [ ! -z "$latestShimmerInxParticipationVersion" ]; then
                                     {
                                         echo 0
                                         echo 33
@@ -233,19 +233,16 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.5
                                     } | whiptail --gauge "Please wait while INX-Participation is updated..." 8 65 0
-                                    newShimmerInxParticipationVersion=$(/usr/bin/shimmer-inx-participation -v | awk '{ print $2 }')
-                                    if [ "$shimmerInxParticipationVersion" != "$newShimmerInxParticipationVersion" ]; then
-                                        {
-                                            # CALL MODULE CONFIGPARSER
-                                            source $shimmerInxParticipationModules/shimmerInxParticipationParser
-                                            sudo systemctl restart shimmer-inx-participation 2>/dev/null
-                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
-                                    fi
+                                    {
+                                        # CALL MODULE CONFIGPARSER
+                                        source $shimmerInxParticipationModules/shimmerInxParticipationParser
+                                        sudo systemctl restart shimmer-inx-participation 2>/dev/null
+                                    } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
                                     whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "INX-Participation successfully updated.\n\nChecksum: $shimmerInxParticipationChecksum" 10 65
+                                    unset shimmerInxParticipationChecksum
                                 else
-                                    whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "Congratulations, you have already installed the latest version of INX-Participation." 8 65
+                                    whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "Sorry, but INX-Participation update aborted." 10 65
                                 fi
-                                unset shimmerInxParticipationChecksum
                             fi
                         else
                             whiptail --title "INX [SHIMMER] Participation" --msgbox "Sorry, but INX-Participation is not installed." 8 65
