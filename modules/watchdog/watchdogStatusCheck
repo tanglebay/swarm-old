@@ -273,209 +273,219 @@ else
     fi
 fi
 
-if [ "$shimmerHornetStatus" = "active" ]; then
-    # INX-Dashboard Status Check
-    if [ "$shimmerInxDashboardStatus" != "active" ] && [ -f "/usr/bin/shimmer-inx-dashboard" ] && [ "$shimmerInxDashboardServiceStatusCheck" = "true" ]; then
-        if [ "$shimmerInxDashboardStatus" = "failed" ]; then
-            sudo systemctl reset-failed shimmer-inx-dashboard 2>/dev/null
-        fi
-        if [ $shimmerInxDashboardStatusCounter -lt 3 ] 2>/dev/null; then
-            if [ $shimmerInxDashboardStatusCounter -ge 1 ] 2>/dev/null; then
-                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                if [ "$killall" = "true" ]; then
-                    sudo killall -s SIGKILL shimmer-inx-dashboard 2>/dev/null
-                else
-                    sudo systemctl stop shimmer-inx-dashboard 2>/dev/null
-                fi
-                let shimmerInxDashboardStatusCounter=$shimmerInxDashboardStatusCounter+1
-                sudo systemctl start shimmer-inx-dashboard 2>/dev/null
-                echo "$restartDate [WACHTDOG] INX-Dashboard (Shimmer) - Service restartet." >> $swarmLogs/swarm.log
-                if [ $shimmerInxDashboardStatusCounter -eq 1 ] 2>/dev/null; then
-                    telegramText="Host: $HOSTNAME%0AApp: INX-Dashboard (Shimmer)%0A%0AAction: Service restarted."
-                    source $watchdogModules/watchdogTelegram
-                fi
-            else
-                let shimmerInxDashboardStatusCounter=$shimmerInxDashboardStatusCounter+1
+if [ -f "/usr/bin/shimmer-inx-dashboard" ] && [ "$shimmerInxDashboardServiceStatusCheck" = "true" ]
+    if [ "$shimmerHornetStatus" = "active" ]; then
+        # INX-Dashboard Status Check
+        if [ "$shimmerInxDashboardStatus" != "active" ]; then
+            if [ "$shimmerInxDashboardStatus" = "failed" ]; then
+                sudo systemctl reset-failed shimmer-inx-dashboard 2>/dev/null
             fi
-            sudo sed -i 's/^shimmerInxDashboardStatusCounter=.*/shimmerInxDashboardStatusCounter='$shimmerInxDashboardStatusCounter'/' $swarmConfigs/watchdog.cfg
+            if [ $shimmerInxDashboardStatusCounter -lt 3 ] 2>/dev/null; then
+                if [ $shimmerInxDashboardStatusCounter -ge 1 ] 2>/dev/null; then
+                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    if [ "$killall" = "true" ]; then
+                        sudo killall -s SIGKILL shimmer-inx-dashboard 2>/dev/null
+                    else
+                        sudo systemctl stop shimmer-inx-dashboard 2>/dev/null
+                    fi
+                    let shimmerInxDashboardStatusCounter=$shimmerInxDashboardStatusCounter+1
+                    sudo systemctl start shimmer-inx-dashboard 2>/dev/null
+                    echo "$restartDate [WACHTDOG] INX-Dashboard (Shimmer) - Service restartet." >> $swarmLogs/swarm.log
+                    if [ $shimmerInxDashboardStatusCounter -eq 1 ] 2>/dev/null; then
+                        telegramText="Host: $HOSTNAME%0AApp: INX-Dashboard (Shimmer)%0A%0AAction: Service restarted."
+                        source $watchdogModules/watchdogTelegram
+                    fi
+                else
+                    let shimmerInxDashboardStatusCounter=$shimmerInxDashboardStatusCounter+1
+                fi
+                sudo sed -i 's/^shimmerInxDashboardStatusCounter=.*/shimmerInxDashboardStatusCounter='$shimmerInxDashboardStatusCounter'/' $swarmConfigs/watchdog.cfg
+            fi
+        else
+            if [ $shimmerInxDashboardStatusCounter -gt 0 ] 2>/dev/null; then
+                let shimmerInxDashboardStatusCounter=$shimmerInxDashboardStatusCounter-1
+                sudo sed -i 's/^shimmerIInxDashboardStatusCounter=.*/shimmerInxDashboardStatusCounter='$shimmerInxDashboardStatusCounter'/' $swarmConfigs/watchdog.cfg
+            fi
         fi
     else
-        if [ $shimmerInxDashboardStatusCounter -gt 0 ] 2>/dev/null; then
-            let shimmerInxDashboardStatusCounter=$shimmerInxDashboardStatusCounter-1
-            sudo sed -i 's/^shimmerIInxDashboardStatusCounter=.*/shimmerInxDashboardStatusCounter='$shimmerInxDashboardStatusCounter'/' $swarmConfigs/watchdog.cfg
+        if [ "$shimmerInxDashboardStatus" = "active" ] && [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+            sudo systemctl stop shimmer-inx-dashboard 2>/dev/null
         fi
-    fi
-else
-    if [ "$shimmerInxDashboardStatus" = "active" ] && [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
-        sudo systemctl stop shimmer-inx-dashboard 2>/dev/null
     fi
 fi
 
-if [ "$shimmerHornetStatus" = "active" ]; then
-    # INX-Indexer Status Check
-    if [ "$shimmerInxIndexerStatus" != "active" ] && [ -f "/usr/bin/shimmer-inx-indexer" ] && [ "$shimmerInxIndexerServiceStatusCheck" = "true" ]; then
-        if [ "$shimmerInxIndexerStatus" = "failed" ]; then
-            sudo systemctl reset-failed shimmer-inx-indexer 2>/dev/null
-        fi
-        if [ $shimmerInxIndexerStatusCounter -lt 5 ] 2>/dev/null; then
-            if [ $shimmerInxIndexerStatusCounter -ge 1 ] 2>/dev/null; then
-                sudo systemctl stop shimmer-inx-indexer 2>/dev/null
-                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                if [ $shimmerInxIndexerStatusCounter -ge 3 ] 2>/dev/null; then
-                    if [ "$shimmerInxIndexerAllowDbReset" = "true" ]; then
-                        if [ "$killall" = "true" ]; then
-                            sudo killall -s SIGKILL shimmer-inx-indexer 2>/dev/null
-                        fi
-                        sudo rm -rf $shimmerInxIndexerHome/database
-                        echo "$restartDate [WACHTDOG] INX-Indexer (Shimmer) - Database reset because of too many failed restarts.." >> $swarmLogs/swarm.log
-                        if [ $shimmerInxIndexerStatusCounter -eq 3 ] 2>/dev/null; then
-                            telegramText="Host: $HOSTNAME%0AApp: INX-Indexer (Shimmer)%0A%0AAction: Database reset because of too many failed restarts."
-                            source $watchdogModules/watchdogTelegram
+if [ -f "/usr/bin/shimmer-inx-indexer" ] && [ "$shimmerInxIndexerServiceStatusCheck" = "true" ]; then
+    if [ "$shimmerHornetStatus" = "active" ]; then
+        # INX-Indexer Status Check
+        if [ "$shimmerInxIndexerStatus" != "active" ]; then
+            if [ "$shimmerInxIndexerStatus" = "failed" ]; then
+                sudo systemctl reset-failed shimmer-inx-indexer 2>/dev/null
+            fi
+            if [ $shimmerInxIndexerStatusCounter -lt 5 ] 2>/dev/null; then
+                if [ $shimmerInxIndexerStatusCounter -ge 1 ] 2>/dev/null; then
+                    sudo systemctl stop shimmer-inx-indexer 2>/dev/null
+                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    if [ $shimmerInxIndexerStatusCounter -ge 3 ] 2>/dev/null; then
+                        if [ "$shimmerInxIndexerAllowDbReset" = "true" ]; then
+                            if [ "$killall" = "true" ]; then
+                                sudo killall -s SIGKILL shimmer-inx-indexer 2>/dev/null
+                            fi
+                            sudo rm -rf $shimmerInxIndexerHome/database
+                            echo "$restartDate [WACHTDOG] INX-Indexer (Shimmer) - Database reset because of too many failed restarts.." >> $swarmLogs/swarm.log
+                            if [ $shimmerInxIndexerStatusCounter -eq 3 ] 2>/dev/null; then
+                                telegramText="Host: $HOSTNAME%0AApp: INX-Indexer (Shimmer)%0A%0AAction: Database reset because of too many failed restarts."
+                                source $watchdogModules/watchdogTelegram
+                            fi
                         fi
                     fi
+                    let shimmerInxIndexerStatusCounter=$shimmerInxIndexerStatusCounter+1
+                    sudo systemctl start shimmer-inx-indexer 2>/dev/null
+                    echo "$restartDate [WACHTDOG] INX-Indexer (Shimmer) - Service restartet." >> $swarmLogs/swarm.log
+                    if [ $shimmerInxIndexerStatusCounter -eq 1 ] 2>/dev/null; then
+                        telegramText="Host: $HOSTNAME%0AApp: INX-Indexer (Shimmer)%0A%0AAction: Service restarted."
+                        source $watchdogModules/watchdogTelegram
+                    fi
+                else
+                    let shimmerInxIndexerStatusCounter=$shimmerInxIndexerStatusCounter+1
                 fi
-                let shimmerInxIndexerStatusCounter=$shimmerInxIndexerStatusCounter+1
-                sudo systemctl start shimmer-inx-indexer 2>/dev/null
-                echo "$restartDate [WACHTDOG] INX-Indexer (Shimmer) - Service restartet." >> $swarmLogs/swarm.log
-                if [ $shimmerInxIndexerStatusCounter -eq 1 ] 2>/dev/null; then
-                    telegramText="Host: $HOSTNAME%0AApp: INX-Indexer (Shimmer)%0A%0AAction: Service restarted."
-                    source $watchdogModules/watchdogTelegram
-                fi
-            else
-                let shimmerInxIndexerStatusCounter=$shimmerInxIndexerStatusCounter+1
+                sudo sed -i 's/^shimmerInxIndexerStatusCounter=.*/shimmerInxIndexerStatusCounter='$shimmerInxIndexerStatusCounter'/' $swarmConfigs/watchdog.cfg
             fi
-            sudo sed -i 's/^shimmerInxIndexerStatusCounter=.*/shimmerInxIndexerStatusCounter='$shimmerInxIndexerStatusCounter'/' $swarmConfigs/watchdog.cfg
+        else
+            if [ $shimmerInxIndexerStatusCounter -gt 0 ] 2>/dev/null; then
+                let shimmerInxIndexerStatusCounter=$shimmerInxIndexerStatusCounter-1
+                sudo sed -i 's/^shimmerInxIndexerStatusCounter=.*/shimmerInxIndexerStatusCounter='$shimmerInxIndexerStatusCounter'/' $swarmConfigs/watchdog.cfg
+            fi
         fi
     else
-        if [ $shimmerInxIndexerStatusCounter -gt 0 ] 2>/dev/null; then
-            let shimmerInxIndexerStatusCounter=$shimmerInxIndexerStatusCounter-1
-            sudo sed -i 's/^shimmerInxIndexerStatusCounter=.*/shimmerInxIndexerStatusCounter='$shimmerInxIndexerStatusCounter'/' $swarmConfigs/watchdog.cfg
+        if [ "$shimmerInxIndexerStatus" = "active" ] && [ -f "/usr/bin/shimmer-inx-indexer" ]; then
+            sudo systemctl stop shimmer-inx-indexer 2>/dev/null
         fi
-    fi
-else
-    if [ "$shimmerInxIndexerStatus" = "active" ] && [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-        sudo systemctl stop shimmer-inx-indexer 2>/dev/null
     fi
 fi
 
-if [ "$shimmerHornetStatus" = "active" ]; then
-    # INX-Mqtt Status Check
-    if [ "$shimmerInxMqttStatus" != "active" ] && [ -f "/usr/bin/shimmer-inx-mqtt" ] && [ "$shimmerInxMqttServiceStatusCheck" = "true" ]; then
-        if [ "$shimmerInxMqttStatus" = "failed" ]; then
-            sudo systemctl reset-failed shimmer-inx-mqtt 2>/dev/null
-        fi
-        if [ $shimmerInxMqttStatusCounter -lt 3 ] 2>/dev/null; then
-            if [ $shimmerInxMqttStatusCounter -ge 1 ] 2>/dev/null; then
-                sudo systemctl stop shimmer-inx-mqtt 2>/dev/null
-                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                if [ "$killall" = "true" ]; then
-                    sudo killall -s SIGKILL shimmer-inx-poi 2>/dev/null
-                fi
-                let shimmerInxMqttStatusCounter=$shimmerInxMqttStatusCounter+1
-                sudo systemctl start shimmer-inx-mqtt 2>/dev/null
-                echo "$restartDate [WACHTDOG] INX-MQTT (Shimmer) - Service restartet." >> $swarmLogs/swarm.log
-                if [ $shimmerInxPoiStatusCounter -eq 1 ] 2>/dev/null; then
-                    telegramText="Host: $HOSTNAME%0AApp: INX-MQTT (Shimmer)%0A%0AAction: Service restarted."
-                    source $watchdogModules/watchdogTelegram
-                fi
-            else
-                let shimmerInxMqttStatusCounter=$shimmerInxMqttStatusCounter+1
+if [ -f "/usr/bin/shimmer-inx-mqtt" ] && [ "$shimmerInxMqttServiceStatusCheck" = "true" ]; then
+    if [ "$shimmerHornetStatus" = "active" ]; then
+        # INX-Mqtt Status Check
+        if [ "$shimmerInxMqttStatus" != "active" ]; then
+            if [ "$shimmerInxMqttStatus" = "failed" ]; then
+                sudo systemctl reset-failed shimmer-inx-mqtt 2>/dev/null
             fi
-            sudo sed -i 's/^shimmerInxMqttStatusCounter=.*/shimmerInxMqttStatusCounter='$shimmerInxMqttStatusCounter'/' $swarmConfigs/watchdog.cfg
+            if [ $shimmerInxMqttStatusCounter -lt 3 ] 2>/dev/null; then
+                if [ $shimmerInxMqttStatusCounter -ge 1 ] 2>/dev/null; then
+                    sudo systemctl stop shimmer-inx-mqtt 2>/dev/null
+                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    if [ "$killall" = "true" ]; then
+                        sudo killall -s SIGKILL shimmer-inx-poi 2>/dev/null
+                    fi
+                    let shimmerInxMqttStatusCounter=$shimmerInxMqttStatusCounter+1
+                    sudo systemctl start shimmer-inx-mqtt 2>/dev/null
+                    echo "$restartDate [WACHTDOG] INX-MQTT (Shimmer) - Service restartet." >> $swarmLogs/swarm.log
+                    if [ $shimmerInxPoiStatusCounter -eq 1 ] 2>/dev/null; then
+                        telegramText="Host: $HOSTNAME%0AApp: INX-MQTT (Shimmer)%0A%0AAction: Service restarted."
+                        source $watchdogModules/watchdogTelegram
+                    fi
+                else
+                    let shimmerInxMqttStatusCounter=$shimmerInxMqttStatusCounter+1
+                fi
+                sudo sed -i 's/^shimmerInxMqttStatusCounter=.*/shimmerInxMqttStatusCounter='$shimmerInxMqttStatusCounter'/' $swarmConfigs/watchdog.cfg
+            fi
+        else
+            if [ $shimmerInxMqttStatusCounter -gt 0 ] 2>/dev/null; then
+                let shimmerInxMqttStatusCounter=$shimmerInxMqttStatusCounter-1
+                sudo sed -i 's/^shimmerInxMqttStatusCounter=.*/shimmerInxMqttStatusCounter='$shimmerInxMqttStatusCounter'/' $swarmConfigs/watchdog.cfg
+            fi
         fi
     else
-        if [ $shimmerInxMqttStatusCounter -gt 0 ] 2>/dev/null; then
-            let shimmerInxMqttStatusCounter=$shimmerInxMqttStatusCounter-1
-            sudo sed -i 's/^shimmerInxMqttStatusCounter=.*/shimmerInxMqttStatusCounter='$shimmerInxMqttStatusCounter'/' $swarmConfigs/watchdog.cfg
+        if [ "$shimmerInxMqttStatus" = "active" ] && [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
+            sudo systemctl stop shimmer-inx-mqtt 2>/dev/null
         fi
-    fi
-else
-    if [ "$shimmerInxMqttStatus" = "active" ] && [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
-        sudo systemctl stop shimmer-inx-mqtt 2>/dev/null
     fi
 fi
 
-if [ "$shimmerHornetStatus" = "active" ]; then
-    # INX-Participation Status Check
-    if [ "$shimmerInxParticipationStatus" != "active" ] && [ -f "/usr/bin/shimmer-inx-participation" ] && [ "$shimmerInxParticipationServiceStatusCheck" = "true" ]; then
-        if [ "$shimmerInxParticipationStatus" = "failed" ]; then
-            sudo systemctl reset-failed shimmer-inx-participation 2>/dev/null
-        fi
-        if [ $shimmerInxParticipationStatusCounter -lt 5 ] 2>/dev/null; then
-            if [ $shimmerInxParticipationStatusCounter -ge 1 ] 2>/dev/null; then
-                sudo systemctl stop shimmer-inx-participation 2>/dev/null
-                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                if [ $shimmerInxParticipationStatusCounter -ge 3 ] 2>/dev/null; then
-                    if [ "$shimmerInxParticipationAllowDbReset" = "true" ]; then
-                        if [ "$killall" = "true" ]; then
-                            sudo killall -s SIGKILL shimmer-inx-participation 2>/dev/null
-                        fi
-                        sudo rm -rf $shimmerInxParticipationHome/database
-                        echo "$restartDate [WACHTDOG] INX-Participation (Shimmer) - Database reset because of too many failed restarts.." >> $swarmLogs/swarm.log
-                        if [ $shimmerInxParticipationStatusCounter -eq 3 ] 2>/dev/null; then
-                            telegramText="Host: $HOSTNAME%0AApp: INX-Participation (Shimmer)%0A%0AAction: Database reset because of too many failed restarts."
-                            source $watchdogModules/watchdogTelegram
+if [ -f "/usr/bin/shimmer-inx-participation" ] && [ "$shimmerInxParticipationServiceStatusCheck" = "true" ]; then
+    if [ "$shimmerHornetStatus" = "active" ]; then
+        # INX-Participation Status Check
+        if [ "$shimmerInxParticipationStatus" != "active" ]; then
+            if [ "$shimmerInxParticipationStatus" = "failed" ]; then
+                sudo systemctl reset-failed shimmer-inx-participation 2>/dev/null
+            fi
+            if [ $shimmerInxParticipationStatusCounter -lt 5 ] 2>/dev/null; then
+                if [ $shimmerInxParticipationStatusCounter -ge 1 ] 2>/dev/null; then
+                    sudo systemctl stop shimmer-inx-participation 2>/dev/null
+                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    if [ $shimmerInxParticipationStatusCounter -ge 3 ] 2>/dev/null; then
+                        if [ "$shimmerInxParticipationAllowDbReset" = "true" ]; then
+                            if [ "$killall" = "true" ]; then
+                                sudo killall -s SIGKILL shimmer-inx-participation 2>/dev/null
+                            fi
+                            sudo rm -rf $shimmerInxParticipationHome/database
+                            echo "$restartDate [WACHTDOG] INX-Participation (Shimmer) - Database reset because of too many failed restarts.." >> $swarmLogs/swarm.log
+                            if [ $shimmerInxParticipationStatusCounter -eq 3 ] 2>/dev/null; then
+                                telegramText="Host: $HOSTNAME%0AApp: INX-Participation (Shimmer)%0A%0AAction: Database reset because of too many failed restarts."
+                                source $watchdogModules/watchdogTelegram
+                            fi
                         fi
                     fi
+                    let shimmerInxParticipationStatusCounter=$shimmerInxParticipationStatusCounter+1
+                    sudo systemctl start shimmer-inx-participation 2>/dev/null
+                    echo "$restartDate [WACHTDOG] INX-Participation (Shimmer) - Service restartet." >> $swarmLogs/swarm.log
+                    if [ $shimmerInxParticipationStatusCounter -eq 1 ] 2>/dev/null; then
+                        telegramText="Host: $HOSTNAME%0AApp: INX-Participation (Shimmer)%0A%0AAction: Service restarted."
+                        source $watchdogModules/watchdogTelegram
+                    fi
+                else
+                    let shimmerInxParticipationStatusCounter=$shimmerInxParticipationStatusCounter+1
                 fi
-                let shimmerInxParticipationStatusCounter=$shimmerInxParticipationStatusCounter+1
-                sudo systemctl start shimmer-inx-participation 2>/dev/null
-                echo "$restartDate [WACHTDOG] INX-Participation (Shimmer) - Service restartet." >> $swarmLogs/swarm.log
-                if [ $shimmerInxParticipationStatusCounter -eq 1 ] 2>/dev/null; then
-                    telegramText="Host: $HOSTNAME%0AApp: INX-Participation (Shimmer)%0A%0AAction: Service restarted."
-                    source $watchdogModules/watchdogTelegram
-                fi
-            else
-                let shimmerInxParticipationStatusCounter=$shimmerInxParticipationStatusCounter+1
+                sudo sed -i 's/^shimmerInxParticipationStatusCounter=.*/shimmerInxParticipationStatusCounter='$shimmerInxParticipationStatusCounter'/' $swarmConfigs/watchdog.cfg
             fi
-            sudo sed -i 's/^shimmerInxParticipationStatusCounter=.*/shimmerInxParticipationStatusCounter='$shimmerInxParticipationStatusCounter'/' $swarmConfigs/watchdog.cfg
+        else
+            if [ $shimmerInxParticipationStatusCounter -gt 0 ] 2>/dev/null; then
+                let shimmerInxParticipationStatusCounter=$shimmerInxParticipationStatusCounter-1
+                sudo sed -i 's/^shimmerInxParticipationStatusCounter=.*/shimmerInxParticipationStatusCounter='$shimmerInxParticipationStatusCounter'/' $swarmConfigs/watchdog.cfg
+            fi
         fi
     else
-        if [ $shimmerInxParticipationStatusCounter -gt 0 ] 2>/dev/null; then
-            let shimmerInxParticipationStatusCounter=$shimmerInxParticipationStatusCounter-1
-            sudo sed -i 's/^shimmerInxParticipationStatusCounter=.*/shimmerInxParticipationStatusCounter='$shimmerInxParticipationStatusCounter'/' $swarmConfigs/watchdog.cfg
+        if [ "$shimmerInxParticipationStatus" = "active" ] && [ -f "/usr/bin/shimmer-inx-participation" ]; then
+            sudo systemctl stop shimmer-inx-participation 2>/dev/null
         fi
-    fi
-else
-    if [ "$shimmerInxParticipationStatus" = "active" ] && [ -f "/usr/bin/shimmer-inx-participation" ]; then
-        sudo systemctl stop shimmer-inx-participation 2>/dev/null
     fi
 fi
 
-if [ "$shimmerHornetStatus" = "active" ]; then
-    # INX-POI Status Check
-    if [ "$shimmerInxPoiStatus" != "active" ] && [ -f "/usr/bin/shimmer-inx-poi" ] && [ "$shimmerInxPoiServiceStatusCheck" = "true" ]; then
-        if [ "$shimmerInxPoiStatus" = "failed" ]; then
-            sudo systemctl reset-failed shimmer-inx-poi 2>/dev/null
-        fi
-        if [ $shimmerInxPoiStatusCounter -lt 3 ] 2>/dev/null; then
-            if [ $shimmerInxPoiStatusCounter -ge 1 ] 2>/dev/null; then
-                restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                if [ "$killall" = "true" ]; then
-                    sudo killall -s SIGKILL shimmer-inx-poi 2>/dev/null
-                else
-                    sudo systemctl stop shimmer-inx-poi 2>/dev/null
-                fi
-                let shimmerInxPoiStatusCounter=$shimmerInxPoiStatusCounter+1
-                sudo systemctl start shimmer-inx-poi 2>/dev/null
-                echo "$restartDate [WACHTDOG] INX-POI (Shimmer) - Service restartet." >> $swarmLogs/swarm.log
-                if [ $shimmerInxPoiStatusCounter -eq 1 ] 2>/dev/null; then
-                    telegramText="Host: $HOSTNAME%0AApp: INX-POI (Shimmer)%0A%0AAction: Service restarted."
-                    source $watchdogModules/watchdogTelegram
-                fi
-            else
-                let shimmerInxPoiStatusCounter=$shimmerInxPoiStatusCounter+1
+if [ -f "/usr/bin/shimmer-inx-poi" ] && [ "$shimmerInxPoiServiceStatusCheck" = "true" ]; then
+    if [ "$shimmerHornetStatus" = "active" ]; then
+        # INX-POI Status Check
+        if [ "$shimmerInxPoiStatus" != "active" ]; then
+            if [ "$shimmerInxPoiStatus" = "failed" ]; then
+                sudo systemctl reset-failed shimmer-inx-poi 2>/dev/null
             fi
-            sudo sed -i 's/^shimmerInxPoiStatusCounter=.*/shimmerInxPoiStatusCounter='$shimmerInxPoiStatusCounter'/' $swarmConfigs/watchdog.cfg
+            if [ $shimmerInxPoiStatusCounter -lt 3 ] 2>/dev/null; then
+                if [ $shimmerInxPoiStatusCounter -ge 1 ] 2>/dev/null; then
+                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    if [ "$killall" = "true" ]; then
+                        sudo killall -s SIGKILL shimmer-inx-poi 2>/dev/null
+                    else
+                        sudo systemctl stop shimmer-inx-poi 2>/dev/null
+                    fi
+                    let shimmerInxPoiStatusCounter=$shimmerInxPoiStatusCounter+1
+                    sudo systemctl start shimmer-inx-poi 2>/dev/null
+                    echo "$restartDate [WACHTDOG] INX-POI (Shimmer) - Service restartet." >> $swarmLogs/swarm.log
+                    if [ $shimmerInxPoiStatusCounter -eq 1 ] 2>/dev/null; then
+                        telegramText="Host: $HOSTNAME%0AApp: INX-POI (Shimmer)%0A%0AAction: Service restarted."
+                        source $watchdogModules/watchdogTelegram
+                    fi
+                else
+                    let shimmerInxPoiStatusCounter=$shimmerInxPoiStatusCounter+1
+                fi
+                sudo sed -i 's/^shimmerInxPoiStatusCounter=.*/shimmerInxPoiStatusCounter='$shimmerInxPoiStatusCounter'/' $swarmConfigs/watchdog.cfg
+            fi
+        else
+            if [ $shimmerInxPoiStatusCounter -gt 0 ] 2>/dev/null; then
+                let shimmerInxPoiStatusCounter=$shimmerInxPoiStatusCounter-1
+                sudo sed -i 's/^shimmerInxPoiStatusCounter=.*/shimmerInxPoiStatusCounter='$shimmerInxPoiStatusCounter'/' $swarmConfigs/watchdog.cfg
+            fi
         fi
     else
-        if [ $shimmerInxPoiStatusCounter -gt 0 ] 2>/dev/null; then
-            let shimmerInxPoiStatusCounter=$shimmerInxPoiStatusCounter-1
-            sudo sed -i 's/^shimmerInxPoiStatusCounter=.*/shimmerInxPoiStatusCounter='$shimmerInxPoiStatusCounter'/' $swarmConfigs/watchdog.cfg
+        if [ -f "/usr/bin/shimmer-inx-poi" ] && [ "$shimmerInxPoiStatus" = "active" ]; then
+            sudo systemctl stop shimmer-inx-poi 2>/dev/null
         fi
-    fi
-else
-    if [ -f "/usr/bin/shimmer-inx-poi" ] && [ "$shimmerInxPoiStatus" = "active" ]; then
-        sudo systemctl stop shimmer-inx-poi 2>/dev/null
     fi
 fi
