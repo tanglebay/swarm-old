@@ -191,7 +191,13 @@ if [ "$shimmerHornetStatus" != "active" ] && [ -f "/usr/bin/shimmer-hornet" ] &&
             fi
             let shimmerHornetStatusCounter=$shimmerHornetStatusCounter+1
             sudo systemctl start shimmer-hornet 2>/dev/null
-            source $shimmerInxModules/shimmerInxPlugins
+            for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+            do
+                if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                    sudo systemctl restart shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                fi
+            done
+            unset shimmerInxPlugin
             echo "$restartDate [WACHTDOG] Hornet (Shimmer) - Service restartet." >> $swarmLogs/swarm.log
             if [ $shimmerHornetStatusCounter -eq 1 ] 2>/dev/null; then
                 elegramText="Host: $HOSTNAME%0AApp: Hornet (Shimmer)%0A%0AAction: Service restarted."
