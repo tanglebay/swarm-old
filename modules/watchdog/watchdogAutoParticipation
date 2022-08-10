@@ -5,15 +5,17 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
         source $swarmModules/swarmAuth
         if [ "$swarmAuth" = "200" ]; then
             latestIotaParticipationEvents=$(curl -s https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/participation/active-event-ids.json |jq '.eventIds' | tr -d '[]",')
+            latestIotaParticipationEvents=$(echo $latestIotaParticipationEvents)
             iotaHornetParticipationList=$(curl -s localhost:14265/api/plugins/participation/events |jq '.data.eventIds' | tr -d '[]",')
-            if [ ! -z "$latestIotaParticipationEvents" ] && [ ! -z "$iotaHornetParticipationList" ]; then
+            iotaHornetParticipationList=$(echo $iotaHornetParticipationList)
+            if [ ! -z "$latestIotaParticipationEvents" ]; then
                 for latestIotaParticipationEvent in ${latestIotaParticipationEvents[@]}
                 do
                     iotaHornetParticipationEvent=$(echo $iotaHornetParticipationList | grep -o "$latestIotaParticipationEvent")
                     if [ -z "$iotaHornetParticipationEvent" ]; then
                         iotaHornetPruningIndex=$(curl -s localhost:14265/api/v1/info | jq '.data.pruningIndex')
                         latestiotaParticipationEventCommencingIndex=$(curl -s https://raw.githubusercontent.com/tanglebay/participation/main/iota-mainnet/templates/$latestIotaParticipationEvent.json | jq '.milestoneIndexCommence')
-                        if [ ! -z "$iotaHornetPruningIndex" ] && [ ! -z "$latestiotaParticipationEventCommencingIndex" ] && [ $iotaHornetPruningIndex -le $latestiotaParticipationCommencingIndex ] 2>/dev/null; then
+                        if [ ! -z "$iotaHornetPruningIndex" ] && [ ! -z "$latestiotaParticipationEventCommencingIndex" ] && [ $iotaHornetPruningIndex -le $latestiotaParticipationEventCommencingIndex ] 2>/dev/null; then
                             if [ ! -d "/tmp/participation" ]; then
                                 sudo mkdir -p /tmp/participation
                             fi
