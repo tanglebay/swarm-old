@@ -21,6 +21,7 @@ while [ $exitCode -lt 1 ]; do
         "2)")
             # INX Control
             while [ $exitCode -lt 1 ]; do
+                unset shimmerInxPluginList shimmerInxPlugin
                 clear
                 CHOICE=$(
                     whiptail --title "INX [SHIMMER] Management" --menu "\nChoose an option" 24 65 0 \
@@ -35,12 +36,20 @@ while [ $exitCode -lt 1 ]; do
 
                 case $CHOICE in
                     "1)")
-                        if (whiptail --title "INX [SHIMMER] Control" --yesno --defaultno "Do you really want to restart all INX plugins?" 8 65); then
+                        shimmerInxPluginList=$(whiptail --title "INX [SHIMMER] Plugins" --checklist "\nSelect (spacebar) routes you want to restart." 24 65 16 \
+                            "Dashboard" "" OFF \
+                            "Indexer" "" OFF \
+                            "MQTT" "" OFF \
+                            "Participation" "" OFF \
+                            "POI" "" OFF 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerInxPluginList" ]; then
+                            shimmerInxPluginList=$(echo $shimmerInxPluginList | tr '[:upper:]' '[:lower:]' | tr -d '"')
                             {
                                 whiptailGaugeNumber=10
                                 echo 0
                                 echo 10
-                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                for shimmerInxPlugin in ${shimmerInxPluginList[@]}
                                 do
                                     if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
                                         sudo systemctl restart shimmer-inx-$shimmerInxPlugin > /dev/null 2>&1
@@ -51,17 +60,26 @@ while [ $exitCode -lt 1 ]; do
                                 echo 100
                                 sleep 0.5
                                 unset whiptailGaugeNumber
-                            } | whiptail --gauge "Please wait while all INX plugins are restarted..." 8 65 0
-                            whiptail --title "INX [SHIMMER] Control" --msgbox "Restart of all INX plugins completed." 8 65
+                            } | whiptail --gauge "Please wait while selected INX plugins are restarted..." 8 65 0
+                            whiptail --title "INX [SHIMMER] Control" --msgbox "Restart of selected INX plugins completed." 8 65
                         fi
+                        unset shimmerInxPluginList shimmerInxPlugin
                     ;;
                     "2)")
-                        if (whiptail --title "INX [SHIMMER] Control" --yesno --defaultno "Do you really want to start all INX plugins?" 8 65); then
+                        shimmerInxPluginList=$(whiptail --title "INX [SHIMMER] Control" --checklist "\nSelect (spacebar) routes you want to start." 24 65 16 \
+                            "Dashboard" "" OFF \
+                            "Indexer" "" OFF \
+                            "MQTT" "" OFF \
+                            "Participation" "" OFF \
+                            "POI" "" OFF 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerInxPluginList" ]; then
+                            shimmerInxPluginList=$(echo $shimmerInxPluginList | tr '[:upper:]' '[:lower:]' | tr -d '"')
                             {
                                 whiptailGaugeNumber=10
                                 echo 0
                                 echo 10
-                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                for shimmerInxPlugin in ${shimmerInxPluginList[@]}
                                 do
                                     if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
                                         sudo systemctl start shimmer-inx-$shimmerInxPlugin > /dev/null 2>&1
@@ -72,17 +90,26 @@ while [ $exitCode -lt 1 ]; do
                                 echo 100
                                 sleep 0.5
                                 unset whiptailGaugeNumber
-                            } | whiptail --gauge "Please wait while all INX plugins are started..." 8 65 0
-                            whiptail --title "INX [SHIMMER] Control" --msgbox "Start of all INX plugins completed." 8 65
+                            } | whiptail --gauge "Please wait while selected INX plugins are started..." 8 65 0
+                            whiptail --title "INX [SHIMMER] Control" --msgbox "Start of selected INX plugins completed." 8 65
                         fi
+                        unset shimmerInxPluginList shimmerInxPlugin
                     ;;
                     "3)")
-                        if (whiptail --title "INX [SHIMMER] Control" --yesno --defaultno "Do you really want to stop all INX plugins?" 8 65); then
+                        shimmerInxPluginList=$(whiptail --title "INX [SHIMMER] Plugins" --checklist "\nSelect (spacebar) routes you want to stop." 24 65 16 \
+                            "Dashboard" "" OFF \
+                            "Indexer" "" OFF \
+                            "MQTT" "" OFF \
+                            "Participation" "" OFF \
+                            "POI" "" OFF 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerInxPluginList" ]; then
+                            shimmerInxPluginList=$(echo $shimmerInxPluginList | tr '[:upper:]' '[:lower:]' | tr -d '"')
                             {
                                 whiptailGaugeNumber=10
                                 echo 0
                                 echo 10
-                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                for shimmerInxPlugin in ${shimmerInxPluginList[@]}
                                 do
                                     if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
                                         sudo systemctl stop shimmer-inx-$shimmerInxPlugin > /dev/null 2>&1
@@ -93,9 +120,10 @@ while [ $exitCode -lt 1 ]; do
                                 echo 100
                                 sleep 0.5
                                 unset whiptailGaugeNumber
-                            } | whiptail --gauge "Please wait while all INX plugins are stopped..." 8 65 0
-                            whiptail --title "INX [SHIMMER] Control" --msgbox "Termination of all INX plugins completed." 8 65
+                            } | whiptail --gauge "Please wait while selected INX plugins are stopped..." 8 65 0
+                            whiptail --title "INX [SHIMMER] Control" --msgbox "Stop of selected INX plugins completed." 8 65
                         fi
+                        unset shimmerInxPluginList shimmerInxPlugin
                     ;;
                 esac
             done
@@ -104,6 +132,7 @@ while [ $exitCode -lt 1 ]; do
         "3)")
             # INX Installer
             while [ $exitCode -lt 1 ]; do
+                unset shimmerInxPluginList shimmerInxPlugin
                 clear
                 CHOICE=$(
                     whiptail --title "INX [SHIMMER] Management" --menu "\nChoose an option" 24 65 0 \
@@ -118,44 +147,26 @@ while [ $exitCode -lt 1 ]; do
 
                 case $CHOICE in
                     "1)")
-                        if (whiptail --title "INX [SHIMMER] Installer" --yesno --defaultno "Do you really want to update all INX plugins?" 8 65); then
+                        shimmerInxPluginList=$(whiptail --title "INX [SHIMMER] Installer" --checklist "\nSelect (spacebar) routes you want to update." 24 65 16 \
+                            "Dashboard" "" OFF \
+                            "Indexer" "" OFF \
+                            "MQTT" "" OFF \
+                            "Participation" "" OFF \
+                            "POI" "" OFF 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerInxPluginList" ]; then
+                            shimmerInxPluginList=$(echo $shimmerInxPluginList | tr '[:upper:]' '[:lower:]' | tr -d '"')
                             {
                                 whiptailGaugeNumber=10
                                 echo 0
                                 echo 10
-                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                for shimmerInxPlugin in ${shimmerInxPluginList[@]}
                                 do
                                     if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                        if [ "$shimmerInxPlugin" = "dashboard" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxDashboardModules/shimmerInxDashboardVersion
-                                            source $shimmerInxDashboardModules/shimmerInxDashboardInstaller
-                                            source $shimmerInxDashboardModules/shimmerInxDashboardParser
-                                        fi
-                                        if [ "$shimmerInxPlugin" = "indexer" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxIndexerModules/shimmerInxIndexerVersion
-                                            source $shimmerInxIndexerModules/shimmerInxIndexerInstaller
-                                            source $shimmerInxIndexerModules/shimmerInxIndexerParser
-                                        fi
-                                        if [ "$shimmerInxPlugin" = "mqtt" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxMqttModules/shimmerInxMqttVersion
-                                            source $shimmerInxMqttModules/shimmerInxMqttInstaller
-                                            source $shimmerInxMqttModules/shimmerInxMqttParser
-                                        fi
-                                        if [ "$shimmerInxPlugin" = "participation" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxParticipationModules/shimmerInxParticipationVersion
-                                            source $shimmerInxParticipationModules/shimmerInxParticipationInstaller
-                                            source $shimmerInxParticipationModules/shimmerInxParticipationParser
-                                        fi
-                                        if [ "$shimmerInxPlugin" = "poi" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxPoiModules/shimmerInxPoiVersion
-                                            source $shimmerInxPoiModules/shimmerInxPoiInstaller
-                                            source $shimmerInxPoiModules/shimmerInxPoiParser
-                                        fi
+                                        source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
+                                        source $shimmerInxModules/shimmerInx${shimmerInxPlugin^}Version
+                                        source $shimmerInxModules/shimmerInx${shimmerInxPlugin^}Installer
+                                        source $shimmerInxModules/shimmerInx${shimmerInxPlugin^}Parser
                                         sudo systemctl restart shimmer-inx-$shimmerInxPlugin > /dev/null 2>&1
                                         let whiptailGaugeNumber=$whiptailGaugeNumber+10
                                         echo $whiptailGaugeNumber
@@ -169,44 +180,26 @@ while [ $exitCode -lt 1 ]; do
                         fi
                     ;;
                     "2)")
-                        if (whiptail --title "INX [SHIMMER] Installer" --yesno --defaultno "Do you really want to install all INX plugins?" 8 65); then
+                        shimmerInxPluginList=$(whiptail --title "INX [SHIMMER] Installer" --checklist "\nSelect (spacebar) routes you want to install." 24 65 16 \
+                            "Dashboard" "" OFF \
+                            "Indexer" "" OFF \
+                            "MQTT" "" OFF \
+                            "Participation" "" OFF \
+                            "POI" "" OFF 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerInxPluginList" ]; then
+                            shimmerInxPluginList=$(echo $shimmerInxPluginList | tr '[:upper:]' '[:lower:]' | tr -d '"')
                             {
                                 whiptailGaugeNumber=10
                                 echo 0
                                 echo 10
-                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                for shimmerInxPlugin in ${shimmerInxPluginList[@]}
                                 do
                                     if [ ! -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                        if [ "$shimmerInxPlugin" = "dashboard" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxDashboardModules/shimmerInxDashboardVersion
-                                            source $shimmerInxDashboardModules/shimmerInxDashboardInstaller
-                                            source $shimmerInxDashboardModules/shimmerInxDashboardParser
-                                        fi
-                                        if [ "$shimmerInxPlugin" = "indexer" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxIndexerModules/shimmerInxIndexerVersion
-                                            source $shimmerInxIndexerModules/shimmerInxIndexerInstaller
-                                            source $shimmerInxIndexerModules/shimmerInxIndexerParser
-                                        fi
-                                        if [ "$shimmerInxPlugin" = "mqtt" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxMqttModules/shimmerInxMqttVersion
-                                            source $shimmerInxMqttModules/shimmerInxMqttInstaller
-                                            source $shimmerInxMqttModules/shimmerInxMqttParser
-                                        fi
-                                        if [ "$shimmerInxPlugin" = "participation" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxParticipationModules/shimmerInxParticipationVersion
-                                            source $shimmerInxParticipationModules/shimmerInxParticipationInstaller
-                                            source $shimmerInxParticipationModules/shimmerInxParticipationParser
-                                        fi
-                                        if [ "$shimmerInxPlugin" = "poi" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxPoiModules/shimmerInxPoiVersion
-                                            source $shimmerInxPoiModules/shimmerInxPoiInstaller
-                                            source $shimmerInxPoiModules/shimmerInxPoiParser
-                                        fi
+                                        source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
+                                        source $shimmerInxModules/shimmer-inx-$shimmerInxPlugin/shimmerInx${shimmerInxPlugin^}Version
+                                        source $shimmerInxModules/shimmerInx${shimmerInxPlugin^}Installer
+                                        source $shimmerInxModules/shimmerInx${shimmerInxPlugin^}Parser
                                         sudo systemctl start shimmer-inx-$shimmerInxPlugin > /dev/null 2>&1
                                         let whiptailGaugeNumber=$whiptailGaugeNumber+10
                                         echo $whiptailGaugeNumber
@@ -220,43 +213,35 @@ while [ $exitCode -lt 1 ]; do
                         fi
                     ;;
                     "3)")
-                        if (whiptail --title "INX [SHIMMER] Installer" --yesno --defaultno "Do you really want to remove all INX plugins?" 8 65); then
-                            {
-                                whiptailGaugeNumber=10
-                                echo 0
-                                echo 10
-                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                do
-                                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                        if [ "$shimmerInxPlugin" = "dashboard" ]; then
+                        shimmerInxPluginList=$(whiptail --title "INX [SHIMMER] Installer" --checklist "\nSelect (spacebar) routes you want to remove." 24 65 16 \
+                            "Dashboard" "" OFF \
+                            "Indexer" "" OFF \
+                            "MQTT" "" OFF \
+                            "Participation" "" OFF \
+                            "POI" "" OFF 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerInxPluginList" ]; then
+                            shimmerInxPluginList=$(echo $shimmerInxPluginList | tr '[:upper:]' '[:lower:]' | tr -d '"')
+                            if (whiptail --title "INX [SHIMMER] Installer" --yesno --defaultno "Do you really want to remove selected INX plugins?" 8 65); then
+                                {
+                                    whiptailGaugeNumber=10
+                                    echo 0
+                                    echo 10
+                                    for shimmerInxPlugin in ${shimmerInxPluginList[@]}
+                                    do
+                                        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
                                             source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxDashboardModules/shimmerInxDashboardRemoval
+                                            source $shimmerInxModules/shimmer-inx-$shimmerInxPlugin/shimmerInx${shimmerInxPlugin^}Removal
+                                            let whiptailGaugeNumber=$whiptailGaugeNumber+10
+                                            echo $whiptailGaugeNumber
                                         fi
-                                        if [ "$shimmerInxPlugin" = "indexer" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxIndexerModules/shimmerInxIndexerRemoval
-                                        fi
-                                        if [ "$shimmerInxPlugin" = "mqtt" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxMqttModules/shimmerInxMqttRemoval
-                                        fi
-                                        if [ "$shimmerInxPlugin" = "participation" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxParticipationModules/shimmerInxParticipationRemoval
-                                        fi
-                                        if [ "$shimmerInxPlugin" = "poi" ]; then
-                                            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
-                                            source $shimmerInxPoiModules/shimmerInxPoiRemoval
-                                        fi
-                                        let whiptailGaugeNumber=$whiptailGaugeNumber+10
-                                        echo $whiptailGaugeNumber
-                                    fi
-                                done
-                                echo 100
-                                sleep 0.5
-                                unset whiptailGaugeNumber
-                            } | whiptail --gauge "Please wait while all INX plugins are removed..." 8 65 0
-                            whiptail --title "INX [SHIMMER] Installer" --msgbox "Removal of all INX plugins completed." 8 65
+                                    done
+                                    echo 100
+                                    sleep 0.5
+                                    unset whiptailGaugeNumber
+                                } | whiptail --gauge "Please wait while all INX plugins are removed..." 8 65 0
+                                whiptail --title "INX [SHIMMER] Installer" --msgbox "Removal of all INX plugins completed." 8 65
+                            fi
                         fi
                     ;;
                 esac
