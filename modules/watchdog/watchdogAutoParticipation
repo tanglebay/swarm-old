@@ -12,29 +12,24 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 for latestIotaParticipationEvent in ${latestIotaParticipationEvents[@]}
                 do
                     iotaHornetParticipationEvent=$(echo $iotaHornetParticipationList | grep -o "$latestIotaParticipationEvent")
-                    if [ -z "$iotaHornetParticipationEvent" ]; then
+                    if [ -z "$iotaHornetParticipationEvent" ] && [ "$iotaHornetParticipationEvent" != "$latestIotaParticipationEvent" ]; then
                         iotaHornetPruningIndex=$(curl -s localhost:14265/api/v1/info | jq '.data.pruningIndex')
-                        latestiotaParticipationEventCommencingIndex=$(curl -s https://raw.githubusercontent.com/tanglebay/participation/main/iota-mainnet/templates/$latestIotaParticipationEvent.json | jq '.milestoneIndexCommence')
-                        if [ ! -z "$iotaHornetPruningIndex" ] && [ ! -z "$latestiotaParticipationEventCommencingIndex" ] && [ $iotaHornetPruningIndex -le $latestiotaParticipationEventCommencingIndex ] 2>/dev/null; then
-                            if [ ! -d "/tmp/participation" ]; then
-                                sudo mkdir -p /tmp/participation
-                            fi
-                            curl -s https://raw.githubusercontent.com/tanglebay/participation/main/iota-mainnet/templates/$latestIotaParticipationEvent.json -o /tmp/participation/$latestIotaParticipationEvent.json
-
-                            if [ -f "/tmp/participation/$latestIotaParticipationEvent.json" ]; then
-                                iotaHornetParticipationAddResponse=$(curl -s -X POST localhost:14265/api/plugins/participation/admin/events -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" -d @/tmp/participation/$latestIotaParticipationEvent.json |jq)
-                                if [[ $iotaHornetParticipationAddResponse = *code=400* ]]; then
-                                    iotaHornetApiJwtToken=$( cd $iotaHornetHome ; /usr/bin/iota-hornet tools jwt-api | awk '{ print $5 }')
-                                    if [ ! -z "$iotaHornetApiJwtToken" ]; then
-                                        sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'$iotaHornetApiJwtToken'"~' $swarmConfigs/iota-hornet.cfg
-                                        echo $iotaHornetApiJwtToken >> $swarmLogs/iotaHornetJwtToken.log
-                                    fi
-
+                        latestIotaParticipationEventDetails=$(curl -s https://raw.githubusercontent.com/tanglebay/participation/main/iota-mainnet/templates/$latestIotaParticipationEvent.json)
+                        latestIotaParticipationEventDetails=$(echo $latestIotaParticipationEventDetails)
+                        latestIotaParticipationEventCommencingIndex=$(echo $latestIotaParticipationEventDetails | jq '.milestoneIndexCommence')
+                        if [ ! -z "$iotaHornetPruningIndex" ] && [ ! -z "$latestIotaParticipationEventCommencingIndex" ] && [ $iotaHornetPruningIndex -le $latestIotaParticipationEventCommencingIndex ] 2>/dev/null; then
+                            iotaHornetParticipationAddResponse=$(curl http://localhost:14265/api/plugins/participation/admin/events -s --http1.1 -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" -d '${latestIotaParticipationEventDetails}')
+                            if [[ $iotaHornetParticipationAddResponse = *code\=400* ]] || [[ $iotaHornetParticipationAddResponse = *code\=401* ]]; then
+                                iotaHornetApiJwtToken=$( cd $iotaHornetHome ; /usr/bin/iota-hornet tools jwt-api --salt $iotaHornetApiJwtSalt | awk '{ print $5 }')
+                                if [ ! -z "$iotaHornetApiJwtToken" ]; then
+                                    sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'$iotaHornetApiJwtToken'"~' $swarmConfigs/iota-hornet.cfg
+                                    echo $iotaHornetApiJwtToken >> $swarmLogs/iotaHornetJwtToken.log
                                 fi
-                                unset iotaHornetParticipationAddResponse
+
                             fi
+                            unset iotaHornetParticipationAddResponse
                         fi
-                        unset iotaHornetPruningIndex latestiotaParticipationEventCommencingIndex
+                        unset iotaHornetPruningIndex latestIotaParticipationEventCommencingIndex
                     fi
                     unset iotaHornetParticipationEvent
                 done
@@ -42,8 +37,4 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             unset latestIotaParticipationEvents iotaHornetParticipationList
         fi
     fi
-
-    # if [ "$shimmerInxParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/shimmer-inx-participation" ]; then
-
-    # fi
 fi
