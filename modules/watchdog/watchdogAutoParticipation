@@ -1,12 +1,12 @@
 #!/bin/bash
 
 if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
-    if [ "$iotaHornetParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/iota-hornet" ]; then
+    if [ "$iotaHornetParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/iota-hornet" ] && [ "$iotaHornetNetwork" = "mainnet" ]; then
         source $swarmModules/swarmAuth
         if [ "$swarmAuth" = "200" ]; then
             latestIotaParticipationEvents=$(curl -s https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/participation/iota-events.json |jq '.eventIds' | tr -d '[]",')
             latestIotaParticipationEvents=$(echo $latestIotaParticipationEvents)
-            iotaHornetParticipationList=$(curl -s localhost:14265/api/plugins/participation/events |jq '.data.eventIds' | tr -d '[]",')
+            iotaHornetParticipationList=$(curl -s localhost:14265/api/plugins/participation/events -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" | jq '.data.eventIds' | tr -d '[]",')
             iotaHornetParticipationList=$(echo $iotaHornetParticipationList)
             if [ ! -z "$latestIotaParticipationEvents" ]; then
                 for latestIotaParticipationEvent in ${latestIotaParticipationEvents[@]}
@@ -36,19 +36,19 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             unset latestIotaParticipationEvents iotaHornetParticipationList
         fi
     fi
-    if [ "$shimmerInxParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/shimmer-hornet" ] && [ -f "/usr/bin/shimmer-inx-participation" ] && [ "$shimmerHornetApiEnabled" = "true" ]; then
+    if [ "$shimmerInxParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/shimmer-hornet" ] && [ -f "/usr/bin/shimmer-inx-participation" ] && [ "$shimmerHornetApiEnabled" = "true" ] && [ "$shimmerHornetNetwork" = "mainnet" ]; then
         source $swarmModules/swarmAuth
         if [ "$swarmAuth" = "200" ]; then
             latestShimmerParticipationEvents=$(curl -s https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/participation/shimmer-events.json |jq '.eventIds' | tr -d '[]",')
             latestShimmerParticipationEvents=$(echo $latestShimmerParticipationEvents)
-            shimmerInxParticipationList=$(curl -s localhost:14265/api/plugins/participation/events |jq '.data.eventIds' | tr -d '[]",')
+            shimmerInxParticipationList=$(curl -s localhost:14266/api/participation/v1/events -H "Content-Type: application/json" -H "Authorization: Bearer ${shimmerHornetApiJwtToken}" |jq '.data.eventIds' | tr -d '[]",')
             shimmerInxParticipationList=$(echo $iotaHornetParticipationList)
             if [ ! -z "$latestShimmerParticipationEvents" ]; then
                 for latestShimmerParticipationEvent in ${latestShimmerParticipationEvents[@]}
                 do
                     shimmerInxParticipationEvent=$(echo $shimmerInxParticipationList | grep -o "$latestShimmerParticipationEvent")
                     if [ -z "$shimmerInxParticipationEvent" ] && [ "$shimmerInxParticipationEvent" != "$latestShimmerParticipationEvent" ]; then
-                        shimmerHornetPruningIndex=$(curl -s localhost:14266/api/v2/core/info | jq '.data.pruningIndex')
+                        shimmerHornetPruningIndex=$(curl -s localhost:14266/api/core/v2/info -H "Content-Type: application/json" -H "Authorization: Bearer ${shimmerHornetApiJwtToken}" | jq '.status.pruningIndex')
                         latestShimmerParticipationEventDetails=$(curl -s https://raw.githubusercontent.com/tanglebay/participation/main/shimmer-mainnet/templates/$latestShimmerParticipationEvent.json)
                         latestShimmerParticipationEventCommencingIndex=$(echo $latestShimmerParticipationEventDetails | jq '.milestoneIndexCommence')
                         if [ ! -z "$shimmerHornetPruningIndex" ] && [ ! -z "$latestShimmerParticipationEventDetails" ] && [ ! -z "$latestShimmerParticipationEventCommencingIndex" ] && [ $shimmerHornetPruningIndex -le $latestShimmerParticipationEventCommencingIndex ] 2>/dev/null; then
