@@ -242,19 +242,21 @@ while [ $exitCode -lt 1 ]; do
                                 if (whiptail --title "Hornet [IOTA] Management" --yesno --defaultno "Do you want to use an alternative source for the snapshot?" 8 65); then
                                     CHOICE=$(
                                         whiptail --title "Hornet [IOTA] Management" --menu "\nChoose your option" 24 65 0 \
-                                        "1)" "Download Snapshot for ICG Vote" \
-                                        "2)" "Download Snapshot for ASMB 2" \
-                                        "3)" "Download Snapshot for ASMB/SMR" \
-                                        "4)" "Download Snapshot via URL" 3>&2 2>&1 1>&3
+                                        "1)" "Download Snapshot for ASMB 3" \
+                                        "2)" "Download Snapshot for ICG Vote" \
+                                        "3)" "Download Snapshot for ASMB 2" \
+                                        "4)" "Download Snapshot for ASMB/SMR" \
+                                        "5)" "Download Snapshot via URL" 3>&2 2>&1 1>&3
                                     )
                                     exitstatus=$?
                                     if [ "$exitstatus" != "1" ]; then
                                         case $CHOICE in
                                             "1)")
-                                                if [ "$swarmUpdateAuthValid" = "200" ]; then
-                                                    iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/snapshots/full_iota-community-governance-vote.bin)
+                                                source $swarmModules/swarmAuth
+                                                if [ "$swarmAuth" = "200" ]; then
+                                                    iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_snapshot-asmb3.bin)
                                                     if [ "$iotaHornetSnapshotSourceValid" = "200" ]; then
-                                                        iotaHornetSnapshotSource="https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/snapshots/full_iota-community-governance-vote.bin"
+                                                        iotaHornetSnapshotSource="https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_snapshot-asmb3.bin"
                                                     else
                                                         exitstatus=1
                                                     fi
@@ -263,10 +265,11 @@ while [ $exitCode -lt 1 ]; do
                                                 fi
                                             ;;
                                             "2)")
-                                                if [ "$swarmUpdateAuthValid" = "200" ]; then
-                                                    iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/snapshots/full_snapshot-asmb2.bin)
+                                                source $swarmModules/swarmAuth
+                                                if [ "$swarmAuth" = "200" ]; then
+                                                    iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_iota-community-governance-vote.bin)
                                                     if [ "$iotaHornetSnapshotSourceValid" = "200" ]; then
-                                                        iotaHornetSnapshotSource="https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/snapshots/full_snapshot-asmb2.bin"
+                                                        iotaHornetSnapshotSource="https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_iota-community-governance-vote.bin"
                                                     else
                                                         exitstatus=1
                                                     fi
@@ -275,10 +278,11 @@ while [ $exitCode -lt 1 ]; do
                                                 fi
                                             ;;
                                             "3)")
-                                                if [ "$swarmUpdateAuthValid" = "200" ]; then
-                                                    iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/snapshots/full_snapshot-asmb-smr.bin)
+                                                source $swarmModules/swarmAuth
+                                                if [ "$swarmAuth" = "200" ]; then
+                                                    iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_snapshot-asmb2.bin)
                                                     if [ "$iotaHornetSnapshotSourceValid" = "200" ]; then
-                                                        iotaHornetSnapshotSource="https://$swarmUpdateAuthUser:$swarmUpdateAuthPwd@$swarmUrl/download/snapshots/full_snapshot-asmb-smr.bin"
+                                                        iotaHornetSnapshotSource="https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_snapshot-asmb2.bin"
                                                     else
                                                         exitstatus=1
                                                     fi
@@ -287,6 +291,19 @@ while [ $exitCode -lt 1 ]; do
                                                 fi
                                             ;;
                                             "4)")
+                                                source $swarmModules/swarmAuth
+                                                if [ "$swarmAuth" = "200" ]; then
+                                                    iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_snapshot-asmb-smr.bin)
+                                                    if [ "$iotaHornetSnapshotSourceValid" = "200" ]; then
+                                                        iotaHornetSnapshotSource="https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_snapshot-asmb-smr.bin"
+                                                    else
+                                                        exitstatus=1
+                                                    fi
+                                                else
+                                                    exitstatus=1
+                                                fi
+                                            ;;
+                                            "5)")
                                                 iotaHornetSnapshotSource=$(whiptail --inputbox "\nPlease specify the download url for the full snapshot" 10 65 --title "Hornet (IOTA) - Management" 3>&1 1>&2 2>&3)
                                                 exitstatus=$?
                                                 if [ "$exitStatus" != 1 ]; then
