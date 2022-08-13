@@ -1,0 +1,90 @@
+#!/bin/bash
+source $swarmConfigs/latest-versions.cfg
+
+if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
+    apps=(iota-hornet shimmer-hornet goshimmer wasp shimmer-inx-dashboard shimmer-inx-indexer shimmer-inx-mqtt shimmer-inx-participation shimmer-inx-poi)
+    for app in ${apps[@]}
+    do
+        if [ -f "/usr/bin/$app" ]; then
+            if [ "$app" = "iota-hornet" ]; then
+                appName="Hornet (IOTA)"
+                appPrefix="iotaHornet"
+            fi
+            if [ "$app" = "shimmer-hornet" ]; then
+                appName="Hornet (Shimmer)"
+                appPrefix="shimmerHornet"
+            fi
+            if [ "$app" = "goshimmer" ]; then
+                appName="GoShimmer"
+                appPrefix="goshimmer"
+            fi
+            if [ "$app" = "wasp" ]; then
+                appName="Wasp"
+                appPrefix="wasp"
+            fi
+            if [ "$app" = "shimmer-inx-dashboard" ]; then
+                appName="INX-Dashboard (Shimmer)"
+                appPrefix="shimmerInxDashboard"
+            fi
+            if [ "$app" = "shimmer-inx-indexer" ]; then
+                appName="INX-Indexer (Shimmer)"
+                appPrefix="shimmerInxIndexer"
+            fi
+            if [ "$app" = "shimmer-inx-mqtt" ]; then
+                appName="INX-MQTT (Shimmer)"
+                appPrefix="shimmerInxMqtt"
+            fi
+            if [ "$app" = "shimmer-inx-participation" ]; then
+                appName="INX-Participation (Shimmer)"
+                appPrefix="shimmerInxParticipation"
+            fi
+            if [ "$app" = "shimmer-inx-poi" ]; then
+                appName="INX-POI (Shimmer)"
+                appPrefix="shimmerInxPoi"
+            fi
+
+            appModules=${appPrefix}Modules
+
+            if [ "$iotaHornetAutoUpdate" = "true" ] && [ ! -f "/tmp/$app.lock" ]; then
+                source ${!appModules}/${appPrefix}Version
+                appVersion=${appPrefix}Version
+                appLatestVersion=latest${appPrefix^}Version
+                if [ "$(printf '%s\n' "${!appLatestVersion}" "${!appVersion}" | sort -V | head -n1)" != "${!appLatestVersion}" ] && [ ! -z "${!appLatestVersion}" ]; then
+                    if [ "$app" = "goshimmer" ]; then
+                        goshimmerAllowDbDownload=false
+                        sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb
+                    fi
+                    appCurrentVersion=${!appVersion}
+                    source ${!appModules}/${appPrefix}Installer
+                    source ${!appModules}/${appPrefix}Version
+                    appVersion=${appPrefix}Version
+                    appUpdated=${appPrefix}Updated
+                    if [ "$appCurrentVersion" != "${!appVersion}" ] || [ "${!appUpdated}" = "true" ]; then
+                        restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                        # CALL MODULE CONFIGPARSER
+                        source ${!appModules}/${appPrefix}Parser
+                        appRestart=restart${appPrefix^}
+                        if [ "${!appRestart}" = "true" ]; then
+                            sudo systemctl restart $app > /dev/null 2>&1
+                            if [ "$app" = "shimmer-hornet" ]; then
+                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                do
+                                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                        sudo systemctl restart shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                    fi
+                                done
+                                unset shimmerInxPlugin
+                            fi
+                        fi
+                        appChecksum=${appPrefix}Checksum
+                        echo "$restartDate [AUTOUPDATE] New Version (${!appLatestVersion}) of $appName installed. Checksum: ${!appChecksum}" >> $swarmLogs/swarm.log
+                        telegramText="Host: $HOSTNAME%0AApp: $appName%0A%0AAction: New Version <b>${!appLatestVersion}</b> installed.%0A%0AChecksum: ${!appChecksum}"
+                        source $watchdogModules/watchdogTelegram
+                    fi
+                fi
+            fi
+            unset appName appPrefix appVersion appLatestVersion appCurrentVersion appUpdated restartDate appRestart appChecksum telegramText
+        fi
+    done
+    unset apps app
+fi
