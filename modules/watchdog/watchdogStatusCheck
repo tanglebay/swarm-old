@@ -108,6 +108,16 @@ do
                     fi
                     let appStatusCounter=${!appStatusCounter}+1
                     sudo systemctl start $app 2>/dev/null
+                    if [ "$app" = "shimmer-hornet" ]; then
+                        sleep 10
+                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                        do
+                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                sudo systemctl restart shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                            fi
+                        done
+                        unset shimmerInxPlugin
+                    fi
                     echo "$restartDate [WACHTDOG] $appName - Service restarted." >> $swarmLogs/swarm.log
                     if [ ${appStatusCounter} -eq 1 ] 2>/dev/null; then
                         telegramText="Host: $HOSTNAME%0AApp: $appName%0A%0AAction: Service restarted."
