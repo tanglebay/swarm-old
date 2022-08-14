@@ -6,6 +6,7 @@ while [ $exitCode -lt 1 ]; do
     clear
     CHOICE=$(
         whiptail --title "Hornet [SHIMMER] Menu" --menu "\nChoose an option" 24 65 0 \
+        "" "" \
         "1)" "Hornet Info" \
         "2)" "Hornet Configuration" \
         "3)" "Hornet Management" \
@@ -25,6 +26,7 @@ while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
                     whiptail --title "Hornet [SHIMMER] Configuration" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
                     "1)" "Hornet configuration" \
                     "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
                 )
@@ -43,6 +45,7 @@ while [ $exitCode -lt 1 ]; do
                             clear
                             CHOICE=$(
                                 whiptail --title "Hornet [SHIMMER] Configuration" --menu "\nChoose an option" 24 65 0 \
+                                "" "" \
                                 "1)" "Peering.json" \
                                 "2)" "Config_Mainnet.json" \
                                 "3)" "Config_Testnet.json" \
@@ -151,9 +154,10 @@ while [ $exitCode -lt 1 ]; do
                     clear
                     CHOICE=$(
                         whiptail --title "Hornet [SHIMMER] Management" --menu "\nChoose your option" 24 65 0 \
-                        "1)" "Show Hornet log" \
-                        "2)" "Start/Stop Hornet" \
-                        "3)" "Event Validation" \
+                        "" "" \
+                        "1)" "Event Validation" \
+                        "2)" "Show Hornet log" \
+                        "3)" "Start/Stop Hornet" \
                         "4)" "Reset Hornet event database" \
                         "5)" "Reset Hornet all databases" \
                         "6)" "Reset Hornet config" 3>&2 2>&1 1>&3
@@ -164,11 +168,67 @@ while [ $exitCode -lt 1 ]; do
                     fi
                     case $CHOICE in
                         "1)")
+                            if [ -f "/usr/bin/shimmer-inx-participation" ]; then
+                                while [ $exitCode -lt 1 ]; do
+                                    clear
+                                    CHOICE=$(
+                                        whiptail --title "Hornet [SHIMMER] Events" --menu "\nChoose your option" 24 65 0 \
+                                        "1)" "Event Validation" \
+                                        "2)" "Show latest event results" 3>&2 2>&1 1>&3
+                                    )
+                                    exitstatus=$?
+                                    if [ "$exitstatus" = "1" ]; then
+                                        exitCode=1
+                                    fi
+                                    case $CHOICE in
+                                        "1)")
+                                            CHOICE=$(
+                                                whiptail --title "Hornet [SHIMMER] Events" --menu "\nChoose your option" 18 65 0 \
+                                                "1)" "Validate Staking Event" \
+                                                "2)" "Validate Voting Event" 3>&2 2>&1 1>&3
+                                            )
+                                            exitstatus=$?
+                                            if [ "$exitstatus" != "1" ]; then
+                                                case $CHOICE in
+                                                    "1)")
+                                                        eventType="staking"
+                                                    ;;
+                                                    "2)")
+                                                        eventType="ballot"
+                                                    ;;
+                                                esac
+                                                eventId=$(whiptail --inputbox "\nPlease enter the event id you want to validate" 10 65 --title "Hornet [SHIMMER] Events" 3>&1 1>&2 2>&3)
+                                                exitStatus=$?
+                                                if [ $exitStatus != 1 ] && [ ! -z "$eventId" ]; then
+                                                    nodeId="shimmer"
+                                                    source $swarmPlugins/shared/eventValidation
+                                                fi
+                                            fi
+                                            unset nodeId
+                                        ;;
+                                        "2)")
+                                            if [ -f "$swarmLogs/participation-event.log" ]; then
+                                                clear
+                                                echo ""
+                                                cat $swarmLogs/participation-event.log
+                                                echo ""
+                                                echo ""
+                                                read -n 1 -s -r -p "Press any key to continue"
+                                            fi
+                                        ;;
+                                    esac
+                                done
+                                exitCode=0
+                            else
+                                whiptail --title "Hornet [SHIMMER] Management" --msgbox "INX-Participation (Shimmer) is not installed, please install the plugin first." 8 65
+                            fi
+                        ;;
+                        "2)")
                             # Display last 65 lines of log
                             sudo journalctl -fu shimmer-hornet | less -FRSXM
                             clear
                         ;;
-                        "2)")
+                        "3)")
                             CHOICE=$(
                                 whiptail --title "Hornet [SHIMMER] Management" --menu "\nChoose your option" 24 65 0 \
                                 "1)" "Restart Hornet" \
@@ -193,7 +253,7 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
-                                    whiptail --title "Hornet [SHIMMER] Management" --msgbox "Hornet successfully restarted" 8 65
+                                    whiptail --title "Hornet [SHIMMER] Management" --msgbox "Hornet successfully restarted." 8 65
                                 ;;
                                 "2)")
                                     {
@@ -211,7 +271,7 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while Hornet is starting..." 8 65 0
-                                    whiptail --title "Hornet [SHIMMER] Management" --msgbox "Hornet successfully started" 8 65
+                                    whiptail --title "Hornet [SHIMMER] Management" --msgbox "Hornet successfully started." 8 65
                                 ;;
                                 "3)")
                                     {
@@ -228,58 +288,6 @@ while [ $exitCode -lt 1 ]; do
                                     whiptail --title "Hornet [SHIMMER] Management" --msgbox "$shimmerHornetStatus" 15 65
                                 ;;
                             esac
-                        ;;
-                        "3)")
-                            while [ $exitCode -lt 1 ]; do
-                                clear
-                                CHOICE=$(
-                                    whiptail --title "Hornet [SHIMMER] Events" --menu "\nChoose your option" 24 65 0 \
-                                    "1)" "Event Validation" \
-                                    "2)" "Show latest event results" 3>&2 2>&1 1>&3
-                                )
-                                exitstatus=$?
-                                if [ "$exitstatus" = "1" ]; then
-                                    exitCode=1
-                                fi
-                                case $CHOICE in
-                                    "1)")
-                                        CHOICE=$(
-                                            whiptail --title "Hornet [SHIMMER] Events" --menu "\nChoose your option" 18 65 0 \
-                                            "1)" "Validate Staking Event" \
-                                            "2)" "Validate Voting Event" 3>&2 2>&1 1>&3
-                                        )
-                                        exitstatus=$?
-                                        if [ "$exitstatus" != "1" ]; then
-                                            case $CHOICE in
-                                                "1)")
-                                                    eventType="staking"
-                                                ;;
-                                                "2)")
-                                                    eventType="ballot"
-                                                ;;
-                                            esac
-                                            eventId=$(whiptail --inputbox "\nPlease enter the event id you want to validate" 10 65 --title "Hornet [SHIMMER] Events" 3>&1 1>&2 2>&3)
-                                            exitStatus=$?
-                                            if [ $exitStatus != 1 ] && [ ! -z "$eventId" ]; then
-                                                nodeId="shimmer"
-                                                source $swarmPlugins/shared/eventValidation
-                                            fi
-                                        fi
-                                        unset nodeId
-                                    ;;
-                                    "2)")
-                                        if [ -f "$swarmLogs/participation-event.log" ]; then
-                                            clear
-                                            echo ""
-                                            cat $swarmLogs/participation-event.log
-                                            echo ""
-                                            echo ""
-                                            read -n 1 -s -r -p "Press any key to continue"
-                                        fi
-                                    ;;
-                                esac
-                            done
-                            exitCode=0
                         ;;
                         "4)")
                             if (whiptail --title "Hornet [SHIMMER] Management" --yesno --defaultno "Are you sure you want to delete the hornet event database?" 8 65); then
