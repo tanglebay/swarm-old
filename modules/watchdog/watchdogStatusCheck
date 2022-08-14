@@ -2,113 +2,118 @@
 source $swarmConfigs/watchdog.cfg
 
 # Hornet
-apps=(iota-hornet shimmer-hornet goshimmer wasp shimmer-inx-dashboard shimmer-inx-indexer shimmer-inx-mqtt shimmer-inx-participation shimmer-inx-poi)
-for app in ${apps[@]}
+swarmApps=(iota-hornet shimmer-hornet goshimmer wasp shimmer-inx-dashboard shimmer-inx-indexer shimmer-inx-mqtt shimmer-inx-participation shimmer-inx-poi)
+for swarmApp in ${swarmApps[@]}
 do
-    if [ -f "/usr/bin/$app" ]; then
-        if [ "$app" = "iota-hornet" ]; then
-            appName="Hornet (IOTA)"
-            appPrefix="iotaHornet"
+    if [ -f "/usr/bin/$swarmApp" ]; then
+        if [ "$swarmApp" = "iota-hornet" ]; then
+            swarmAppName="Hornet (IOTA)"
+            swarmAppPrefix="iotaHornet"
         fi
-        if [ "$app" = "shimmer-hornet" ]; then
-            appName="Hornet (Shimmer)"
-            appPrefix="shimmerHornet"
+        if [ "$swarmApp" = "shimmer-hornet" ]; then
+            swarmAppName="Hornet (Shimmer)"
+            swarmAppPrefix="shimmerHornet"
         fi
-        if [ "$app" = "goshimmer" ]; then
-            appName="GoShimmer"
-            appPrefix="goshimmer"
+        if [ "$swarmApp" = "goshimmer" ]; then
+            swarmAppName="GoShimmer"
+            swarmAppPrefix="goshimmer"
         fi
-        if [ "$app" = "wasp" ]; then
-            appName="Wasp"
-            appPrefix="wasp"
+        if [ "$swarmApp" = "wasp" ]; then
+            swarmAppName="Wasp"
+            swarmAppPrefix="wasp"
         fi
-        if [ "$app" = "shimmer-inx-dashboard" ]; then
-            appName="INX-Dashboard (Shimmer)"
-            appPrefix="shimmerInxDashboard"
+        if [ "$swarmApp" = "shimmer-inx-dashboard" ]; then
+            swarmAppName="INX-Dashboard (Shimmer)"
+            swarmAppPrefix="shimmerInxDashboard"
         fi
-        if [ "$app" = "shimmer-inx-indexer" ]; then
-            appName="INX-Indexer (Shimmer)"
-            appPrefix="shimmerInxIndexer"
+        if [ "$swarmApp" = "shimmer-inx-indexer" ]; then
+            swarmAppName="INX-Indexer (Shimmer)"
+            swarmAppPrefix="shimmerInxIndexer"
         fi
-        if [ "$app" = "shimmer-inx-mqtt" ]; then
-            appName="INX-MQTT (Shimmer)"
-            appPrefix="shimmerInxMqtt"
+        if [ "$swarmApp" = "shimmer-inx-mqtt" ]; then
+            swarmAppName="INX-MQTT (Shimmer)"
+            swarmAppPrefix="shimmerInxMqtt"
         fi
-        if [ "$app" = "shimmer-inx-participation" ]; then
-            appName="INX-Participation (Shimmer)"
-            appPrefix="shimmerInxParticipation"
+        if [ "$swarmApp" = "shimmer-inx-participation" ]; then
+            swarmAppName="INX-Participation (Shimmer)"
+            swarmAppPrefix="shimmerInxParticipation"
         fi
-        if [ "$app" = "shimmer-inx-poi" ]; then
-            appName="INX-POI (Shimmer)"
-            appPrefix="shimmerInxPoi"
+        if [ "$swarmApp" = "shimmer-inx-poi" ]; then
+            swarmAppName="INX-POI (Shimmer)"
+            swarmAppPrefix="shimmerInxPoi"
         fi
 
-        appStatusCounter=${appPrefix}StatusCounter
-        if [ -n "${!appStatusCounter}" ]; then
-            if [ ${!appStatusCounter} -ne ${!appStatusCounter} ] 2>/dev/null; then
-                appStatusCounter=0
-                sudo sed -i 's/^'${appPrefix}'StatusCounter=.*/'${appPrefix}'StatusCounter='$appStatusCounter'/' $swarmConfigs/watchdog.cfg
+        swarmAppStatusCounter=${swarmAppPrefix}StatusCounter
+        if [ -n "${!swarmAppStatusCounter}" ]; then
+            if [ ${!swarmAppStatusCounter} -ne ${!swarmAppStatusCounter} ] 2>/dev/null; then
+                swarmAppStatusCounter=0
+                sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $swarmConfigs/watchdog.cfg
             fi
         else
-            appStatusCounter=0
-            sudo sed -i 's/^'${appPrefix}'StatusCounter=.*/'${appPrefix}'StatusCounter='$appStatusCounter'/' $swarmConfigs/watchdog.cfg
+            swarmAppStatusCounter=0
+            sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $swarmConfigs/watchdog.cfg
         fi
 
         source $swarmConfigs/watchdog.cfg
-        appHome=${appPrefix}Home
-        appStatus=${appPrefix}Status
-        appServiceStatusCheck=${appPrefix}ServiceStatusCheck
-        appAllowDbReset=${appPrefix}AllowDbReset
-        appStatusCounter=${appPrefix}StatusCounter
+        swarmAppHome=${swarmAppPrefix}Home
+        swarmAppNetwork=${swarmPrefix}Network
+        swarmAppStatus=${swarmAppPrefix}Status
+        swarmAppServiceStatusCheck=${swarmAppPrefix}ServiceStatusCheck
+        swarmAppAllowDbReset=${swarmAppPrefix}AllowDbReset
+        swarmAppStatusCounter=${swarmAppPrefix}StatusCounter
 
         # START
-        if [ "${!appStatus}" != "active" ] && [ "${!appServiceStatusCheck}" = "true" ]; then
-            if [ "${!appStatus}" = "failed" ]; then
-                sudo systemctl reset-failed $app 2>/dev/null
+        if [ "${!swarmAppStatus}" != "active" ] && [ "${!swarmAppServiceStatusCheck}" = "true" ]; then
+            if [ "${!swarmAppStatus}" = "failed" ]; then
+                sudo systemctl reset-failed $swarmApp 2>/dev/null
             fi
-            if [ ${!appStatusCounter} -lt 5 ] 2>/dev/null; then
-                if [ ${!appStatusCounter} -ge 1 ] 2>/dev/null; then
-                    sudo systemctl stop $app 2>/dev/null
+            if [ ${!swarmAppStatusCounter} -lt 5 ] 2>/dev/null; then
+                if [ ${!swarmAppStatusCounter} -ge 1 ] 2>/dev/null; then
+                    sudo systemctl stop $swarmApp 2>/dev/null
                     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                    if [ "${!appAllowDbReset}" = "true" ]; then
-                        if [ "$app" = "iota-hornet" ] && [[ $iotaHornetPlugins = *participation* ]] && [ ${!appStatusCounter} -eq 2 ] 2>/dev/null; then
+                    if [ "${!swarmAppAllowDbReset}" = "true" ]; then
+                        if [ "$swarmApp" = "iota-hornet" ] && [[ $iotaHornetPlugins = *participation* ]] && [ ${!swarmAppStatusCounter} -eq 2 ] 2>/dev/null; then
                             sudo rm -rf $iotaHornetHome/${iotaHornetNetwork}db/participation 2>/dev/null
-                            echo "$restartDate [WACHTDOG] $appName - Participation database reset because of too many failed restarts." >> $swarmLogs/swarm.log
-                            telegramText="Host: $HOSTNAME%0AApp: $appName%0A%0AAction: Participation database reset because of too many failed restarts."
+                            echo "$restartDate [WACHTDOG] $swarmAppName - Participation database reset because of too many failed restarts." >> $swarmLogs/swarm.log
+                            telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Participation database reset because of too many failed restarts."
                             source $watchdogModules/watchdogTelegram
                         fi
-                        if [ ${!appStatusCounter} -ge 3 ] 2>/dev/null; then
-                            if [ "${!appAllowDbReset}" = "true" ]; then
+                        if [ ${!swarmAppStatusCounter} -ge 3 ] 2>/dev/null; then
+                            if [ "${!swarmAppAllowDbReset}" = "true" ]; then
                                 if [ "$killall" = "true" ]; then
-                                    sudo killall -s SIGKILL $app 2>/dev/null
+                                    sudo killall -s SIGKILL $swarmApp 2>/dev/null
                                 fi
-                                if [ "$app" = "iota-hornet" ]; then
-                                    sudo rm -rf ${!appHome}/${iotaHornetNetwork}db $iotaHornetHome/snapshots/${iotaHornetNetwork}/*.bin 2>/dev/null
-                                    appDbDeleted=true
+                                if [ "$swarmApp" = "iota-hornet" ]; then
+                                    sudo rm -rf ${!swarmAppHome}/${iotaHornetNetwork}db $iotaHornetHome/snapshots/${iotaHornetNetwork}/*.bin 2>/dev/null
+                                    swarmAppDbDeleted=true
                                 fi
-                                if [ "$app" = "shimmer-hornet" ]; then
-                                    sudo rm -rf ${!appHome}/${shimmerHornetNetwork}/database 2>/dev/null
-                                    appDbDeleted=true
+                                if [ "$swarmApp" = "shimmer-hornet" ]; then
+                                    sudo rm -rf ${!swarmAppHome}/${!swarmAppNetwork}/database 2>/dev/null
+                                    swarmAppDbDeleted=true
                                 fi
-                                if [[ $app = *shimmer-inx* ]]; then
-                                    if [ -d "${!appHome}/database" ]; then
-                                        sudo rm -rf ${!appHome}/database 2>/dev/null
-                                        appDbDeleted=true
+                                if [ "$swarmApp" = "goshimmer" ]; then
+                                    sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb
+                                    swarmAppDbDeleted=true
+                                fi
+                                if [[ $swarmApp = *shimmer-inx* ]]; then
+                                    if [ -d "${!swarmAppHome}/database" ]; then
+                                        sudo rm -rf ${!swarmAppHome}/database 2>/dev/null
+                                        swarmAppDbDeleted=true
                                     fi
                                 fi
-                                if [ "$appDbDeleted" = "true" ]; then
-                                    echo "$restartDate [WACHTDOG] $appName - Database reset because of too many failed restarts." >> $swarmLogs/swarm.log
-                                    if [ ${!appStatusCounter} -eq 3 ] 2>/dev/null; then
-                                        telegramText="Host: $HOSTNAME%0AApp: $appName%0A%0AAction: Database reset because of too many failed restarts."
+                                if [ "$swarmAppDbDeleted" = "true" ]; then
+                                    echo "$restartDate [WACHTDOG] $swarmAppName - Database reset because of too many failed restarts." >> $swarmLogs/swarm.log
+                                    if [ ${!swarmAppStatusCounter} -eq 3 ] 2>/dev/null; then
+                                        telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Database reset because of too many failed restarts."
                                         source $watchdogModules/watchdogTelegram
                                     fi
                                 fi
                             fi
                         fi
                     fi
-                    let appStatusCounter=${!appStatusCounter}+1
-                    sudo systemctl start $app 2>/dev/null
-                    if [ "$app" = "shimmer-hornet" ]; then
+                    let swarmAppStatusCounter=${!swarmAppStatusCounter}+1
+                    sudo systemctl start $swarmApp 2>/dev/null
+                    if [ "$swarmApp" = "shimmer-hornet" ]; then
                         sleep 10
                         for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                         do
@@ -118,26 +123,26 @@ do
                         done
                         unset shimmerInxPlugin
                     fi
-                    echo "$restartDate [WACHTDOG] $appName - Service restarted." >> $swarmLogs/swarm.log
-                    if [ ${appStatusCounter} -eq 1 ] 2>/dev/null; then
-                        telegramText="Host: $HOSTNAME%0AApp: $appName%0A%0AAction: Service restarted."
+                    echo "$restartDate [WACHTDOG] $swarmAppName - Service restarted." >> $swarmLogs/swarm.log
+                    if [ ${swarmAppStatusCounter} -eq 1 ] 2>/dev/null; then
+                        telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Service restarted."
                         source $watchdogModules/watchdogTelegram
                     fi
                 else
-                    let appStatusCounter=${!appStatusCounter}+1
+                    let swarmAppStatusCounter=${!swarmAppStatusCounter}+1
                 fi
-                sudo sed -i 's/^'$appPrefix'StatusCounter=.*/'$appPrefix'StatusCounter='$appStatusCounter'/' $swarmConfigs/watchdog.cfg
+                sudo sed -i 's/^'$swarmAppPrefix'StatusCounter=.*/'$swarmAppPrefix'StatusCounter='$swarmAppStatusCounter'/' $swarmConfigs/watchdog.cfg
             fi
         else
-            if [ ${!appStatusCounter} -gt 0 ] 2>/dev/null; then
-                let appStatusCounter=${!appStatusCounter}-1
-                sudo sed -i 's/^'$appPrefix'StatusCounter=.*/'$appPrefix'StatusCounter='$appStatusCounter'/' $swarmConfigs/watchdog.cfg
+            if [ ${!swarmAppStatusCounter} -gt 0 ] 2>/dev/null; then
+                let swarmAppStatusCounter=${!swarmAppStatusCounter}-1
+                sudo sed -i 's/^'$swarmAppPrefix'StatusCounter=.*/'$swarmAppPrefix'StatusCounter='$swarmAppStatusCounter'/' $swarmConfigs/watchdog.cfg
             fi
         fi
-        unset appName appPrefix appHome appStatus appServiceStatusCheck appAllowDbReset appStatusCounter
+        unset swarmAppName swarmAppPrefix swarmAppHome swarmAppStatus swarmAppServiceStatusCheck swarmAppAllowDbReset swarmAppStatusCounter
     fi
 done
 
-unset apps app
+unset swarmApp
 
 ################################################################################################################################################

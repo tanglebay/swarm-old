@@ -2,71 +2,71 @@
 source $swarmConfigs/latest-versions.cfg
 
 if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
-    apps=(iota-hornet shimmer-hornet goshimmer wasp shimmer-inx-dashboard shimmer-inx-indexer shimmer-inx-mqtt shimmer-inx-participation shimmer-inx-poi)
-    for app in ${apps[@]}
+    for swarmApp in ${swarmApps[@]}
     do
-        if [ -f "/usr/bin/$app" ]; then
-            if [ "$app" = "iota-hornet" ]; then
-                appName="Hornet (IOTA)"
-                appPrefix="iotaHornet"
+        if [ -f "/usr/bin/$swarmApp" ]; then
+            if [ "$swarmApp" = "iota-hornet" ]; then
+                swarmAppName="Hornet (IOTA)"
+                swarmAppPrefix="iotaHornet"
             fi
-            if [ "$app" = "shimmer-hornet" ]; then
-                appName="Hornet (Shimmer)"
-                appPrefix="shimmerHornet"
+            if [ "$swarmApp" = "shimmer-hornet" ]; then
+                swarmAppName="Hornet (Shimmer)"
+                swarmAppPrefix="shimmerHornet"
             fi
-            if [ "$app" = "goshimmer" ]; then
-                appName="GoShimmer"
-                appPrefix="goshimmer"
+            if [ "$swarmApp" = "goshimmer" ]; then
+                swarmAppName="GoShimmer"
+                swarmAppPrefix="goshimmer"
             fi
-            if [ "$app" = "wasp" ]; then
-                appName="Wasp"
-                appPrefix="wasp"
+            if [ "$swarmApp" = "wasp" ]; then
+                swarmAppName="Wasp"
+                swarmAppPrefix="wasp"
             fi
-            if [ "$app" = "shimmer-inx-dashboard" ]; then
-                appName="INX-Dashboard (Shimmer)"
-                appPrefix="shimmerInxDashboard"
+            if [ "$swarmApp" = "shimmer-inx-dashboard" ]; then
+                swarmAppName="INX-Dashboard (Shimmer)"
+                swarmAppPrefix="shimmerInxDashboard"
             fi
-            if [ "$app" = "shimmer-inx-indexer" ]; then
-                appName="INX-Indexer (Shimmer)"
-                appPrefix="shimmerInxIndexer"
+            if [ "$swarmApp" = "shimmer-inx-indexer" ]; then
+                swarmAppName="INX-Indexer (Shimmer)"
+                swarmAppPrefix="shimmerInxIndexer"
             fi
-            if [ "$app" = "shimmer-inx-mqtt" ]; then
-                appName="INX-MQTT (Shimmer)"
-                appPrefix="shimmerInxMqtt"
+            if [ "$swarmApp" = "shimmer-inx-mqtt" ]; then
+                swarmAppName="INX-MQTT (Shimmer)"
+                swarmAppPrefix="shimmerInxMqtt"
             fi
-            if [ "$app" = "shimmer-inx-participation" ]; then
-                appName="INX-Participation (Shimmer)"
-                appPrefix="shimmerInxParticipation"
+            if [ "$swarmApp" = "shimmer-inx-participation" ]; then
+                swarmAppName="INX-Participation (Shimmer)"
+                swarmAppPrefix="shimmerInxParticipation"
             fi
-            if [ "$app" = "shimmer-inx-poi" ]; then
-                appName="INX-POI (Shimmer)"
-                appPrefix="shimmerInxPoi"
+            if [ "$swarmApp" = "shimmer-inx-poi" ]; then
+                swarmAppName="INX-POI (Shimmer)"
+                swarmAppPrefix="shimmerInxPoi"
             fi
 
-            appModules=${appPrefix}Modules
+            swarmAppModules=${swarmAppPrefix}Modules
+            swarmAppAutoUpdate=${swarmAppPrefix}AutoUpdate
 
-            if [ "$iotaHornetAutoUpdate" = "true" ] && [ ! -f "/tmp/$app.lock" ]; then
-                source ${!appModules}/${appPrefix}Version
-                appVersion=${appPrefix}Version
-                appLatestVersion=latest${appPrefix^}Version
-                if [ "$(printf '%s\n' "${!appLatestVersion}" "${!appVersion}" | sort -V | head -n1)" != "${!appLatestVersion}" ] && [ ! -z "${!appLatestVersion}" ]; then
-                    if [ "$app" = "goshimmer" ]; then
+            if [ "${!swarmAppAutoUpdate}" = "true" ] && [ ! -f "/tmp/$swarmApp.lock" ]; then
+                source ${!swarmAppModules}/${swarmAppPrefix}Version
+                swarmAppVersion=${swarmAppPrefix}Version
+                swarmAppLatestVersion=latest${swarmAppPrefix^}Version
+                if [ "$(printf '%s\n' "${!swarmAppLatestVersion}" "${!swarmAppVersion}" | sort -V | head -n1)" != "${!swarmAppLatestVersion}" ] && [ ! -z "${!swarmAppLatestVersion}" ]; then
+                    if [ "$swarmApp" = "goshimmer" ]; then
                         goshimmerAllowDbDownload=false
                         sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb
                     fi
-                    appCurrentVersion=${!appVersion}
-                    source ${!appModules}/${appPrefix}Installer
-                    source ${!appModules}/${appPrefix}Version
-                    appVersion=${appPrefix}Version
-                    appUpdated=${appPrefix}Updated
-                    if [ "$appCurrentVersion" != "${!appVersion}" ] || [ "${!appUpdated}" = "true" ]; then
+                    swarmAppCurrentVersion=${!swarmAppVersion}
+                    source ${!swarmAppModules}/${swarmAppPrefix}Installer
+                    source ${!swarmAppModules}/${swarmAppPrefix}Version
+                    swarmAppVersion=${swarmAppPrefix}Version
+                    swarmAppUpdated=${swarmAppPrefix}Updated
+                    if [ "$swarmAppCurrentVersion" != "${!swarmAppVersion}" ] || [ "${!swarmAppUpdated}" = "true" ]; then
                         restartDate=`date '+%d-%m-%Y %H-%M-%S'`
                         # CALL MODULE CONFIGPARSER
-                        source ${!appModules}/${appPrefix}Parser
-                        appRestart=restart${appPrefix^}
-                        if [ "${!appRestart}" = "true" ]; then
-                            sudo systemctl restart $app > /dev/null 2>&1
-                            if [ "$app" = "shimmer-hornet" ]; then
+                        source ${!swarmAppModules}/${swarmAppPrefix}Parser
+                        swarmAppRestart=restart${swarmAppPrefix^}
+                        if [ "${!swarmAppRestart}" = "true" ]; then
+                            sudo systemctl restart $swarmApp > /dev/null 2>&1
+                            if [ "$swarmApp" = "shimmer-hornet" ]; then
                                 for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                                 do
                                     if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
@@ -76,15 +76,15 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                                 unset shimmerInxPlugin
                             fi
                         fi
-                        appChecksum=${appPrefix}Checksum
-                        echo "$restartDate [AUTOUPDATE] New Version (${!appLatestVersion}) of $appName installed. Checksum: ${!appChecksum}" >> $swarmLogs/swarm.log
-                        telegramText="Host: $HOSTNAME%0AApp: $appName%0A%0AAction: New Version <b>${!appLatestVersion}</b> installed.%0A%0AChecksum: ${!appChecksum}"
+                        swarmAppChecksum=${swarmAppPrefix}Checksum
+                        echo "$restartDate [AUTOUPDATE] New Version (${!swarmAppLatestVersion}) of $swarmAppName installed. Checksum: ${!swarmAppChecksum}" >> $swarmLogs/swarm.log
+                        telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: New Version <b>${!swarmAppLatestVersion}</b> installed.%0A%0AChecksum: ${!swarmAppChecksum}"
                         source $watchdogModules/watchdogTelegram
                     fi
                 fi
             fi
-            unset appName appPrefix appVersion appLatestVersion appCurrentVersion appUpdated restartDate appRestart appChecksum telegramText
+            unset swarmAppName swarmAppPrefix swarmAppVersion swarmAppLatestVersion swarmAppCurrentVersion swarmAppUpdated restartDate swarmAppRestart swarmAppChecksum telegramText
         fi
     done
-    unset apps app
+    unset swarmApp
 fi
