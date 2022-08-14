@@ -49,87 +49,35 @@ if [ "$swarmManualUpdate" = "true" ]; then
                             sudo rm -rf /etc/apt/sources.list.d/hornet* > /dev/null 2>&1
                             sudo apt-get -qq update > /dev/null 2>&1
                         fi
-
-                        if [ -f "/usr/bin/iota-hornet" ]; then
-                            # source $swarmConfigs/hornet.cfg
-                            source $iotaHornetModules/iotaHornetParser
-                            if [ "$restartIotaHornet" = "true" ]; then
-                                sudo systemctl restart iota-hornet > /dev/null 2>&1
-                                unset restartIotaHornet
-                            fi
-                        fi
                         echo 45
-                        if [ -f "/usr/bin/shimmer-hornet" ]; then
-                            # source $swarmConfigs/hornet.cfg
-                            source $shimmerHornetModules/shimmerHornetParser
-                            if [ "$restartShimmerHornet" = "true" ]; then
-                                sudo systemctl restart shimmer-hornet > /dev/null 2>&1
-                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                do
-                                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                        sudo systemctl restart shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                        progressNumber=45
+                        for swarmApp in ${swarmApps[@]}
+                        do
+                            source $swarmModules/swarmAppVars
+                            if [ -f "/usr/bin/$swarmApp" ]; then
+                                swarmAppModules=${swarmAppPrefix}Modules
+                                source ${!swarmAppModules}/${swarmAppPrefix}Parser
+                                swarmAppRestart=restart${swarmAppPrefix}
+                                if [ "${!swarmAppRestart}" = "true" ]; then
+                                    sudo systemctl restart $swarmApp > /dev/null 2>&1
+                                    if [ "$swarmApp" = "shimmer-hornet" ]; then
+                                        sleep 10
+                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                        do
+                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                sudo systemctl restart shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                            fi
+                                        done
+                                        unset restartShimmerHornet shimmerInxPlugin
                                     fi
-                                done
-                                unset restartShimmerHornet shimmerInxPlugin
+                                fi
+                                unset swarmAppRestart swarmAppModules
                             fi
-                        fi
-                        echo 50
-                        if [ -f "/usr/bin/goshimmer" ]; then
-                            # source $swarmConfigs/hornet.cfg
-                            source $goshimmerModules/goshimmerParser
-                            if [ "$restartGoshimmer" = "true" ]; then
-                                sudo systemctl restart goshimmer > /dev/null 2>&1
-                                unset restartGoshimmer
-                            fi
-                        fi
-                        echo 55
-                        if [ -f "/usr/bin/wasp" ]; then
-                            source $waspModules/waspParser
-                            if [ "$restartWasp" = "true" ]; then
-                                sudo systemctl restart wasp > /dev/null 2>&1
-                                unset restartWasp
-                            fi
-                        fi
-                        echo 60
-                        if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
-                            source $shimmerInxDashboardModules/shimmerInxDashboardParser
-                            if [ "$restartShimmerInxDashboard" = "true" ]; then
-                                sudo systemctl restart shimmer-inx-dashboard > /dev/null 2>&1
-                                unset restartShimmerInxDashboard
-                            fi
-                        fi
-                        echo 65
-                        if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-                            source $shimmerInxIndexerModules/shimmerInxIndexerParser
-                            if [ "$restartShimmerInxIndexer" = "true" ]; then
-                                sudo systemctl restart shimmer-inx-indexer > /dev/null 2>&1
-                                unset restartShimmerInxIndexer
-                            fi
-                        fi
-                        echo 70
-                        if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
-                            source $shimmerInxMqttModules/shimmerInxMqttParser
-                            if [ "$restartShimmerInxMqtt" = "true" ]; then
-                                sudo systemctl restart shimmer-inx-mqtt > /dev/null 2>&1
-                                unset restartShimmerInxMqtt
-                            fi
-                        fi
-                        echo 75
-                        if [ -f "/usr/bin/shimmer-inx-participation" ]; then
-                            source $shimmerInxParticipationModules/shimmerInxParticipationParser
-                            if [ "$restartShimmerInxParticipation" = "true" ]; then
-                                sudo systemctl restart shimmer-inx-participation > /dev/null 2>&1
-                                unset restartShimmerInxParticipation
-                            fi
-                        fi
-                        echo 80
-                        if [ -f "/usr/bin/shimmer-inx-poi" ]; then
-                            source $shimmerInxPoiModules/shimmerInxPoiParser
-                            if [ "$restartShimmerInxPoi" = "true" ]; then
-                                sudo systemctl restart shimmer-inx-poi > /dev/null 2>&1
-                                unset restartShimmerInxPoi
-                            fi
-                        fi
+                            unset swarmAppPrefix
+                            let progressNumber=$progressNumber+5
+                            echo $progressNumber
+                        done
+                        unset swarmApp progressNumber
                         echo 85
                         source $proxyModules/proxyAutomaticDeployment
                     fi
