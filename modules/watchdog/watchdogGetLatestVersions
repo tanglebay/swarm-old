@@ -15,42 +15,7 @@ fi
 if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
     for swarmApp in ${swarmApps[@]}
     do
-        if [ "$swarmApp" = "iota-hornet" ]; then
-            swarmAppName="hornet"
-            swarmAppPrefix="iotaHornet"
-        fi
-        if [ "$swarmApp" = "shimmer-hornet" ]; then
-            swarmAppName="hornet"
-            swarmAppPrefix="shimmerHornet"
-        fi
-        if [ "$swarmApp" = "goshimmer" ]; then
-            swarmAppName="goshimmer"
-            swarmAppPrefix="goshimmer"
-        fi
-        if [ "$swarmApp" = "wasp" ]; then
-            swarmAppName="wasp"
-            swarmAppPrefix="wasp"
-        fi
-        if [ "$swarmApp" = "shimmer-inx-dashboard" ]; then
-            swarmAppName="inx-dashboard"
-            swarmAppPrefix="shimmerInxDashboard"
-        fi
-        if [ "$swarmApp" = "shimmer-inx-indexer" ]; then
-            swarmAppName="inx-indexer"
-            swarmAppPrefix="shimmerInxIndexer"
-        fi
-        if [ "$swarmApp" = "shimmer-inx-mqtt" ]; then
-            swarmAppName="inx-mqtt"
-            swarmAppPrefix="shimmerInxMqtt"
-        fi
-        if [ "$swarmApp" = "shimmer-inx-participation" ]; then
-            swarmAppName="inx-participation"
-            swarmAppPrefix="shimmerInxParticipation"
-        fi
-        if [ "$swarmApp" = "shimmer-inx-poi" ]; then
-            swarmAppName="inx-poi"
-            swarmAppPrefix="shimmerInxPoi"
-        fi
+        source $swarmModules/swarmAppVars
         if [ -f "/usr/bin/$swarmApp" ]; then
             swarmAppCurrentLatestVersion=latest${swarmAppPrefix^}Version
             swarmAppRelease=${swarmAppPrefix}Release
@@ -58,15 +23,15 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             swarmAppModules=${swarmAppPrefix}Modules
 
             if [ "${!swarmAppRelease}" = "stable" ]; then
-                swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/$swarmAppName | grep ${!swarmAppReleaseVersion} | awk '!/(-rc|-beta|-alpha)/' | head -n 1)
+                swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/$swarmAppGithubName | grep ${!swarmAppReleaseVersion} | awk '!/(-rc|-beta|-alpha)/' | head -n 1)
                 swarmAppLatestVersion=$(echo $swarmAppLatestVersion | tr -d 'v')
             fi
             if [ "${!swarmAppRelease}" = "beta" ]; then
-                swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/$swarmAppName | grep ${!swarmAppReleaseVersion} | awk '!/-alpha/' | head -n 1)
+                swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/$swarmAppGithubName | grep ${!swarmAppReleaseVersion} | awk '!/-alpha/' | head -n 1)
                 swarmAppLatestVersion=$(echo $swarmAppLatestVersion | tr -d 'v')
             fi
             if [ "${!swarmAppRelease}" = "alpha" ]; then
-                swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/$swarmAppName | grep ${!swarmAppReleaseVersion} | head -n 1)
+                swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/$swarmAppGithubName | grep ${!swarmAppReleaseVersion} | head -n 1)
                 swarmAppLatestVersion=$(echo $swarmAppLatestVersion | tr -d 'v')
             fi
             if [ "$swarmAppLatestVersion" = "\"\"" ] || [ -z "$swarmAppLatestVersion" ] || [ "$swarmAppLatestVersion" = "null" ]; then
@@ -83,7 +48,7 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 sudo sed -i 's~^latest'${swarmAppPrefix^}'Version=.*~latest'${swarmAppPrefix^}'Version=""~' $swarmConfigs/latest-versions.cfg
             fi
         fi
-        unset swarmAppName swarmAppPrefix swarmAppCurrentLatestVersion swarmAppRelease swarmAppReleaseVersion swarmAppModules swarmAppLatestVersion
+        unset swarmAppGithubName swarmAppPrefix swarmAppCurrentLatestVersion swarmAppRelease swarmAppReleaseVersion swarmAppModules swarmAppLatestVersion
     done
     unset swarmApp
 fi
