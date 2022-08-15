@@ -2,7 +2,7 @@
 
 if [ "$swarmManualUpdate" = "true" ]; then
     if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
-        source $swarmModules/swarmAuth
+        source $swarmModule/swarmAuth
         if [ "$swarmAuth" = "200" ] && [ ! -f "/tmp/watchdog.lock" ]; then
             sudo touch /tmp/watchdog.lock
             {
@@ -24,8 +24,16 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                     ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                     if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
-                        sudo rm -rf $swarmHome > /dev/null 2>&1
+                        sudo rm -rf $swarmHome $swarmConfigs/*.* > /dev/null 2>&1
                         sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
+                        if [ ! -d "$swarmConfigs" ]; then
+                            sudo mkdir -p $swarmConfigs
+                        fi
+                        if [ -d "/etc/swarm" ]; then
+                            sudo mv -f $swarmHome/configs/*.cfg /etc/swarm > /dev/null 2>&1
+                            sudo rm -rf $swarmHome/configs > /dev/null 2>&1
+                        fi
+
 
                         sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
                         echo 25
@@ -33,7 +41,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                         # Load new env
                         source /var/lib/swarm/environment
 
-                        source $swarmModules/swarmParser
+                        source $swarmModule/swarmParser
 
                         echo 30
                         ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
@@ -41,7 +49,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
 
                         echo 35
 
-                        source $swarmModules/swarmUpdaterAppService
+                        source $swarmModule/swarmUpdaterAppService
 
                         echo 40
                         # Remove Hornet apt
@@ -53,7 +61,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                         progressNumber=45
                         for swarmApp in ${swarmApps[@]}
                         do
-                            source $swarmModules/swarmAppVars
+                            source $swarmModule/swarmAppVars
                             if [ -f "/usr/bin/$swarmApp" ]; then
                                 swarmAppModules=${swarmAppPrefix}Modules
                                 source ${!swarmAppModules}/${swarmAppPrefix}Parser
@@ -137,7 +145,7 @@ else
                     sudo rm -rf $swarmHome > /dev/null 2>&1
                     sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
                     sudo cat /var/lib/swarm/templates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
-                    source $swarmModules/swarmUpdaterAfter
+                    source $swarmModule/swarmUpdaterAfter
                 fi
                 if [ -d "$swarmTmp" ]; then
                     sudo rm -rf $swarmTmp > /dev/null 2>&1

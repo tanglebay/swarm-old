@@ -2,20 +2,23 @@
 source $swarmConfigs/latest-versions.cfg
 
 if [ -z "$latestShimmerInxPoiVersion" ] || [ "$latestShimmerInxPoiVersion" = "\"\"" ] || [ "$latestShimmerInxPoiVersion" = "null" ]; then
-    if [ "$shimmerInxPoiRelease" = "stable" ]; then
-        latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-poi | grep $shimmerInxPoiReleaseVersion | awk '!/(-rc|-beta|-alpha)/' | head -n 1)
-        latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v"')
-    fi
-    if [ "$shimmerInxPoiRelease" = "beta" ]; then
-        latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-poi | grep $shimmerInxPoiReleaseVersion | awk '!/-alpha/' | head -n 1)
-        latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v"')
-    fi
-    if [ "$shimmerInxPoiRelease" = "alpha" ]; then
-        latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-poi | grep $shimmerInxPoiReleaseVersion | head -n 1)
-        latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v"')
-    fi
-    if [ ! -z "$latestShimmerInxPoiVersion" ] && [ "$latestShimmerInxPoiVersion" != "\"\"" ] && [ "$latestShimmerInxPoiVersion" != "null" ]; then
-        sudo sed -i 's~^latestShimmerInxPoiVersion=.*~latestShimmerInxPoiVersion="'$latestShimmerInxPoiVersion'"~' $swarmConfigs/latest-versions.cfg
+    source $swarmModule/swarmAuth
+    if [ "$swarmAuth" = "200" ]; then
+        if [ "$shimmerInxPoiRelease" = "stable" ]; then
+            latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-poi | grep $shimmerInxPoiReleaseVersion | awk '!/(-rc|-beta|-alpha)/' | head -n 1)
+            latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v"')
+        fi
+        if [ "$shimmerInxPoiRelease" = "beta" ]; then
+            latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-poi | grep $shimmerInxPoiReleaseVersion | awk '!/-alpha/' | head -n 1)
+            latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v"')
+        fi
+        if [ "$shimmerInxPoiRelease" = "alpha" ]; then
+            latestShimmerInxPoiVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-poi | grep $shimmerInxPoiReleaseVersion | head -n 1)
+            latestShimmerInxPoiVersion=$(echo $latestShimmerInxPoiVersion | tr -d 'v"')
+        fi
+        if [ ! -z "$latestShimmerInxPoiVersion" ] && [ "$latestShimmerInxPoiVersion" != "\"\"" ] && [ "$latestShimmerInxPoiVersion" != "null" ]; then
+            sudo sed -i 's~^latestShimmerInxPoiVersion=.*~latestShimmerInxPoiVersion="'$latestShimmerInxPoiVersion'"~' $swarmConfigs/latest-versions.cfg
+        fi
     fi
 fi
 
