@@ -74,39 +74,42 @@ while [ $exitCode -lt 1 ]; do
             source $swarmModule/swarmTools
         ;;
         "7)")
-            CHOICE=$(
-                whiptail --title "SWARM Menu" --menu "\nChoose an option" 24 65 0 \
-                "" "" \
-                "1)" "Update SWARM" \
-                "2)" "Remove SWARM" \
-                "3)" "Check SWARM.log" 3>&2 2>&1 1>&3
-            )
-            case $CHOICE in
-                "1)")
-                    # Update SWARM
-                    if (whiptail --title "SWARM - Update" --yesno --defaultno "Do you really want to update SWARM?" 8 65); then
-                        inputLatestSwarmVersion=$(whiptail --inputbox "Type the username for the update access of SWARM:" 10 65 "latest" --title "SWARM - Update" 3>&1 1>&2 2>&3)
-                        exitstatus=$?
-                        if [ "$exitstatus" != "1" ]; then
-                            if [ "$inputLatestSwarmVersion" != "latest" ]; then
-                                latestSwarmVersion="$inputLatestSwarmVersion"
-                            else
-                                source $swarmConfigs/latest-versions.cfg
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "SWARM Menu" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
+                    "1)" "Update SWARM" \
+                    "2)" "Remove SWARM" \
+                    "3)" "Check SWARM.log" 3>&2 2>&1 1>&3
+                )
+                case $CHOICE in
+                    "1)")
+                        # Update SWARM
+                        if (whiptail --title "SWARM - Update" --yesno --defaultno "Do you really want to update SWARM?" 8 65); then
+                            inputLatestSwarmVersion=$(whiptail --inputbox "Type the username for the update access of SWARM:" 10 65 "latest" --title "SWARM - Update" 3>&1 1>&2 2>&3)
+                            exitstatus=$?
+                            if [ "$exitstatus" != "1" ]; then
+                                if [ "$inputLatestSwarmVersion" != "latest" ]; then
+                                    latestSwarmVersion="$inputLatestSwarmVersion"
+                                else
+                                    source $swarmConfigs/latest-versions.cfg
+                                fi
+                                swarmManualUpdate=true
+                                source $swarmModule/swarmUpdater
+                                unset swarmManualUpdate inputLatestSwarmVersion
+                                exit 0
                             fi
-                            swarmManualUpdate=true
-                            source $swarmModule/swarmUpdater
-                            unset swarmManualUpdate inputLatestSwarmVersion
-                            exit 0
                         fi
-                    fi
-                ;;
-                "2)")
-                    source $swarmModule/swarmRemoval
-                ;;
-                "3)")
-                    sudo $swarmCLEditor $swarmLogs/swarm.log
-                ;;
-            esac
+                    ;;
+                    "2)")
+                        source $swarmModule/swarmRemoval
+                    ;;
+                    "3)")
+                        sudo $swarmCLEditor $swarmLogs/swarm.log
+                    ;;
+                esac
+            done
+            exitCode=0
         ;;
     esac
 done
