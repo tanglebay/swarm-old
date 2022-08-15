@@ -24,22 +24,21 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                     ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                     if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
-                        sudo rm -rf $swarmHome $swarmConfigs/*.* > /dev/null 2>&1
+                        sudo rm -rf $swarmHome $swarmConfigs > /dev/null 2>&1
                         sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
+                        # Load new env
+                        source /var/lib/swarm/environment
+
                         if [ ! -d "$swarmConfigs" ]; then
                             sudo mkdir -p $swarmConfigs
                         fi
-                        if [ -d "/etc/swarm" ]; then
-                            sudo mv -f $swarmHome/configs/*.cfg /etc/swarm > /dev/null 2>&1
-                            sudo rm -rf $swarmHome/configs > /dev/null 2>&1
+                        if [ -d "/etc/swarm/configs" ]; then
+                            swarmConfigs="/etc/swarm/configs"
+                            sudo mv -f $swarmHome/configs /etc/swarm > /dev/null 2>&1
                         fi
-
 
                         sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
                         echo 25
-
-                        # Load new env
-                        source /var/lib/swarm/environment
 
                         source $swarmModule/swarmParser
 
@@ -142,8 +141,16 @@ else
             if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                 ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                 if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
-                    sudo rm -rf $swarmHome > /dev/null 2>&1
+                    sudo rm -rf $swarmHome $swarmConfigs > /dev/null 2>&1
                     sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
+                    source /var/lib/swarm/environment
+                    if [ ! -d "$swarmConfigs" ]; then
+                        sudo mkdir -p $swarmConfigs
+                    fi
+                    if [ -d "/etc/swarm/configs" ]; then
+                        swarmConfigs="/etc/swarm/configs"
+                        sudo mv -f $swarmHome/configs /etc/swarm > /dev/null 2>&1
+                    fi
                     sudo cat /var/lib/swarm/templates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
                     source $swarmModule/swarmUpdaterAfter
                 fi
