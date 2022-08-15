@@ -26,16 +26,24 @@ do
         source ${!swarmAppModule}/${swarmAppPrefix}Parser
         swarmAppRestart=restart${swarmAppPrefix^}
         if [ "${!swarmAppRestart}" = "true" ]; then
-            sudo systemctl restart $swarmApp > /dev/null 2>&1
             if [ "$swarmApp" = "shimmer-hornet" ]; then
-                sleep 10
                 for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                 do
-                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                        sudo systemctl restart shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                    if [ -f "/usr/bin/shimmer-$shimmerInxPlugin" ]; then
+                        sudo systemctl stop shimmer-$shimmerInxPlugin 2>/dev/null
                     fi
                 done
-                unset restartShimmerHornet shimmerInxPlugin
+                unset shimmerInxPlugin
+                sudo systemctl restart $swarmApp > /dev/null 2>&1
+                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                do
+                    if [ -f "/usr/bin/shimmer-$shimmerInxPlugin" ]; then
+                        sudo systemctl start shimmer-$shimmerInxPlugin 2>/dev/null
+                    fi
+                done
+                unset shimmerInxPlugin restartShimmerHornet
+            else
+                sudo systemctl restart $swarmApp > /dev/null 2>&1
             fi
         fi
         unset swarmAppRestart swarmAppModule
