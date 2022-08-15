@@ -9,14 +9,13 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 echo 0
                 echo 10
                 if [ ! -d "$swarmTmp" ]; then
+                    sudo mkdir -p $swarmTmp
+                fi
+                if [ ! -d "$swarmTmp" ]; then
                     sudo mkdir -p $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
                 fi
                 echo 20
                 sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
-                if [ -f "$swarmLogs/githubVersion" ]; then
-                    sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
-                fi
-
                 echo 25
                 swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/checksum.txt)
                 sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
@@ -124,7 +123,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
             exit 0
         else
             if [ -d "$swarmTmp" ]; then
-                sudo rm -rf $swarmTmp > /dev/null 2>&1
+                sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
             fi
             if [ -f "/tmp/watchdog.lock" ]; then
                 sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
@@ -137,14 +136,15 @@ if [ "$swarmManualUpdate" = "true" ]; then
 else
     if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
         if [ "$swarmAuth" = "200" ]; then
+            if [ ! -d "$swarmTmp" ]; then
+                sudo mkdir -p $swarmTmp
+            fi
             if [ ! -d "$swarmTmp/v$latestSwarmVersion" ]; then
                 sudo mkdir -p $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
             fi
 
+            # Backup current configs
             sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
-            if [ -f "$swarmLogs/githubVersion" ]; then
-                sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
-            fi
 
             swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/checksum.txt)
             sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
@@ -169,11 +169,11 @@ else
                     source $swarmModule/swarmUpdaterAfter
                 fi
                 if [ -d "$swarmTmp" ]; then
-                    sudo rm -rf $swarmTmp > /dev/null 2>&1
+                    sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
                 fi
             else
                 if [ -d "$swarmTmp" ]; then
-                    sudo rm -rf $swarmTmp > /dev/null 2>&1
+                    sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
                 fi
             fi
         fi
