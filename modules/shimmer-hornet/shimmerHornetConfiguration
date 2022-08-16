@@ -30,6 +30,9 @@ while [ $exitCode -lt 1 ]; do
         exitCode=1
         if [ "$restartShimmerHornet" = "true" ] && [ -f "/usr/bin/shimmer-hornet" ]; then
             if (whiptail --title "Hornet [SHIMMER] Menu" --yesno "Would you like to apply the changes and restart hornet?" 8 65); then
+                if [ ! -f "/tmp/shimmer-hornet.lock" ]; then
+                    sudo touch /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                fi
                 {
                     echo 0
                     echo 20
@@ -38,6 +41,9 @@ while [ $exitCode -lt 1 ]; do
                     for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                     do
                         if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                            if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                            fi
                             sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
                         fi
                     done
@@ -49,6 +55,9 @@ while [ $exitCode -lt 1 ]; do
                     do
                         if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
                             sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                            if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                            fi
                         fi
                     done
                     unset shimmerInxPlugin
@@ -56,6 +65,9 @@ while [ $exitCode -lt 1 ]; do
                     sleep 0.25
                 } | whiptail --gauge "Please wait while the changes are applied and Hornet is restarted..." 8 65 0
                 unset restartShimmerHornet
+                if [ -f "/tmp/shimmer-hornet.lock" ]; then
+                    sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                fi
             fi
         fi
     fi
@@ -166,6 +178,19 @@ while [ $exitCode -lt 1 ]; do
                             if (whiptail --title "Hornet [SHIMMER] API & JWT" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
                                 shimmerHornetApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
                                 sudo sed -i 's~^shimmerHornetApiJwtSalt=.*~shimmerHornetApiJwtSalt="'$shimmerHornetApiJwtSalt'"~' $swarmConfigs/shimmer-hornet.cfg
+                                if [ -f "/tmp/shimmer-hornet.lock" ]; then
+                                    sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                                fi
+                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                do
+                                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                        if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                            sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                        fi
+                                        sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                    fi
+                                done
+                                unset shimmerInxPlugin
                                 {
                                     echo 0
                                     echo 15
@@ -184,6 +209,19 @@ while [ $exitCode -lt 1 ]; do
                                     fi
                                     echo 100
                                 } | whiptail --gauge "Please wait while all JWT tokens will be revoked..." 8 65 0
+                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                do
+                                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                        if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                        fi
+                                        sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                    fi
+                                done
+                                unset shimmerInxPlugin
+                                if [ -f "/tmp/shimmer-hornet.lock" ]; then
+                                    sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                                fi
                             fi
                         else
                             whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "Please install Hornet first." 8 65

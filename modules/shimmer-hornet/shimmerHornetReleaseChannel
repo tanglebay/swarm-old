@@ -17,8 +17,33 @@ if [ "$shimmerHornetRelease" != "$currentShimmerHornetRelease" ]; then
         source $proxyModule/proxyAutomaticDeployment
         echo 90
         if [ "$shimmerHornetUpdated" = "true" ] || [ "$restartShimmerHornet" = "true" ]; then
+            if [ ! -f "/tmp/shimmer-hornet.lock" ]; then
+                sudo touch /tmp/shimmer-hornet.lock > /dev/null 2>&1
+            fi
+            for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+            do
+                if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                    if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                        sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                    fi
+                    sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                fi
+            done
+            unset shimmerInxPlugin
             sudo systemctl restart shimmer-hornet
-            unset restartShimmerHornet
+            for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+            do
+                if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                    if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                        sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                    fi
+                    sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                fi
+            done
+            unset restartShimmerHornet shimmerInxPlugin
+            if [ -f "/tmp/shimmer-hornet.lock" ]; then
+                sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+            fi
         fi
         echo 100
     } | whiptail --gauge "Please wait while Hornet is prepared..." 8 65 0

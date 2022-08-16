@@ -27,6 +27,9 @@ while [ $exitCode -lt 1 ]; do
         exitCode=1
         if [ "$restartIotaHornet" = "true" ] && [ -f "/usr/bin/iota-hornet" ]; then
             if (whiptail --title "Hornet [IOTA] Menu" --yesno "Would you like to apply the changes and restart hornet?" 8 65); then
+                if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                    sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                fi
                 {
                     echo 0
                     echo 33
@@ -38,6 +41,9 @@ while [ $exitCode -lt 1 ]; do
                     sleep 0.25
                 } | whiptail --gauge "Please wait while the changes are applied and Hornet is restarted..." 8 65 0
                 unset restartIotaHornet
+                if [ -f "/tmp/iota-hornet.lock" ]; then
+                    sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                fi
             fi
         fi
     fi
@@ -173,6 +179,9 @@ while [ $exitCode -lt 1 ]; do
                             if (whiptail --title "Hornet [IOTA] API & JWT" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
                                 iotaHornetApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
                                 sudo sed -i 's~^iotaHornetApiJwtSalt=.*~iotaHornetApiJwtSalt="'$iotaHornetApiJwtSalt'"~' $swarmConfigs/iota-hornet.cfg
+                                if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                    sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                                fi
                                 {
                                     echo 0
                                     echo 15
@@ -191,6 +200,9 @@ while [ $exitCode -lt 1 ]; do
                                     fi
                                     echo 100
                                 } | whiptail --gauge "Please wait while all JWT tokens will be revoked..." 8 65 0
+                                if [ -f "/tmp/iota-hornet.lock" ]; then
+                                    sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                fi
                             fi
                         else
                             whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Please install Hornet (IOTA) first." 8 65

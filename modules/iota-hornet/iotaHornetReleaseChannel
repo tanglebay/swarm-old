@@ -14,8 +14,14 @@ if [ "$iotaHornetRelease" != "$currentIotaHornetRelease" ]; then
         source $proxyModule/proxyAutomaticDeployment
         echo 90
         if [ "$iotaHornetUpdated" = "true" ] || [ "$restartIotaHornet" = "true" ]; then
+            if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+            fi
             sudo systemctl restart iota-hornet
             unset restartIotaHornet
+            if [ -f "/tmp/iota-hornet.lock" ]; then
+                sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+            fi
         fi
         echo 100
     } | whiptail --gauge "Please wait while Hornet- is prepared..." 8 65 0
