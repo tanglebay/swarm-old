@@ -23,22 +23,10 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                     ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                     if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
-                        sudo rm -rf $swarmHome $swarmConfigs > /dev/null 2>&1
+                        sudo rm -rf $swarmHome > /dev/null 2>&1
                         sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
                         # Load new env
                         source /var/lib/swarm/environment
-
-                        # if [ ! -d "/etc/swarm" ]; then
-                        #     sudo mkdir -p /etc/swarm > /dev/null 2>&1
-                        # fi
-                        # if [ -d "/etc/swarm" ]; then
-                        #     sudo mv -f $swarmHome/configs /etc/swarm > /dev/null 2>&1
-                        #     if [ "$swarmConfigs" != "/etc/swarm/configs" ]; then
-                        #         swarmConfigs="/etc/swarm/configs"
-                        #         sudo sed -i 's~^swarmConfigs=.*~swarmConfigs="/etc/swarm/configs"~' /var/lib/swarm/environment
-                        #     fi
-                        # fi
-
                         sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
                         echo 25
 
@@ -113,8 +101,8 @@ if [ "$swarmManualUpdate" = "true" ]; then
             source $swarmHome/version
             whiptail --title "SWARM - Update" --msgbox "\nSWARM successfully updated to v$version (build $build).\n\nChecksum: $swarmChecksum" 14 65
             unset swarmUpdated swarmChecksum
-            if [ -d "$swarmTmp" ]; then
-                sudo rm -rf $swarmTmp > /dev/null 2>&1
+            if [ -d "$swarmTmp/v$latestSwarmVersion" ]; then
+                sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
             fi
             if [ -f "/tmp/watchdog.lock" ]; then
                 sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
@@ -122,7 +110,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
             clear
             exit 0
         else
-            if [ -d "$swarmTmp" ]; then
+            if [ -d "$swarmTmp/v$latestSwarmVersion" ]; then
                 sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
             fi
             if [ -f "/tmp/watchdog.lock" ]; then
