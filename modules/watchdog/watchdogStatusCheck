@@ -31,6 +31,15 @@ do
             fi
             if [ $swarmAppStatusCounter -lt 5 ] 2>/dev/null; then
                 if [ $swarmAppStatusCounter -ge 1 ] 2>/dev/null; then
+                    if [ "$swarmApp" = "shimmer-hornet" ]; then
+                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                        do
+                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                            fi
+                        done
+                        unset shimmerInxPlugin
+                    fi
                     sudo systemctl stop $swarmApp 2>/dev/null
                     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
                     if [ "${!swarmAppAllowDbReset}" = "true" ]; then
@@ -75,20 +84,25 @@ do
                         fi
                     fi
                     sudo systemctl start $swarmApp 2>/dev/null
-                    if [ "$swarmApp" = "shimmer-hornet" ]; then
-                        sleep 10
-                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                        do
-                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                sudo systemctl restart shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                            fi
-                        done
-                        unset shimmerInxPlugin
-                    fi
                     echo "$restartDate [WACHTDOG] $swarmAppName - Service restarted." >> $swarmLogs/swarm.log
                     if [ $swarmAppStatusCounter -eq 1 ] 2>/dev/null; then
                         telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Service restarted."
                         source $watchdogModule/watchdogTelegram
+                    fi
+                    if [ "$swarmApp" = "shimmer-hornet" ]; then
+                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                        do
+                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                sudo systemctl restart shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                if [ $swarmAppStatusCounter -eq 1 ] 2>/dev/null; then
+                                    shimmerInxPluginName="INX-${shimmerInxPlugin^} (Shimmer)"
+                                    telegramText="Host: $HOSTNAME%0AApp: $shimmerInxPluginName%0A%0AAction: Service restarted."
+                                    source $watchdogModule/watchdogTelegram
+                                    unset shimmerInxPluginName
+                                fi
+                            fi
+                        done
+                        unset shimmerInxPlugin
                     fi
                     let swarmAppStatusCounter=$swarmAppStatusCounter+1
                 else
