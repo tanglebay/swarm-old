@@ -34,13 +34,13 @@ do
                     sudo systemctl stop $swarmApp 2>/dev/null
                     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
                     if [ "${!swarmAppAllowDbReset}" = "true" ]; then
-                        if [ "$swarmApp" = "iota-hornet" ] && [[ $iotaHornetPlugins = *participation* ]] && [ $swarmAppStatusCounter -eq 2 ] 2>/dev/null; then
+                        if [ "$swarmApp" = "iota-hornet" ] && [[ $iotaHornetPlugins = *participation* ]] && [ $swarmAppStatusCounter -eq 3 ] 2>/dev/null; then
                             sudo rm -rf $iotaHornetHome/${iotaHornetNetwork}db/participation 2>/dev/null
                             echo "$restartDate [WACHTDOG] $swarmAppName - Participation database reset because of too many failed restarts." >> $swarmLogs/swarm.log
                             telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Participation database reset because of too many failed restarts."
                             source $watchdogModule/watchdogTelegram
                         fi
-                        if [ $swarmAppStatusCounter -ge 3 ] 2>/dev/null; then
+                        if [ $swarmAppStatusCounter -ge 4 ] 2>/dev/null; then
                             if [ "${!swarmAppAllowDbReset}" = "true" ]; then
                                 if [ "$killall" = "true" ]; then
                                     sudo killall -s SIGKILL $swarmApp 2>/dev/null
@@ -69,6 +69,7 @@ do
                                         telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Database reset because of too many failed restarts."
                                         source $watchdogModule/watchdogTelegram
                                     fi
+                                    unset swarmAppDbDeleted
                                 fi
                             fi
                         fi
