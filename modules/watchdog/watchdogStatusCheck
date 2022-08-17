@@ -7,7 +7,7 @@ do
         source $swarmModule/swarmAppVars
 
         swarmAppStatusCounter=${swarmAppPrefix}StatusCounter
-        swarmAppStatusCounter=$(echo ${!swarmAppStatusCounter})
+        swarmAppStatusCounter=${!swarmAppStatusCounter}
         if [ -n "${swarmAppStatusCounter}" ]; then
             if [ ${swarmAppStatusCounter} -ne ${swarmAppStatusCounter} ] 2>/dev/null; then
                 swarmAppStatusCounter=0
@@ -65,7 +65,7 @@ do
                                 fi
                                 if [ "$swarmAppDbDeleted" = "true" ]; then
                                     echo "$restartDate [WACHTDOG] $swarmAppName - Database reset because of too many failed restarts." >> $swarmLogs/swarm.log
-                                    if [ $swarmAppStatusCounter -eq 3 ] 2>/dev/null; then
+                                    if [ $swarmAppStatusCounter -eq 4 ] 2>/dev/null; then
                                         telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Database reset because of too many failed restarts."
                                         source $watchdogModule/watchdogTelegram
                                     fi
@@ -74,7 +74,6 @@ do
                             fi
                         fi
                     fi
-                    let swarmAppStatusCounter=$swarmAppStatusCounter+1
                     sudo systemctl start $swarmApp 2>/dev/null
                     if [ "$swarmApp" = "shimmer-hornet" ]; then
                         sleep 10
@@ -91,6 +90,7 @@ do
                         telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Service restarted."
                         source $watchdogModule/watchdogTelegram
                     fi
+                    let swarmAppStatusCounter=$swarmAppStatusCounter+1
                 else
                     let swarmAppStatusCounter=$swarmAppStatusCounter+1
                 fi
