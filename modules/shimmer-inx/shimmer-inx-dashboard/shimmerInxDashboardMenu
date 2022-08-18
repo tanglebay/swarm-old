@@ -5,6 +5,7 @@ while [ $exitCode -lt 1 ]; do
     clear
     CHOICE=$(
         whiptail --title "INX [SHIMMER] Dashboard" --menu "\nChoose an option" 24 65 0 \
+        "" "" \
         "1)" "INX-Dashboard Info" \
         "2)" "INX-Dashboard Configuration" \
         "3)" "INX-Dashboard Management" \
@@ -18,13 +19,14 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
-            source $shimmerInxDashboardModules/shimmerInxDashboardInfo
+            source $shimmerInxDashboardModule/shimmerInxDashboardInfo
         ;;
         "2)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
                     whiptail --title "INX-Dashboard [SHIMMER] Configuration" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
                     "1)" "INX-Dashboard Configuration" \
                     "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
                 )
@@ -36,13 +38,14 @@ while [ $exitCode -lt 1 ]; do
 
                 case $CHOICE in
                     "1)")
-                        source $shimmerInxDashboardModules/shimmerInxDashboardConfiguration
+                        source $shimmerInxDashboardModule/shimmerInxDashboardConfiguration
                     ;;
                     "2)")
                         while [ $exitCode -lt 1 ]; do
                             clear
                             CHOICE=$(
                                 whiptail --title "INX-Dashboard [SHIMMER] Configuration" --menu "\nChoose an option" 24 65 0 \
+                                "" "" \
                                 "1)" "config.json" \
                                 "2)" "shimmer-inx-dashboard.cfg (SWARM)" 3>&2 2>&1 1>&3
                             )
@@ -57,6 +60,9 @@ while [ $exitCode -lt 1 ]; do
                                     if [ -f "$shimmerInxDashboardHome/config.json" ]; then
                                         sudo $swarmCLEditor $shimmerInxDashboardHome/config.json
                                         if (whiptail --title "INX-Dashboard [SHIMMER] Configuration" --yesno --defaultno "Would you like to restart INX-Dashboard now?" 8 65); then
+                                            if [ ! -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                                sudo touch /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                            fi
                                             {
                                                 echo 0
                                                 echo 50
@@ -64,6 +70,9 @@ while [ $exitCode -lt 1 ]; do
                                                 echo 100
                                                 sleep 0.25
                                             } | whiptail --gauge "Please wait while INX-Dashboard is restarting..." 8 65 0
+                                            if [ -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                                sudo rm -rf /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                            fi
                                         fi
                                     else
                                         whiptail --title "INX-Dashboard [SHIMMER] Configuration" --msgbox "INX-Dashboard is not installed." 8 65
@@ -73,14 +82,20 @@ while [ $exitCode -lt 1 ]; do
                                     sudo $swarmCLEditor $swarmConfigs/shimmer-inx-dashboard.cfg
                                     if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
                                         if (whiptail --title "INX-Dashboard [SHIMMER] Configuration" --yesno --defaultno "Would you like to restart INX-Dashboard now?" 8 65); then
+                                            if [ ! -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                                sudo touch /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                            fi
                                             {
                                                 echo 0
-                                                source $shimmerInxDashboardModules/shimmerInxDashboardParser
+                                                source $shimmerInxDashboardModule/shimmerInxDashboardParser
                                                 echo 50
                                                 sudo systemctl restart shimmer-inx-dashboard > /dev/null 2>&1
                                                 echo 100
                                                 sleep 0.25
                                             } | whiptail --gauge "Please wait while INX-Dashboard is restarting..." 8 65 0
+                                            if [ -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                                sudo rm -rf /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                            fi
                                         fi
                                     fi
                                 ;;
@@ -98,6 +113,7 @@ while [ $exitCode -lt 1 ]; do
                     clear
                     CHOICE=$(
                         whiptail --title "INX-Dashboard [SHIMMER] Management" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
                         "1)" "Show INX-Dashboard log" \
                         "2)" "Stop/Start INX-Dashboard" \
                         "3)" "Reset INX-Dashboard config" 3>&2 2>&1 1>&3
@@ -115,53 +131,76 @@ while [ $exitCode -lt 1 ]; do
                             clear
                         ;;
                         "2)")
-                            CHOICE=$(
-                                whiptail --title "INX-Dashboard [SHIMMER] Management" --menu "\nChoose your option" 24 65 0 \
-                                "1)" "Restart INX-Dashboard" \
-                                "2)" "Start INX-Dashboard" \
-                                "3)" "Stop INX-Dashboard" \
-                                "4)" "Status INX-Dashboard" 3>&2 2>&1 1>&3
-                            )
-                            case $CHOICE in
-                                "1)")
-                                    {
-                                        echo 0
-                                        echo 50
-                                        sudo systemctl restart shimmer-inx-dashboard > /dev/null 2>&1
-                                        echo 100
-                                        sleep 0.25
-                                    } | whiptail --gauge "Please wait while INX-Dashboard is restarting..." 8 65 0
-                                    whiptail --title "INX-Dashboard [SHIMMER] Management" --msgbox "INX-Dashboard successfully restarted." 8 65
-                                ;;
-                                "2)")
-                                    {
-                                        echo 0
-                                        echo 50
-                                        sudo systemctl start shimmer-inx-dashboard > /dev/null 2>&1
-                                        echo 100
-                                        sleep 0.25
-                                    } | whiptail --gauge "Please wait while INX-Dashboard is starting..." 8 65 0
-                                    whiptail --title "INX-Dashboard [SHIMMER] Management" --msgbox "INX-Dashboard successfully started." 8 65
-                                ;;
-                                "3)")
-                                    {
-                                        echo 0
-                                        echo 50
-                                        sudo systemctl stop shimmer-inx-dashboard > /dev/null 2>&1
-                                        echo 100
-                                        sleep 0.25
-                                    } | whiptail --gauge "Please wait while INX-Dashboard is stopping..." 8 65 0
-                                    whiptail --title "INX-Dashboard [SHIMMER] Management" --msgbox "INX-Dashboard successfully stopped." 8 65
-                                ;;
-                                "4)")
-                                    shimmerInxDashboardStatus="$(sudo systemctl status shimmer-inx-dashboard)"
-                                    whiptail --title "INX-Dashboard [SHIMMER] Management" --msgbox "$shimmerInxDashboardStatus" 15 65
-                                ;;
-                            esac
+                            while [ $exitCode -lt 1 ]; do
+                                CHOICE=$(
+                                    whiptail --title "INX-Dashboard [SHIMMER] Management" --menu "\nChoose your option" 24 65 0 \
+                                    "" "" \
+                                    "1)" "Restart INX-Dashboard" \
+                                    "2)" "Start INX-Dashboard" \
+                                    "3)" "Stop INX-Dashboard" \
+                                    "4)" "Status INX-Dashboard" 3>&2 2>&1 1>&3
+                                )
+                                exitStatus=$?
+                                if [ "$exitStatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        if [ ! -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                            sudo touch /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                        fi
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl restart shimmer-inx-dashboard > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while INX-Dashboard is restarting..." 8 65 0
+                                        if [ -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                        fi
+                                        whiptail --title "INX-Dashboard [SHIMMER] Management" --msgbox "INX-Dashboard successfully restarted." 8 65
+                                    ;;
+                                    "2)")
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl start shimmer-inx-dashboard > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while INX-Dashboard is starting..." 8 65 0
+                                        if [ -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                        fi
+                                        whiptail --title "INX-Dashboard [SHIMMER] Management" --msgbox "INX-Dashboard successfully started." 8 65
+                                    ;;
+                                    "3)")
+                                        if [ ! -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                            sudo touch /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                        fi
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl stop shimmer-inx-dashboard > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while INX-Dashboard is stopping..." 8 65 0
+                                        whiptail --title "INX-Dashboard [SHIMMER] Management" --msgbox "INX-Dashboard successfully stopped." 8 65
+                                    ;;
+                                    "4)")
+                                        shimmerInxDashboardStatus="$(sudo systemctl status shimmer-inx-dashboard)"
+                                        whiptail --title "INX-Dashboard [SHIMMER] Management" --msgbox "$shimmerInxDashboardStatus" 15 65
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
                         ;;
                         "3)")
                             if (whiptail --title "INX-Dashboard [SHIMMER] Management" --yesno --defaultno "Are you sure you want to reset the INX-Dashboard config file?" 8 65); then
                                 source $swarmConfigs/shimmer-inx-dashboard.cfg
+                                if [ ! -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                    sudo touch /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                fi
                                 {
                                     echo 0
                                     echo 20
@@ -169,12 +208,15 @@ while [ $exitCode -lt 1 ]; do
                                     echo 40
                                     sudo -u inx wget -q -O $shimmerInxDashboardHome/config.json https://raw.githubusercontent.com/iotaledger/inx-dashboard/develop/config_template.json
                                     echo 60
-                                    source $shimmerInxDashboardModules/shimmerInxDashboardParser
+                                    source $shimmerInxDashboardModule/shimmerInxDashboardParser
                                     echo 80
                                     sudo systemctl start shimmer-inx-dashboard > /dev/null 2>&1
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the config reset is running (this may take a while)..." 8 65 0
+                                if [ -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                    sudo rm -rf /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                fi
                                 whiptail --title "INX-Dashboard [SHIMMER] Debugging" --msgbox "INX-Dashboard config successfully reset." 8 65
                             fi
                         ;;
@@ -189,6 +231,7 @@ while [ $exitCode -lt 1 ]; do
             while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
                     whiptail --title "INX-Dashboard [SHIMMER] Installer" --menu "\nChoose your option" 24 65 0 \
+                    "" "" \
                     "1)" "Update INX-Dashboard" \
                     "2)" "Install INX-Dashboard" \
                     "3)" "Remove INX-Dashboard" 3>&2 2>&1 1>&3
@@ -204,20 +247,23 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
                             if (whiptail --title "INX-Dashboard [SHIMMER] Installer" --yesno --defaultno "Do you really want to update INX-Dashboard?" 8 65); then
                                 # Update INX-Dashboard
-                                source $shimmerInxDashboardModules/shimmerInxDashboardVersion
+                                source $shimmerInxDashboardModule/shimmerInxDashboardVersion
                                 if [ ! -z "$latestShimmerInxDashboardVersion" ]; then
+                                    if [ ! -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                        sudo touch /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                    fi
                                     {
                                         echo 0
                                         echo 33
-                                        source $shimmerInxDashboardModules/shimmerInxDashboardVersion
+                                        source $shimmerInxDashboardModule/shimmerInxDashboardVersion
                                         echo 66
-                                        source $shimmerInxDashboardModules/shimmerInxDashboardInstaller                      
+                                        source $shimmerInxDashboardModule/shimmerInxDashboardInstaller                      
                                         echo 100
                                         sleep 0.5
                                     } | whiptail --gauge "Please wait while INX-Dashboard is updated..." 8 65 0
                                     {
                                         # CALL MODULE CONFIGPARSER
-                                        source $shimmerInxDashboardModules/shimmerInxDashboardParser
+                                        source $shimmerInxDashboardModule/shimmerInxDashboardParser
                                         sudo systemctl restart shimmer-inx-dashboard 2>/dev/null
                                     } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
                                     shimmerInxDashboardChecksum=$(cat /tmp/shimmer-inx-dashboard.checksum 2>/dev/null)
@@ -225,6 +271,9 @@ while [ $exitCode -lt 1 ]; do
                                     if [ -f "/tmp/shimmer-inx-dashboard.checksum" ]; then
                                         sudo rm -rf /tmp/shimmer-inx-dashboard.checksum 2>/dev/null
                                         unset shimmerInxDashboardChecksum
+                                    fi
+                                    if [ -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                        sudo rm -rf /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
                                     fi
                                 else
                                     whiptail --title "INX-Dashboard [SHIMMER] Installer" --msgbox "Sorry, but INX-Dashboard update aborted." 8 65
@@ -238,18 +287,21 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/shimmer-hornet" ]; then
                             # INSTALL INX-Dashboard
                             if [ ! -f "/usr/bin/shimmer-inx-dashboard" ]; then
+                                if [ ! -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                    sudo touch /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                fi
                                 source $swarmConfigs/shimmer-inx-dashboard.cfg
-                                source $shimmerInxDashboardModules/shimmerInxDashboardVersion
+                                source $shimmerInxDashboardModule/shimmerInxDashboardVersion
                                 {
                                     echo 0
                                     echo 20
-                                    source $shimmerInxDashboardModules/shimmerInxDashboardInstaller
+                                    source $shimmerInxDashboardModule/shimmerInxDashboardInstaller
                                     echo 40
                                     if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
                                         source $swarmConfigs/shimmer-inx-dashboard.cfg
                                         echo 60
                                         # CALL MODULE CONFIGPARSER
-                                        source $shimmerInxDashboardModules/shimmerInxDashboardParser
+                                        source $shimmerInxDashboardModule/shimmerInxDashboardParser
                                         echo 70
                                         sudo systemctl start shimmer-inx-dashboard > /dev/null 2>&1
                                         sleep 2
@@ -275,11 +327,14 @@ while [ $exitCode -lt 1 ]; do
                                         echo 25
                                         source $swarmConfigs/shimmer-inx-dashboard.cfg
                                         echo 50
-                                        source $shimmerInxDashboardModules/shimmerInxDashboardRemoval
+                                        source $shimmerInxDashboardModule/shimmerInxDashboardRemoval
                                         echo 75
                                         echo 100
                                     } | whiptail --gauge "Please wait while the INX-Dashboard files are removed...." 8 65 0
                                     whiptail --title "INX-Dashboard [SHIMMER] Installer" --msgbox "Error while installing INX-Dashboard! Please try again later." 8 65
+                                fi
+                                if [ -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                    sudo rm -rf /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
                                 fi
                             else
                                 if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
@@ -300,7 +355,7 @@ while [ $exitCode -lt 1 ]; do
                             {
                                 echo 0
                                 echo 50
-                                source $shimmerInxDashboardModules/shimmerInxDashboardRemoval
+                                source $shimmerInxDashboardModule/shimmerInxDashboardRemoval
                                 echo 100
                                 sleep 0.5
                             } | whiptail --gauge "Please wait while INX-Dashboard will be removed..." 8 65 0

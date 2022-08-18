@@ -1,0 +1,73 @@
+#!/bin/bash
+source $swarmConfigs/latest-versions.cfg
+
+if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
+    for swarmApp in ${swarmApps[@]}
+    do
+        if [ -f "/usr/bin/$swarmApp" ]; then
+            source $swarmModule/swarmAppVars
+
+            swarmAppModule=${swarmAppPrefix}Module
+            swarmAppAutoUpdate=${swarmAppPrefix}AutoUpdate
+
+            if [ "${!swarmAppAutoUpdate}" = "true" ] && [ ! -f "/tmp/$swarmApp.lock" ]; then
+                source ${!swarmAppModule}/${swarmAppPrefix}Version
+                swarmAppVersion=${swarmAppPrefix}Version
+                swarmAppLatestVersion=latest${swarmAppPrefix^}Version
+                if [ "$(printf '%s\n' "${!swarmAppLatestVersion}" "${!swarmAppVersion}" | sort -V | head -n1)" != "${!swarmAppLatestVersion}" ] && [ ! -z "${!swarmAppLatestVersion}" ]; then
+                    if [ ! -f "/tmp/$swarmApp.lock" ]; then
+                        sudo touch /tmp/$swarmApp.lock > /dev/null 2>&1
+                    fi
+                    if [ "$swarmApp" = "goshimmer" ]; then
+                        goshimmerAllowDbDownload=false
+                        sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb
+                    fi
+                    swarmAppCurrentVersion=${!swarmAppVersion}
+                    source ${!swarmAppModule}/${swarmAppPrefix}Installer
+                    source ${!swarmAppModule}/${swarmAppPrefix}Version
+                    swarmAppVersion=${swarmAppPrefix}Version
+                    swarmAppUpdated=${swarmAppPrefix}Updated
+                    if [ "$swarmAppCurrentVersion" != "${!swarmAppVersion}" ] || [ "${!swarmAppUpdated}" = "true" ]; then
+                        restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                        # CALL MODULE CONFIGPARSER
+                        source ${!swarmAppModule}/${swarmAppPrefix}Parser
+                        swarmAppRestart=restart${swarmAppPrefix^}
+                        if [ "${!swarmAppRestart}" = "true" ]; then
+                            if [ "$swarmApp" = "shimmer-hornet" ]; then
+                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                do
+                                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                        sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                    fi
+                                done
+                                unset shimmerInxPlugin
+                            fi
+                            sudo systemctl restart $swarmApp > /dev/null 2>&1
+                            if [ "$swarmApp" = "shimmer-hornet" ]; then
+                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                do
+                                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                        sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                    fi
+                                done
+                                unset shimmerInxPlugin
+                            fi
+                        fi
+                        swarmAppChecksum=${swarmAppPrefix}Checksum
+                        echo "$restartDate [AUTOUPDATE] New Version (${!swarmAppLatestVersion}) of $swarmAppName installed. Checksum: ${!swarmAppChecksum}" >> $swarmLogs/swarm.log
+                        telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: New Version <b>${!swarmAppLatestVersion}</b> installed.%0A%0AChecksum: ${!swarmAppChecksum}"
+                        source $watchdogModule/watchdogTelegram
+                        if [ -f "/tmp/$swarmApp.checksum" ]; then
+                            sudo rm -rf /tmp/$swarmApp.checksum > /dev/null 2>&1
+                        fi
+                    if [ -f "/tmp/$swarmApp.lock" ]; then
+                        sudo rm -rf /tmp/$swarmApp.lock > /dev/null 2>&1
+                    fi
+                    fi
+                fi
+            fi
+            unset swarmAppName swarmAppPrefix swarmAppVersion swarmAppLatestVersion swarmAppCurrentVersion swarmAppUpdated restartDate swarmAppRestart swarmAppChecksum telegramText
+        fi
+    done
+    unset swarmApp
+fi

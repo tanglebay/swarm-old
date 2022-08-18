@@ -6,6 +6,7 @@ while [ $exitCode -lt 1 ]; do
     clear
     CHOICE=$(
         whiptail --title "Hornet [IOTA] Menu" --menu "\nChoose an option" 24 65 0 \
+        "" "" \
         "1)" "Hornet Info" \
         "2)" "Hornet Configurations" \
         "3)" "Hornet Management" \
@@ -18,13 +19,14 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
-            source $iotaHornetModules/iotaHornetInfo
+            source $iotaHornetModule/iotaHornetInfo
         ;;
         "2)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
                     whiptail --title "Hornet [IOTA] Configuration" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
                     "1)" "Hornet configuration" \
                     "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
                 )
@@ -36,13 +38,14 @@ while [ $exitCode -lt 1 ]; do
 
                 case $CHOICE in
                     "1)")
-                        source $iotaHornetModules/iotaHornetConfiguration
+                        source $iotaHornetModule/iotaHornetConfiguration
                     ;;
                     "2)")
                         while [ $exitCode -lt 1 ]; do
                             clear
                             CHOICE=$(
                                 whiptail --title "Hornet [IOTA] Configuration" --menu "\nChoose an option" 24 65 0 \
+                                "" "" \
                                 "1)" "Peering.json" \
                                 "2)" "Mainnet.json" \
                                 "3)" "Iota-Hornet.cfg (SWARM)" 3>&2 2>&1 1>&3
@@ -57,6 +60,9 @@ while [ $exitCode -lt 1 ]; do
                                 "1)")
                                     sudo $swarmCLEditor $iotaHornetHome/peering.json
                                     if (whiptail --title "Hornet [IOTA] Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                                        if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                            sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                                        fi
                                         {
                                             echo 0
                                             echo 50
@@ -64,11 +70,17 @@ while [ $exitCode -lt 1 ]; do
                                             echo 100
                                             sleep 0.25
                                         } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
+                                        if [ -f "/tmp/iota-hornet.lock" ]; then
+                                            sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                        fi
                                     fi
                                 ;;
                                 "2)")
                                     sudo $swarmCLEditor $iotaHornetHome/config.json
                                     if (whiptail --title "Hornet [IOTA] Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                                        if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                            sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                                        fi
                                         {
                                             echo 0
                                             echo 50
@@ -76,19 +88,28 @@ while [ $exitCode -lt 1 ]; do
                                             echo 100
                                             sleep 0.25
                                         } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
+                                        if [ -f "/tmp/iota-hornet.lock" ]; then
+                                            sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                        fi
                                     fi
                                 ;;
                                 "3)")
                                     sudo $swarmCLEditor $swarmConfigs/iota-hornet.cfg
                                     if (whiptail --title "Hornet [IOTA] Configuration" --yesno --defaultno "Would you like to restart hornet now?" 8 65); then
+                                        if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                            sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                                        fi
                                         {
                                             echo 0
-                                            source $iotaHornetModules/iotaHornetParser
+                                            source $iotaHornetModule/iotaHornetParser
                                             echo 50
                                             sudo systemctl restart itota-hornet > /dev/null 2>&1
                                             echo 100
                                             sleep 0.25
                                         } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
+                                        if [ -f "/tmp/iota-hornet.lock" ]; then
+                                            sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                        fi
                                     fi
                                 ;;
                             esac
@@ -105,9 +126,10 @@ while [ $exitCode -lt 1 ]; do
                     clear
                     CHOICE=$(
                         whiptail --title "Hornet [IOTA] Management" --menu "\nChoose your option" 24 65 0 \
-                        "1)" "Show Hornet log" \
-                        "2)" "Start/Stop Hornet" \
-                        "3)" "Event Validation" \
+                        "" "" \
+                        "1)" "Event Validation" \
+                        "2)" "Show Hornet log" \
+                        "3)" "Start/Stop Hornet" \
                         "4)" "Reset Hornet event database" \
                         "5)" "Reset Hornet all databases" \
                         "6)" "Reset Hornet config" 3>&2 2>&1 1>&3
@@ -118,60 +140,11 @@ while [ $exitCode -lt 1 ]; do
                     fi
                     case $CHOICE in
                         "1)")
-                            # Display last 65 lines of log
-                            sudo journalctl -fu iota-hornet | less -FRSXM
-                            clear
-                        ;;
-                        "2)")
-                            CHOICE=$(
-                                whiptail --title "Hornet [IOTA] Management" --menu "\nChoose your option" 24 65 0 \
-                                "1)" "Restart Hornet" \
-                                "2)" "Start Hornet" \
-                                "3)" "Stop Hornet" \
-                                "4)" "Status Hornet" 3>&2 2>&1 1>&3
-                            )
-                            case $CHOICE in
-                                "1)")
-                                    {
-                                        echo 0
-                                        echo 50
-                                        sudo systemctl restart iota-hornet > /dev/null 2>&1
-                                        echo 100
-                                        sleep 0.25
-                                    } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
-                                    whiptail --title "Hornet [IOTA] Management" --msgbox "Hornet successfully restarted" 8 65
-                                ;;
-                                "2)")
-                                    {
-                                        echo 0
-                                        echo 50
-                                        sudo systemctl start iota-hornet > /dev/null 2>&1
-                                        echo 100
-                                        sleep 0.25
-                                    } | whiptail --gauge "Please wait while Hornet is starting..." 8 65 0
-                                    whiptail --title "Hornet [IOTA] Management" --msgbox "Hornet successfully started" 8 65
-                                ;;
-                                "3)")
-                                    {
-                                        echo 0
-                                        echo 50
-                                        sudo systemctl stop iota-hornet > /dev/null 2>&1
-                                        echo 100
-                                        sleep 0.25
-                                    } | whiptail --gauge "Please wait while Hornet is stopping..." 8 65 0
-                                    whiptail --title "Hornet [IOTA] Management" --msgbox "Hornet successfully stopped." 8 65
-                                ;;
-                                "4)")
-                                    iotaHornetStatus="$(sudo systemctl status iota-hornet)"
-                                    whiptail --title "Hornet [IOTA] Management" --msgbox "$iotaHornetStatus" 15 65
-                                ;;
-                            esac
-                        ;;
-                        "3)")
                             while [ $exitCode -lt 1 ]; do
                                 clear
                                 CHOICE=$(
                                     whiptail --title "Hornet [IOTA] Events" --menu "\nChoose your option" 24 65 0 \
+                                    "" "" \
                                     "1)" "Event Validation" \
                                     "2)" "Show latest event results" 3>&2 2>&1 1>&3
                                 )
@@ -181,28 +154,35 @@ while [ $exitCode -lt 1 ]; do
                                 fi
                                 case $CHOICE in
                                     "1)")
-                                        CHOICE=$(
-                                            whiptail --title "Hornet [IOTA] Events" --menu "\nChoose your option" 18 65 0 \
-                                            "1)" "Validate Staking Event" \
-                                            "2)" "Validate Voting Event" 3>&2 2>&1 1>&3
-                                        )
-                                        exitstatus=$?
-                                        if [ "$exitstatus" != "1" ]; then
-                                            case $CHOICE in
-                                                "1)")
-                                                    eventType="staking"
-                                                ;;
-                                                "2)")
-                                                    eventType="ballot"
-                                                ;;
-                                            esac
-                                            eventId=$(whiptail --inputbox "\nPlease enter the event id you want to validate" 10 65 --title "Hornet [IOTA] Events" 3>&1 1>&2 2>&3)
-                                            exitStatus=$?
-                                            if [ $exitStatus != 1 ] && [ ! -z "$eventId" ]; then
-                                                eventNetwork="iota"
-                                                source $swarmPlugins/shared/eventValidation
+                                        while [ $exitCode -lt 1 ]; do
+                                            CHOICE=$(
+                                                whiptail --title "Hornet [IOTA] Events" --menu "\nChoose your option" 24 65 0 \
+                                                "" "" \
+                                                "1)" "Validate Staking Event" \
+                                                "2)" "Validate Voting Event" 3>&2 2>&1 1>&3
+                                            )
+                                            exitstatus=$?
+                                            if [ "$exitStatus" = "1" ]; then
+                                                exitCode=1
                                             fi
-                                        fi
+                                            if [ "$exitstatus" = "0" ]; then
+                                                case $CHOICE in
+                                                    "1)")
+                                                        eventType="staking"
+                                                    ;;
+                                                    "2)")
+                                                        eventType="ballot"
+                                                    ;;
+                                                esac
+                                                eventId=$(whiptail --inputbox "\nPlease enter the event id you want to validate" 10 65 --title "Hornet [IOTA] Events" 3>&1 1>&2 2>&3)
+                                                exitStatus=$?
+                                                if [ $exitStatus != 1 ] && [ ! -z "$eventId" ]; then
+                                                    eventNetwork="iota"
+                                                    source $swarmSharedModule/eventValidation
+                                                fi
+                                            fi
+                                        done
+                                        exitCode=0
                                     ;;
                                     "2)")
                                         if [ -f "/tmp/participation-event.log" ]; then
@@ -220,9 +200,82 @@ while [ $exitCode -lt 1 ]; do
                             done
                             exitCode=0
                         ;;
+                        "2)")
+                            # Display last 65 lines of log
+                            sudo journalctl -fu iota-hornet | less -FRSXM
+                            clear
+                        ;;
+                        "3)")
+                            while [ $exitCode -lt 1 ]; do
+                                CHOICE=$(
+                                    whiptail --title "Hornet [IOTA] Management" --menu "\nChoose your option" 24 65 0 \
+                                    "" "" \
+                                    "1)" "Restart Hornet" \
+                                    "2)" "Start Hornet" \
+                                    "3)" "Stop Hornet" \
+                                    "4)" "Status Hornet" 3>&2 2>&1 1>&3
+                                )
+                                exitStatus=$?
+                                if [ "$exitStatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                            sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                                        fi
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl restart iota-hornet > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while Hornet is restarting..." 8 65 0
+                                        if [ -f "/tmp/iota-hornet.lock" ]; then
+                                            sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                        fi
+                                        whiptail --title "Hornet [IOTA] Management" --msgbox "Hornet successfully restarted" 8 65
+                                    ;;
+                                    "2)")
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl start iota-hornet > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while Hornet is starting..." 8 65 0
+                                        if [ -f "/tmp/iota-hornet.lock" ]; then
+                                            sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                        fi
+                                        whiptail --title "Hornet [IOTA] Management" --msgbox "Hornet successfully started" 8 65
+                                    ;;
+                                    "3)")
+                                        if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                            sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                                        fi
+                                        {
+                                            echo 0
+                                            echo 50
+                                            sudo systemctl stop iota-hornet > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while Hornet is stopping..." 8 65 0
+                                        whiptail --title "Hornet [IOTA] Management" --msgbox "Hornet successfully stopped." 8 65
+                                    ;;
+                                    "4)")
+                                        iotaHornetStatus="$(sudo systemctl status iota-hornet)"
+                                        whiptail --title "Hornet [IOTA] Management" --msgbox "$iotaHornetStatus" 15 65
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
+                        ;;
                         "4)")
                             if (whiptail --title "Hornet [IOTA] Management" --yesno --defaultno "Are you sure you want to delete the hornet event database?" 8 65); then
                                 source $swarmConfigs/iota-hornet.cfg
+                                if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                    sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                                fi
                                 {
                                     echo 0
                                     echo 25
@@ -234,6 +287,9 @@ while [ $exitCode -lt 1 ]; do
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
+                                if [ -f "/tmp/iota-hornet.lock" ]; then
+                                    sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                fi
                                 whiptail --title "Hornet [IOTA] Management" --msgbox "Event database successfully reset." 8 65
                             fi
                         ;;
@@ -242,6 +298,7 @@ while [ $exitCode -lt 1 ]; do
                                 if (whiptail --title "Hornet [IOTA] Management" --yesno --defaultno "Do you want to use an alternative source for the snapshot?" 8 65); then
                                     CHOICE=$(
                                         whiptail --title "Hornet [IOTA] Management" --menu "\nChoose your option" 24 65 0 \
+                                        "" "" \
                                         "1)" "Download Snapshot for ASMB 3" \
                                         "2)" "Download Snapshot for ICG Vote" \
                                         "3)" "Download Snapshot for ASMB 2" \
@@ -252,7 +309,7 @@ while [ $exitCode -lt 1 ]; do
                                     if [ "$exitstatus" != "1" ]; then
                                         case $CHOICE in
                                             "1)")
-                                                source $swarmModules/swarmAuth
+                                                source $swarmModule/swarmAuth
                                                 if [ "$swarmAuth" = "200" ]; then
                                                     iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_snapshot-asmb3.bin)
                                                     if [ "$iotaHornetSnapshotSourceValid" = "200" ]; then
@@ -265,7 +322,7 @@ while [ $exitCode -lt 1 ]; do
                                                 fi
                                             ;;
                                             "2)")
-                                                source $swarmModules/swarmAuth
+                                                source $swarmModule/swarmAuth
                                                 if [ "$swarmAuth" = "200" ]; then
                                                     iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_iota-community-governance-vote.bin)
                                                     if [ "$iotaHornetSnapshotSourceValid" = "200" ]; then
@@ -278,7 +335,7 @@ while [ $exitCode -lt 1 ]; do
                                                 fi
                                             ;;
                                             "3)")
-                                                source $swarmModules/swarmAuth
+                                                source $swarmModule/swarmAuth
                                                 if [ "$swarmAuth" = "200" ]; then
                                                     iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_snapshot-asmb2.bin)
                                                     if [ "$iotaHornetSnapshotSourceValid" = "200" ]; then
@@ -291,7 +348,7 @@ while [ $exitCode -lt 1 ]; do
                                                 fi
                                             ;;
                                             "4)")
-                                                source $swarmModules/swarmAuth
+                                                source $swarmModule/swarmAuth
                                                 if [ "$swarmAuth" = "200" ]; then
                                                     iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/full_snapshot-asmb-smr.bin)
                                                     if [ "$iotaHornetSnapshotSourceValid" = "200" ]; then
@@ -319,6 +376,9 @@ while [ $exitCode -lt 1 ]; do
                                     fi
                                 fi
                                 if [ "$exitstatus" != "1" ]; then
+                                    if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                        sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                                    fi
                                     source $swarmConfigs/iota-hornet.cfg
                                     {
                                         echo 0
@@ -339,6 +399,9 @@ while [ $exitCode -lt 1 ]; do
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
+                                    if [ -f "/tmp/iota-hornet.lock" ]; then
+                                        sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                    fi
                                     whiptail --title "Hornet [IOTA] Management" --msgbox "${iotaHornetNetwork}DB successfully reset." 8 65
                                 fi
                             fi
@@ -346,6 +409,9 @@ while [ $exitCode -lt 1 ]; do
                         "6)")
                             if (whiptail --title "Hornet [IOTA] Management" --yesno --defaultno "Are you sure you want to reset the hornet config file?" 8 65); then
                                 source $swarmConfigs/iota-hornet.cfg
+                                if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                    sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                                fi
                                 {
                                     echo 0
                                     echo 20
@@ -357,12 +423,15 @@ while [ $exitCode -lt 1 ]; do
                                         sudo -u hornet wget -q -O $iotaHornetHome/$iotaHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/develop/$iotaHornetConfig.json
                                     fi
                                     echo 60
-                                    source $iotaHornetModules/iotaHornetParser
+                                    source $iotaHornetModule/iotaHornetParser
                                     echo 80
                                     sudo systemctl start iota-hornet > /dev/null 2>&1
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while the config reset is running (this may take a while)..." 8 65 0
+                                if [ -f "/tmp/iota-hornet.lock" ]; then
+                                    sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                fi
                                 whiptail --title "Hornet [IOTA] Management" --msgbox "${iotaHornetNetwork} config successfully reset." 8 65
                             fi
                         ;;
@@ -377,6 +446,7 @@ while [ $exitCode -lt 1 ]; do
             while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
                     whiptail --title "Hornet [IOTA] Installer" --menu "\nChoose your option" 24 65 0 \
+                    "" "" \
                     "1)" "Update Hornet" \
                     "2)" "Install Hornet" \
                     "3)" "Remove Hornet" 3>&2 2>&1 1>&3
@@ -392,14 +462,17 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/iota-hornet" ]; then
                             if (whiptail --title "Hornet [IOTA] Installer" --yesno --defaultno "Do you really want to update Hornet?" 8 65); then
                                 # Update HORNET
-                                source $iotaHornetModules/iotaHornetVersion
+                                source $iotaHornetModule/iotaHornetVersion
                                 if [ ! -z "$latestIotaHornetVersion" ]; then
+                                    if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                        sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                                    fi
                                     {
                                         echo 0
                                         echo 33
-                                        source $iotaHornetModules/iotaHornetInstaller
+                                        source $iotaHornetModule/iotaHornetInstaller
                                         echo 66
-                                        source $iotaHornetModules/iotaHornetParser
+                                        source $iotaHornetModule/iotaHornetParser
                                         echo 100
                                         sleep 0.5
                                     } | whiptail --gauge "Please wait while Hornet is updated..." 8 65 0
@@ -415,6 +488,9 @@ while [ $exitCode -lt 1 ]; do
                                     if [ -f "/tmp/iota-hornet.checksum" ]; then
                                         sudo rm -rf /tmp/iota-hornet.checksum 2>/dev/null
                                         unset iotaHornetChecksum
+                                    fi
+                                    if [ -f "/tmp/iota-hornet.lock" ]; then
+                                        sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
                                     fi
                                 else
                                     whiptail --title "Hornet [IOTA] Installer" --msgbox "Sorry, but Hornet update aborted." 10 65
@@ -437,20 +513,23 @@ while [ $exitCode -lt 1 ]; do
                         fi
                         # INSTALL Hornet
                         if [ ! -f "/usr/bin/iota-hornet" ] && [ "$iotaHornetSkipInstallation" = "false" ]; then
+                            if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                            fi
                             {
                                 echo 0
                                 echo 10
                                 source $swarmConfigs/iota-hornet.cfg
                                 echo 30
-                                source $iotaHornetModules/iotaHornetVersion
+                                source $iotaHornetModule/iotaHornetVersion
                                 echo 40
-                                source $iotaHornetModules/iotaHornetInstaller
+                                source $iotaHornetModule/iotaHornetInstaller
                                 echo 50
                                 if [ -f "/usr/bin/iota-hornet" ]; then
                                     source $swarmConfigs/iota-hornet.cfg
                                     echo 60
                                     # CALL MODULE CONFIGPARSER
-                                    source $iotaHornetModules/iotaHornetParser
+                                    source $iotaHornetModule/iotaHornetParser
                                     echo 70
                                     if [ "$ufw" = "true" ]; then
                                         if [ "$iotaHornetRunAsEntryNode" != "true" ]; then
@@ -484,11 +563,14 @@ while [ $exitCode -lt 1 ]; do
                                     echo 25
                                     source $swarmConfigs/iota-hornet.cfg
                                     echo 50
-                                    source $iotaHornetModules/iotaHornetRemoval
+                                    source $iotaHornetModule/iotaHornetRemoval
                                     echo 75
                                     echo 100
                                 } | whiptail --gauge "Please wait while the Hornet files are removed...." 8 65 0
                                 whiptail --title "Hornet [IOTA] Installer" --msgbox "Error while installing Hornet! Please try again later." 8 65
+                            fi
+                            if [ -f "/tmp/iota-hornet.lock" ]; then
+                                sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
                             fi
                         else
                             if [ -f "/usr/bin/iota-hornet" ]; then
@@ -506,7 +588,7 @@ while [ $exitCode -lt 1 ]; do
                             {
                                 echo 0
                                 echo 50
-                                source $iotaHornetModules/iotaHornetRemoval
+                                source $iotaHornetModule/iotaHornetRemoval
                                 echo 100
                                 sleep 0.5
                             } | whiptail --gauge "Please wait while Hornet will be removed..." 8 65 0

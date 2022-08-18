@@ -3,26 +3,33 @@
 eventDataLog="/tmp/participation-event.log"
 
 if [ "$eventNetwork" = "iota" ]; then
-    nodeApiPort=14265
     nodeJwtToken="$iotaHornetApiJwtToken"
 fi
 
 if [ "$eventNetwork" = "shimmer" ]; then
-    nodeApiPort=14266
     nodeJwtToken="$shimmerHornetApiJwtToken"
 fi
 
 ##################################################################################################################################
 
 if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "staking" ]; then
-    eventStatus=$(curl -Ls http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
+    if [ "$eventNetwork" = "iota" ]; then
+        eventStatus=$(curl -Ls http://localhost:14265/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
+    fi
+    if [ "$eventNetwork" = "shimmer" ]; then
+        eventStatus=$(curl -Ls http://localhost:14266/api/participation/v1/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
+    fi
 
     if [ -z "$eventStatus" ] || [ "$eventStatus" = "null" ] || [ "$eventStatus" = "\"null\"" ]; then
         whiptail --title "SWARM - Events" --msgbox "The event could not be found in the database." 8 65
     else
         if [[ $eventStatus = *ended* ]]; then
-            sudo curl -Ls http://localhost:$nodeApiPort/api/plugins/participation/admin/events/${eventId}/rewards --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
-
+            if [ "$eventNetwork" = "iota" ]; then
+                sudo curl -Ls http://localhost:14265/api/plugins/participation/admin/events/${eventId}/rewards --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
+            fi
+            if [ "$eventNetwork" = "shimmer" ]; then
+                sudo curl -Ls http://localhost:14266/api/participation/v1/admin/events/${eventId}/rewards --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
+            fi
             eventSymbol=$(printf "Symbol:          %s\n" "$(jq '.symbol' ${eventDataLog})")
             eventMilestone=$(printf "Milestone index: %s\n" "$(jq '.milestoneIndex' ${eventDataLog})")
             eventTotalRewards=$(printf "Total rewards:   %s\n" "$(jq '.totalRewards' ${eventDataLog})")
@@ -40,13 +47,23 @@ if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "staking" ]; then
 fi
 
 if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "ballot" ]; then
-    eventStatus=$(curl -Ls http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
+    if [ "$eventNetwork" = "iota" ]; then
+        eventStatus=$(curl -Ls http://localhost:14265/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
+    fi
+    if [ "$eventNetwork" = "shimmer" ]; then
+        eventStatus=$(curl -Ls http://localhost:14266/api/participation/v1/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.status')
+    fi
 
     if [ -z "$eventStatus" ] || [ "$eventStatus" = "null" ] || [ "$eventStatus" = "\"null\"" ]; then
         whiptail --title "SWARM - Events" --msgbox "The event could not be found in the database." 8 65
     else
         if [[ $eventStatus = *ended* ]]; then
-            ballotChecksum=$(curl -Ls http://localhost:$nodeApiPort/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
+            if [ "$eventNetwork" = "iota" ]; then
+                ballotChecksum=$(curl -Ls http://localhost:14265/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
+            fi
+            if [ "$eventNetwork" = "shimmer" ]; then
+                ballotChecksum=$(curl -Ls http://localhost:14266/api/participation/v1/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
+            fi
             echo "Ballot ID: \"$eventId\"" > $eventDataLog
             echo "Checksum: $ballotChecksum" >> $eventDataLog
             whiptail --title "SWARM - Events" --msgbox "\nVoting ID: \"$eventId\"\n\nChecksum: $ballotChecksum" 24 65

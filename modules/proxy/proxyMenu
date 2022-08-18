@@ -3,6 +3,7 @@ while [ $exitCode -lt 1 ]; do
     clear
     CHOICE=$(
         whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
+        "" "" \
         "1)" "Proxy Info" \
         "2)" "Proxy Configuration" \
         "3)" "Proxy Debugging" \
@@ -16,7 +17,7 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
-            source $proxyModules/proxyInfo
+            source $proxyModule/proxyInfo
         ;;
         "2)")
             while [ $exitCode -lt 1 ]; do
@@ -29,6 +30,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 CHOICE=$(
                     whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
                     "1)" "$menuProxySwarmEndpoint SWARM Endpoint" \
                     "2)" "Hornet [IOTA] proxy settings" \
                     "3)" "Hornet [SHIMMER] proxy settings" \
@@ -52,7 +54,7 @@ while [ $exitCode -lt 1 ]; do
                             proxySwarmEndpointMenu="enabled"
                         fi
                         sudo sed -i 's/^proxySwarmEndpoint=.*/proxySwarmEndpoint='$proxySwarmEndpoint'/' $swarmConfigs/proxy.cfg
-                        source $proxyModules/proxySwarmEndpoint
+                        source $proxyModule/proxySwarmEndpoint
                         whiptail --title "Proxy - SWARM" --msgbox "SWARM endpoint $proxySwarmEndpointMenu." 8 65
                     ;;
                     "2)")
@@ -133,6 +135,7 @@ while [ $exitCode -lt 1 ]; do
                             clear
                             CHOICE=$(
                                 whiptail --title "Proxy - WASP Settings" --menu "\nChoose an option" 24 65 0 \
+                                "" "" \
                                 "1)" "WASP Dashboard" \
                                 "2)" "WASP API" 3>&2 2>&1 1>&3
                             )
@@ -204,6 +207,7 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             CHOICE=$(
                                 whiptail --title "Proxy - Advanced Settings" --menu "\nChoose an option" 24 65 0 \
+                                "" "" \
                                 "1)" "$proxyAutomaticDeploymentMenu automatic proxy deployment" 3>&2 2>&1 1>&3
                             )
                             exitStatus=$?
@@ -232,132 +236,153 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "3)")
-            CHOICE=$(
-                whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
-                "1)" "Show proxy status" \
-                "2)" "Start/stop proxy" 3>&2 2>&1 1>&3
-            )
-            case $CHOICE in
-                "1)")
-                    proxyStatus="$(sudo systemctl status nginx)"
-                    whiptail --title "Proxy Status" --msgbox "$proxyStatus" 15 65
-                ;;
-                "2)")
-                    CHOICE=$(
-                        whiptail --title "Proxy Menu" --menu "\nChoose your option" 24 65 0 \
-                        "1)" "Restart Proxy" \
-                        "2)" "Start Proxy" \
-                        "3)" "Stop Proxy" 3>&2 2>&1 1>&3
-                    )
-                    case $CHOICE in
-                        "1)")
-                            {
-                                echo 0
-                                sleep 0.25
-                                echo 66
-                                sudo systemctl restart nginx
-                                echo 100
-                                sleep 0.25
-                            } | whiptail --gauge "Please wait while re-starting the proxy..." 6 65 0
-                            whiptail --scrolltext --title "Proxy Menu" --msgbox "Proxy restarted successfully!" 8 65
-                        ;;
-                        "2)")
-                            {
-                                echo 0
-                                sleep 0.25
-                                echo 66
-                                sudo systemctl start nginx
-                                echo 100
-                                sleep 0.25
-                            } | whiptail --gauge "Please wait while starting the proxy..." 6 65 0
-                            whiptail --title "Proxy Menu" --msgbox "Proxy started successfully!" 8 65
-                        ;;
-                        "3)")
-                            {
-                                echo 0
-                                sleep 0.25
-                                echo 66
-                                sudo systemctl stop nginx
-                                echo 100
-                                sleep 0.25
-                            } | whiptail --gauge "Please wait while stopping the proxy..." 6 65 0
-                            whiptail --title "Proxy Menu" --msgbox "Proxy stopped successfully!" 8 65
-                        ;;
-                    esac
-                ;;
-            esac
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
+                    "1)" "Show proxy status" \
+                    "2)" "Start/stop proxy" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        proxyStatus="$(sudo systemctl status nginx)"
+                        whiptail --title "Proxy Status" --msgbox "$proxyStatus" 15 65
+                    ;;
+                    "2)")
+                        CHOICE=$(
+                            whiptail --title "Proxy Menu" --menu "\nChoose your option" 24 65 0 \
+                            "" "" \
+                            "1)" "Restart Proxy" \
+                            "2)" "Start Proxy" \
+                            "3)" "Stop Proxy" 3>&2 2>&1 1>&3
+                        )
+                        exitStatus=$?
+                        if [ "$exitStatus" = "1" ]; then
+                            exitCode=1
+                        fi
+                        case $CHOICE in
+                            "1)")
+                                {
+                                    echo 0
+                                    sleep 0.25
+                                    echo 66
+                                    sudo systemctl restart nginx
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while re-starting the proxy..." 6 65 0
+                                whiptail --scrolltext --title "Proxy Menu" --msgbox "Proxy restarted successfully!" 8 65
+                            ;;
+                            "2)")
+                                {
+                                    echo 0
+                                    sleep 0.25
+                                    echo 66
+                                    sudo systemctl start nginx
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while starting the proxy..." 6 65 0
+                                whiptail --title "Proxy Menu" --msgbox "Proxy started successfully!" 8 65
+                            ;;
+                            "3)")
+                                {
+                                    echo 0
+                                    sleep 0.25
+                                    echo 66
+                                    sudo systemctl stop nginx
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while stopping the proxy..." 6 65 0
+                                whiptail --title "Proxy Menu" --msgbox "Proxy stopped successfully!" 8 65
+                            ;;
+                        esac
+                    ;;
+                esac
+            done
+            exitCode=0
         ;;
         "4)")
-            CHOICE=$(
-                whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
-                "1)" "Install/Deploy the proxy" \
-                "2)" "Remove the proxy" \
-                "3)" "Renew SSL certificate" 3>&2 2>&1 1>&3
-            )
-            case $CHOICE in
-                "1)")
-                    if [ -f "/usr/bin/iota-hornet" ] || [ -f "/usr/bin/shimmer-hornet" ] || [ -f "/usr/bin/iota-bee" ] || [ -f "/usr/bin/shimmer-bee" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
-                        source $swarmConfigs/proxy.cfg
-                        if (whiptail --title "Proxy - Deployment" --yesno --defaultno "Before deploying the proxy, please make sure that the domain and port are set for all nodes to be installed. If you use one domain for multiple nodes, please use different ports.\n\n\nAre you sure you want to continue?" 16 65); then
-                            source $proxyModules/proxyDeployment
-                            clear
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
+                    "1)" "Install/Deploy the proxy" \
+                    "2)" "Remove the proxy" \
+                    "3)" "Renew SSL certificate" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/iota-hornet" ] || [ -f "/usr/bin/shimmer-hornet" ] || [ -f "/usr/bin/iota-bee" ] || [ -f "/usr/bin/shimmer-bee" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
+                            source $swarmConfigs/proxy.cfg
+                            if (whiptail --title "Proxy - Deployment" --yesno --defaultno "Before deploying the proxy, please make sure that the domain and port are set for all nodes to be installed. If you use one domain for multiple nodes, please use different ports.\n\n\nAre you sure you want to continue?" 16 65); then
+                                source $proxyModule/proxyDeployment
+                                clear
+                            fi
+                        else
+                            whiptail --title "Proxy - Deployment" --msgbox "No node software found on the system, please install a node first before you can install the proxy." 8 65
                         fi
-                    else
-                        whiptail --title "Proxy - Deployment" --msgbox "No node software found on the system, please install a node first before you can install the proxy." 8 65
-                    fi
-                ;;
-                "2)")
-                    if (whiptail --title "Proxy - Removal" --yesno --defaultno "Do you really want to remove the proxy?" 8 65); then
-                        {
-                            echo 0
-                            if [ "$ufw" = "true" ]; then
-                                source $proxyModules/proxyParser
-                                sudo ufw delete allow 80/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $proxySwarmDashboardPort/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $proxyIotaHornetPort/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $proxyShimmerHornetPort/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $proxyIotaBeePort/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $proxyShimmerBeePort/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $proxyWaspDashboardPort/tcp > /dev/null 2>&1
-                                sudo ufw delete allow $proxyWaspApiPort/tcp > /dev/null 2>&1
-                            fi
-                            echo 20
-                            sudo apt -qq purge software-properties-common certbot python3-certbot-nginx nginx* -y > /dev/null 2>&1
-                            echo 40
-                            sudo apt -qq autoremove -y > /dev/null 2>&1
-                            echo 60
-                            if [ -d "/etc/nginx" ]; then
-                                sudo rm -rf /etc/nginx > /dev/null 2>&1
-                            fi
-                            if [ -d "/etc/letsencrypt" ]; then
-                                sudo rm -rf /etc/letsencrypt > /dev/null 2>&1
-                            fi
-                            sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetDomain=""/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetDomain=""/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyGoshimmerUrl=.*/proxyGoshimmerUrl=""/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyWaspDashboardUrl=.*/proxyWaspDashboardUrl=/' $swarmConfigs/proxy.cfg
-                            sudo sed -i 's/^proxyWaspApiUrl=.*/proxyWaspApiUrl=/' $swarmConfigs/proxy.cfg
-                            echo 100
-                            sleep 0.25
-                        } | whiptail --gauge "Please wait while removing the proxy..." 6 65 0
-                        whiptail --title "Proxy - Removal" --msgbox "Proxy removed successfully!" 8 65
-                    fi
-                ;;
-                "3)")
-                    # Manual renew certificate if installed
-                    source $proxyModules/proxyParser
-                    if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
-                        sudo certbot renew --force-renewal
-                        echo ""
-                        echo ""
-                        echo "#############################################################"
-                        read -p "Press any key to continue..."
-                    else
-                        whiptail --title "Proxy Menu" --msgbox "Error! No SSL Certificate installed!" 8 65
-                    fi
-                ;;
-            esac
+                    ;;
+                    "2)")
+                        if (whiptail --title "Proxy - Removal" --yesno --defaultno "Do you really want to remove the proxy?" 8 65); then
+                            {
+                                echo 0
+                                if [ "$ufw" = "true" ]; then
+                                    source $proxyModule/proxyParser
+                                    sudo ufw delete allow 80/tcp > /dev/null 2>&1
+                                    sudo ufw delete allow $proxySwarmDashboardPort/tcp > /dev/null 2>&1
+                                    sudo ufw delete allow $proxyIotaHornetPort/tcp > /dev/null 2>&1
+                                    sudo ufw delete allow $proxyShimmerHornetPort/tcp > /dev/null 2>&1
+                                    sudo ufw delete allow $proxyIotaBeePort/tcp > /dev/null 2>&1
+                                    sudo ufw delete allow $proxyShimmerBeePort/tcp > /dev/null 2>&1
+                                    sudo ufw delete allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
+                                    sudo ufw delete allow $proxyWaspDashboardPort/tcp > /dev/null 2>&1
+                                    sudo ufw delete allow $proxyWaspApiPort/tcp > /dev/null 2>&1
+                                fi
+                                echo 20
+                                sudo apt -qq purge software-properties-common certbot python3-certbot-nginx nginx* -y > /dev/null 2>&1
+                                echo 40
+                                sudo apt -qq autoremove -y > /dev/null 2>&1
+                                echo 60
+                                if [ -d "/etc/nginx" ]; then
+                                    sudo rm -rf /etc/nginx > /dev/null 2>&1
+                                fi
+                                if [ -d "/etc/letsencrypt" ]; then
+                                    sudo rm -rf /etc/letsencrypt > /dev/null 2>&1
+                                fi
+                                sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetDomain=""/' $swarmConfigs/proxy.cfg
+                                sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetDomain=""/' $swarmConfigs/proxy.cfg
+                                sudo sed -i 's/^proxyGoshimmerUrl=.*/proxyGoshimmerUrl=""/' $swarmConfigs/proxy.cfg
+                                sudo sed -i 's/^proxyWaspDashboardUrl=.*/proxyWaspDashboardUrl=/' $swarmConfigs/proxy.cfg
+                                sudo sed -i 's/^proxyWaspApiUrl=.*/proxyWaspApiUrl=/' $swarmConfigs/proxy.cfg
+                                echo 100
+                                sleep 0.25
+                            } | whiptail --gauge "Please wait while removing the proxy..." 6 65 0
+                            whiptail --title "Proxy - Removal" --msgbox "Proxy removed successfully!" 8 65
+                        fi
+                    ;;
+                    "3)")
+                        # Manual renew certificate if installed
+                        source $proxyModule/proxyParser
+                        if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
+                            sudo certbot renew --force-renewal
+                            echo ""
+                            echo ""
+                            echo "#############################################################"
+                            read -p "Press any key to continue..."
+                        else
+                            whiptail --title "Proxy Menu" --msgbox "Error! No SSL Certificate installed!" 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
         ;;
     esac
 done

@@ -2,6 +2,9 @@
 
 # Check if network changed
 if [ "$shimmerHornetNetwork" != "$currentShimmerHornetNetwork" ]; then
+    if [ ! -f "/tmp/shimmer-hornet.lock" ]; then
+        sudo touch /tmp/shimmer-hornet.lock > /dev/null 2>&1
+    fi
     if [ "$shimmerHornetNetwork" = "mainnet" ]; then
         echo "OPTIONS=\"--config config_mainnet.json\"" > /etc/default/shimmer-hornet
     fi
@@ -11,13 +14,25 @@ if [ "$shimmerHornetNetwork" != "$currentShimmerHornetNetwork" ]; then
     if [ "$shimmerHornetNetwork" = "alphanet" ]; then
         echo "OPTIONS=\"--config config_alphanet.json\"" > /etc/default/shimmer-hornet
     fi
+
+    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+    do
+        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+            if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+            fi
+            sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+        fi
+    done
+    unset shimmerInxPlugin
+
     sudo systemctl stop shimmer-hornet > /dev/null 2>&1
     sudo rm -rf $shimmerHornetHome/$currentShimmerHornetNetwork
     if [ ! -d "$shimmerHornetHome/$shimmerHornetNetwork" ]; then
         sudo -u hornet mkdir -p $shimmerHornetHome/$shimmerHornetNetwork
         sudo chmod 700 $shimmerHornetHome/$shimmerHornetNetwork
     fi
-    source $shimmerHornetModules/shimmerHornetParser
+    source $shimmerHornetModule/shimmerHornetParser
     if [ -f "/usr/bin/shimmer-hornet" ]; then
         shimmerHornetStatus="$(systemctl show -p ActiveState --value shimmer-hornet)"
     fi
@@ -25,5 +40,18 @@ if [ "$shimmerHornetNetwork" != "$currentShimmerHornetNetwork" ]; then
         sudo systemctl start shimmer-hornet > /dev/null 2>&1
     fi
     newShimmerHornetApiJwtToken=true
+    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+    do
+        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+            if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+            fi
+            sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+        fi
+    done
+    unset shimmerInxPlugin
+    if [ -f "/tmp/shimmer-hornet.lock" ]; then
+        sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+    fi
     whiptail --title "[SHIMMER] Hornet - Configuration" --msgbox "Hornet was successfully changed to the $shimmerHornetNetwork network!" 8 65
 fi

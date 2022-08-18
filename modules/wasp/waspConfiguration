@@ -4,6 +4,7 @@ while [ $exitCode -lt 1 ]; do
     source $swarmConfigs/wasp.cfg
     CHOICE=$(
         whiptail --title "WASP Configurations" --menu "\nChoose an option" 24 65 0 \
+        "" "" \
         "1)" "WASP-CLI" \
         "2)" "Dashboard-Auth" \
         "3)" "Webapi-Auth" \
@@ -22,12 +23,14 @@ while [ $exitCode -lt 1 ]; do
         if [ "$restartWasp" = "true" ] && [ -f "/usr/bin/wasp" ]; then
             if (whiptail --title "WASP Menu" --yesno "Would you like to apply the changes and restart WASP?" 8 65); then
                 {
+                    sudo touch /tmp/wasp.lock > /dev/null 2>&1
                     echo 0
                     echo 33
-                    source $waspModules/waspParser
+                    source $waspModule/waspParser
                     echo 50
                     sudo systemctl restart wasp > /dev/null 2>&1
                     sleep 0.25
+                    sudo rm -rf /tmp/wasp.lock > /dev/null 2>&1
                     echo 100
                     sleep 0.25
                 } | whiptail --gauge "Please wait while the changes are applied and WASP is restarted..." 6 65 0
@@ -42,6 +45,7 @@ while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
                     whiptail --title "WASP - Dashboard" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
                     "1)" "Show Peering ID" \
                     "2)" "Set trusted neighbor" 3>&2 2>&1 1>&3
                 )
@@ -83,6 +87,7 @@ while [ $exitCode -lt 1 ]; do
                 # wasp Dashboard
                 CHOICE=$(
                     whiptail --title "WASP - Dashboard" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
                     "1)" "Dashboard Username" \
                     "2)" "Dashboard Password" 3>&2 2>&1 1>&3
                 )
@@ -138,6 +143,7 @@ while [ $exitCode -lt 1 ]; do
                 # wasp webapi
                 CHOICE=$(
                     whiptail --title "WASP - WebAPI" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
                     "1)" "$waspWebapiAuthEnabledMenu WebAPI-Auth" \
                     "2)" "WebAPI Credentials" 3>&2 2>&1 1>&3
                 )
@@ -205,7 +211,7 @@ while [ $exitCode -lt 1 ]; do
             useWaspEnablePlugins=true
             source $swarmConfigs/wasp.cfg
             currentWaspEnablePlugins=$waspEnablePlugins
-            source $waspModules/waspPlugins
+            source $waspModule/waspPlugins
             waspEnablePlugins=$(whiptail --title "WASP - Plugins" --checklist "\nSelect (with spacebar) the WASP plugins to be activated:" 10 78 2 3>&1 1>&2 2>&3)
             exitStatus=$?
             waspEnablePlugins=$(echo $waspEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
@@ -227,7 +233,7 @@ while [ $exitCode -lt 1 ]; do
             useWaspDisablePlugins=true
             source $swarmConfigs/wasp.cfg
             currentWaspDisablePlugins=$waspDisablePlugins
-            source $waspModules/waspPlugins
+            source $waspModule/waspPlugins
             waspDisablePlugins=$(whiptail --title "WASP - Plugins" --checklist "\nSelect (with spacebar) the WASP plugins to be deactivated:" 14 78 2 3>&1 1>&2 2>&3)
             exitStatus=$?
             waspDisablePlugins=$(echo $waspDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')

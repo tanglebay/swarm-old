@@ -1,12 +1,12 @@
 #!/bin/bash
 
 if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
-    if [ "$iotaHornetParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/iota-hornet" ]; then
-        source $swarmModules/swarmAuth
+    if [ "$iotaHornetParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/iota-hornet" ] && [ "$iotaHornetNetwork" = "mainnet" ]; then
+        source $swarmModule/swarmAuth
         if [ "$swarmAuth" = "200" ]; then
             latestIotaParticipationEvents=$(curl -s https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/participation/iota-events.json |jq '.eventIds' | tr -d '[]",')
             latestIotaParticipationEvents=$(echo $latestIotaParticipationEvents)
-            iotaHornetParticipationList=$(curl -s localhost:14265/api/plugins/participation/events |jq '.data.eventIds' | tr -d '[]",')
+            iotaHornetParticipationList=$(curl -s localhost:14265/api/plugins/participation/events -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" | jq '.data.eventIds' | tr -d '[]",')
             iotaHornetParticipationList=$(echo $iotaHornetParticipationList)
             if [ ! -z "$latestIotaParticipationEvents" ]; then
                 for latestIotaParticipationEvent in ${latestIotaParticipationEvents[@]}
@@ -24,7 +24,14 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                                     sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'$iotaHornetApiJwtToken'"~' $swarmConfigs/iota-hornet.cfg
                                     echo $iotaHornetApiJwtToken >> $swarmLogs/iotaHornetJwtToken.log
                                 fi
-
+                            fi
+                            if [[ $iotaHornetParticipationAddResponse = *$latestIotaParticipationEvent* ]]; then
+                                sysDate=`date '+%d-%m-%Y %H-%M-%S'`
+                                latestIotaParticipationEventName=$(echo $latestIotaParticipationEventDetails | jq '.name')
+                                echo "$sysDate [WACHTDOG] Hornet (IOTA) - Event \"$latestIotaParticipationEventName\" added." >> $swarmLogs/swarm.log
+                                telegramText="Host: $HOSTNAME%0AApp: Hornet (IOTA)%0A%0AAction: Event \"$latestIotaParticipationEventName\" added automatically."
+                                source $watchdogModule/watchdogTelegram
+                                unset latestShimmerParticipationEventName
                             fi
                             unset iotaHornetParticipationAddResponse
                         fi
@@ -36,30 +43,37 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             unset latestIotaParticipationEvents iotaHornetParticipationList
         fi
     fi
-    if [ "$shimmerInxParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/shimmer-hornet" ] && [ -f "/usr/bin/shimmer-inx-participation" ] && [ "$shimmerHornetApiEnabled" = "true" ]; then
-        source $swarmModules/swarmAuth
+    if [ "$shimmerInxParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/shimmer-hornet" ] && [ -f "/usr/bin/shimmer-inx-participation" ] && [ "$shimmerHornetApiEnabled" = "true" ] && [ "$shimmerHornetNetwork" = "mainnet" ]; then
+        source $swarmModule/swarmAuth
         if [ "$swarmAuth" = "200" ]; then
             latestShimmerParticipationEvents=$(curl -s https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/participation/shimmer-events.json |jq '.eventIds' | tr -d '[]",')
             latestShimmerParticipationEvents=$(echo $latestShimmerParticipationEvents)
-            shimmerInxParticipationList=$(curl -s localhost:14265/api/plugins/participation/events |jq '.data.eventIds' | tr -d '[]",')
+            shimmerInxParticipationList=$(curl -s localhost:14266/api/participation/v1/events -H "Content-Type: application/json" -H "Authorization: Bearer ${shimmerHornetApiJwtToken}" |jq '.data.eventIds' | tr -d '[]",')
             shimmerInxParticipationList=$(echo $iotaHornetParticipationList)
             if [ ! -z "$latestShimmerParticipationEvents" ]; then
                 for latestShimmerParticipationEvent in ${latestShimmerParticipationEvents[@]}
                 do
                     shimmerInxParticipationEvent=$(echo $shimmerInxParticipationList | grep -o "$latestShimmerParticipationEvent")
                     if [ -z "$shimmerInxParticipationEvent" ] && [ "$shimmerInxParticipationEvent" != "$latestShimmerParticipationEvent" ]; then
-                        shimmerHornetPruningIndex=$(curl -s localhost:14266/api/v2/core/info | jq '.data.pruningIndex')
+                        shimmerHornetPruningIndex=$(curl -s localhost:14266/api/core/v2/info -H "Content-Type: application/json" -H "Authorization: Bearer ${shimmerHornetApiJwtToken}" | jq '.status.pruningIndex')
                         latestShimmerParticipationEventDetails=$(curl -s https://raw.githubusercontent.com/tanglebay/participation/main/shimmer-mainnet/templates/$latestShimmerParticipationEvent.json)
                         latestShimmerParticipationEventCommencingIndex=$(echo $latestShimmerParticipationEventDetails | jq '.milestoneIndexCommence')
                         if [ ! -z "$shimmerHornetPruningIndex" ] && [ ! -z "$latestShimmerParticipationEventDetails" ] && [ ! -z "$latestShimmerParticipationEventCommencingIndex" ] && [ $shimmerHornetPruningIndex -le $latestShimmerParticipationEventCommencingIndex ] 2>/dev/null; then
-                            shimmerInxParticipationAddResponse=$(curl http://localhost:14266/api/participation/v1/events -s --http1.1 -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${shimmerHornetApiJwtToken}" -d "${latestShimmerParticipationEventDetails}")
+                            shimmerInxParticipationAddResponse=$(curl http://localhost:14266/api/participation/v1/admin/events -s --http1.1 -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${shimmerHornetApiJwtToken}" -d "${latestShimmerParticipationEventDetails}")
                             if [[ $shimmerInxParticipationAddResponse = *code\=400* ]] || [[ $shimmerInxParticipationAddResponse = *code\=401* ]]; then
                                 shimmerHornetApiJwtToken=$( cd $shimmerHornetHome/$shimmerHornetNetwork ; /usr/bin/shimmer-hornet tools jwt-api --salt $shimmerHornetApiJwtSalt | awk '{ print $5 }')
                                 if [ ! -z "$shimmerHornetApiJwtToken" ]; then
                                     sudo sed -i 's~^shimmerHornetApiJwtToken=.*~shimmerHornetApiJwtToken="'$shimmerHornetApiJwtToken'"~' $swarmConfigs/shimmer-hornet.cfg
                                     echo $shimmerHornetApiJwtToken >> $swarmLogs/shimmerHornetJwtToken.log
                                 fi
-
+                            fi
+                            if [[ $shimmerInxParticipationAddResponse = *$latestShimmerParticipationEvent* ]]; then
+                                sysDate=`date '+%d-%m-%Y %H-%M-%S'`
+                                latestShimmerParticipationEventName=$(echo $latestShimmerParticipationEventDetails | jq '.name')
+                                echo "$sysDate [WACHTDOG] INX-Participation (Shimmer) - Event \"$latestShimmerParticipationEventName\" added." >> $swarmLogs/swarm.log
+                                telegramText="Host: $HOSTNAME%0AApp: INX-Participation (Shimmer)%0A%0AAction: Event \"$latestShimmerParticipationEventName\" added automatically."
+                                source $watchdogModule/watchdogTelegram
+                                unset latestShimmerParticipationEventName
                             fi
                             unset shimmerInxParticipationAddResponse
                         fi

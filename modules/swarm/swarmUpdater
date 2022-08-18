@@ -2,21 +2,17 @@
 
 if [ "$swarmManualUpdate" = "true" ]; then
     if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
-        source $swarmModules/swarmAuth
+        source $swarmModule/swarmAuth
         if [ "$swarmAuth" = "200" ] && [ ! -f "/tmp/watchdog.lock" ]; then
             sudo touch /tmp/watchdog.lock
             {
                 echo 0
                 echo 10
-                if [ ! -d "$swarmTmp" ]; then
+                if [ ! -d "$swarmTmp/v$latestSwarmVersion" ]; then
                     sudo mkdir -p $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
                 fi
                 echo 20
                 sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
-                if [ -f "$swarmLogs/githubVersion" ]; then
-                    sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
-                fi
-
                 echo 25
                 swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/checksum.txt)
                 sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
@@ -26,14 +22,12 @@ if [ "$swarmManualUpdate" = "true" ]; then
                     if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
                         sudo rm -rf $swarmHome > /dev/null 2>&1
                         sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
-
+                        # Load new env
+                        source /var/lib/swarm/environment
                         sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
                         echo 25
 
-                        # Load new env
-                        source /var/lib/swarm/environment
-
-                        source $swarmModules/swarmParser
+                        source $swarmModule/swarmParser
 
                         echo 30
                         ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
@@ -41,7 +35,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
 
                         echo 35
 
-                        source $swarmModules/swarmUpdaterAppService
+                        source $swarmModule/swarmUpdaterAppService
 
                         echo 40
                         # Remove Hornet apt
@@ -49,89 +43,57 @@ if [ "$swarmManualUpdate" = "true" ]; then
                             sudo rm -rf /etc/apt/sources.list.d/hornet* > /dev/null 2>&1
                             sudo apt-get -qq update > /dev/null 2>&1
                         fi
-
-                        if [ -f "/usr/bin/iota-hornet" ]; then
-                            # source $swarmConfigs/hornet.cfg
-                            source $iotaHornetModules/iotaHornetParser
-                            if [ "$restartIotaHornet" = "true" ]; then
-                                sudo systemctl restart iota-hornet > /dev/null 2>&1
-                                unset restartIotaHornet
-                            fi
-                        fi
                         echo 45
-                        if [ -f "/usr/bin/shimmer-hornet" ]; then
-                            # source $swarmConfigs/hornet.cfg
-                            source $shimmerHornetModules/shimmerHornetParser
-                            if [ "$restartShimmerHornet" = "true" ]; then
-                                sudo systemctl restart shimmer-hornet > /dev/null 2>&1
-                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                do
-                                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                        sudo systemctl restart shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                        progressNumber=45
+                        for swarmApp in ${swarmApps[@]}
+                        do
+                            source $swarmModule/swarmAppVars
+                            if [ -f "/usr/bin/$swarmApp" ]; then
+                                if [ ! -f "/tmp/$swarmApp.lock" ]; then
+                                    sudo touch /tmp/$swarmApp.lock > /dev/null 2>&1
+                                fi
+                                swarmAppModule=${swarmAppPrefix}Module
+                                source ${!swarmAppModule}/${swarmAppPrefix}Parser
+                                swarmAppRestart=restart${swarmAppPrefix^}
+                                if [ "${!swarmAppRestart}" = "true" ]; then
+                                    if [ "$swarmApp" = "shimmer-hornet" ]; then
+                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                        do
+                                            if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                                sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                            fi
+                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                            fi
+                                        done
+                                        unset shimmerInxPlugin
+                                        sudo systemctl restart $swarmApp > /dev/null 2>&1
+                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                        do
+                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                            fi
+                                            if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                                sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                            fi
+                                        done
+                                        unset shimmerInxPlugin restartShimmerHornet
+                                    else
+                                        sudo systemctl restart $swarmApp > /dev/null 2>&1
                                     fi
-                                done
-                                unset restartShimmerHornet shimmerInxPlugin
+                                fi
+                                if [ -f "/tmp/$swarmApp.lock" ]; then
+                                    sudo rm -rf /tmp/$swarmApp.lock > /dev/null 2>&1
+                                fi
+                                unset swarmAppRestart swarmAppModule
                             fi
-                        fi
-                        echo 50
-                        if [ -f "/usr/bin/goshimmer" ]; then
-                            # source $swarmConfigs/hornet.cfg
-                            source $goshimmerModules/goshimmerParser
-                            if [ "$restartGoshimmer" = "true" ]; then
-                                sudo systemctl restart goshimmer > /dev/null 2>&1
-                                unset restartGoshimmer
-                            fi
-                        fi
-                        echo 55
-                        if [ -f "/usr/bin/wasp" ]; then
-                            source $waspModules/waspParser
-                            if [ "$restartWasp" = "true" ]; then
-                                sudo systemctl restart wasp > /dev/null 2>&1
-                                unset restartWasp
-                            fi
-                        fi
-                        echo 60
-                        if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
-                            source $shimmerInxDashboardModules/shimmerInxDashboardParser
-                            if [ "$restartShimmerInxDashboard" = "true" ]; then
-                                sudo systemctl restart shimmer-inx-dashboard > /dev/null 2>&1
-                                unset restartShimmerInxDashboard
-                            fi
-                        fi
-                        echo 65
-                        if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-                            source $shimmerInxIndexerModules/shimmerInxIndexerParser
-                            if [ "$restartShimmerInxIndexer" = "true" ]; then
-                                sudo systemctl restart shimmer-inx-indexer > /dev/null 2>&1
-                                unset restartShimmerInxIndexer
-                            fi
-                        fi
-                        echo 70
-                        if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
-                            source $shimmerInxMqttModules/shimmerInxMqttParser
-                            if [ "$restartShimmerInxMqtt" = "true" ]; then
-                                sudo systemctl restart shimmer-inx-mqtt > /dev/null 2>&1
-                                unset restartShimmerInxMqtt
-                            fi
-                        fi
-                        echo 75
-                        if [ -f "/usr/bin/shimmer-inx-participation" ]; then
-                            source $shimmerInxParticipationModules/shimmerInxParticipationParser
-                            if [ "$restartShimmerInxParticipation" = "true" ]; then
-                                sudo systemctl restart shimmer-inx-participation > /dev/null 2>&1
-                                unset restartShimmerInxParticipation
-                            fi
-                        fi
-                        echo 80
-                        if [ -f "/usr/bin/shimmer-inx-poi" ]; then
-                            source $shimmerInxPoiModules/shimmerInxPoiParser
-                            if [ "$restartShimmerInxPoi" = "true" ]; then
-                                sudo systemctl restart shimmer-inx-poi > /dev/null 2>&1
-                                unset restartShimmerInxPoi
-                            fi
-                        fi
+                            unset swarmAppPrefix
+                            let progressNumber=$progressNumber+5
+                            echo $progressNumber
+                        done
+                        unset swarmApp progressNumber
                         echo 85
-                        source $proxyModules/proxyAutomaticDeployment
+                        source $proxyModule/proxyAutomaticDeployment
                     fi
                 fi
                 echo 100
@@ -140,7 +102,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
         if [ -f "$swarmHome/update.lock" ]; then
             swarmUpdated=true
             sudo cat /var/lib/swarm/templates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
-            source $proxyModules/proxySwarmEndpoint
+            source $proxyModule/proxySwarmEndpoint
             sudo rm -rf $swarmHome/update.lock > /dev/null 2>&1
         fi
         if [ "$swarmUpdated" = "true" ]; then
@@ -148,8 +110,8 @@ if [ "$swarmManualUpdate" = "true" ]; then
             source $swarmHome/version
             whiptail --title "SWARM - Update" --msgbox "\nSWARM successfully updated to v$version (build $build).\n\nChecksum: $swarmChecksum" 14 65
             unset swarmUpdated swarmChecksum
-            if [ -d "$swarmTmp" ]; then
-                sudo rm -rf $swarmTmp > /dev/null 2>&1
+            if [ -d "$swarmTmp/v$latestSwarmVersion" ]; then
+                sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
             fi
             if [ -f "/tmp/watchdog.lock" ]; then
                 sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
@@ -157,8 +119,8 @@ if [ "$swarmManualUpdate" = "true" ]; then
             clear
             exit 0
         else
-            if [ -d "$swarmTmp" ]; then
-                sudo rm -rf $swarmTmp > /dev/null 2>&1
+            if [ -d "$swarmTmp/v$latestSwarmVersion" ]; then
+                sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
             fi
             if [ -f "/tmp/watchdog.lock" ]; then
                 sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
@@ -175,10 +137,8 @@ else
                 sudo mkdir -p $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
             fi
 
+            # Backup current configs
             sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
-            if [ -f "$swarmLogs/githubVersion" ]; then
-                sudo cp -rf $swarmLogs/githubVersion $swarmTmp/ > /dev/null 2>&1
-            fi
 
             swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/checksum.txt)
             sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
@@ -186,17 +146,18 @@ else
             if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                 ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                 if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
-                    sudo rm -rf $swarmHome > /dev/null 2>&1
+                    sudo rm -rf $swarmHome $swarmConfigs > /dev/null 2>&1
                     sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
+                    source /var/lib/swarm/environment
                     sudo cat /var/lib/swarm/templates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
-                    source $swarmModules/swarmUpdaterAfter
+                    source $swarmModule/swarmUpdaterAfter
                 fi
                 if [ -d "$swarmTmp" ]; then
-                    sudo rm -rf $swarmTmp > /dev/null 2>&1
+                    sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
                 fi
             else
                 if [ -d "$swarmTmp" ]; then
-                    sudo rm -rf $swarmTmp > /dev/null 2>&1
+                    sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
                 fi
             fi
         fi
