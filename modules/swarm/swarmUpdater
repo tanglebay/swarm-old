@@ -8,20 +8,20 @@ if [ "$swarmManualUpdate" = "true" ]; then
             {
                 echo 0
                 echo 10
-                if [ ! -d "$swarmTmp/v$latestSwarmVersion" ]; then
-                    sudo mkdir -p $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
+                if [ ! -d "$swarmTmpPath/v$latestSwarmVersion" ]; then
+                    sudo mkdir -p $swarmTmpPath/v$latestSwarmVersion > /dev/null 2>&1
                 fi
                 echo 20
-                sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
+                sudo cp -rf $swarmConfigs/*.cfg $swarmTmpPath/ > /dev/null 2>&1
                 echo 25
                 swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/checksum.txt)
-                sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
-                swarmChecksum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
+                sudo wget -q -O $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
+                swarmChecksum=$(shasum -a 512 $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
                 if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
-                    ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
-                    if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
+                    ( cd $swarmTmpPath/v$latestSwarmVersion ; sudo tar -xzf $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
+                    if [ -f "$swarmTmpPath/v$latestSwarmVersion/swarm/update.lock" ]; then
                         sudo rm -rf $swarmHome > /dev/null 2>&1
-                        sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
+                        sudo mv -f $swarmTmpPath/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
                         # Load new env
                         source /var/lib/swarm/environment
                         sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
@@ -106,59 +106,52 @@ if [ "$swarmManualUpdate" = "true" ]; then
             sudo rm -rf $swarmHome/update.lock > /dev/null 2>&1
         fi
         if [ "$swarmUpdated" = "true" ]; then
-            swarmChecksum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
+            swarmChecksum=$(shasum -a 512 $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
             source $swarmHome/version
             whiptail --title "SWARM - Update" --msgbox "\nSWARM successfully updated to v$version (build $build).\n\nChecksum: $swarmChecksum" 14 65
             unset swarmUpdated swarmChecksum
-            if [ -d "$swarmTmp/v$latestSwarmVersion" ]; then
-                sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
-            fi
             if [ -f "/tmp/watchdog.lock" ]; then
                 sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
             fi
             clear
             exit 0
         else
-            if [ -d "$swarmTmp/v$latestSwarmVersion" ]; then
-                sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
-            fi
             if [ -f "/tmp/watchdog.lock" ]; then
                 sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
             fi
             unset swarmUpdated
             whiptail --title "SWARM Menu" --msgbox "SWARM update failed." 8 65
         fi
+        if [ -d "$swarmTmpPath" ]; then
+            sudo rm -rf $swarmTmpPath > /dev/null 2>&1
+        fi
         unset checkSwarmUpdateAuth swarmChkSum swarmUpdateChkSum
     fi
 else
     if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
         if [ "$swarmAuth" = "200" ]; then
-            if [ ! -d "$swarmTmp/v$latestSwarmVersion" ]; then
-                sudo mkdir -p $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
+            if [ ! -d "$swarmTmpPath/v$latestSwarmVersion" ]; then
+                sudo mkdir -p $swarmTmpPath/v$latestSwarmVersion > /dev/null 2>&1
             fi
 
             # Backup current configs
-            sudo cp -rf $swarmConfigs/*.cfg $swarmTmp/ > /dev/null 2>&1
+            sudo cp -rf $swarmConfigs/*.cfg $swarmTmpPath/ > /dev/null 2>&1
 
             swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/checksum.txt)
-            sudo wget -q -O $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
-            swarmChecksum=$(shasum -a 512 $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
+            sudo wget -q -O $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
+            swarmChecksum=$(shasum -a 512 $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
             if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
-                ( cd $swarmTmp/v$latestSwarmVersion ; sudo tar -xzf $swarmTmp/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
-                if [ -f "$swarmTmp/v$latestSwarmVersion/swarm/update.lock" ]; then
+                ( cd $swarmTmpPath/v$latestSwarmVersion ; sudo tar -xzf $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
+                if [ -f "$swarmTmpPath/v$latestSwarmVersion/swarm/update.lock" ]; then
                     sudo rm -rf $swarmHome $swarmConfigs > /dev/null 2>&1
-                    sudo mv -f $swarmTmp/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
+                    sudo mv -f $swarmTmpPath/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
                     source /var/lib/swarm/environment
                     sudo cat /var/lib/swarm/templates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
                     source $swarmModule/swarmUpdaterAfter
                 fi
-                if [ -d "$swarmTmp" ]; then
-                    sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
-                fi
-            else
-                if [ -d "$swarmTmp" ]; then
-                    sudo rm -rf $swarmTmp/v$latestSwarmVersion > /dev/null 2>&1
-                fi
+            fi
+            if [ -d "$swarmTmpPath" ]; then
+                sudo rm -rf $swarmTmpPath > /dev/null 2>&1
             fi
         fi
         unset swarmAuth swarmRemoteChecksum
