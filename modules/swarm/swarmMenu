@@ -80,8 +80,9 @@ while [ $exitCode -lt 1 ]; do
                     "" "" \
                     "1)" "Update SWARM" \
                     "2)" "Remove SWARM" \
-                    "3)" "Backup SWARM Configs" \
-                    "4)" "Check SWARM.log" 3>&2 2>&1 1>&3
+                    "3)" "Restore SWARM configs" \
+                    "4)" "Backup SWARM Configs" \
+                    "5)" "Check SWARM.log" 3>&2 2>&1 1>&3
                 )
                 exitStatus=$?
                 if [ "$exitStatus" = "1" ]; then
@@ -110,17 +111,85 @@ while [ $exitCode -lt 1 ]; do
                         source $swarmModule/swarmRemoval
                     ;;
                     "3)")
-                        if (whiptail --title "SWARM [BACKUP] Config" --yesno --defaultno "Do you really want to backup SWARM configs?" 8 65); then
-                            if [ ! -d "$swarmTmp" ]; then
-                                sudo mkdir -p $swarmTmp > /dev/null 2>&1
+                        if [ -d "$swarmBackups" ]; then
+                            swarmConfigFiles=$(whiptail --title "SWARM [RESTORE] Config" --checklist "\nSelect (spacebar) the configs you want to restore." 24 65 11 \
+                                "SWARM.cfg" "" OFF \
+                                "Proxy.cfg" "" OFF \
+                                "IOTA-Hornet.cfg" "" OFF \
+                                "Shimmer-Hornet.cfg" "" OFF \
+                                "Shimmer-INX-Dashboard.cfg" "" OFF \
+                                "Shimmer-INX-Indexer.cfg" "" OFF \
+                                "Shimmer-INX-Participation.cfg" "" OFF \
+                                "Shimmer-INX-MQTT.cfg" "" OFF \
+                                "Shimmer-INX-POI.cfg" "" OFF \
+                                "GoShimmer.cfg" "" OFF \
+                                "WASP.cfg" "" OFF 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ "$exitStatus" != "1" ] && [ ! -z "$swarmConfigFiles" ]; then
+                                swarmConfigFiles=$(echo $swarmConfigFiles | tr '[:upper:]' '[:lower:]' | tr -d '"')
+                                {
+                                    whiptailGaugeNumber=10
+                                    echo 0
+                                    echo 10
+                                    for swarmConfigFile in ${swarmConfigFiles[@]}
+                                    do
+                                        if [ -f "$swarmBackup/$swarmConfigFile" ]; then
+                                                sudo cp -rf $swarmBackup/$swarmConfigFile $swarmConfigs/$swarmConfigFile > /dev/null 2>&1
+                                        fi
+                                        let whiptailGaugeNumber=$whiptailGaugeNumber+10
+                                        echo $whiptailGaugeNumber
+                                    done
+                                    echo 100
+                                    sleep 0.5
+                                    unset whiptailGaugeNumber
+                                } | whiptail --gauge "Please wait while all selected config files are restored..." 8 65 0
+                                whiptail --title "SWARM [RESTORE] Config" --msgbox "Restored all selected SWARM config files." 8 65
                             fi
-                            sudo cp -rf $swarmConfigs $swarmTmp/ > /dev/null 2>&1
-                            if [ -d "$swarmTmp/configs" ]; then
-                                whiptail --title "SWARM [BACKUP] Config" --msgbox "\nBackup successful.\n\nBackup path: \"$swarmTmp/configs\"" 10 65
-                            fi
+                            unset swarmConfigFiles swarmConfigFile
+                        else
+                            whiptail --title "SWARM [RESTORE] Config" --msgbox "Aborted - No backup folder was found, please create a backup first." 8 65
                         fi
                     ;;
                     "4)")
+                        swarmConfigFiles=$(whiptail --title "SWARM [BACKUP] Config" --checklist "\nSelect (spacebar) the configs you want to backup." 24 65 11 \
+                            "SWARM.cfg" "" OFF \
+                            "Proxy.cfg" "" OFF \
+                            "IOTA-Hornet.cfg" "" OFF \
+                            "Shimmer-Hornet.cfg" "" OFF \
+                            "Shimmer-INX-Dashboard.cfg" "" OFF \
+                            "Shimmer-INX-Indexer.cfg" "" OFF \
+                            "Shimmer-INX-Participation.cfg" "" OFF \
+                            "Shimmer-INX-MQTT.cfg" "" OFF \
+                            "Shimmer-INX-POI.cfg" "" OFF \
+                            "GoShimmer.cfg" "" OFF \
+                            "WASP.cfg" "" OFF 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$swarmConfigFiles" ]; then
+                            swarmConfigFiles=$(echo $swarmConfigFiles | tr '[:upper:]' '[:lower:]' | tr -d '"')
+                            if [ ! -d "$swarmBackup" ]; then
+                                sudo mkdir -p $swarmBackup > /dev/null 2>&1
+                            fi
+                            {
+                                whiptailGaugeNumber=10
+                                echo 0
+                                echo 10
+                                for swarmConfigFile in ${swarmConfigFiles[@]}
+                                do
+                                    if [ -f "$swarmBackup/$swarmConfigFile" ]; then
+                                            sudo cp -rf $swarmConfigs/$swarmConfigFile $swarmBackup/$swarmConfigFile > /dev/null 2>&1
+                                    fi
+                                    let whiptailGaugeNumber=$whiptailGaugeNumber+10
+                                    echo $whiptailGaugeNumber
+                                done
+                                echo 100
+                                sleep 0.5
+                                unset whiptailGaugeNumber
+                            } | whiptail --gauge "Please wait while all selected config files are backuped..." 8 65 0
+                            whiptail --title "SWARM [BACKUP] Config" --msgbox "Backup of all the selected config files created." 8 65
+                        fi
+                        unset swarmConfigFiles swarmConfigFile
+                    ;;
+                    "5)")
                         sudo $swarmCLEditor $swarmLogs/swarm.log
                     ;;
                 esac
