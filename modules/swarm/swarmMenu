@@ -150,32 +150,34 @@ while [ $exitCode -lt 1 ]; do
                                         echo $whiptailGaugeNumber
                                         for swarmApp in ${swarmConfigFiles[@]}
                                         do
-                                            source $swarmModule/swarmAppVars
-                                            source $swarmConfigs/$swarmApp.cfg
-                                            source ${!swarmAppModule}/${swarmAppPrefix}Parser
-                                            swarmAppRestart=restart${swarmAppPrefix^}
-                                            if [ "${!swarmAppRestart}" = "true" ]; then
-                                                if [ "$swarmApp" = "shimmer-hornet" ]; then
-                                                    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                                    do
-                                                        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                                            sudo systemctl stop shimmer-inx-$shimmerInxPlugin > /dev/null 2>&1
-                                                        fi
-                                                    done
-                                                    unset shimmerInxPlugin
+                                            if [ -f "/usr/bin/$swarmApp" ]; then
+                                                source $swarmModule/swarmAppVars
+                                                source $swarmConfigs/$swarmApp.cfg
+                                                source ${!swarmAppModule}/${swarmAppPrefix}Parser
+                                                swarmAppRestart=restart${swarmAppPrefix^}
+                                                if [ "${!swarmAppRestart}" = "true" ]; then
+                                                    if [ "$swarmApp" = "shimmer-hornet" ]; then
+                                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                                        do
+                                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                                sudo systemctl stop shimmer-inx-$shimmerInxPlugin > /dev/null 2>&1
+                                                            fi
+                                                        done
+                                                        unset shimmerInxPlugin
+                                                    fi
+                                                    sudo systemctl restart $swarmApp > /dev/null 2>&1
+                                                    if [ "$swarmApp" = "shimmer-hornet" ]; then
+                                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                                        do
+                                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                                sudo systemctl start shimmer-inx-$shimmerInxPlugin > /dev/null 2>&1
+                                                            fi
+                                                        done
+                                                        unset shimmerInxPlugin
+                                                    fi
                                                 fi
-                                                sudo systemctl restart $swarmApp > /dev/null 2>&1
-                                                if [ "$swarmApp" = "shimmer-hornet" ]; then
-                                                    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                                    do
-                                                        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                                            sudo systemctl start shimmer-inx-$shimmerInxPlugin > /dev/null 2>&1
-                                                        fi
-                                                    done
-                                                    unset shimmerInxPlugin
-                                                fi
+                                                unset swarmAppName swarmAppPrefix swarmAppModule swarmAppRestart
                                             fi
-                                            unset swarmAppName swarmAppPrefix swarmAppModule swarmAppRestart
                                             let whiptailGaugeNumber=$whiptailGaugeNumber+10
                                             echo $whiptailGaugeNumber
                                         done
