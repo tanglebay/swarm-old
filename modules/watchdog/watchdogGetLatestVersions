@@ -22,8 +22,12 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             swarmAppReleaseVersion=${swarmAppPrefix}ReleaseVersion
             swarmAppModule=${swarmAppPrefix}Module
 
+            if [ ! -z "${!swarmAppReleaseVersion}" ]; then
+                swarmGrepAppReleaseVersion="| grep ${!swarmAppReleaseVersion}"
+            fi
+
             if [ "${!swarmAppRelease}" = "stable" ]; then
-                swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/$swarmAppGithubName | grep ${!swarmAppReleaseVersion} | awk '!/(-rc|-beta|-alpha)/' | head -n 1)
+                swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/$swarmAppGithubName $swarmGrepAppReleaseVersion | awk '!/(-rc|-beta|-alpha)/' | head -n 1)
                 swarmAppLatestVersion=$(echo $swarmAppLatestVersion | tr -d 'v')
             fi
             if [ "${!swarmAppRelease}" = "beta" ]; then
@@ -48,7 +52,7 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 sudo sed -i 's~^latest'${swarmAppPrefix^}'Version=.*~latest'${swarmAppPrefix^}'Version=""~' $swarmConfigs/latest-versions.cfg
             fi
         fi
-        unset swarmAppGithubName swarmAppPrefix swarmAppCurrentLatestVersion swarmAppRelease swarmAppReleaseVersion swarmAppModule swarmAppLatestVersion
+        unset swarmAppGithubName swarmAppPrefix swarmAppCurrentLatestVersion swarmAppRelease swarmAppReleaseVersion swarmAppModule swarmAppLatestVersion swarmGrepAppReleaseVersion
     done
     unset swarmApp
 fi
