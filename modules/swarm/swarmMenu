@@ -111,7 +111,7 @@ while [ $exitCode -lt 1 ]; do
                         source $swarmModule/swarmRemoval
                     ;;
                     "3)")
-                        if [ -d "$swarmBackupsPath" ]; then
+                        if [ -d "$swarmBackupPath" ]; then
                             swarmConfigFiles=$(whiptail --title "SWARM [RESTORE] Config" --checklist "\nSelect (spacebar) the configs you want to restore." 24 65 11 \
                                 "SWARM.cfg" "" OFF \
                                 "Proxy.cfg" "" OFF \
@@ -126,7 +126,7 @@ while [ $exitCode -lt 1 ]; do
                                 "WASP.cfg" "" OFF 3>&1 1>&2 2>&3)
                             exitStatus=$?
                             if [ "$exitStatus" != "1" ] && [ ! -z "$swarmConfigFiles" ]; then
-                                swarmConfigFiles=$(echo $swarmConfigFiles | tr '[:upper:]' '[:lower:]' | tr -d '"')
+                                swarmConfigFiles=$(echo $swarmConfigFiles | tr '[:upper:]' '[:lower:]' | tr -d '"' | sed 's/.cfg//')
                                 {
                                     whiptailGaugeNumber=10
                                     echo 0
@@ -134,7 +134,7 @@ while [ $exitCode -lt 1 ]; do
                                     for swarmConfigFile in ${swarmConfigFiles[@]}
                                     do
                                         if [ -f "$swarmBackupPath/$swarmConfigFile" ]; then
-                                                sudo cp -rf $swarmBackupPath/$swarmConfigFile $swarmConfigs/$swarmConfigFile > /dev/null 2>&1
+                                                sudo cp -rf $swarmBackupPath/$swarmConfigFile.cfg $swarmConfigs/$swarmConfigFile.cfg > /dev/null 2>&1
                                         fi
                                         let whiptailGaugeNumber=$whiptailGaugeNumber+10
                                         echo $whiptailGaugeNumber
@@ -143,7 +143,37 @@ while [ $exitCode -lt 1 ]; do
                                     sleep 0.5
                                     unset whiptailGaugeNumber
                                 } | whiptail --gauge "Please wait while all selected config files are restored..." 8 65 0
+
                                 whiptail --title "SWARM [RESTORE] Config" --msgbox "Restored all selected SWARM config files." 8 65
+                            fi
+                            if (whiptail --title "SWARM - Update" --yesno --defaultno "Do you want to parse all the restored configuration files with the apps configuration now?" 8 65); then
+                                for swarmApp in ${swarmConfigFiles[@]}
+                                    source $swarmModule/swarmAppVars
+                                    source $swarmConfigs/$swarmApp.cfg
+                                    source ${!swarmAppModule}/${swarmAppPrefix}Parser
+                                    swarmAppRestart=restart${swarmAppPrefix^}
+                                    if [ "${!swarmAppRestart}" = "true" ]; then
+                                        if [ "$swarmApp" = "shimmer-hornet" ]; then
+                                            for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                            do
+                                                if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                    sudo systemctl stop shimmer-inx-$shimmerInxPlugin > /dev/null 2>&1
+                                                fi
+                                            done
+                                        fi
+                                        sudo systemctl restart $swarmApp > /dev/null 2>&1
+                                        if [ "$swarmApp" = "shimmer-hornet" ]; then
+                                            for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                            do
+                                                if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                    sudo systemctl start shimmer-inx-$shimmerInxPlugin > /dev/null 2>&1
+                                                fi
+                                            done
+                                        fi
+                                    fi
+                                    unset swarmAppName swarmAppPrefix swarmAppModule swarmAppRestart
+                                done
+                                unset swarmApp
                             fi
                             unset swarmConfigFiles swarmConfigFile
                         else
