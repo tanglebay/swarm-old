@@ -99,6 +99,11 @@ while [ $exitCode -lt 1 ]; do
                                     latestSwarmVersion="$inputLatestSwarmVersion"
                                 else
                                     source $swarmConfigs/latest-versions.cfg
+                                    if [ "$latestSwarmVersion" = "latest" ] || [ -z "$latestSwarmVersion" ]; then
+                                        latestSwarmVersion=$(curl --max-time 5 -Ls https://$cdnUrl/swarm/version/stable | head -n 1)
+                                        latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
+                                        sudo sed -i 's~^latestSwarmVersion=.*~latestSwarmVersion="'$latestSwarmVersion'"~' $swarmConfigs/latest-versions.cfg
+                                    fi
                                 fi
                                 swarmManualUpdate=true
                                 source $swarmModule/swarmUpdater
