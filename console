@@ -1,12 +1,83 @@
 #!/bin/bash
 
+if [ "$1" = "-h" ] || [ "$1" = "-help" ]; then
+    echo ""
+    echo "     _______          __     _____  __  __ "
+    echo "    / ____\ \        / /\   |  __ \|  \/  |"
+    echo "   | (___  \ \  /\  / /  \  | |__) | \  / |"
+    echo "    \___ \  \ \/  \/ / /\ \ |  _  /| |\/| |"
+    echo "    ____) |  \  /\  / ____ \| | \ \| |  | |"
+    echo "   |_____/    \/  \/_/    \_\_|  \_\_|  |_|"
+    echo ""
+    echo ""
+    echo "###################################################"
+    echo ""
+    echo "Usage of /var/lib/swarm/swarm (SWARM v$version-b$build)."
+    echo ""
+    echo "Command line flags:"
+    echo ""
+    echo "   -h, -help              prints the help page of SWARM"
+    echo "   -v, -version           prints the SWARM version and build"
+    echo "   -ac, -authcheck        verifies the authentication of the CDN user credentials"
+    echo "   -u, -update string     updates SWARM to \"latest\" or version e.g. \"1.0.0\""
+    echo "   -a, -about             prints information about SWARM"
+    exit 0
+fi
+
 if [ "$1" = "-v" ] || [ "$1" = "-version" ]; then
     echo "SWARM v$version-b$build"
     exit 0
 fi
 
+if [ "$1" = "-ac" ] || [ "$1" = "-authcheck" ]; then
+    source $swarmConfigsPath/swarm.cfg
+    source $swarmModulePath/swarmAuth
+    echo "SWARM v$version-b$build"
+    echo "Auth Status: $swarmAuthText"
+    exit 0
+fi
+
+if [ "$1" = "-u" ] || [ "$1" = "-update" ]; then
+    if [ -z "$2" ]; then
+        echo ""
+        echo "Aborted - No version included. Specify \"latest\" or a version e.g. \"1.0.0\" (without quotes)."
+        echo "As an example, run the update to the latest stable build like this \"swarm -update latest\"."
+        echo ""
+    else
+        source $swarmConfigsPath/swarm.cfg
+        source $swarmModulePath/swarmAuth
+        if [ "$2" = "latest" ]; then
+            source $swarmConfigsPath/latest-versions.cfg
+            if [ -z "$latestSwarmVersion" ]; then
+                latestSwarmVersion=$(curl --max-time 5 -Ls https://$cdnUrl/swarm/version/stable | head -n 1)
+                latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
+                sudo sed -i 's~^latestSwarmVersion=.*~latestSwarmVersion="'$latestSwarmVersion'"~' $swarmConfigs/latest-versions.cfg
+            fi
+        else
+            latestSwarmVersion=$2
+        fi
+        echo ""
+        echo "-> Updating SWARM... (this might take a while)"
+        echo ""
+        source $swarmModulePath/swarmUpdater
+        if [ "$swarmUpdated" = "true" ]; then
+            source $swarmHomePath/version
+            echo  "SWARM has been successfully updated to version \"$version-b$build\"."
+            echo ""
+            echo "Checksum:"
+            echo "$swarmChecksum"
+            echo ""
+        else
+            echo "SWARM could not be updated, please check if your authentication is valid."
+            echo "You can check this with \"swarm -ac\" or \"swarm -authcheck\"."
+            echo ""
+        fi
+        unset swarmUpdated swarmChecksum
+    fi
+    exit 0
+fi
+
 if [ "$1" = "-a" ] || [ "$1" = "-about" ]; then
-    echo ""
     echo ""
     echo "SWARM is a script that allows you to easily install and manage an IOTA node."
     echo "The most important configuration options are given via simple and selectable menu items."
@@ -18,15 +89,15 @@ if [ "$1" = "-a" ] || [ "$1" = "-about" ]; then
     echo "Donation address: $donationAddress"
     echo ""
     echo ""
-    echo "$copyright"
+    echo "$license - $copyright"
     echo ""
     exit 0
 fi
 
-if [ "$1" = "-license" ]; then
-    echo ""
+if [ "$1" = "-l" ] || [ "$1" = "-license" ]; then
     echo ""
     sudo cat $licenseFile
+    echo ""
     echo ""
     exit 0
 fi

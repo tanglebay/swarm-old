@@ -2,7 +2,7 @@
 
 if [ "$swarmManualUpdate" = "true" ]; then
     if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
-        source $swarmModule/swarmAuth
+        source $swarmModulePath/swarmAuth
         if [ "$swarmAuth" = "200" ] && [ ! -f "/tmp/watchdog.lock" ]; then
             sudo touch /tmp/watchdog.lock
             {
@@ -20,14 +20,14 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                     ( cd $swarmTmpPath/v$latestSwarmVersion ; sudo tar -xzf $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                     if [ -f "$swarmTmpPath/v$latestSwarmVersion/swarm/update.lock" ]; then
-                        sudo rm -rf $swarmHome > /dev/null 2>&1
+                        sudo rm -rf $swarmHomePath > /dev/null 2>&1
                         sudo mv -f $swarmTmpPath/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
                         # Load new env
                         source /var/lib/swarm/environment
-                        sudo chmod +x $swarmHome/swarm $swarmPlugins/watchdog > /dev/null 2>&1
+                        sudo chmod +x $swarmHomePath/swarm $swarmPlugins/watchdog > /dev/null 2>&1
                         echo 25
 
-                        source $swarmModule/swarmParser
+                        source $swarmModulePath/swarmParser
 
                         echo 30
                         ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
@@ -35,7 +35,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
 
                         echo 35
 
-                        source $swarmModule/swarmUpdaterAppService
+                        source $swarmModulePath/swarmUpdaterAppService
 
                         echo 40
                         # Remove Hornet apt
@@ -47,7 +47,7 @@ if [ "$swarmManualUpdate" = "true" ]; then
                         progressNumber=45
                         for swarmApp in ${swarmApps[@]}
                         do
-                            source $swarmModule/swarmAppVars
+                            source $swarmModulePath/swarmAppVars
                             if [ -f "/usr/bin/$swarmApp" ]; then
                                 if [ ! -f "/tmp/$swarmApp.lock" ]; then
                                     sudo touch /tmp/$swarmApp.lock > /dev/null 2>&1
@@ -99,15 +99,15 @@ if [ "$swarmManualUpdate" = "true" ]; then
                 echo 100
             } | whiptail --gauge "Updating SWARM..." 6 65 0
         fi
-        if [ -f "$swarmHome/update.lock" ]; then
+        if [ -f "$swarmHomePath/update.lock" ]; then
             swarmUpdated=true
             sudo cat /var/lib/swarm/templates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
             source $proxyModule/proxySwarmEndpoint
-            sudo rm -rf $swarmHome/update.lock > /dev/null 2>&1
+            sudo rm -rf $swarmHomePath/update.lock > /dev/null 2>&1
         fi
         if [ "$swarmUpdated" = "true" ]; then
             swarmChecksum=$(shasum -a 512 $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
-            source $swarmHome/version
+            source $swarmHomePath/version
             whiptail --title "SWARM - Update" --msgbox "\nSWARM successfully updated to v$version (build $build).\n\nChecksum: $swarmChecksum" 14 65
             unset swarmUpdated swarmChecksum
             if [ -f "/tmp/watchdog.lock" ]; then
@@ -143,11 +143,11 @@ else
             if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
                 ( cd $swarmTmpPath/v$latestSwarmVersion ; sudo tar -xzf $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
                 if [ -f "$swarmTmpPath/v$latestSwarmVersion/swarm/update.lock" ]; then
-                    sudo rm -rf $swarmHome $swarmConfigs > /dev/null 2>&1
+                    sudo rm -rf $swarmHomePath > /dev/null 2>&1
                     sudo mv -f $swarmTmpPath/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
                     source /var/lib/swarm/environment
-                    sudo cat /var/lib/swarm/templates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
-                    source $swarmModule/swarmUpdaterAfter
+                    sudo cat $swarmTemplatesPath/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
+                    source $swarmModulePath/swarmUpdaterAfter
                 fi
             fi
             if [ -d "$swarmTmpPath" ]; then
