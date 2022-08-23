@@ -383,20 +383,42 @@ while [ $exitCode -lt 1 ]; do
                                     source $iotaHornetModule/iotaHornetConfigs
                                     {
                                         echo 0
-                                        echo 25
+                                        echo 20
                                         if [ "$killall" = "true" ]; then
                                             sudo killall -s SIGKILL iota-hornet > /dev/null 2>&1
                                         else
                                             sudo systemctl stop iota-hornet > /dev/null 2>&1
                                         fi
-                                        echo 50
+                                        echo 40
                                         sudo rm -rf $iotaHornetHome/${iotaHornetNetwork}db $iotaHornetHome/snapshots/${iotaHornetNetwork}/*.bin
                                         if [ ! -z "$iotaHornetSnapshotSource" ]; then
                                             sudo -u hornet wget -q -O $iotaHornetHome/snapshots/${iotaHornetNetwork}/full_snapshot.bin $iotaHornetSnapshotSource
                                         fi
+                                        if [[ $iotaHornetEnablePlugins = *participation* ]]; then
+                                            iotaHornetDisableParticipation=true
+                                            source $iotaHornetConfigParsers/iotaHornetEnablePlugins
+                                            unset iotaHornetDisableParticipation restartIotaHornet
+                                        fi
                                         sudo sed -i 's/^iotaHornetStatusCounter=.*/hornetStatusCounter=0/' $swarmConfigs/watchdog.cfg
-                                        echo 75
-                                        sudo systemctl start iota-hornet
+                                        echo 60
+                                        sudo systemctl start iota-hornet > /dev/null 2>&1
+                                        echo 80
+                                        if [[ $iotaHornetEnablePlugins = *participation* ]]; then
+                                            swarmSleepCounter=1
+                                            whiptailGauge=85
+                                            while [ $swarmSleepCounter -lt 3 ]; do
+                                                sleep 5
+                                                echo $whiptailGauge
+                                                let whiptailGauge=$whiptailGauge+5
+                                                let swarmSleepCounter=$swarmSleepCounter+1
+                                            done
+                                            unset swarmSleepCounter whiptailGauge
+                                            source $iotaHornetConfigParsers/iotaHornetEnablePlugins
+                                            if [ "$restartIotaHornet" = "true" ]; then
+                                                sudo systemctl restart iota-hornet > /dev/null 2>&1
+                                            fi
+                                            unset restartIotaHornet
+                                        fi
                                         echo 100
                                         sleep 0.25
                                     } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
