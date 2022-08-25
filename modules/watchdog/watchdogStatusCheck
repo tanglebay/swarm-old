@@ -3,7 +3,7 @@
 for swarmApp in ${swarmApps[@]}
 do
     if [ -f "/usr/bin/$swarmApp" ] && [ ! -f "/tmp/$swarmApp.lock" ]; then
-        source $swarmConfigs/watchdog.cfg
+        source $watchdogStateFile
         source $swarmModule/swarmAppVars
 
         swarmAppStatusCounter=${swarmAppPrefix}StatusCounter
@@ -11,11 +11,11 @@ do
         if [ -n "${swarmAppStatusCounter}" ]; then
             if [ ${swarmAppStatusCounter} -ne ${swarmAppStatusCounter} ] 2>/dev/null; then
                 swarmAppStatusCounter=0
-                sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $swarmConfigs/watchdog.cfg
+                sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $watchdogStateFile
             fi
         else
             swarmAppStatusCounter=0
-            sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $swarmConfigs/watchdog.cfg
+            sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $watchdogStateFile
         fi
 
         swarmAppHome=${swarmAppPrefix}Home
@@ -45,7 +45,7 @@ do
                     if [ "${!swarmAppAllowDbReset}" = "true" ]; then
                         if [ "$swarmApp" = "iota-hornet" ] && [[ $iotaHornetPlugins = *participation* ]] && [ $swarmAppStatusCounter -eq 2 ] 2>/dev/null; then
                             sudo rm -rf $iotaHornetHome/${iotaHornetNetwork}db/participation 2>/dev/null
-                            echo "$restartDate [WACHTDOG] $swarmAppName - Participation database reset because of too many failed restarts." >> $swarmLogs/swarm.log
+                            echo "$restartDate [WACHTDOG] $swarmAppName - Participation database reset because of too many failed restarts." >> $swarmLogs/watchdog.log
                             telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Participation database reset because of too many failed restarts."
                             source $watchdogModule/watchdogTelegram
                         fi
@@ -73,7 +73,7 @@ do
                                     fi
                                 fi
                                 if [ "$swarmAppDbDeleted" = "true" ]; then
-                                    echo "$restartDate [WACHTDOG] $swarmAppName - Database reset because of too many failed restarts." >> $swarmLogs/swarm.log
+                                    echo "$restartDate [WACHTDOG] $swarmAppName - Database reset because of too many failed restarts." >> $swarmLogs/watchdog.log
                                     if [ $swarmAppStatusCounter -eq 4 ] 2>/dev/null; then
                                         telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Database reset because of too many failed restarts."
                                         source $watchdogModule/watchdogTelegram
@@ -84,7 +84,7 @@ do
                         fi
                     fi
                     sudo systemctl start $swarmApp 2>/dev/null
-                    echo "$restartDate [WACHTDOG] $swarmAppName - Service restarted." >> $swarmLogs/swarm.log
+                    echo "$restartDate [WACHTDOG] $swarmAppName - Service restarted." >> $swarmLogs/watchdog.log
                     if [ $swarmAppStatusCounter -eq 1 ] 2>/dev/null; then
                         telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Service restarted."
                         source $watchdogModule/watchdogTelegram
@@ -102,12 +102,12 @@ do
                 else
                     let swarmAppStatusCounter=$swarmAppStatusCounter+1
                 fi
-                sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $swarmConfigs/watchdog.cfg
+                sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $watchdogStateFile
             fi
         else
             if [ $swarmAppStatusCounter -gt 0 ] 2>/dev/null; then
                 let swarmAppStatusCounter=$swarmAppStatusCounter-1
-                sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $swarmConfigs/watchdog.cfg
+                sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $watchdogStateFile
             fi
         fi
         unset swarmAppName swarmAppPrefix swarmAppHome swarmAppStatus swarmAppServiceStatusCheck swarmAppAllowDbReset swarmAppStatusCounter
