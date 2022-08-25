@@ -1,15 +1,10 @@
 #!/bin/bash
 crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled
 while [ $exitCode -lt 1 ]; do
-    if [ "$swarmAutoUpdate" = "true" ]; then
-        swarmAutoUpdateMenu="Disable"
+    if [ "$watchdogSwarmAutoUpdate" = "true" ]; then
+        watchdogSwarmAutoUpdateMenu="Disable"
     else
-        swarmAutoUpdateMenu="Enable"
-    fi
-    if [ "$proxyCheck" = "true" ]; then
-        proxyCheckMenu="Disable"
-    else
-        proxyCheckMenu="Enable"
+        watchdogSwarmAutoUpdateMenu="Enable"
     fi
 
     CHOICE=$(
@@ -19,8 +14,7 @@ while [ $exitCode -lt 1 ]; do
         "2)" "INX [Watchdog]" \
         "3)" "GoShimmer [Watchdog]" \
         "4)" "WASP [Watchdog]" \
-        "5)" "Telegram Notifications [Watchdog]" \
-        "6)" "Update Watchdog" 3>&2 2>&1 1>&3
+        "5)" "Telegram Notifications [Watchdog]" 3>&2 2>&1 1>&3
     )
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
@@ -30,7 +24,7 @@ while [ $exitCode -lt 1 ]; do
         "1)")
             while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
-                    whiptail --title "Hornet - Watchdog" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Watchdog [-] Hornet " --menu "\nChoose an option" 24 65 0 \
                     "" "" \
                     "1)" "Hornet [IOTA]" \
                     "2)" "Hornet [SHIMMER]" 3>&2 2>&1 1>&3
@@ -42,35 +36,35 @@ while [ $exitCode -lt 1 ]; do
                 case $CHOICE in
                     "1)")
                         while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/swarm.cfg
-                            if [ "$iotaHornetAutoUpdate" = "true" ]; then
-                                iotaHornetAutoUpdateMenu="Disable"
+                            source $swarmConfigs/watchdog.cfg
+                            if [ "$watchdogIotaHornetAutoUpdate" = "true" ]; then
+                                watchdogIotaHornetAutoUpdateMenu="Disable"
                             else
-                                iotaHornetAutoUpdateMenu="Enable"
+                                watchdogIotaHornetAutoUpdateMenu="Enable"
                             fi
-                            if [ "$iotaHornetAllowDbReset" = "true" ]; then
-                                iotaHornetAllowDbResetMenu="Forbid"
+                            if [ "$watchdogIotaHornetAllowDbReset" = "true" ]; then
+                                watchdogIotaHornetAllowDbResetMenu="Forbid"
                             else
-                                iotaHornetAllowDbResetMenu="Allow"
+                                watchdogIotaHornetAllowDbResetMenu="Allow"
                             fi
-                            if [ "$iotaHornetServiceStatusCheck" = "true" ]; then
-                                iotaHornetServiceStatusCheckMenu="Disable"
+                            if [ "$watchdogIotaHornetServiceStatusCheck" = "true" ]; then
+                                watchdogIotaHornetServiceStatusCheckMenu="Disable"
                             else
-                                iotaHornetServiceStatusCheckMenu="Enable"
+                                watchdogIotaHornetServiceStatusCheckMenu="Enable"
                             fi
-                            if [ "$iotaHornetParticipationAutoAdd" = "true" ]; then
-                                iotaHornetParticipationAutoAddMenu="Disable"
+                            if [ "$watchdogIotaHornetParticipationAutoAdd" = "true" ]; then
+                                watchdogIotaHornetParticipationAutoAddMenu="Disable"
                             else
-                                iotaHornetParticipationAutoAddMenu="Enable"
+                                watchdogIotaHornetParticipationAutoAddMenu="Enable"
                             fi
 
                             CHOICE=$(
-                                whiptail --title "SWARM [IOTA] Hornet" --menu "\nChoose an option" 24 65 0 \
+                                whiptail --title "Watchdog [IOTA] Hornet" --menu "\nChoose an option" 24 65 0 \
                                 "" "" \
-                                "1)" "$iotaHornetAutoUpdateMenu Hornet AutoUpdater" \
-                                "2)" "$iotaHornetAllowDbResetMenu Hornet database reset" \
-                                "3)" "$iotaHornetServiceStatusCheckMenu Hornet service status check" \
-                                "4)" "$iotaHornetParticipationAutoAddMenu auto-add participation events" 3>&2 2>&1 1>&3
+                                "1)" "$watchdogIotaHornetAutoUpdateMenu Hornet AutoUpdater" \
+                                "2)" "$watchdogIotaHornetAllowDbResetMenu Hornet database reset" \
+                                "3)" "$watchdogIotaHornetServiceStatusCheckMenu Hornet service status check" \
+                                "4)" "$watchdogIotaHornetParticipationAutoAddMenu auto-add participation events" 3>&2 2>&1 1>&3
                             )
                             exitStatus=$?
                             if [ "$exitStatus" = "1" ]; then
@@ -78,48 +72,48 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             case $CHOICE in
                                 "1)")
-                                    if [ "$iotaHornetAutoUpdate" = "true" ]; then
-                                        iotaHornetAutoUpdate=false
-                                        iotaHornetAutoUpdateMenu="disabled"
+                                    if [ "$watchdogIotaHornetAutoUpdate" = "true" ]; then
+                                        watchdogIotaHornetAutoUpdate=false
+                                        watchdogIotaHornetAutoUpdateMenu="disabled"
                                     else
-                                        iotaHornetAutoUpdate=true
-                                        iotaHornetAutoUpdateMenu="enabled"
+                                        watchdogIotaHornetAutoUpdate=true
+                                        watchdogIotaHornetAutoUpdateMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^iotaHornetAutoUpdate=.*/iotaHornetAutoUpdate='$iotaHornetAutoUpdate'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "Watchdog [IOTA] Hornet" --msgbox "Hornet AutoUpdater $iotaHornetAutoUpdateMenu." 8 65
+                                    sudo sed -i 's/^watchdogIotaHornetAutoUpdate=.*/watchdogIotaHornetAutoUpdate='$watchdogIotaHornetAutoUpdate'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [IOTA] Hornet" --msgbox "Hornet AutoUpdater $watchdogIotaHornetAutoUpdateMenu." 8 65
                                 ;;
                                 "2)")
-                                    if [ "$iotaHornetAllowDbReset" = "true" ]; then
-                                        iotaHornetAllowDbReset=false
-                                        iotaHornetAllowDbResetMenu="disabled"
+                                    if [ "$watchdogIotaHornetAllowDbReset" = "true" ]; then
+                                        watchdogIotaHornetAllowDbReset=false
+                                        watchdogIotaHornetAllowDbResetMenu="disabled"
                                     else
-                                        iotaHornetAllowDbReset=true
-                                        iotaHornetAllowDbResetMenu="enabled"
+                                        watchdogIotaHornetAllowDbReset=true
+                                        watchdogIotaHornetAllowDbResetMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^iotaHornetAllowDbReset=.*/iotaHornetAllowDbReset='$iotaHornetAllowDbReset'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "SWARM [IOTA] Hornet" --msgbox "Delete Hornet database $iotaHornetAllowDbResetMenu for Watchdog." 8 65
+                                    sudo sed -i 's/^watchdogIotaHornetAllowDbReset=.*/watchdogIotaHornetAllowDbReset='$watchdogIotaHornetAllowDbReset'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [IOTA] Hornet" --msgbox "Delete Hornet database $iotaHornetAllowDbResetMenu for Watchdog." 8 65
                                 ;;
                                 "3)")
-                                    if [ "$iotaHornetServiceStatusCheck" = "true" ]; then
-                                        iotaHornetServiceStatusCheck=false
-                                        iotaHornetServiceStatusCheckMenu="disabled"
+                                    if [ "$watchdogIotaHornetServiceStatusCheck" = "true" ]; then
+                                        watchdogIotaHornetServiceStatusCheck=false
+                                        watchdogIotaHornetServiceStatusCheckMenu="disabled"
                                     else
-                                        iotaHornetServiceStatusCheck=true
-                                        iotaHornetServiceStatusCheckMenu="enabled"
+                                        watchdogIotaHornetServiceStatusCheck=true
+                                        watchdogIotaHornetServiceStatusCheckMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^iotaHornetServiceStatusCheck=.*/iotaHornetServiceStatusCheck='$iotaHornetServiceStatusCheck'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "SWARM [IOTA] Hornet" --msgbox "Watchdog Hornet service check $iotaHornetServiceStatusCheckMenu." 8 65
+                                    sudo sed -i 's/^watchdogIotaHornetServiceStatusCheck=.*/watchdogIotaHornetServiceStatusCheck='$watchdogIotaHornetServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [IOTA] Hornet" --msgbox "Watchdog Hornet service check $watchdogIotaHornetServiceStatusCheckMenu." 8 65
                                 ;;
                                 "4)")
-                                    if [ "$iotaHornetParticipationAutoAdd" = "true" ]; then
-                                        iotaHornetParticipationAutoAdd=false
-                                        iotaHornetParticipationAutoAddMenu="disabled"
+                                    if [ "$watchdogIotaHornetParticipationAutoAdd" = "true" ]; then
+                                        watchdogIotaHornetParticipationAutoAdd=false
+                                        watchdogIotaHornetParticipationAutoAddMenu="disabled"
                                     else
-                                        iotaHornetParticipationAutoAdd=true
-                                        iotaHornetParticipationAutoAddMenu="enabled"
+                                        watchdogIotaHornetParticipationAutoAdd=true
+                                        watchdogIotaHornetParticipationAutoAddMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^iotaHornetParticipationAutoAdd=.*/iotaHornetParticipationAutoAdd='$iotaHornetParticipationAutoAdd'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "SWARM [IOTA] Hornet" --msgbox "Watchdog auto-add participation events $iotaHornetParticipationAutoAddMenu." 8 65
+                                    sudo sed -i 's/^watchdogIotaHornetParticipationAutoAdd=.*/watchdogIotaHornetParticipationAutoAdd='$watchdogIotaHornetParticipationAutoAdd'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [IOTA] Hornet" --msgbox "Watchdog auto-add participation events $watchdogIotaHornetParticipationAutoAddMenu." 8 65
                                 ;;
                             esac
                         done
@@ -127,29 +121,29 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "2)")
                         while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/swarm.cfg
-                            if [ "$shimmerHornetAutoUpdate" = "true" ]; then
-                                shimmerHornetAutoUpdateMenu="Disable"
+                            source $swarmConfigs/watchdog.cfg
+                            if [ "$watchdogShimmerHornetAutoUpdate" = "true" ]; then
+                                watchdogShimmerHornetAutoUpdateMenu="Disable"
                             else
-                                shimmerHornetAutoUpdateMenu="Enable"
+                                watchdogShimmerHornetAutoUpdateMenu="Enable"
                             fi
-                            if [ "$shimmerHornetAllowDbReset" = "true" ]; then
-                                shimmerHornetAllowDbResetMenu="Forbid"
+                            if [ "$watchdogShimmerHornetAllowDbReset" = "true" ]; then
+                                watchdogShimmerHornetAllowDbResetMenu="Forbid"
                             else
-                                shimmerHornetAllowDbResetMenu="Allow"
+                                watchdogShimmerHornetAllowDbResetMenu="Allow"
                             fi
-                            if [ "$shimmerHornetServiceStatusCheck" = "true" ]; then
-                                shimmerHornetServiceStatusCheckMenu="Disable"
+                            if [ "$watchdogShimmerHornetServiceStatusCheck" = "true" ]; then
+                                watchdogShimmerHornetServiceStatusCheckMenu="Disable"
                             else
-                                shimmerHornetServiceStatusCheckMenu="Enable"
+                                watchdogShimmerHornetServiceStatusCheckMenu="Enable"
                             fi
 
                             CHOICE=$(
-                                whiptail --title "Hornet [SHIMMER] Watchdog" --menu "\nChoose an option" 24 65 0 \
+                                whiptail --title "Watchdog [SHIMMER] Hornet" --menu "\nChoose an option" 24 65 0 \
                                 "" "" \
-                                "1)" "$shimmerHornetAutoUpdateMenu Hornet-Shimmer AutoUpdater" \
-                                "2)" "$shimmerHornetAllowDbResetMenu Hornet-Shimmer database reset" \
-                                "3)" "$shimmerHornetServiceStatusCheckMenu Hornet-Shimmer service status check" 3>&2 2>&1 1>&3
+                                "1)" "$watchdogShimmerHornetAutoUpdateMenu Hornet-Shimmer AutoUpdater" \
+                                "2)" "$watchdogShimmerHornetAllowDbResetMenu Hornet-Shimmer database reset" \
+                                "3)" "$watchdogShimmerHornetServiceStatusCheckMenu Hornet-Shimmer service status check" 3>&2 2>&1 1>&3
                             )
                             exitStatus=$?
                             if [ "$exitStatus" = "1" ]; then
@@ -157,37 +151,37 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             case $CHOICE in
                                 "1)")
-                                    if [ "$shimmerHornetAutoUpdate" = "true" ]; then
-                                        shimmerHornetAutoUpdate=false
-                                        shimmerHornetAutoUpdateMenu="disabled"
+                                    if [ "$watchdogShimmerHornetAutoUpdate" = "true" ]; then
+                                        watchdogShimmerHornetAutoUpdate=false
+                                        watchdogShimmerHornetAutoUpdateMenu="disabled"
                                     else
-                                        shimmerHornetAutoUpdate=true
-                                        shimmerHornetAutoUpdateMenu="enabled"
+                                        watchdogShimmerHornetAutoUpdate=true
+                                        watchdogShimmerHornetAutoUpdateMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerHornetAutoUpdate=.*/shimmerHornetAutoUpdate='$shimmerHornetAutoUpdate'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "Hornet [SHIMMER] Watchdog" --msgbox "Hornet AutoUpdater $shimmerHornetAutoUpdateMenu." 8 65
+                                    sudo sed -i 's/^watchdogShimmerHornetAutoUpdate=.*/watchdogShimmerHornetAutoUpdate='$watchdogShimmerHornetAutoUpdate'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] Hornet" --msgbox "Hornet AutoUpdater $watchdogShimmerHornetAutoUpdateMenu." 8 65
                                 ;;
                                 "2)")
-                                    if [ "$shimmerHornetAllowDbReset" = "true" ]; then
-                                        shimmerHornetAllowDbReset=false
-                                        shimmerHornetAllowDbResetMenu="disabled"
+                                    if [ "$watchdogShimmerHornetAllowDbReset" = "true" ]; then
+                                        watchdogShimmerHornetAllowDbReset=false
+                                        watchdogShimmerHornetAllowDbResetMenu="disabled"
                                     else
-                                        shimmerHornetAllowDbReset=true
-                                        shimmerHornetAllowDbResetMenu="enabled"
+                                        watchdogShimmerHornetAllowDbReset=true
+                                        watchdogShimmerHornetAllowDbResetMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerHornetAllowDbReset=.*/shimmerHornetAllowDbReset='$shimmerHornetAllowDbReset'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "Hornet [SHIMMER] Watchdog" --msgbox "Delete Hornet database $shimmerHornetAllowDbResetMenu for Watchdog." 8 65
+                                    sudo sed -i 's/^watchdogShimmerHornetAllowDbReset=.*/watchdogShimmerHornetAllowDbReset='$watchdogShimmerHornetAllowDbReset'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] Hornet" --msgbox "Delete Hornet database $watchdogShimmerHornetAllowDbResetMenu for Watchdog." 8 65
                                 ;;
                                 "3)")
-                                    if [ "$shimmerHornetServiceStatusCheck" = "true" ]; then
-                                        shimmerHornetServiceStatusCheck=false
-                                        shimmerHornetServiceStatusCheckMenu="disabled"
+                                    if [ "$watchdogShimmerHornetServiceStatusCheck" = "true" ]; then
+                                        watchdogShimmerHornetServiceStatusCheck=false
+                                        watchdogShimmerHornetServiceStatusCheckMenu="disabled"
                                     else
-                                        shimmerHornetServiceStatusCheck=true
-                                        shimmerHornetServiceStatusCheckMenu="enabled"
+                                        watchdogShimmerHornetServiceStatusCheck=true
+                                        watchdogShimmerHornetServiceStatusCheckMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerHornetServiceStatusCheck=.*/shimmerHornetServiceStatusCheck='$shimmerHornetServiceStatusCheck'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "Hornet [SHIMMER] Watchdog" --msgbox "Watchdog Hornet service check $shimmerHornetServiceStatusCheckMenu." 8 65
+                                    sudo sed -i 's/^watchdogShimmerHornetServiceStatusCheck=.*/watchdogShimmerHornetServiceStatusCheck='$watchdogShimmerHornetServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] Hornet" --msgbox "Watchdog Hornet service check $watchdogShimmerHornetServiceStatusCheckMenu." 8 65
                                 ;;
                             esac
                         done
@@ -200,7 +194,7 @@ while [ $exitCode -lt 1 ]; do
         "2)")
             while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
-                    whiptail --title "SWARM [SWARM] INX" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Watchdog [SHIMMER] INX" --menu "\nChoose an option" 24 65 0 \
                     "" "" \
                     "1)" "INX-Dashboard" \
                     "2)" "INX-Indexer" \
@@ -215,22 +209,22 @@ while [ $exitCode -lt 1 ]; do
                 case $CHOICE in
                     "1)")
                         while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/swarm.cfg
-                            if [ "$shimmerInxDashboardAutoUpdate" = "true" ]; then
-                                shimmerInxDashboardAutoUpdateMenu="Disable"
+                            source $swarmConfigs/watchdog.cfg
+                            if [ "$watchdogShimmerInxDashboardAutoUpdate" = "true" ]; then
+                                watchdogShimmerInxDashboardAutoUpdateMenu="Disable"
                             else
-                                shimmerInxDashboardAutoUpdateMenu="Enable"
+                                watchdogShimmerInxDashboardAutoUpdateMenu="Enable"
                             fi
-                            if [ "$shimmerInxDashboardServiceStatusCheck" = "true" ]; then
-                                shimmerInxDashboardServiceStatusCheckMenu="Disable"
+                            if [ "$watchdogShimmerInxDashboardServiceStatusCheck" = "true" ]; then
+                                watchdogShimmerInxDashboardServiceStatusCheckMenu="Disable"
                             else
-                                shimmerInxDashboardServiceStatusCheckMenu="Enable"
+                                watchdogShimmerInxDashboardServiceStatusCheckMenu="Enable"
                             fi
 
                             CHOICE=$(
-                                whiptail --title "INX-Dashboard [SHIMMER] Watchdog" --menu "\nChoose an option" 24 65 0 \
-                                "1)" "$shimmerInxDashboardAutoUpdateMenu INX-Dashboard AutoUpdater" \
-                                "2)" "$shimmerInxDashboardServiceStatusCheckMenu INX-Dashboard service status check" 3>&2 2>&1 1>&3
+                                whiptail --title "Watchdog [SHIMMER] INX-Dashboard" --menu "\nChoose an option" 24 65 0 \
+                                "1)" "$watchdogShimmerInxDashboardAutoUpdateMenu INX-Dashboard AutoUpdater" \
+                                "2)" "$watchdogShimmerInxDashboardServiceStatusCheckMenu INX-Dashboard service status check" 3>&2 2>&1 1>&3
                             )
                             exitStatus=$?
                             if [ "$exitStatus" = "1" ]; then
@@ -238,26 +232,26 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             case $CHOICE in
                                 "1)")
-                                    if [ "$shimmerInxDashboardAutoUpdate" = "true" ]; then
-                                        shimmerInxDashboardAutoUpdate=false
-                                        shimmerInxDashboardAutoUpdateMenu="disabled"
+                                    if [ "$watchdogShimmerInxDashboardAutoUpdate" = "true" ]; then
+                                        watchdogShimmerInxDashboardAutoUpdate=false
+                                        watchdogShimmerInxDashboardAutoUpdateMenu="disabled"
                                     else
-                                        shimmerInxDashboardAutoUpdate=true
-                                        shimmerInxDashboardAutoUpdateMenu="enabled"
+                                        watchdogShimmerInxDashboardAutoUpdate=true
+                                        watchdogShimmerInxDashboardAutoUpdateMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxDashboardAutoUpdate=.*/shimmerInxDashboardAutoUpdate='$shimmerInxDashboardAutoUpdate'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-Dashboard [SHIMMER] Watchdog" --msgbox "INX-Dashboard AutoUpdater $shimmerInxDashboardAutoUpdateMenu." 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxDashboardAutoUpdate=.*/watchdogShimmerInxDashboardAutoUpdate='$watchdogShimmerInxDashboardAutoUpdate'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-Dashboard" --msgbox "INX-Dashboard AutoUpdater $watchdogShimmerInxDashboardAutoUpdateMenu." 8 65
                                 ;;
                                 "2)")
-                                    if [ "$shimmerInxDashboardServiceStatusCheck" = "true" ]; then
-                                        shimmerInxDashboardServiceStatusCheck=false
-                                        shimmerInxDashboardServiceStatusCheckMenu="disabled"
+                                    if [ "$watchdogShimmerInxDashboardServiceStatusCheck" = "true" ]; then
+                                        watchdogShimmerInxDashboardServiceStatusCheck=false
+                                        watchdogShimmerInxDashboardServiceStatusCheckMenu="disabled"
                                     else
-                                        shimmerInxDashboardServiceStatusCheck=true
-                                        shimmerInxDashboardServiceStatusCheckMenu="enabled"
+                                        watchdogShimmerInxDashboardServiceStatusCheck=true
+                                        watchdogShimmerInxDashboardServiceStatusCheckMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxDashboardServiceStatusCheck=.*/shimmerInxDashboardServiceStatusCheck='$shimmerInxDashboardServiceStatusCheck'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-Dashboard [SHIMMER] Watchdog" --msgbox "Watchdog INX-Dashboard service check $shimmerInxDashboardServiceStatusCheckMenu." 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxDashboardServiceStatusCheck=.*/watchdogShimmerInxDashboardServiceStatusCheck='$watchdogShimmerInxDashboardServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-Dashboard" --msgbox "Watchdog INX-Dashboard service check $shimmerInxDashboardServiceStatusCheckMenu." 8 65
                                 ;;
                             esac
                         done
@@ -265,29 +259,29 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "2)")
                         while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/swarm.cfg
-                            if [ "$shimmerInxIndexerAutoUpdate" = "true" ]; then
-                                shimmerInxIndexerAutoUpdateMenu="Disable"
+                            source $swarmConfigs/watchdog.cfg
+                            if [ "$watchdogShimmerInxIndexerAutoUpdate" = "true" ]; then
+                                watchdogShimmerInxIndexerAutoUpdateMenu="Disable"
                             else
-                                shimmerInxIndexerAutoUpdateMenu="Enable"
+                                watchdogShimmerInxIndexerAutoUpdateMenu="Enable"
                             fi
-                            if [ "$shimmerInxIndexerAllowDbReset" = "true" ]; then
-                                shimmerInxIndexerAllowDbResetMenu="Forbid"
+                            if [ "$watchdogShimmerInxIndexerAllowDbReset" = "true" ]; then
+                                watchdogShimmerInxIndexerAllowDbResetMenu="Forbid"
                             else
-                                shimmerInxIndexerAllowDbResetMenu="Allow"
+                                watchdogShimmerInxIndexerAllowDbResetMenu="Allow"
                             fi
-                            if [ "$shimmerInxIndexerServiceStatusCheck" = "true" ]; then
-                                shimmerInxIndexerServiceStatusCheckMenu="Disable"
+                            if [ "$watchdogShimmerInxIndexerServiceStatusCheck" = "true" ]; then
+                                watchdogShimmerInxIndexerServiceStatusCheckMenu="Disable"
                             else
-                                shimmerInxIndexerServiceStatusCheckMenu="Enable"
+                                watchdogShimmerInxIndexerServiceStatusCheckMenu="Enable"
                             fi
 
                             CHOICE=$(
-                                whiptail --title "Watchdog [SHIMMER] INX" --menu "\nChoose an option" 24 65 0 \
+                                whiptail --title "Watchdog [SHIMMER] INX-Indexer" --menu "\nChoose an option" 24 65 0 \
                                 "" "" \
-                                "1)" "$shimmerInxIndexerAutoUpdateMenu AutoUpdater" \
-                                "2)" "$shimmerInxIndexerAllowDbResetMenu database reset" \
-                                "3)" "$shimmerInxIndexerServiceStatusCheckMenu service status check" 3>&2 2>&1 1>&3
+                                "1)" "$watchdogShimmerInxIndexerAutoUpdateMenu AutoUpdater" \
+                                "2)" "$watchdogShimmerInxIndexerAllowDbResetMenu database reset" \
+                                "3)" "$watchdogShimmerInxIndexerServiceStatusCheckMenu service status check" 3>&2 2>&1 1>&3
                             )
                             exitStatus=$?
                             if [ "$exitStatus" = "1" ]; then
@@ -295,37 +289,37 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             case $CHOICE in
                                 "1)")
-                                    if [ "$shimmerInxIndexerAutoUpdate" = "true" ]; then
-                                        shimmerInxIndexerAutoUpdate=false
-                                        shimmerInxIndexerAutoUpdateMenu="disabled"
+                                    if [ "$watchdogShimmerInxIndexerAutoUpdate" = "true" ]; then
+                                        watchdogShimmerInxIndexerAutoUpdate=false
+                                        watchdogShimmerInxIndexerAutoUpdateMenu="disabled"
                                     else
-                                        shimmerInxIndexerAutoUpdate=true
-                                        shimmerInxIndexerAutoUpdateMenu="enabled"
+                                        watchdogShimmerInxIndexerAutoUpdate=true
+                                        watchdogShimmerInxIndexerAutoUpdateMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxIndexerAutoUpdate=.*/shimmerInxIndexerAutoUpdate='$shimmerInxIndexerAutoUpdate'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-Indexer [SHIMMER] Watchdog" --msgbox "INX-Indexer AutoUpdater $shimmerInxIndexerAutoUpdateMenu." 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxIndexerAutoUpdate=.*/watchdogShimmerInxIndexerAutoUpdate='$watchdogShimmerInxIndexerAutoUpdate'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-Indexer" --msgbox "INX-Indexer AutoUpdater $watchdogShimmerInxIndexerAutoUpdateMenu." 8 65
                                 ;;
                                 "2)")
-                                    if [ "$shimmerInxIndexerAllowDbReset" = "true" ]; then
-                                        shimmerInxIndexerAllowDbReset=false
-                                        shimmerInxIndexerAllowDbResetMenu="disabled"
+                                    if [ "$watchdogShimmerInxIndexerAllowDbReset" = "true" ]; then
+                                        watchdogShimmerInxIndexerAllowDbReset=false
+                                        watchdogShimmerInxIndexerAllowDbResetMenu="disabled"
                                     else
-                                        shimmerInxIndexerAllowDbReset=true
-                                        shimmerInxIndexerAllowDbResetMenu="enabled"
+                                        watchdogShimmerInxIndexerAllowDbReset=true
+                                        watchdogShimmerInxIndexerAllowDbResetMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxIndexerAllowDbReset=.*/shimmerInxIndexerAllowDbReset='$shimmerInxIndexerAllowDbReset'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "[SHIMMER] INX-Indexer - Watchdog" --msgbox "Delete INX-Indexer database $shimmerInxIndexerAllowDbResetMenu for Watchdog." 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxIndexerAllowDbReset=.*/watchdogShimmerInxIndexerAllowDbReset='$watchdogShimmerInxIndexerAllowDbReset'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-Indexer" --msgbox "Delete INX-Indexer database $watchdogShimmerInxIndexerAllowDbResetMenu for Watchdog." 8 65
                                 ;;
                                 "3)")
-                                    if [ "$shimmerInxIndexerServiceStatusCheck" = "true" ]; then
-                                        shimmerInxIndexerServiceStatusCheck=false
-                                        shimmerInxIndexerServiceStatusCheckMenu="disabled"
+                                    if [ "$watchdogShimmerInxIndexerServiceStatusCheck" = "true" ]; then
+                                        watchdogShimmerInxIndexerServiceStatusCheck=false
+                                        watchdogShimmerInxIndexerServiceStatusCheckMenu="disabled"
                                     else
-                                        shimmerInxIndexerServiceStatusCheck=true
-                                        shimmerInxIndexerServiceStatusCheckMenu="enabled"
+                                        watchdogShimmerInxIndexerServiceStatusCheck=true
+                                        watchdogShimmerInxIndexerServiceStatusCheckMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxIndexerServiceStatusCheck=.*/shimmerInxIndexerServiceStatusCheck='$shimmerInxIndexerServiceStatusCheck'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-Indexer [SHIMMER] Watchdog" --msgbox "Watchdog INX-Indexer service check $shimmerInxIndexerServiceStatusCheckMenu." 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxIndexerServiceStatusCheck=.*/watchdogShimmerInxIndexerServiceStatusCheck='$watchdogShimmerInxIndexerServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-Indexer" --msgbox "Watchdog INX-Indexer service check $watchdogShimmerInxIndexerServiceStatusCheckMenu." 8 65
                                 ;;
                             esac
                         done
@@ -333,23 +327,23 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "3)")
                         while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/swarm.cfg
-                            if [ "$shimmerInxMqttAutoUpdate" = "true" ]; then
-                                shimmerInxMqttAutoUpdateMenu="Disable"
+                            source $swarmConfigs/watchdog.cfg
+                            if [ "$watchdogShimmerInxMqttAutoUpdate" = "true" ]; then
+                                watchdogShimmerInxMqttAutoUpdateMenu="Disable"
                             else
-                                shimmerInxMqttAutoUpdateMenu="Enable"
+                                watchdogShimmerInxMqttAutoUpdateMenu="Enable"
                             fi
-                            if [ "$shimmerInxMqttServiceStatusCheck" = "true" ]; then
-                                shimmerInxMqttServiceStatusCheckMenu="Disable"
+                            if [ "$watchdogShimmerInxMqttServiceStatusCheck" = "true" ]; then
+                                watchdogShimmerInxMqttServiceStatusCheckMenu="Disable"
                             else
-                                shimmerInxMqttServiceStatusCheckMenu="Enable"
+                                watchdogShimmerInxMqttServiceStatusCheckMenu="Enable"
                             fi
 
                             CHOICE=$(
-                                whiptail --title "INX-MQTT [SHIMMER] Watchdog" --menu "\nChoose an option" 24 65 0 \
+                                whiptail --title "Watchdog [SHIMMER] INX-MQTT" --menu "\nChoose an option" 24 65 0 \
                                 "" "" \
-                                "1)" "$shimmerInxMqttAutoUpdateMenu AutoUpdater" \
-                                "2)" "$shimmerInxMqttServiceStatusCheckMenu service status check" 3>&2 2>&1 1>&3
+                                "1)" "$watchdogShimmerInxMqttAutoUpdateMenu AutoUpdater" \
+                                "2)" "$watchdogShimmerInxMqttServiceStatusCheckMenu service status check" 3>&2 2>&1 1>&3
                             )
                             exitStatus=$?
                             if [ "$exitStatus" = "1" ]; then
@@ -357,26 +351,26 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             case $CHOICE in
                                 "1)")
-                                    if [ "$shimmerInxMqttAutoUpdate" = "true" ]; then
-                                        shimmerInxMqttAutoUpdate=false
-                                        shimmerInxMqttAutoUpdateMenu="disabled"
+                                    if [ "$watchdogShimmerInxMqttAutoUpdate" = "true" ]; then
+                                        watchdogShimmerInxMqttAutoUpdate=false
+                                        watchdogShimmerInxMqttAutoUpdateMenu="disabled"
                                     else
-                                        shimmerInxMqttAutoUpdate=true
-                                        shimmerInxMqttAutoUpdateMenu="enabled"
+                                        watchdogShimmerInxMqttAutoUpdate=true
+                                        watchdogShimmerInxMqttAutoUpdateMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxMqttAutoUpdate=.*/shimmerInxMqttAutoUpdate='$shimmerInxMqttAutoUpdate'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-MQTT [SHIMMER] Watchdog" --msgbox "INX-MQTT AutoUpdater $shimmerInxMqttAutoUpdateMenu." 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxMqttAutoUpdate=.*/watchdogShimmerInxMqttAutoUpdate='$watchdogShimmerInxMqttAutoUpdate'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-MQTT" --msgbox "INX-MQTT AutoUpdater $watchdogShimmerInxMqttAutoUpdateMenu." 8 65
                                 ;;
                                 "2)")
-                                    if [ "$shimmerInxMqttServiceStatusCheck" = "true" ]; then
-                                        shimmerInxMqttServiceStatusCheck=false
-                                        shimmerInxMqttServiceStatusCheckMenu="disabled"
+                                    if [ "$watchdogShimmerInxMqttServiceStatusCheck" = "true" ]; then
+                                        watchdogShimmerInxMqttServiceStatusCheck=false
+                                        watchdogShimmerInxMqttServiceStatusCheckMenu="disabled"
                                     else
-                                        shimmerInxMqttServiceStatusCheck=true
-                                        shimmerInxMqttServiceStatusCheckMenu="enabled"
+                                        watchdogShimmerInxMqttServiceStatusCheck=true
+                                        watchdogShimmerInxMqttServiceStatusCheckMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxMqttServiceStatusCheck=.*/shimmerInxMqttServiceStatusCheck='$shimmerInxMqttServiceStatusCheck'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-MQTT [SHIMMER] Watchdog" --msgbox "Watchdog INX-MQTT service check $shimmerInxMqttServiceStatusCheckMenu." 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxMqttServiceStatusCheck=.*/watchdogShimmerInxMqttServiceStatusCheck='$watchdogShimmerInxMqttServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-MQTT" --msgbox "Watchdog INX-MQTT service check $watchdogShimmerInxMqttServiceStatusCheckMenu." 8 65
                                 ;;
                             esac
                         done
@@ -384,35 +378,35 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "4)")
                         while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/swarm.cfg
-                            if [ "$shimmerInxParticipationAutoUpdate" = "true" ]; then
-                                shimmerInxParticipationAutoUpdateMenu="Disable"
+                            source $swarmConfigs/watchdog.cfg
+                            if [ "$watchdogShimmerInxParticipationAutoUpdate" = "true" ]; then
+                                watchdogShimmerInxParticipationAutoUpdateMenu="Disable"
                             else
-                                shimmerInxParticipationAutoUpdateMenu="Enable"
+                                watchdogShimmerInxParticipationAutoUpdateMenu="Enable"
                             fi
-                            if [ "$shimmerInxParticipationAllowDbReset" = "true" ]; then
-                                shimmerInxParticipationAllowDbResetMenu="Forbid"
+                            if [ "$watchdogShimmerInxParticipationAllowDbReset" = "true" ]; then
+                                watchdogShimmerInxParticipationAllowDbResetMenu="Forbid"
                             else
-                                shimmerInxParticipationAllowDbResetMenu="Allow"
+                                watchdogShimmerInxParticipationAllowDbResetMenu="Allow"
                             fi
-                            if [ "$shimmerInxParticipationServiceStatusCheck" = "true" ]; then
-                                shimmerInxParticipationServiceStatusCheckMenu="Disable"
+                            if [ "$watchdogShimmerInxParticipationServiceStatusCheck" = "true" ]; then
+                                watchdogShimmerInxParticipationServiceStatusCheckMenu="Disable"
                             else
-                                shimmerInxParticipationServiceStatusCheckMenu="Enable"
+                                watchdogShimmerInxParticipationServiceStatusCheckMenu="Enable"
                             fi
-                            if [ "$shimmerInxParticipationAutoAdd" = "true" ]; then
-                                shimmerInxParticipationAutoAddMenu="Disable"
+                            if [ "$watchdogShimmerInxParticipationAutoAdd" = "true" ]; then
+                                watchdogShimmerInxParticipationAutoAddMenu="Disable"
                             else
-                                shimmerInxParticipationAutoAddMenu="Enable"
+                                watchdogShimmerInxParticipationAutoAddMenu="Enable"
                             fi
 
                             CHOICE=$(
-                                whiptail --title "INX-Participation [SHIMMER] Watchdog" --menu "\nChoose an option" 24 65 0 \
+                                whiptail --title "Watchdog [SHIMMER] INX-Participation" --menu "\nChoose an option" 24 65 0 \
                                 "" "" \
-                                "1)" "$shimmerInxParticipationAutoUpdateMenu AutoUpdater" \
-                                "2)" "$shimmerInxParticipationAllowDbResetMenu database reset" \
-                                "3)" "$shimmerInxParticipationServiceStatusCheckMenu service status check" \
-                                "4)" "$shimmerInxParticipationAutoAddMenu auto-add participation events" 3>&2 2>&1 1>&3
+                                "1)" "$watchdogShimmerInxParticipationAutoUpdateMenu AutoUpdater" \
+                                "2)" "$watchdogShimmerInxParticipationAllowDbResetMenu database reset" \
+                                "3)" "$watchdogShimmerInxParticipationServiceStatusCheckMenu service status check" \
+                                "4)" "$watchdogShimmerInxParticipationAutoAddMenu auto-add participation events" 3>&2 2>&1 1>&3
                             )
                             exitStatus=$?
                             if [ "$exitStatus" = "1" ]; then
@@ -420,48 +414,48 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             case $CHOICE in
                                 "1)")
-                                    if [ "$shimmerInxParticipationAutoUpdate" = "true" ]; then
-                                        shimmerInxParticipationAutoUpdate=false
-                                        shimmerInxParticipationAutoUpdateMenu="disabled"
+                                    if [ "$watchdogShimmerInxParticipationAutoUpdate" = "true" ]; then
+                                        watchdogShimmerInxParticipationAutoUpdate=false
+                                        watchdogShimmerInxParticipationAutoUpdateMenu="disabled"
                                     else
-                                        shimmerInxParticipationAutoUpdate=true
-                                        shimmerInxParticipationAutoUpdateMenu="enabled"
+                                        watchdogShimmerInxParticipationAutoUpdate=true
+                                        watchdogShimmerInxParticipationAutoUpdateMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxParticipationAutoUpdate=.*/shimmerInxParticipationAutoUpdate='$shimmerInxParticipationAutoUpdate'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-Participation [SHIMMER] Watchdog" --msgbox "INX-Participation AutoUpdater $shimmerInxParticipationAutoUpdateMenu." 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxParticipationAutoUpdate=.*/watchdogShimmerInxParticipationAutoUpdate='$watchdogShimmerInxParticipationAutoUpdate'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-Participation" --msgbox "INX-Participation AutoUpdater $watchdogShimmerInxParticipationAutoUpdateMenu." 8 65
                                 ;;
                                 "2)")
-                                    if [ "$shimmerInxParticipationAllowDbReset" = "true" ]; then
-                                        shimmerInxParticipationAllowDbReset=false
-                                        shimmerInxParticipationAllowDbResetMenu="disabled"
+                                    if [ "$watchdogShimmerInxParticipationAllowDbReset" = "true" ]; then
+                                        watchdogShimmerInxParticipationAllowDbReset=false
+                                        watchdogShimmerInxParticipationAllowDbResetMenu="disabled"
                                     else
-                                        shimmerInxParticipationAllowDbReset=true
-                                        shimmerInxParticipationAllowDbResetMenu="enabled"
+                                        watchdogShimmerInxParticipationAllowDbReset=true
+                                        watchdogShimmerInxParticipationAllowDbResetMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxParticipationAllowDbReset=.*/shimmerInxParticipationAllowDbReset='$shimmerInxParticipationAllowDbReset'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-Participation [SHIMMER] Watchdog" --msgbox "Delete INX-Participation database $shimmerInxParticipationAllowDbResetMenu for Watchdog." 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxParticipationAllowDbReset=.*/watchdogShimmerInxParticipationAllowDbReset='$watchdogShimmerInxParticipationAllowDbReset'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-Participation" --msgbox "Delete INX-Participation database $watchdogShimmerInxParticipationAllowDbResetMenu for Watchdog." 8 65
                                 ;;
                                 "3)")
-                                    if [ "$shimmerInxParticipationServiceStatusCheck" = "true" ]; then
-                                        shimmerInxParticipationServiceStatusCheck=false
-                                        shimmerInxParticipationServiceStatusCheckMenu="disabled"
+                                    if [ "$watchdogShimmerInxParticipationServiceStatusCheck" = "true" ]; then
+                                        watchdogShimmerInxParticipationServiceStatusCheck=false
+                                        watchdogShimmerInxParticipationServiceStatusCheckMenu="disabled"
                                     else
-                                        shimmerInxParticipationServiceStatusCheck=true
-                                        shimmerInxParticipationServiceStatusCheckMenu="enabled"
+                                        watchdogShimmerInxParticipationServiceStatusCheck=true
+                                        watchdogShimmerInxParticipationServiceStatusCheckMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxParticipationServiceStatusCheck=.*/shimmerInxParticipationServiceStatusCheck='$shimmerInxParticipationServiceStatusCheck'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-Participation [SHIMMER] Watchdog" --msgbox "Watchdog INX-Participation service check $shimmerInxParticipationServiceStatusCheckMenu." 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxParticipationServiceStatusCheck=.*/watchdogShimmerInxParticipationServiceStatusCheck='$watchdogShimmerInxParticipationServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-Participation" --msgbox "Watchdog INX-Participation service check $watchdogShimmerInxParticipationServiceStatusCheckMenu." 8 65
                                 ;;
                                 "4)")
-                                    if [ "$shimmerInxParticipationAutoAdd" = "true" ]; then
-                                        shimmerInxParticipationAutoAdd=false
-                                        shimmerInxParticipationAutoAddMenu="disabled"
+                                    if [ "$watchdogShimmerInxParticipationAutoAdd" = "true" ]; then
+                                        watchdogShimmerInxParticipationAutoAdd=false
+                                        watchdogShimmerInxParticipationAutoAddMenu="disabled"
                                     else
-                                        shimmerInxParticipationAutoAdd=true
-                                        shimmerInxParticipationAutoAddMenu="enabled"
+                                        watchdogShimmerInxParticipationAutoAdd=true
+                                        watchdogShimmerInxParticipationAutoAddMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxParticipationAutoAdd=.*/shimmerInxParticipationAutoAdd='$shimmerInxParticipationAutoAdd'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-Participation [SHIMMER] Watchdog" --msgbox "Watchdog auto-add participation events $shimmerInxParticipationAutoAddMenu." 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxParticipationAutoAdd=.*/watchdogShimmerInxParticipationAutoAdd='$watchdogShimmerInxParticipationAutoAdd'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-Participation" --msgbox "Watchdog auto-add participation events $watchdogShimmerInxParticipationAutoAddMenu." 8 65
                                 ;;
                             esac
                         done
@@ -469,23 +463,23 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "5)")
                         while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/swarm.cfg
-                            if [ "$shimmerInxPoiAutoUpdate" = "true" ]; then
-                                shimmerInxPoiAutoUpdateMenu="Disable"
+                            source $swarmConfigs/watchdog.cfg
+                            if [ "$watchdogShimmerInxPoiAutoUpdate" = "true" ]; then
+                                watchdogShimmerInxPoiAutoUpdateMenu="Disable"
                             else
-                                shimmerInxPoiAutoUpdateMenu="Enable"
+                                watchdogShimmerInxPoiAutoUpdateMenu="Enable"
                             fi
-                            if [ "$shimmerInxPoiServiceStatusCheck" = "true" ]; then
-                                shimmerInxPoiServiceStatusCheckMenu="Disable"
+                            if [ "$watchdogShimmerInxPoiServiceStatusCheck" = "true" ]; then
+                                watchdogShimmerInxPoiServiceStatusCheckMenu="Disable"
                             else
-                                shimmerInxPoiServiceStatusCheckMenu="Enable"
+                                watchdogShimmerInxPoiServiceStatusCheckMenu="Enable"
                             fi
 
                             CHOICE=$(
-                                whiptail --title "INX-POI [SHIMMER] Watchdog" --menu "\nChoose an option" 24 65 0 \
+                                whiptail --title "Watchdog [SHIMMER] INX-PoI" --menu "\nChoose an option" 24 65 0 \
                                 "" "" \
-                                "1)" "$shimmerInxPoiAutoUpdateMenu AutoUpdater" \
-                                "2)" "$shimmerInxPoiServiceStatusCheckMenu service status check" 3>&2 2>&1 1>&3
+                                "1)" "$watchdogShimmerInxPoiAutoUpdateMenu AutoUpdater" \
+                                "2)" "$watchdogShimmerInxPoiServiceStatusCheckMenu service status check" 3>&2 2>&1 1>&3
                             )
                             exitStatus=$?
                             if [ "$exitStatus" = "1" ]; then
@@ -493,26 +487,26 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             case $CHOICE in
                                 "1)")
-                                    if [ "$shimmerInxPoiAutoUpdate" = "true" ]; then
-                                        shimmerInxPoiAutoUpdate=false
-                                        shimmerInxPoiAutoUpdateMenu="disabled"
+                                    if [ "$watchdogShimmerInxPoiAutoUpdate" = "true" ]; then
+                                        watchdogShimmerInxPoiAutoUpdate=false
+                                        watchdogShimmerInxPoiAutoUpdateMenu="disabled"
                                     else
-                                        shimmerInxPoiAutoUpdate=true
-                                        shimmerInxPoiAutoUpdateMenu="enabled"
+                                        watchdogShimmerInxPoiAutoUpdate=true
+                                        watchdogShimmerInxPoiAutoUpdateMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxPoiAutoUpdate=.*/shimmerInxPoiAutoUpdate='$shimmerInxPoiAutoUpdate'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-POI [SHIMMER] Watchdog" --msgbox "INX-POI AutoUpdater $shimmerInxPoiAutoUpdateMenu!" 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxPoiAutoUpdate=.*/watchdogShimmerInxPoiAutoUpdate='$watchdogShimmerInxPoiAutoUpdate'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-PoI" --msgbox "INX-POI AutoUpdater $watchdogShimmerInxPoiAutoUpdateMenu!" 8 65
                                 ;;
                                 "2)")
-                                    if [ "$shimmerInxPoiServiceStatusCheck" = "true" ]; then
-                                        shimmerInxPoiServiceStatusCheck=false
-                                        shimmerInxPoiServiceStatusCheckMenu="disabled"
+                                    if [ "$watchdogShimmerInxPoiServiceStatusCheck" = "true" ]; then
+                                        watchdogShimmerInxPoiServiceStatusCheck=false
+                                        watchdogShimmerInxPoiServiceStatusCheckMenu="disabled"
                                     else
-                                        shimmerInxPoiServiceStatusCheck=true
-                                        shimmerInxPoiServiceStatusCheckMenu="enabled"
+                                        watchdogShimmerInxPoiServiceStatusCheck=true
+                                        watchdogShimmerInxPoiServiceStatusCheckMenu="enabled"
                                     fi
-                                    sudo sed -i 's/^shimmerInxPoiServiceStatusCheck=.*/shimmerInxPoiServiceStatusCheck='$shimmerInxPoiServiceStatusCheck'/' $swarmConfigs/swarm.cfg
-                                    whiptail --title "INX-POI [SHIMMER] Watchdog" --msgbox "Watchdog INX-POI service check $shimmerInxPoiServiceStatusCheckMenu!" 8 65
+                                    sudo sed -i 's/^watchdogShimmerInxPoiServiceStatusCheck=.*/watchdogShimmerInxPoiServiceStatusCheck='$watchdogShimmerInxPoiServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+                                    whiptail --title "Watchdog [SHIMMER] INX-PoI" --msgbox "Watchdog INX-POI service check $watchdogShimmerInxPoiServiceStatusCheckMenu!" 8 65
                                 ;;
                             esac
                         done
@@ -524,34 +518,34 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "3)")
             while [ $exitCode -lt 1 ]; do
-                source $swarmConfigs/swarm.cfg
-                if [ "$goshimmerAutoUpdate" = "true" ]; then
-                    goshimmerAutoUpdateMenu="Disable"
+                source $swarmConfigs/watchdog.cfg
+                if [ "$watchdogGoshimmerAutoUpdate" = "true" ]; then
+                    watchdogGoshimmerAutoUpdateMenu="Disable"
                 else
-                    goshimmerAutoUpdateMenu="Enable"
+                    watchdogGoshimmerAutoUpdateMenu="Enable"
                 fi
-                if [ "$goshimmerAllowDbReset" = "true" ]; then
-                    goshimmerAllowDbResetMenu="Forbid"
+                if [ "$watchdogGoshimmerAllowDbReset" = "true" ]; then
+                    watchdogGoshimmerAllowDbResetMenu="Forbid"
                 else
-                    goshimmerAllowDbResetMenu="Allow"
+                    watchdogGoshimmerAllowDbResetMenu="Allow"
                 fi
-                if [ "$goshimmerServiceStatusCheck" = "true" ]; then
-                    goshimmerServiceStatusCheckMenu="Disable"
+                if [ "$watchdogGoshimmerServiceStatusCheck" = "true" ]; then
+                    watchdogGoshimmerServiceStatusCheckMenu="Disable"
                 else
-                    goshimmerServiceStatusCheckMenu="Enable"
+                    watchdogGoshimmerServiceStatusCheckMenu="Enable"
                 fi
-                if [ "$goshimmerDbBackupDownload" = "true" ]; then
-                    goshimmerDbBackupDownloadMenu="Disable"
+                if [ "$watchdogGoshimmerDbBackupDownload" = "true" ]; then
+                    watchdogGoshimmerDbBackupDownloadMenu="Disable"
                 else
-                    goshimmerDbBackupDownloadMenu="Enable"
+                    watchdogGoshimmerDbBackupDownloadMenu="Enable"
                 fi
                 CHOICE=$(
-                    whiptail --title "SWARM - GoShimmer" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Watchdog [RESEARCH] GoShimmer" --menu "\nChoose an option" 24 65 0 \
                     "" "" \
-                    "1)" "$goshimmerAutoUpdateMenu GoShimmer AutoUpdater" \
-                    "2)" "$goshimmerDbBackupDownloadMenu GoShimmer DB backup download" \
-                    "3)" "$goshimmerAllowDbResetMenu GoShimmer database reset" \
-                    "4)" "$goshimmerServiceStatusCheckMenu GoShimmer status check" 3>&2 2>&1 1>&3
+                    "1)" "$watchdogGoshimmerAutoUpdateMenu GoShimmer AutoUpdater" \
+                    "2)" "$watchdogGoshimmerDbBackupDownloadMenu GoShimmer DB backup download" \
+                    "3)" "$watchdogGoshimmerAllowDbResetMenu GoShimmer database reset" \
+                    "4)" "$watchdogGoshimmerServiceStatusCheckMenu GoShimmer status check" 3>&2 2>&1 1>&3
                 )
                 exitStatus=$?
                 if [ "$exitStatus" = "1" ]; then
@@ -559,48 +553,48 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ "$goshimmerAutoUpdate" = "true" ]; then
-                            goshimmerAutoUpdate=false
-                            goshimmerAutoUpdateMenu="disabled"
+                        if [ "$watchdogGoshimmerAutoUpdate" = "true" ]; then
+                            watchdogGoshimmerAutoUpdate=false
+                            watchdogGoshimmerAutoUpdateMenu="disabled"
                         else
-                            goshimmerAutoUpdate=true
-                            goshimmerAutoUpdateMenu="enabled"
+                            watchdogGoshimmerAutoUpdate=true
+                            watchdogGoshimmerAutoUpdateMenu="enabled"
                         fi
-                        sudo sed -i 's/^goshimmerAutoUpdate=.*/goshimmerAutoUpdate='$goshimmerAutoUpdate'/' $swarmConfigs/swarm.cfg
-                        whiptail --title "Watchdog - GoShimmer" --msgbox "GoShimmer AutoUpdater $goshimmerAutoUpdateMenu!" 8 65
+                        sudo sed -i 's/^watchdogGoshimmerAutoUpdate=.*/watchdogGoshimmerAutoUpdate='$watchdogGoshimmerAutoUpdate'/' $swarmConfigs/watchdog.cfg
+                        whiptail --title "Watchdog [RESEARCH] GoShimmer" --msgbox "GoShimmer AutoUpdater $watchdogGoshimmerAutoUpdateMenu!" 8 65
                     ;;
                     "2)")
-                        if [ "$goshimmerDbBackupDownload" = "true" ]; then
-                            goshimmerDbBackupDownload=false
-                            sudo sed -i 's/^goshimmerDbBackupDownload=.*/goshimmerDbBackupDownload=false/' $swarmConfigs/swarm.cfg
-                            whiptail --title "GoShimmer - DB Download" --msgbox "GoShimmer DB backup download disabled." 8 65
+                        if [ "$watchdogGoshimmerDbBackupDownload" = "true" ]; then
+                            watchdogGoshimmerDbBackupDownload=false
+                            sudo sed -i 's/^watchdogGoshimmerDbBackupDownload=.*/watchdogGoshimmerDbBackupDownload=false/' $swarmConfigs/watchdog.cfg
+                            whiptail --title "Watchdog [RESEARCH] GoShimmer" --msgbox "GoShimmer DB backup download disabled." 8 65
                         else
-                            goshimmerDbBackupDownload=true
-                            sudo sed -i 's/^goshimmerDbBackupDownload=.*/goshimmerDbBackupDownload=true/' $swarmConfigs/swarm.cfg
-                            whiptail --title "GoShimmer - DB Download" --msgbox "GoShimmer DB download enabled." 8 65
+                            watchdogGoshimmerDbBackupDownload=true
+                            sudo sed -i 's/^watchdogGoshimmerDbBackupDownload=.*/watchdogGoshimmerDbBackupDownload=true/' $swarmConfigs/watchdog.cfg
+                            whiptail --title "Watchdog [RESEARCH] GoShimmer" --msgbox "GoShimmer DB download enabled." 8 65
                         fi
                     ;;
                     "3)")
-                        if [ "$goshimmerAllowDbReset" = "true" ]; then
-                            goshimmerAllowDbReset=false
-                            goshimmerAllowDbResetMenu="disabled"
+                        if [ "$watchdogGoshimmerAllowDbReset" = "true" ]; then
+                            watchdogGoshimmerAllowDbReset=false
+                            watchdogGoshimmerAllowDbResetMenu="disabled"
                         else
-                            goshimmerAllowDbReset=true
-                            goshimmerAllowDbResetMenu="enabled"
+                            watchdogGoshimmerAllowDbReset=true
+                            watchdogGoshimmerAllowDbResetMenu="enabled"
                         fi
-                        sudo sed -i 's/^goshimmerAllowDbReset=.*/goshimmerAllowDbReset='$goshimmerAllowDbReset'/' $swarmConfigs/swarm.cfg
-                        whiptail --title "SWARM - GoShimmer" --msgbox "Delete GoShimmer database $goshimmerAllowDbResetMenu for Watchdog!" 8 65
+                        sudo sed -i 's/^watchdogGoshimmerAllowDbReset=.*/watchdogGoshimmerAllowDbReset='$watchdogGoshimmerAllowDbReset'/' $swarmConfigs/watchdog.cfg
+                        whiptail --title "Watchdog [RESEARCH] GoShimmer" --msgbox "Delete GoShimmer database $watchdogGoshimmerAllowDbResetMenu for Watchdog!" 8 65
                     ;;
                     "4)")
-                        if [ "$goshimmerServiceStatusCheck" = "true" ]; then
-                            goshimmerServiceStatusCheck=false
-                            goshimmerServiceStatusCheckMenu="disabled"
+                        if [ "$watchdogGoshimmerServiceStatusCheck" = "true" ]; then
+                            watchdogGoshimmerServiceStatusCheck=false
+                            watchdogGoshimmerServiceStatusCheckMenu="disabled"
                         else
-                            goshimmerServiceStatusCheck=true
-                            goshimmerServiceStatusCheckMenu="enabled"
+                            watchdogGoshimmerServiceStatusCheck=true
+                            watchdogGoshimmerServiceStatusCheckMenu="enabled"
                         fi
-                        sudo sed -i 's/^goshimmerServiceStatusCheck=.*/goshimmerServiceStatusCheck='$goshimmerServiceStatusCheck'/' $swarmConfigs/swarm.cfg
-                        whiptail --title "SWARM - GoShimmer" --msgbox "GoShimmer status check $goshimmerServiceStatusCheckMenu." 8 65
+                        sudo sed -i 's/^watchdogGoshimmerServiceStatusCheck=.*/watchdogGoshimmerServiceStatusCheck='$watchdogGoshimmerServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+                        whiptail --title "Watchdog [RESEARCH] GoShimmer" --msgbox "GoShimmer status check $watchdogGoshimmerServiceStatusCheckMenu." 8 65
                     ;;
                 esac
             done
@@ -608,28 +602,28 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "4)")
             while [ $exitCode -lt 1 ]; do
-                source $swarmConfigs/swarm.cfg
-                if [ "$waspAutoUpdate" = "true" ]; then
-                    waspAutoUpdateMenu="Disable"
+                source $swarmConfigs/watchdog.cfg
+                if [ "$watchdogWaspAutoUpdate" = "true" ]; then
+                    watchdogWaspAutoUpdateMenu="Disable"
                 else
-                    waspAutoUpdateMenu="Enable"
+                    watchdogWaspAutoUpdateMenu="Enable"
                 fi
-                if [ "$waspAllowDbReset" = "true" ]; then
-                    waspAllowDbResetMenu="Forbid"
+                if [ "$watchdogWaspAllowDbReset" = "true" ]; then
+                    watchdogWaspAllowDbResetMenu="Forbid"
                 else
-                    waspAllowDbResetMenu="Allow"
+                    watchdogWaspAllowDbResetMenu="Allow"
                 fi
-                if [ "$waspServiceStatusCheck" = "true" ]; then
-                    waspServiceStatusCheckMenu="disabled"
+                if [ "$watchdogWaspServiceStatusCheck" = "true" ]; then
+                    watchdogWaspServiceStatusCheckMenu="disabled"
                 else
-                    waspServiceStatusCheckMenu="enabled"
+                    watchdogWaspServiceStatusCheckMenu="enabled"
                 fi
                 CHOICE=$(
-                    whiptail --title "SWARM - WASP" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Watchdog [-] WASP" --menu "\nChoose an option" 24 65 0 \
                     "" "" \
-                    "1)" "$waspAutoUpdateMenu WASP AutoUpdater" \
-                    "2)" "$waspAllowDbResetMenu WASP database reset" \
-                    "3)" "$waspServiceStatusCheckMenu WASP status check" 3>&2 2>&1 1>&3
+                    "1)" "$watchdogWaspAutoUpdateMenu WASP AutoUpdater" \
+                    "2)" "$watchdogWaspAllowDbResetMenu WASP database reset" \
+                    "3)" "$watchdogWaspServiceStatusCheckMenu WASP status check" 3>&2 2>&1 1>&3
                 )
                 exitStatus=$?
                 if [ "$exitStatus" = "1" ]; then
@@ -637,37 +631,37 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ "$waspAutoUpdate" = "true" ]; then
-                            waspAutoUpdate=false
-                            waspAutoUpdateMenu="disabled"
+                        if [ "$watchdogWaspAutoUpdate" = "true" ]; then
+                            watchdogWaspAutoUpdate=false
+                            watchdogWaspAutoUpdateMenu="disabled"
                         else
-                            waspAutoUpdate=true
-                            waspAutoUpdateMenu="enabled"
+                            watchdogWaspAutoUpdate=true
+                            watchdogWaspAutoUpdateMenu="enabled"
                         fi
-                        sudo sed -i 's/^waspAutoUpdate=.*/waspAutoUpdate='$waspAutoUpdate'/' $swarmConfigs/swarm.cfg
-                        whiptail --title "Watchdog - WASP" --msgbox "WASP AutoUpdater $waspAutoUpdateMenu!" 8 65
+                        sudo sed -i 's/^watchdogWaspAutoUpdate=.*/watchdogWaspAutoUpdate='$watchdogWaspAutoUpdate'/' $swarmConfigs/watchdog.cfg
+                        whiptail --title "Watchdog [-] WASP" --msgbox "WASP AutoUpdater $watchdogWaspAutoUpdateMenu!" 8 65
                     ;;
                     "2)")
-                        if [ "$waspAllowDbReset" = "true" ]; then
-                            waspAllowDbReset=false
-                            waspAllowDbResetMenu="disabled"
+                        if [ "$watchdogWaspAllowDbReset" = "true" ]; then
+                            watchdogWaspAllowDbReset=false
+                            watchdogWaspAllowDbResetMenu="disabled"
                         else
-                            waspAllowDbReset=true
-                            waspAllowDbResetMenu="enabled"
+                            watchdogWaspAllowDbReset=true
+                            watchdogWaspAllowDbResetMenu="enabled"
                         fi
-                        sudo sed -i 's/^waspAllowDbReset=.*/waspAllowDbReset='$waspAllowDbReset'/' $swarmConfigs/swarm.cfg
-                        whiptail --title "SWARM - WASP" --msgbox "Delete WASP database $waspAllowDbResetMenu for Watchdog!" 8 65
+                        sudo sed -i 's/^watchdogWaspAllowDbReset=.*/watchdogWaspAllowDbReset='$watchdogWaspAllowDbReset'/' $swarmConfigs/watchdog.cfg
+                        whiptail --title "Watchdog [-] WASP" --msgbox "Delete WASP database $watchdogWaspAllowDbResetMenu for Watchdog!" 8 65
                     ;;
                     "3)")
-                        if [ "$waspServiceStatusCheck" = "true" ]; then
-                            waspServiceStatusCheck=false
-                            waspServiceStatusCheckMenu="disabled"
+                        if [ "$watchdogWaspServiceStatusCheck" = "true" ]; then
+                            watchdogWaspServiceStatusCheck=false
+                            watchdogWaspServiceStatusCheckMenu="disabled"
                         else
-                            waspServiceStatusCheck=true
-                            waspServiceStatusCheckMenu="enabled"
+                            watchdogWaspServiceStatusCheck=true
+                            watchdogWaspServiceStatusCheckMenu="enabled"
                         fi
-                        sudo sed -i 's/^waspServiceStatusCheck=.*/waspServiceStatusCheck='$waspServiceStatusCheck'/' $swarmConfigs/swarm.cfg
-                        whiptail --title "SWARM - WASP" --msgbox "WASP status check $waspServiceStatusCheckMenu." 8 65
+                        sudo sed -i 's/^watchdogWaspServiceStatusCheck=.*/watchdogWaspServiceStatusCheck='$watchdogWaspServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+                        whiptail --title "Watchdog [-] WASP" --msgbox "WASP status check $watchdogWaspServiceStatusCheckMenu." 8 65
                     ;;
                 esac
             done
@@ -675,16 +669,16 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "5)")
             while [ $exitCode -lt 1 ]; do
-                source $swarmConfigs/swarm.cfg
-                if [ "$telegramNotifications" = "true" ]; then
-                    telegramNotificationsStatus="Disable"
+                source $swarmConfigs/watchdog.cfg
+                if [ "$watchdogTelegramNotifications" = "true" ]; then
+                    watchdogTelegramNotificationsStatus="Disable"
                 else
-                    telegramNotificationsStatus="Enable"
+                    watchdogTelegramNotificationsStatus="Enable"
                 fi
                 CHOICE=$(
-                    whiptail --title "SWARM - Telegram Notifications" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Watchdog [-] Telegram Notifications" --menu "\nChoose an option" 24 65 0 \
                     "" "" \
-                    "1)" "$telegramNotificationsStatus Telegram Notifications" \
+                    "1)" "$watchdogTelegramNotificationsStatus Telegram Notifications" \
                     "2)" "Set Telegram Bot Token" \
                     "3)" "Set Telegram Channel ID" 3>&2 2>&1 1>&3
                 )
@@ -694,48 +688,41 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ "$telegramNotifications" = "true" ]; then
-                            telegramText="[$HOSTNAME] Watchdog Telegram notifications via SWARM disabled."
+                        if [ "$watchdogTelegramNotifications" = "true" ]; then
+                            watchdogTelegramText="[$HOSTNAME] Watchdog Telegram notifications via SWARM disabled."
                             source $watchdogModule/watchdogTelegram
-                            telegramNotifications=false
-                            sudo sed -i 's/^telegramNotifications=.*/telegramNotifications=false/' $swarmConfigs/swarm.cfg
-                            whiptail --title "SWARM - Telegram Notifications" --msgbox "Telegram notification for Watchdog disabled." 8 65
+                            watchdogTelegramNotifications=false
+                            sudo sed -i 's/^watchdogTelegramNotifications=.*/watchdogTelegramNotifications=false/' $swarmConfigs/watchdog.cfg
+                            whiptail --title "Watchdog [-] Telegram Notifications" --msgbox "Telegram notification for Watchdog disabled." 8 65
                         else
-                            telegramNotifications=true
-                            sudo sed -i 's/^telegramNotifications=.*/telegramNotifications=true/' $swarmConfigs/swarm.cfg
-                            telegramText="[$HOSTNAME] Watchdog Telegram notifications via SWARM enabled."
+                            watchdogTelegramNotifications=true
+                            sudo sed -i 's/^watchdogTelegramNotifications=.*/watchdogTelegramNotifications=true/' $swarmConfigs/watchdog.cfg
+                            watchdogTelegramText="[$HOSTNAME] Watchdog Telegram notifications via SWARM enabled."
                             source $watchdogModule/watchdogTelegram
-                            whiptail --title "SWARM - Telegram Notifications" --msgbox "Telegram notification for Watchdog enabled." 8 65
+                            whiptail --title "Watchdog [-] Telegram Notifications" --msgbox "Telegram notification for Watchdog enabled." 8 65
                         fi
                     ;;
                     "2)")
-                        currentTelegramBotToken="$telegramBotToken"
-                        telegramBotToken=$(whiptail --inputbox "\nEnter your Telegram Bot Token" 10 65 $telegramBotToken --title "SWARM - Telegram Notifications" 3>&1 1>&2 2>&3)
+                        currentTelegramBotToken="$watchdogTelegramBotToken"
+                        watchdogTelegramBotToken=$(whiptail --inputbox "\nEnter your Telegram Bot Token" 10 65 $watchdogTelegramBotToken --title "Watchdog [-] Telegram Notifications" 3>&1 1>&2 2>&3)
                         exitStatus=$?
-                        if [ "$exitStatus" != "1" ] && [ "$currentTelegramBotToken" != "$telegramBotToken" ]; then
-                            sudo sed -i 's~^telegramBotToken=.*~telegramBotToken="'$telegramBotToken'"~' $swarmConfigs/swarm.cfg
-                            whiptail --title "SWARM - Telegram Notifications" --msgbox "New Telegram bot token successfully set." 8 65
+                        if [ "$exitStatus" != "1" ] && [ "$currentTelegramBotToken" != "$watchdogTelegramBotToken" ]; then
+                            sudo sed -i 's~^watchdogTelegramBotToken=.*~watchdogTelegramBotToken="'$watchdogTelegramBotToken'"~' $swarmConfigs/watchdog.cfg
+                            whiptail --title "Watchdog [-] Telegram Notifications" --msgbox "New Telegram bot token successfully set." 8 65
                         fi
                     ;;
                     "3)")
-                        currentTelegramChannelId="$telegramChannelId"
-                        telegramChannelId=$(whiptail --inputbox "\nEnter your Telegram Channel ID" 10 65 $telegramChannelId --title "SWARM - Telegram Notifications" 3>&1 1>&2 2>&3)
+                        currentTelegramChannelId="$watchdogTelegramChannelId"
+                        watchdogTelegramChannelId=$(whiptail --inputbox "\nEnter your Telegram Channel ID" 10 65 $watchdogTelegramChannelId --title "Watchdog [-] Telegram Notifications" 3>&1 1>&2 2>&3)
                         exitStatus=$?
-                        if [ "$exitStatus" != "1" ] && [ "$currentTelegramChannelId" != "$telegramChannelId" ]; then
-                            sudo sed -i 's~^telegramChannelId=.*~telegramChannelId="'$telegramChannelId'"~' $swarmConfigs/swarm.cfg
-                            whiptail --title "SWARM - Telegram Notifications" --msgbox "New Telegram channel ID successfully set." 8 65
+                        if [ "$exitStatus" != "1" ] && [ "$currentTelegramChannelId" != "$watchdogTelegramChannelId" ]; then
+                            sudo sed -i 's~^watchdogTelegramChannelId=.*~watchdogTelegramChannelId="'$watchdogTelegramChannelId'"~' $swarmConfigs/watchdog.cfg
+                            whiptail --title "Watchdog [-] Telegram Notifications" --msgbox "New Telegram channel ID successfully set." 8 65
                         fi
                     ;;
                 esac
             done
             exitCode=0
-        ;;
-        "6)")
-            if (whiptail --title "Watchdog - Update" --yesno --defaultno "Do you really want to update Watchdog?" 8 65); then
-                ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
-                ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
-                whiptail --title "Watchdog - Update" --msgbox "Watchdog cronjob updated." 8 65
-            fi
         ;;
     esac
 done
