@@ -7,12 +7,14 @@ IFS=', ' read -r -a ARRAYiotaHornetEnablePlugins <<< "$iotaHornetEnablePlugins"
 
 parser="$(jq '.node.enablePlugins' $iotaHornetHome/$iotaHornetConfig.json)"
 parser="$(echo $parser | tr -d '[]" ')"
-if [ "$parser" != "$iotaHornetEnablePlugins" ]; then
+if [ "$parser" != "$iotaHornetEnablePlugins" ] || [ "$iotaHornetDisableParticipation" = "true" ]; then
     sudo jq '.node.enablePlugins |= []' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
     for iotaHornetEnablePlugin in "${ARRAYiotaHornetEnablePlugins[@]}"
     do
         if [ ! -z "$iotaHornetEnablePlugin" ]; then
-            sudo jq '.node.enablePlugins |= .+ ["'$iotaHornetEnablePlugin'"]' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            if [ "$iotaHornetEnablePlugin" != "participation" ] && [ "$iotaHornetDisableParticipation" != "true" ]; then
+                sudo jq '.node.enablePlugins |= .+ ["'$iotaHornetEnablePlugin'"]' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            fi
         fi
     done
     restartIotaHornet=true
