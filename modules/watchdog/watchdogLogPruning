@@ -12,6 +12,17 @@ if [ "$logPruning" = "true" ]; then
         fi
         unset currentLogSize logSize
     fi
+    if [ -f "$swarmLogs/watchdog.log" ]; then
+        currentLogSize="$(du -sb $swarmLogs/watchdog.log | cut -f1)"
+        let logSize=$logSize*1000000
+        if [ $currentLogSize -gt $logSize ]; then
+            if [ -f "$swarmLogs/watchdog.log.1" ]; then
+                sudo rm -rf $swarmLogs/watchdog.log.1
+            fi
+            sudo mv $swarmLogs/watchdog.log $swarmLogs/watchdog.log.1
+        fi
+        unset currentLogSize logSize
+    fi
     if [ -f "$swarmLogs/iotaHornetJwtToken.log" ]; then
         currentLogSize="$(du -sb $swarmLogs/iotaHornetJwtToken.log | cut -f1)"
         let logSize=$logSize*1000000
