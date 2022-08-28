@@ -7,10 +7,10 @@ if [ -f "/usr/sbin/nginx" ]; then
     proxyStatus=$(systemctl show -p ActiveState --value nginx)
     if [ "$proxySwarmEndpoint" = "true" ]; then
         proxySwarmEndpointVersion=$(head -n 1 /etc/nginx/swarm/swarm.conf | awk '{ print $3 }')
-        proxySwarmEndpointStatus="enabled (v$proxySwarmEndpointVersion)"
+        proxySwarmEndpointStatus="✓ (v$proxySwarmEndpointVersion)"
 
     else
-        proxySwarmEndpointStatus="disabled"
+        proxySwarmEndpointStatus="X"
     fi
 
     hr="\n\n#############################################################"
@@ -46,8 +46,14 @@ if [ -f "/usr/sbin/nginx" ]; then
         unset proxyWaspApiVersion proxyWaspApiInfo
     fi
 
+    if [ "$proxyAutomaticDeployment" = "true" ]; then
+        proxyAutomaticDeploymentInfo="Proxy Auto-Deploy: ✓"
+    else
+        proxyAutomaticDeploymentInfo="Proxy Auto-Deploy: X"
+    fi
+
     # OUTPUT
-    whiptail --scrolltext --title "Proxy Info [v$version]" --msgbox "Webserver: ${proxyStatus}\nSWARM Endpoint: ${proxySwarmEndpointStatus}${hr}${proxyIotaHornetInfo}${proxyShimmerHornetInfo}${proxyGoshimmerInfo}${proxyWaspDashboardInfo}${proxyWaspApiInfo}" 24 65
+    whiptail --scrolltext --title "Proxy Info [v$version]" --msgbox "Webserver: ${proxyStatus}\n${proxyAutomaticDeploymentInfo}\nSWARM Endpoint: ${proxySwarmEndpointStatus}${hr}${proxyIotaHornetInfo}${proxyShimmerHornetInfo}${proxyGoshimmerInfo}${proxyWaspDashboardInfo}${proxyWaspApiInfo}" 24 65
 else
     whiptail --title "Proxy Info [v$version]" --msgbox "Reverse proxy not installed!" 8 65
 fi
