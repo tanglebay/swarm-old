@@ -87,7 +87,7 @@ else
                             if [ -f "/var/lib/swarm/swarm" ]; then
                                 echo -e $TEXT_RED_B && echo "-> Loading env..." && echo -e $TEXT_RESET
                                 source /var/lib/swarm/environment
-                                sudo chmod +x /var/lib/swarm/swarm /var/lib/swarm/plugins/watchdog
+                                sudo chmod +x /var/lib/swarm/swarm /var/lib/swarm/watchdog
                                 echo -e $TEXT_RED_B && echo "-> Installing watchdog..." && echo -e $TEXT_RESET
                                 ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
                                 sudo sed -i 's~^swarmAuthUser=.*~swarmAuthUser="'$keyboardInputUsername'"~g' $swarmConfigs/swarm.cfg 2>/dev/null
