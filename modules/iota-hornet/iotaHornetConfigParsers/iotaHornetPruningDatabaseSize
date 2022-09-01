@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$iotaHornetPruningEnabled" = "true" ] && [ -f "/usr/bin/iota-hornet" ]; then
+if [ -f "/usr/bin/iota-hornet" ]; then
     if [[ $iotaHornetPruningDatabaseSize = *-* ]]; then
         unset iotaHornetPruningDatabaseSize
     fi
@@ -27,7 +27,9 @@ if [ "$iotaHornetPruningEnabled" = "true" ] && [ -f "/usr/bin/iota-hornet" ]; th
     parser=$(echo $parser | tr -d '"')
     if [ "$parser" != "${iotaHornetPruningDatabaseSize}GB" ] && [ $iotaHornetPruningDatabaseSize -eq $iotaHornetPruningDatabaseSize ] 2>/dev/null; then
         sudo jq '.pruning.size.targetSize = "'$iotaHornetPruningDatabaseSize'GB"' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-        restartIotaHornet=true
-        echo "iotaHornetPruningDatabaseSize" >> /tmp/iotaHornetParsing
+        if [ "$iotaHornetPruningEnabled" = "true" ]; then
+            restartIotaHornet=true
+            echo "iotaHornetPruningDatabaseSize" >> /tmp/iotaHornetParsing
+        fi
     fi
 fi
