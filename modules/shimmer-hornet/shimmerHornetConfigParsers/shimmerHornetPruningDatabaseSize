@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$shimmerHornetPruningEnabled" = "true" ] && [ -f "/usr/bin/shimmer-hornet" ]; then
+if [ -f "/usr/bin/shimmer-hornet" ]; then
     if [[ $shimmerHornetPruningDatabaseSize = *-* ]]; then
         unset shimmerHornetPruningDatabaseSize
     fi
@@ -27,7 +27,9 @@ if [ "$shimmerHornetPruningEnabled" = "true" ] && [ -f "/usr/bin/shimmer-hornet"
     parser=$(echo $parser | tr -d '"')
     if [ "$parser" != "${shimmerHornetPruningDatabaseSize}GB" ] && [ $shimmerHornetPruningDatabaseSize -eq $shimmerHornetPruningDatabaseSize ] 2>/dev/null; then
         sudo jq '.pruning.size.targetSize = "'$shimmerHornetPruningDatabaseSize'GB"' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
-        restartShimmerHornet=true
-        echo "shimmerHornetPruningDatabaseSize" >> /tmp/shimmerHornetParsing
+        if [ "$shimmerHornetPruningEnabled" = "true" ]; then
+            restartShimmerHornet=true
+            echo "shimmerHornetPruningDatabaseSize" >> /tmp/shimmerHornetParsing
+        fi
     fi
 fi
