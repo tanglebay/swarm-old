@@ -22,3 +22,8 @@ fi
 if [[ ! -x "$watchdogCronCmd" ]]; then
     sudo chmod +x $watchdogCronCmd > /dev/null 2>&1
 fi
+
+crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled > /dev/null 2>&1
+if [ "$watchdogStatus" != "enabled" ]; then
+    ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
+fi
