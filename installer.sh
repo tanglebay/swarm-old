@@ -4,14 +4,13 @@ TEXT_RESET='\e[0m'
 TEXT_RED_B='\e[1;31m'
 
 clear
-
-    echo ""
-    echo " _______      _  _  _      _______       ______      _______"
-    echo " |______      |  |  |      |_____|      |_____/      |  |  |"
-    echo " ______|      |__|__|      |     |      |    \_      |  |  |"                                                            
-    echo ""
-    echo "============================================================="
-    echo ""
+echo ""
+echo " _______      _  _  _      _______       ______      _______"
+echo " |______      |  |  |      |_____|      |_____/      |  |  |"
+echo " ______|      |__|__|      |     |      |    \_      |  |  |"
+echo ""
+echo "============================================================="
+echo ""
 if [ $(id -u) -ne 0 ]; then
 
     echo -e $TEXT_RED_B && echo "-> Please run SWARM installer with sudo or as root" && echo -e $TEXT_RESET
@@ -33,9 +32,14 @@ else
             latestSwarmVersion=$(curl --max-time 5 -Ls https://cdn.tanglebay.com/swarm/version/stable | head -n 1)
             latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
             checkSwarmUpdateAuth=$(curl -s -o /dev/null -w "%{http_code}" https://$keyboardInputUsername:$keyboardInputPassword@cdn.tanglebay.com/test.file)
-            if [ "$checkSwarmUpdateAuth" = "200" ] && [ ! -z "$latestSwarmVersion" ]; then                                          
-                echo ""                                            
-                echo "###################################################"
+            if [ "$checkSwarmUpdateAuth" = "200" ] && [ ! -z "$latestSwarmVersion" ]; then
+                clear
+                echo ""
+                echo " _______      _  _  _      _______       ______      _______"
+                echo " |______      |  |  |      |_____|      |_____/      |  |  |"
+                echo " ______|      |__|__|      |     |      |    \_      |  |  |"
+                echo ""
+                echo "============================================================="
                 echo ""
                 read -p "Do you want to ${swarmReinstall}install SWARM now?(Y/n) " keyboardInput </dev/tty
                 keyboardInput=$(echo $keyboardInput | tr '[:upper:]' '[:lower:]')
