@@ -1,0 +1,18 @@
+#!/bin/bash
+
+IFS=', ' read -r -a ARRAYshimmerWaspWebapiAdminWhitelistIps <<< "$shimmerWaspWebapiAdminWhitelist"
+
+parser="$(jq '.webapi.auth.ip' $shimmerWaspHome/config.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$shimmerWaspWebapiAdminWhitelist" ]; then
+    sudo jq '.webapi.auth.ip |= []' $shimmerWaspHome/config.json|sponge $shimmerWaspHome/config.json
+    for shimmerWaspWebapiAdminWhitelistIp in "${ARRAYshimmerWaspWebapiAdminWhitelistIps[@]}"
+    do
+        sudo jq '.webapi.auth.ip |= .+ ["'$shimmerWaspWebapiAdminWhitelistIp'"]' $shimmerWaspHome/config.json|sponge $shimmerWaspHome/config.json
+    done
+    restartShimmerWasp=true
+fi
+
+unset ARRAYshimmerWaspWebapiAdminWhitelistIps
+unset shimmerWaspWebapiAdminWhitelistIps
+unset shimmerWaspWebapiAdminWhitelistIp

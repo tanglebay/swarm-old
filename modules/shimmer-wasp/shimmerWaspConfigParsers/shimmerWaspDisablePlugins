@@ -1,0 +1,21 @@
+#!/bin/bash
+
+useShimmerWaspDisablePlugins=true
+source $shimmerWaspModule/shimmerWaspPlugins
+
+IFS=', ' read -r -a ARRAYshimmerWaspDisablePlugins <<< "$shimmerWaspDisablePlugins"
+
+parser="$(jq '.node.enablePlugins' $shimmerWaspHome/config.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+if [ "$parser" != "$shimmerWaspDisablePlugins" ]; then
+    sudo jq '.node.disablePlugins |= []' $shimmerWaspHome/config.json|sponge $shimmerWaspHome/config.json
+    for shimmerWaspDisablePlugin in "${ARRAYshimmerWaspDisablePlugins[@]}"
+    do
+        sudo jq '.node.disablePlugins |= .+ ["'$shimmerWaspDisablePlugin'"]' $shimmerWaspHome/config.json|sponge $shimmerWaspHome/config.json
+    done
+    restartShimmerWasp=true
+fi
+
+unset ARRAYshimmerWaspDisablePlugins
+unset shimmerWaspDisablePlugin
+unset useShimmerWaspDisablePlugins
