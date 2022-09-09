@@ -1,0 +1,332 @@
+#!/bin/bash
+while [ $exitCode -lt 1 ]; do
+    clear
+    source $swarmConfigs/shimmer-wasp.cfg
+    CHOICE=$(
+        whiptail --title "WASP Configurations" --menu "\nChoose an option" 24 65 0 \
+        "" "" \
+        "1)" "WASP-CLI" \
+        "2)" "Dashboard-Auth" \
+        "3)" "Webapi-Auth" \
+        "4)" "Enable Plugins" \
+        "5)" "Disable Plugins" \
+        "6)" "Nodeconn address" \
+        "7)" "Network ID" \
+        "8)" "Peering Port" \
+        "9)" "NanoMsg Port" \
+        "10)" "Admin Whitelist" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+        if [ "$restartShimmerWasp" = "true" ] && [ -f "/usr/bin/shimmer-wasp" ]; then
+            if (whiptail --title "WASP [SHIMMER] Menu" --yesno "Would you like to apply the changes and restart WASP?" 8 65); then
+                {
+                    sudo touch /tmp/shimmer-wasp.lock > /dev/null 2>&1
+                    echo 0
+                    echo 33
+                    source $shimmerWaspModule/shimmerWaspParser
+                    echo 50
+                    sudo systemctl restart wasp > /dev/null 2>&1
+                    sleep 0.25
+                    sudo rm -rf /tmp/wasp.lock > /dev/null 2>&1
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while the changes are applied and WASP is restarted..." 6 65 0
+                unset restartShimmerWasp
+            fi
+        fi
+    fi
+
+    case $CHOICE in
+        "1)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                CHOICE=$(
+                    whiptail --title "WASP [SHIMMER] Dashboard" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
+                    "1)" "Show Peering ID" \
+                    "2)" "Set trusted neighbor" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/shimmer-wasp-cli" ]; then
+                            shimmerWaspPeeringId=$(cd /var/lib/shimmer-wasp ; /usr/bin/shimmer-wasp-cli peering info | head -n 1 | awk '{ print $2 }')
+                            whiptail --title "WASP [SHIMMER] CLI" --msgbox "$shimmerWaspAlias Peering-ID: $shimmerWaspPeeringId" 8 65
+                        else
+                            whiptail --title "WASP [SHIMMER] CLI" --msgbox "Please install Wasp first." 8 65
+                        fi
+                    ;;
+                    "2)")
+                        if [ -f "/usr/bin/shimmer-wasp-cli" ]; then
+                            inputNeighborId=$(whiptail --inputbox "\nSet the wasp ID of the new neighbor:" 8 65 --title "WASP [SHIMMER] CLI" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ "$exitStatus" != "1" ] && [ ! -z "$inputNeighborId" ]; then
+                                inputNeighborNetId=$(whiptail --inputbox "\nSet the wasp NetID of the new neighbor:" 8 65 --title "WASP [SHIMMER] CLI" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ "$exitStatus" != "1" ] && [ ! -z "$inputNeighborNetId" ]; then
+                                    (cd /var/lib/shimmer-wasp ; /usr/bin/shimmer-wasp-cli peering trust $inputNeighborId $inputNeighborNetId)
+                                fi
+                            fi
+                        else
+                            whiptail --title "WASP - CLI" --msgbox "Please install Wasp first." 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                # wasp Dashboard
+                CHOICE=$(
+                    whiptail --title "WASP [SHIMMER] Dashboard" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
+                    "1)" "Dashboard Username" \
+                    "2)" "Dashboard Password" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        shimmerWaspDashboardAuthUsername=$(whiptail --inputbox "\nPlease set a username for the dashboard login:" 8 65 $shimmerWaspDashboardAuthUsername --title "WASP - Dashboard" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ ! -z "$shimmerWaspDashboardAuthUsername" ] && [ "$exitStatus" != "1" ]; then
+                            if [ -f "/usr/bin/shimmer-wasp" ]; then
+                                source $shimmerWaspConfigParsers/shimmerWaspDashboardAuthUsername
+                            fi
+                            sudo sed -i 's/^shimmerWaspDashboardAuthUsername=.*/shimmerWaspDashboardAuthUsername="'$shimmerWaspDashboardAuthUsername'"/' $swarmConfigs/shimmer-wasp.cfg
+                            whiptail --title "WASP [SHIMMER] Dashboard" --msgbox "New Dashboard username for auth applied!" 8 65
+                        fi
+                    ;;
+                    "2)")
+                        shimmerWaspDashboardAuthPassword=$(whiptail --passwordbox "\nPlease set a secure password for your dashboard login:" 8 65 --title "WASP [SHIMMER] Dashboard" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerWaspDashboardAuthPassword" ]; then
+                            shimmerWaspDashboardAuthPassword2=$(whiptail --passwordbox "\nPlease re-enter the password:" 8 65 --title "WASP [SHIMMER] Dashboard" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerWaspDashboardAuthPassword2" ]; then
+                                if [ "$shimmerWaspDashboardAuthPassword" = "$shimmerWaspDashboardAuthPassword2" ]; then
+                                    if [ -f "/usr/bin/shimmer-wasp" ]; then
+                                        source $shimmerWaspConfigParsers/shimmerWaspDashboardAuthPassword
+                                    fi
+                                    sudo sed -i 's/^shimmerWaspDashboardAuthPassword=.*/shimmerWaspDashboardAuthPassword="'$shimmerWaspDashboardAuthPassword'"/' $swarmConfigs/shimmer-wasp.cfg
+                                    whiptail --title "WASP [SHIMMER] Dashboard" --msgbox "New Dashboard credentials applied!" 8 65
+                                else
+                                    whiptail --title "WASP [SHIMMER] Dashboard" --msgbox "No valid credentials, please try again!" 8 65
+                                fi
+                            fi
+                        fi
+                        unset shimmerWaspDashboardAuthPassword2
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                source $swarmConfigs/shimmer-wasp.cfg
+                if [ "$shimmerWaspWebapiAuthEnabled" = "true" ]; then
+                    shimmerWaspWebapiAuthEnabledMenu="Disable"
+                else
+                    shimmerWaspWebapiAuthEnabledMenu="Enable"
+                fi
+                # wasp webapi
+                CHOICE=$(
+                    whiptail --title "WASP [SHIMMER] WebAPI" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
+                    "1)" "$shimmerWaspWebapiAuthEnabledMenu WebAPI-Auth" \
+                    "2)" "WebAPI Credentials" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/sbin/nginx" ]; then
+                            if [ ! -d "/etc/nginx/swarm/shimmer-wasp" ]; then
+                                sudo mkdir -p /etc/nginx/swarm/shimmer-wasp
+                            fi
+                            if [ ! -f "/etc/nginx/swarm/shimmer-wasp/.htpasswd_webapi" ]; then
+                                sudo touch /etc/nginx/swarm/shimmer-wasp/.htpasswd_webapi
+                            fi
+                            shimmerWaspWebapiAuthHash=$(cat /etc/nginx/swarm/shimmer-wasp/.htpasswd_webapi)
+                            if [ ! -z "$shimmerWaspWebapiAuthHash" ]; then
+                                shimmerWaspWebapiAuthEnabledMenu="${shimmerWaspWebapiAuthEnabledMenu,,}"
+                                if (whiptail --title "WASP [SHIMMER] WebAPI" --yesno --defaultno "Do you really want to $shimmerWaspWebapiAuthEnabledMenu authentication for the webAPI?" 8 65); then
+                                    if [ "$shimmerWaspWebapiAuthEnabled" = "true" ]; then
+                                        shimmerWaspWebapiAuthEnabled=false
+                                        shimmerWaspWebapiAuthEnabledMenu="disabled"
+                                    else
+                                        shimmerWaspWebapiAuthEnabled=true
+                                        shimmerWaspWebapiAuthEnabledMenu="enabled"
+                                    fi
+                                    sudo sed -i 's/^shimmerWaspWebapiAuthEnabled=.*/shimmerWaspWebapiAuthEnabled='$shimmerWaspWebapiAuthEnabled'/' $swarmConfigs/shimmer-wasp.cfg
+                                    source $shimmerWaspconfigParsers/shimmerWaspWebapiAuth
+                                    whiptail --title "WASP [SHIMMER] WebAPI" --msgbox "WebAPI authentication $shimmerWaspWebapiAuthEnabledMenu!" 8 65
+                                fi
+                            else
+                                whiptail --title "WASP [SHIMMER] WebAPI" --msgbox "Please set the WebAPI credentials first!" 8 65
+                            fi
+                        else
+                            whiptail --title "WASP [SHIMMER] WebAPI" --msgbox "Please install the proxy first before you can set the login credentials." 8 65
+                        fi
+                    ;;
+                    "2)")
+                        shimmerWaspWebapiAuthUsername=$(whiptail --inputbox "\nPlease set a username for the webAPI login:" 8 65 --title "WASP [SHIMMER] WebAPI" 3>&1 1>&2 2>&3)
+                        exitStatus=$?
+                        if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerWaspWebapiAuthUsername" ]; then
+                            shimmerWaspWebapiAuthPassword=$(whiptail --passwordbox "\nPlease set a secure password for the webAPI login:" 8 65 --title "WASP [SHIMMER] WebAPI" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerWaspWebApiAuthPassword" ]; then
+                                shimmerWaspWebapiAuthPassword2=$(whiptail --passwordbox "\nPlease set a secure password for the webAPI login:" 8 65 --title "WASP [SHIMMER] WebAPI" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerWaspWebApiAuthPassword2" ]; then
+                                    source $shimmerWaspConfigParsers/shimmerWaspWebapiAuthHash
+                                    whiptail --title "WASP [SHIMMER] WebAPI" --msgbox "New Dashboard credentials applied!" 8 65
+                                else
+                                    whiptail --title "WASP [SHIMMER ]WebAPI" --msgbox "No valid credentials, please try again!" 8 65
+                                fi
+                            fi
+                        fi
+                        unset shimmerWaspWebapiAuthUsername
+                        unset shimmerWaspWebapiAuthPassword
+                        unset shimmerWaspWebapiAuthPassword2
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "4)")
+            useShimmerWaspEnablePlugins=true
+            source $swarmConfigs/shimmer-wasp.cfg
+            currentShimmerWaspEnablePlugins=$shimmerWaspEnablePlugins
+            source $shimmerWaspModule/shimmerWaspPlugins
+            shimmerWaspEnablePlugins=$(whiptail --title "WASP [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the WASP plugins to be activated:" 10 78 2 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            shimmerWaspEnablePlugins=$(echo $shimmerWaspEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$shimmerWaspEnablePlugins" != "$currentShimmerWaspEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                if [ -f "/usr/bin/shimmer-wasp" ]; then
+                    source $shimmerWaspConfigParsers/shimmerWaspEnablePlugins
+                fi
+                sudo sed -i 's/^shimmerWaspEnablePlugins=.*/shimmerWaspEnablePlugins="'$shimmerWaspEnablePlugins'"/' $swarmConfigs/shimmer-wasp.cfg
+                if [ ! -z "$shimmerWaspEnablePlugins" ]; then
+                    whiptail --title "WASP [SHIMMER] Plugins" --msgbox "The following plugins are enabled: $shimmerWaspEnablePlugins!" 8 65
+                else
+                    whiptail --title "WASP [SHIMMER] Plugins" --msgbox "There are no plugins enabled for WASP!" 8 65
+                fi
+                restartShimmerW=true
+            fi
+            unset useShimmerWaspEnablePlugins
+        ;;
+        "5)")
+            useShimmerWaspDisablePlugins=true
+            source $swarmConfigs/shimmer-wasp.cfg
+            currentShimmerWaspDisablePlugins=$shimmerWaspDisablePlugins
+            source $shimmerWaspModule/shimmerWaspPlugins
+            shimmerWaspDisablePlugins=$(whiptail --title "WASP [SHIMMER] Plugins" --checklist "\nSelect (with spacebar) the WASP plugins to be deactivated:" 14 78 2 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            shimmerWaspDisablePlugins=$(echo $shimmerWaspDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$shimmerWaspDisablePlugins" != "$currentShimmerWaspDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                if [ -f "/usr/bin/shimmer-wasp" ]; then
+                    source $shimmerWaspConfigParsers/shimmerWaspDisablePlugins
+                fi
+                sudo sed -i 's/^shimmerWaspDisablePlugins=.*/shimmerWaspDisablePlugins="'$shimmerWaspDisablePlugins'"/' $swarmConfigs/shimmer-wasp.cfg
+                if [ ! -z "$shimmerWaspDisablePlugins" ]; then
+                    whiptail --title "WASP [SHIMMER] Plugins" --msgbox "The following plugins are disabled: $shimmerWaspDisablePlugins!" 8 65
+                else
+                    whiptail --title "WASP [SHIMMER] Plugins" --msgbox "There are no plugins disabled for WASP!" 8 65
+                fi
+                restartShimmerWasp=true
+            fi
+            unset useShimmerWaspDisablePlugins
+        ;;
+        "6)")
+            currentShimmerWaspNodeconnAddress=$shimmerWaspNodeconnAddress
+            shimmerWaspNodeconnAddress=$(whiptail --inputbox "\nPlease enter the address of a goshimmer node with active TXstream:" 10 65 $currentShimmerWaspNodeconnAddress --title "WASP - Nodeconn" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ "$exitStatus" != "1" ]; then
+                if [ ! -z "$shimmerWaspNodeconnAddress" ] && [ "$currentShimmerWaspNodeconnAddress" != "$shimmerWaspNodeconnAddress" ]; then
+                    if [ -f "/usr/bin/shimmer-wasp" ]; then
+                        source $shimmerWaspConfigParsers/shimmerWaspNodeconnAddress
+                    fi
+                    sudo sed -i 's/^shimmerWaspNodeconnAddress=.*/shimmerWaspNodeconnAddress="'$shimmerWaspNodeconnAddress'"/' $swarmConfigs/shimmer-wasp.cfg
+                    whiptail --title "WASP [SHIMMER] Nodeconn" --msgbox "New WASP to Goshimmer connection applied!" 8 65
+                fi
+            fi
+        ;;
+        "7)")
+            source $swarmConfigs/shimmer-wasp.cfg
+            currentShimmerWaspNetworkId=$shimmerWaspNetworkId
+            shimmerWaspNetworkId=$(whiptail --inputbox "\nSet the network ID for the committee communication." 10 65 $shimmerWaspNetworkId --title "WASP [SHIMMER] NetID" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerWaspNetworkId" ] && [ "$currentShimmerWaspNetworkId" != "$shimmerWaspNetworkId" ]; then
+                if [ -f "/usr/bin/shimmer-wasp" ]; then
+                    source $shimmerWaspConfigParsers/shimmerWaspNetworkId
+                fi
+                sudo sed -i 's/^shimmerWaspNetworkId=.*/shimmerWasNetworkId="'$shimmerWaspNetworkId'"/' $swarmConfigs/shimmer-wasp.cfg
+                whiptail --title "WASP [SHIMMER] NetID" --msgbox "Network ID was set to \"$shimmerWaspNetworkId\"!" 8 65
+            fi
+        ;;
+        "8)")
+            source $swarmConfigs/shimmer-wasp.cfg
+            currentShimmerWaspPeeringPort=$shimmerWaspPeeringPort
+            shimmerWaspPeeringPort=$(whiptail --inputbox "\nSet the peering (network) port for the committee communication." 10 65 $shimmerWaspPeeringPort --title "WASP [SHIMMER] Peering" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerWaspPeeringPort" ] && [ $currentShimmerWaspPeeringPort -ne $shimmerWaspPeeringPort ] && [ $shimmerWaspPeeringPort -eq $shimmerWaspPeeringPort ] 2>/dev/null; then
+                if [ -f "/usr/bin/shimmer-wasp" ]; then
+                    if [ "$ufw" = "true" ]; then
+                        sudo ufw delete allow $currentShimmerWaspPeeringPort/tcp > /dev/null 2>&1
+                        sudo ufw allow $shimmerWaspPeeringPort/tcp > /dev/null 2>&1
+                    fi
+                    source $shimmerWaspConfigParsers/shimmerWaspPeeringPort
+                fi
+                sudo sed -i 's/^shimmerWaspPeeringPort=.*/shimmerWaspPeeringPort='$shimmerWaspPeeringPort'/' $swarmConfigs/shimmer-wasp.cfg
+                whiptail --title "WASP [SHIMMER] Peering" --msgbox "Peering port was set to \"$shimmerWaspPeeringPort/tcp\"!" 8 65
+            fi
+        ;;
+        "9)")
+            source $swarmConfigs/shimmer-wasp.cfg
+            currentShimmerWaspNanomsgPort=$shimmerWaspNanomsgPort
+            shimmerWaspNanomsgPort=$(whiptail --inputbox "\nSet the nanomsg port for the committee communication." 10 65 $shimmerWaspNanomsgPort --title "WASP [SHIMMER] Peering" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerWaspNanomsgPort" ] && [ $currentShimmerWaspNanomsgPort -ne $shimmerWaspNanomsgPort ] && [ $shimmerWaspNanomsgPort -eq $shimmerWaspNanomsgPort ] 2>/dev/null; then
+                if [ -f "/usr/bin/shimmer-wasp" ]; then
+                    if [ "$ufw" = "true" ]; then
+                        sudo ufw delete allow $currentShimmerWaspNanomsgPort/tcp > /dev/null 2>&1
+                        sudo ufw allow $shimmerWaspNanomsgPort/tcp > /dev/null 2>&1
+                    fi
+                    source $shimmerWaspConfigParsers/shimmerWaspNanomsgPort
+                fi
+                sudo sed -i 's/^shimmerWaspNanomsgPort=.*/shimmerWaspNanomsgPort='$shimmerWaspNanomsgPort'/' $swarmConfigs/shimmer-wasp.cfg
+                whiptail --title "WASP [SHIMMER] Nanomsg" --msgbox "Nanomsg port was set to \"$shimmerWaspNanomsgPort/tcp\"!" 8 65
+            fi
+        ;;
+        "10)")
+            source $swarmConfigs/shimmer-wasp.cfg
+            currentShimmerWaspWebapiAdminWhitelist=$shimmerWaspWebapiAdminWhitelist
+            shimmerWaspWebapiAdminWhitelist=$(whiptail --inputbox "\nAllow addresses (separated by comma) to access the admin webapi." 10 65 $shimmerWaspWebapiAdminWhitelist --title "WASP [SHIMMER] Admin Whitelist" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            shimmerWaspWebapiAdminWhitelist=$(echo $shimmerWaspWebapiAdminWhitelist | tr -d ' ')
+            if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerWaspWebapiAdminWhitelist" ] && [ "$currentShimmerWaspWebapiAdminWhitelist" != "$shimmerWaspWebapiAdminWhitelist" ]; then
+                if [ -f "/usr/bin/shimmer-wasp" ]; then
+                    source $shimmerWaspConfigParsers/shimmerWaspWebapiAdminWhitelist
+                fi
+                sudo sed -i 's/^shimmerWaspWebapiAdminWhitelist=.*/shimmerWaspWebapiAdminWhitelist="'$shimmerWaspWebapiAdminWhitelist'"/' $swarmConfigs/shimmer-wasp.cfg
+                whiptail --title "WASP [SHIMMER] Admin Whitelist" --msgbox "\nFollowing addresses are admin \"$shimmerWaspWebapiAdminWhitelist\"!" 10 65
+            fi
+        ;;
+    esac
+done
+sudo chown -R wasp:wasp $shimmerWaspHome/*.json
+exitCode=0
