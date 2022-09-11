@@ -8,7 +8,7 @@ else
     sudo systemctl stop shimmer-inx-dashboard > /dev/null 2>&1
 fi
 
-getInxInstallations=$(ls /usr/bin/ | grep -E 'dashboard|indexer|mqtt|participation|inx-poi')
+getInxInstallations=$(ls /usr/bin/ | grep -E 'dashboard|indexer|mqtt|participation|poi')
 if [ -z "$getInxInstallations" ]; then
     if id inx >/dev/null 2>&1; then
         sudo deluser inx >/dev/null
@@ -23,6 +23,16 @@ sudo systemctl daemon-reload > /dev/null 2>&1
 
 if [ -z "$getInxInstallations" ] && [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/shimmer-hornet" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ]; then
     sudo snap remove go > /dev/null 2>&1
+fi
+
+
+proxyShimmerInxDashboardSingle=false
+sudo sed -i 's/^proxyShimmerInxDashboardSingle=.*/proxyShimmerInxDashboardSingle='$proxyShimmerInxDashboardSingle'/' $swarmConfigs/proxy.cfg
+sudo sed -i 's/^proxyShimmerInxDashboardUrl=.*/proxyShimmerInxDashboardUrl=""/' $swarmConfigs/proxy.cfg
+unset proxyShimmerInxDashboardUrl
+if [ -f "/etc/nginx/sites-enabled/shimmer-inx-dashboard" ]; then
+    sudo rm -rf /etc/nginx/sites-enabled/shimmer-inx-dashboard > /dev/null 2>&1
+    sudo systemctl reload nginx > /dev/null 2>&1
 fi
 
 source $proxyModule/proxyShimmerInxDashboard

@@ -27,7 +27,7 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
         sudo chmod 644 /etc/nginx/swarm/extended-proxy.conf
     fi
 
-    if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerWaspApiDomain/fullchain.pem" ]; then
+    if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerWaspApiDomain/fullchain.pem" ]; then
         if [ -d "/var/www/html/swarm-dashboard" ]; then
             sudo rm -rf /var/www/html/swarm-dashboard
         fi
@@ -66,6 +66,17 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
             sudo sed -i 's/443/'$proxyShimmerHornetPort'/g' /etc/nginx/sites-enabled/shimmer-hornet
             if [ "$ufw" = "true" ]; then
                 sudo ufw allow $proxyShimmerHornetPort/tcp > /dev/null 2>&1
+            fi
+        fi
+        if [ -f "/usr/bin/shimmer-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerInxDashboardDomain" ] && [ ! -z "$proxyShimmerInxDashboardPort" ] && [ "$proxyShimmerInxDashboardSingle" = "true" ]; then
+            if [ -z "$defaultDomain" ]; then
+                defaultDomain="$proxyShimmerInxDashboardDomain"
+            fi
+            sudo cp -rf $swarmTemplates/proxy/nginx_shimmer-inx-dashboard.template /etc/nginx/sites-enabled/shimmer-inx-dashboard
+            sudo sed -i 's/domain.tld/'$proxyShimmerHornetDomain'/g' /etc/nginx/sites-enabled/shimmer-inx-dashboard
+            sudo sed -i 's/443/'$proxyShimmerInxDashboardPort'/g' /etc/nginx/sites-enabled/shimmer-inx-dashboard
+            if [ "$ufw" = "true" ]; then
+                sudo ufw allow $proxyShimmerInxDashboardPort/tcp > /dev/null 2>&1
             fi
         fi
         if [ -f "/usr/bin/goshimmer" ] && [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] && [ ! -z "$proxyGoshimmerDomain" ] && [ ! -z "$proxyGoshimmerPort" ]; then
