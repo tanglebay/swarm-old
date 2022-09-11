@@ -17,19 +17,30 @@ if [ -f "/usr/sbin/nginx" ]; then
 
     if [ ! -z "$proxyIotaHornetUrl" ] && [ -d "/etc/letsencrypt/live/$proxyIotaHornetDomain" ] && [ -f "/usr/bin/iota-hornet" ] && [ -f "/etc/nginx/sites-enabled/iota-hornet" ]; then
         proxyIotaHornetVersion=$(head -n 1 /etc/nginx/sites-enabled/iota-hornet | awk '{ print $3 }')
-        proxyIotaHornetInfo="\n\n${proxyInfoHornetDashboard}Hornet [IOTA] Dashboard/API (v$proxyIotaHornetVersion)\nhttps://$proxyIotaHornetUrl"
+        proxyIotaHornetInfo="\n\nHornet [IOTA] Dashboard/API (v$proxyIotaHornetVersion)\nhttps://$proxyIotaHornetUrl"
     else
         unset proxyIotaHornetVersion proxyIotaHornetInfo
     fi
     if [ ! -z "$proxyShimmerHornetUrl" ] && [ -d "/etc/letsencrypt/live/$proxyShimmerHornetDomain" ] && [ -f "/usr/bin/shimmer-hornet" ] && [ -f "/etc/nginx/sites-enabled/shimmer-hornet" ]; then
         proxyShimmerHornetVersion=$(head -n 1 /etc/nginx/sites-enabled/shimmer-hornet | awk '{ print $3 }')
-        proxyShimmerHornetInfo="\n\n${proxyInfoShimmerHornetDashboard}Hornet [Shimmer] Dashboard/API (v$proxyShimmerHornetVersion)\nhttps://$proxyShimmerHornetUrl"
+        if [ "$proxyShimmerInxDashboardSingle" = "true" ]; then
+            proxyShimmerHornetEndpointInfo=" API"
+        else
+            proxyShimmerHornetEndpointInfo=" Dashboard/API"
+        fi
+        proxyShimmerHornetInfo="\n\nHornet [Shimmer]$proxyShimmerHornetEndpointInfo (v$proxyShimmerHornetVersion)\nhttps://$proxyShimmerHornetUrl"
     else
-        unset proxyShimmerHornetVersion proxyShimmerHornetInfo
+        unset proxyShimmerHornetVersion proxyShimmerHornetEndpointInfo proxyShimmerHornetInfo
+    fi
+    if [ ! -z "$proxyShimmerInxDashboardUrl" ] && [ -d "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain" ] && [ -f "/usr/bin/shimmer-inx-dashboard" ] && [ -f "/etc/nginx/sites-enabled/shimmer-inx-dashboard" ] && [ "$proxyShimmerInxDashboardSingle" = "true" ]; then
+        proxyShimmerInxDashboardVersion=$(head -n 1 /etc/nginx/sites-enabled/shimmer-inx-dashboard | awk '{ print $3 }')
+        proxyShimmerInxDashboardInfo="\n\nINX [Shimmer] Dashboard (v$proxyShimmerInxDashboardVersion)\nhttps://$proxyShimmerInxDashboardUrl"
+    else
+        unset proxyShimmerInxDashboardVersion proxyShimmerInxDashboardInfo
     fi
     if [ ! -z "$proxyGoshimmerUrl" ] && [ -d "/etc/letsencrypt/live/$proxyGoshimmerDomain" ] && [ -f "/usr/bin/goshimmer" ] && [ -f "/etc/nginx/sites-enabled/goshimmer" ]; then
         proxyGoshimmerVersion=$(head -n 1 /etc/nginx/sites-enabled/goshimmer | awk '{ print $3 }')
-        proxyGoshimmerInfo="\n\n${proxyInfoGoshimmerDashboard}GoShimmer Dashboard/API (v$proxyGoshimmerVersion)\nhttps://$proxyGoshimmerUrl"
+        proxyGoshimmerInfo="\n\nGoShimmer Dashboard/API (v$proxyGoshimmerVersion)\nhttps://$proxyGoshimmerUrl"
     else
         unset proxyGoshimmerVersion proxyGoshimmerInfo
     fi
@@ -53,7 +64,7 @@ if [ -f "/usr/sbin/nginx" ]; then
     fi
 
     # OUTPUT
-    whiptail --scrolltext --title "Proxy Info [v$version]" --msgbox "Webserver: ${proxyStatus}\n${proxyAutomaticDeploymentInfo}\nSWARM Endpoint: ${proxySwarmEndpointStatus}${hr}${proxyIotaHornetInfo}${proxyShimmerHornetInfo}${proxyGoshimmerInfo}${proxyShimmerWaspDashboardInfo}${proxyShimmerWaspApiInfo}" 24 65
+    whiptail --scrolltext --title "Proxy Info [v$version]" --msgbox "Webserver: ${proxyStatus}\n${proxyAutomaticDeploymentInfo}\nSWARM Endpoint: ${proxySwarmEndpointStatus}${hr}${proxyIotaHornetInfo}${proxyShimmerHornetInfo}${proxyShimmerInxDashboardInfo}${proxyGoshimmerInfo}${proxyShimmerWaspDashboardInfo}${proxyShimmerWaspApiInfo}" 24 65
 else
     whiptail --title "Proxy Info [v$version]" --msgbox "Reverse proxy not installed!" 8 65
 fi
