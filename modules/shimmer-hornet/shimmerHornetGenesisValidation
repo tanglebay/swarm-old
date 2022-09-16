@@ -1,0 +1,73 @@
+#!/bin/bash
+
+if [ -f "/tmp/shimmer_genesis-snapshot.log" ]; then
+    if (whiptail --title "Hornet [SHIMMER] Genesis" --yesno --defaultno "There is already a log for the Shimmer genesis snapshot.\nDo you want to generate a new genesis snapshot?" 10 65); then
+        sudo rm -rf /tmp/shimmer_genesis-snapshot.log > /dev/null 2>&1
+    fi
+fi
+
+if [ ! -f "/tmp/shimmer_genesis-snapshot.log" ]; then
+    {
+        echo 0
+        echo 5
+        if [ ! -d "/tmp/shimmer-genesis" ]; then
+            mkdir -p /tmp/shimmer-genesis
+        fi
+        echo 15
+        if [ ! -f "/tmp/shimmer-genesis/protocol_parameters.json" ]; then
+            curl -sL https://github.com/iotaledger/global-snapshots/raw/shimmer-genesis/shimmer/protocol_parameters.json -o /tmp/shimmer-genesis/protocol_parameters.json
+        fi
+        echo 30
+        if [ ! -f "/tmp/shimmer-genesis/shimmer.json" ]; then
+            curl -sL https://github.com/iotaledger/participation-events/raw/master/results/staking/shimmer.json -o /tmp/shimmer-genesis/shimmer.json
+        fi
+        echo 45
+        if [ ! -f "/tmp/shimmer-genesis/genesis_snapshot_orig.bin" ]; then
+            curl -sL https://github.com/iotaledger/global-snapshots/raw/shimmer-genesis/shimmer/genesis_snapshot.bin -o /tmp/shimmer-genesis/genesis_snapshot_orig.bin
+        fi
+        echo 60
+        ( cd /tmp/shimmer-genesis ; /usr/bin/shimmer-hornet tool snap-gen --protocolParametersPath /tmp/shimmer-genesis/protocol_parameters.json --genesisAddressesPath=/tmp/shimmer-genesis/shimmer.json --genesisAddresses=smr1qrmakyqt5ezm5k9c0sk39gwfavpktxkjmx0jvh9ejxjq6pr6d39egv2mvuc:181362050906137,smr1qpjva0y6qwjmv42dspw2se2776l5qr0r5p2s5m7nrg73qhvm6a6y7uvqxn6:181362050906136 --outputPath /tmp/shimmer-genesis/genesis_snapshot.bin ) > /dev/null 2>&1
+        echo 75
+        if [ -f "/tmp/shimmer-genesis/genesis_snapshot.bin" ]; then
+            echo "Snapshot creation successful!" > /tmp/shimmer_genesis-snapshot.log
+            sudo /usr/bin/shimmer-hornet tool snap-hash --fullSnapshotPath /tmp/shimmer-genesis/genesis_snapshot.bin >> /tmp/shimmer_genesis-snapshot.log
+            echo 85
+            echo "calculating SHA256 hashes..." >> /tmp/shimmer_genesis-snapshot.log
+            sudo shasum -a 256 /tmp/shimmer-genesis/genesis_snapshot*.bin >> /tmp/shimmer_genesis-snapshot.log
+        fi
+        echo 100
+    } | whiptail --gauge "Please wait while Shimmer Genesis snapshot is generated..." 8 65 0
+
+    if [ -f "/tmp/shimmer_genesis-snapshot.log" ]; then
+        {
+            echo 0
+            echo 5
+            sudo -u hornet mkdir -p $shimmerHornetHome/mainnet/snapshots > /dev/null 2>&1
+            echo 20
+            sudo chmod 775 $shimmerHornetHome/mainnet/snapshots > /dev/null 2>&1
+            echo 40
+            sudo -u hornet cp -rf /tmp/shimmer-genesis/genesis_snapshot.bin $shimmerHornetHome/mainnet/snapshots/full_snapshot.bin > /dev/null 2>&1
+            echo 60
+            if [ -f "$shimmerHornetHome/mainnet/snapshots/full_snapshot.bin" ]; then
+                sudo chmod 644 $shimmerHornetHome/mainnet/snapshots/full_snapshot.bin > /dev/null 2>&1
+                echo 80
+            fi
+            echo 100
+        } | whiptail --gauge "Please wait while the snapshot is being processed..." 8 65 0
+        if (whiptail --title "Hornet [SHIMMER] Genesis" --yesno --defaultno "Do you want to view the validation log?" 10 65); then
+            clear
+            echo ""
+            sudo cat /tmp/shimmer_genesis-snapshot.log
+            echo ""
+            echo ""
+            read -n 1 -s -r -p "Press any key to continue"
+            sudo rm -rf /tmp/shimmer-genesis > /dev/null 2>&1
+            whiptail --title "Hornet [SHIMMER] Genesis" --msgbox "The Shimmer genesis snapshot was successfully created." 8 65
+        else
+            sudo rm -rf /tmp/shimmer-genesis > /dev/null 2>&1
+            whiptail --title "Hornet [SHIMMER] Genesis" --msgbox "The Shimmer genesis snapshot was successfully created." 8 65
+        fi
+    else
+        whiptail --title "Hornet [SHIMMER] Genesis" --msgbox "Aborted - Genesis snapshot could not be validated." 8 65
+    fi
+fi

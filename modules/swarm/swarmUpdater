@@ -115,6 +115,9 @@ if [ "$swarmManualUpdate" = "true" ]; then
             if [ -f "/tmp/watchdog.lock" ]; then
                 sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
             fi
+            if [ -f "/tmp/watchdog.state" ]; then
+                sudo rm -rf /tmp/watchdog.state > /dev/null 2>&1
+            fi
             clear
             exit 0
         else
@@ -147,9 +150,11 @@ else
                 if [ -f "$swarmTmpPath/v$latestSwarmVersion/swarm/update.lock" ]; then
                     sudo rm -rf $swarmHome > /dev/null 2>&1
                     sudo mv -f $swarmTmpPath/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
-                    source /var/lib/swarm/environment
-                    sudo cat $swarmTemplates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
-                    source $swarmModule/swarmUpdaterAfter
+                    if [ -f "$swarmHome/swarm" ]; then
+                        source /var/lib/swarm/environment
+                        sudo cat $swarmTemplates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
+                        source $swarmModule/swarmUpdaterAfter
+                    fi
                 fi
             fi
             if [ -d "$swarmTmpPath" ]; then

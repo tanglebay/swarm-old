@@ -239,7 +239,8 @@ while [ $exitCode -lt 1 ]; do
                         "3)" "Start/Stop Hornet" \
                         "4)" "Reset Hornet event database" \
                         "5)" "Reset Hornet all databases" \
-                        "6)" "Reset Hornet config" 3>&2 2>&1 1>&3
+                        "6)" "Reset Hornet config" \
+                        "7)" "Shimmer Genesis Validation" 3>&2 2>&1 1>&3
                     )
                     exitstatus=$?
                     if [ "$exitstatus" = "1" ]; then
@@ -577,6 +578,48 @@ while [ $exitCode -lt 1 ]; do
                                 whiptail --title "Hornet [SHIMMER] Debugging" --msgbox "${shimmerHornetNetwork} config successfully reset." 8 65
                             fi
                         ;;
+                        "7)")
+                            while [ $exitCode -lt 1 ]; do
+                                CHOICE=$(
+                                    whiptail --title "Hornet [SHIMMER] Genesis" --menu "\nChoose your option" 24 65 0 \
+                                    "" "" \
+                                    "1)" "Show Genesis Snapshot Log" \
+                                    "2)" "Generate Genesis Snapshot" 3>&2 2>&1 1>&3
+                                )
+                                exitStatus=$?
+                                if [ "$exitStatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        if [ -f "/usr/bin/shimmer-hornet" ]; then
+                                            if [ -f "/tmp/shimmer_genesis-snapshot.log" ]; then
+                                                clear
+                                                echo ""
+                                                sudo cat /tmp/shimmer_genesis-snapshot.log
+                                                echo ""
+                                                echo ""
+                                                read -n 1 -s -r -p "Press any key to continue"
+                                            else
+                                                if (whiptail --title "Hornet [SHIMMER] Genesis" --yesno --defaultno "There is no log for the Shimmer genesis snapshot.\nDo you want to generate the genesis snapshot?" 10 65); then
+                                                    source $shimmerHornetModule/shimmerHornetGenesisValidation
+                                                fi
+                                            fi
+                                        else
+                                            whiptail --title "Hornet [SHIMMER] Genesis" --msgbox "Hornet installation not found, please install Hornet first." 8 65
+                                        fi
+                                    ;;
+                                    "2)")
+                                        if [ -f "/usr/bin/shimmer-hornet" ]; then
+                                            source $shimmerHornetModule/shimmerHornetGenesisValidation
+                                        else
+                                            whiptail --title "Hornet [SHIMMER] Genesis" --msgbox "Hornet installation not found, please install Hornet first." 8 65
+                                        fi
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
+                        ;;
                     esac
                 done
                 exitCode=0
@@ -753,7 +796,7 @@ while [ $exitCode -lt 1 ]; do
                                     source $shimmerHornetModule/shimmerHornetRemoval
                                     echo 75
                                     echo 100
-                                } | whiptail --gauge "Please wait while the Hornet files are removed...." 8 65 0
+                                } | whiptail --gauge "Please wait while the Hornet files are removed..." 8 65 0
                                 whiptail --title "Hornet [SHIMMER] Installer" --msgbox "Error while installing Hornet! Please try again later." 8 65
                             fi
                             if [ -f "/tmp/shimmer-hornet.lock" ]; then
