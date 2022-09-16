@@ -1,0 +1,26 @@
+#!/bin/bash
+
+if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
+    for swarmApp in ${swarmApps[@]}
+    do
+        if [ -f "/usr/bin/$swarmApp" ]; then
+            source $swarmModule/swarmAppVars
+            watchdogAppDeadlockCounter=${swarmAppPrefix}DeadlockCounter
+
+            if [ -f "/tmp/$swarmApp.lock" ]; then
+                if [ ${!watchdogAppDeadlockCounter} -gt 0 ]; then
+                    sudo rm -rf /tmp/$swarmApp.lock > /dev/null 2>&1
+                    sudo sed -i 's/^'${swarmAppPrefix}'DeadlockCounter=.*/'${swarmAppPrefix}'DeadlockCounter=0/' $watchdogStateFile
+                else
+                    sudo sed -i 's/^'${swarmAppPrefix}'DeadlockCounter=.*/'${swarmAppPrefix}'DeadlockCounter=1/' $watchdogStateFile
+                fi
+            else
+                if [ ${!watchdogAppDeadlockCounter} -gt 0 ]; then
+                    sudo sed -i 's/^'${swarmAppPrefix}'DeadlockCounter=.*/'${swarmAppPrefix}'DeadlockCounter=0/' $watchdogStateFile
+                fi
+            fi
+            unset swarmAppName swarmAppPrefix watchdogAppDeadlockCounter
+        fi
+    done
+    unset swarmApp
+fi
