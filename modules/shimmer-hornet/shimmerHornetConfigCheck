@@ -2,17 +2,24 @@
 if [ -f "$shimmerHornetHome/$shimmerHornetConfig.json" ]; then
     checkConfigFile=$(cat $shimmerHornetHome/$shimmerHornetConfig.json)
 fi
-if [ -z "$checkConfigFile" ] || [ ! -f "$shimmerHornetHome/$shimmerHornetConfig.json" ]; then
-    if [ "$shimmerHornetRelease" = "stable" ]; then
+
+# TMP
+shimmerHornetNetworkName="$(jq '.protocol.targetNetworkName' $shimmerHornetHome/$shimmerHornetConfig.json)"
+shimmerHornetNetworkName=$(echo $shimmerHornetNetworkName | tr -d '"')
+if [ -z "$checkConfigFile" ] || [ ! -f "$shimmerHornetHome/$shimmerHornetConfig.json" ] || [ "$shimmerHornetNetworkName" = "shimmer" ]; then
+######
+    if [ "$shimmerHornetNetwork" = "mainnet" ]; then
         if [ -f "$shimmerHornetHome/$shimmerHornetConfig.json" ]; then
             sudo chown hornet:hornet $shimmerHornetHome/$shimmerHornetConfig.json > /dev/null 2>&1
         fi
         sudo -u hornet wget -q -O $shimmerHornetHome/$shimmerHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/shimmer/config_defaults.json
-    else
+    fi
+    if [ "$shimmerHornetNetwork" = "testnet" ]; then
         if [ -f "$shimmerHornetHome/$shimmerHornetConfig.json" ]; then
             sudo chown hornet:hornet $shimmerHornetHome/$shimmerHornetConfig.json > /dev/null 2>&1
         fi
-        sudo -u hornet wget -q -O $shimmerHornetHome/$shimmerHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/develop/config_defaults.json
+        
+        sudo -u hornet wget -q -O $shimmerHornetHome/$shimmerHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/develop/config_testnet.json
     fi
 fi
 
@@ -20,4 +27,4 @@ if [ -f "/tmp/shimmerHornetParsing" ]; then
     sudo rm -rf /tmp/shimmerHornetParsing > /dev/null 2>&1
 fi
 
-unset checkConfigFile
+unset checkConfigFile shimmerHornetNetworkName
