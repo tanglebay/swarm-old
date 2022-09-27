@@ -38,6 +38,19 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/$swarmAppGithubName $swarmGrepAppReleaseVersion | head -n 1)
                 swarmAppLatestVersion=$(echo $swarmAppLatestVersion | tr -d 'v')
             fi
+
+            # TMP
+            if [ "$shimmerHornetMainnetLauncher" != "false" ] && [ "$swarmApp" = "shimmer-hornet" ] && [ "${!swarmAppRelease}" = "beta" ]; then
+                shimmerHornetMainnetLaunchVersionCheck=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases/$swarmAppGithubName $swarmGrepAppReleaseVersion | awk '!/(-rc|-beta|-alpha)/' | head -n 1)
+                shimmerHornetMainnetLaunchVersionCheck=$(echo $shimmerHornetMainnetLaunchVersionCheck | tr -d 'v')
+                if [ ! -z "$shimmerHornetMainnetLaunchVersionCheck" ]; then
+                    swarmAppLatestVersion=$shimmerHornetMainnetLaunchVersionCheck
+                    sudo sed -i 's/^shimmerHornetRelease=.*/shimmerHornetRelease="stable"/' $swarmConfigs/shimmer-hornet.cfg
+                fi
+                unset shimmerHornetMainnetLaunchVersionCheck
+            fi
+            #####
+
             if [ "$swarmAppLatestVersion" = "\"\"" ] || [ -z "$swarmAppLatestVersion" ] || [ "$swarmAppLatestVersion" = "null" ]; then
                 if [ -f "/usr/bin/$swarmApp" ]; then
                     source ${!swarmAppModule}/${swarmAppPrefix}Version
