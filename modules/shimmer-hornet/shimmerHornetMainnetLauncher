@@ -1,43 +1,57 @@
 #!/bin/bash
 
 if [ "$shimmerHornetMainnetLauncher" = "true" ]; then
-    if [ -d "$shimmerHornetHome/testnet" ]; then
-        if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-            sudo touch /tmp/shimmer-inx-indexer.lock 2>/dev/null
-            if [ -d "$shimmerInxIndexerHome/database" ]; then
-                sudo systemctl stop shimmer-inx-indexer 2>/dev/null
-                sudo rm -rf $shimmerInxIndexerHome/database 2>/dev/null
+    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+    do
+        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+            sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock 2>/dev/null
+            sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+            if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
+                if [ -d "$shimmerInxIndexerHome/database" ]; then
+                    sudo rm -rf $shimmerInxIndexerHome/database 2>/dev/null
+                fi
+            fi
+            if [ -f "/usr/bin/shimmer-inx-participation" ]; then
+                if [ -d "$shimmerInxParticipationHome/database" ]; then
+                    sudo rm -rf $shimmerInxParticipationHome/database 2>/dev/null
+                fi
             fi
         fi
-        if [ -f "/usr/bin/shimmer-inx-participation" ]; then
-            if [ -d "$shimmerInxParticipationHome/database" ]; then
-                sudo systemctl stop shimmer-inx-participation 2>/dev/null
-                sudo rm -rf $shimmerInxParticipationHome/database 2>/dev/null
-            fi
-        fi
-        sudo touch /tmp/shimmer-hornet.lock 2>/dev/null
-        sudo systemctl stop shimmer-hornet 2>/dev/null
-        sudo rm -rf $shimmerHornetHome/testnet 2>/dev/null
-        sudo rm -rf $shimmerHornetHome/config_testnet.json
-        sudo rm -rf $shimmerHornetHome/config_alphanet.json
-        sudo sed -i 's/^shimmerHornetRelease=.*/shimmerHornetRelease="stable"/' $swarmConfigs/shimmer-hornet.cfg
-        sudo sed -i 's/^shimmerHornetNetwork=.*/shimmerHornetNetwork="mainnet"/' $swarmConfigs/shimmer-hornet.cfg
-        if [ -d "$shimmerHornetHome/shimmer" ]; then
-            sudo rm -rf $shimmerHornetHome/shimmer 2>/dev/null
-        fi
-        if [ -d "$shimmerHornetHome/alphanet" ]; then
-            sudo rm -rf $shimmerHornetHome/alphanet 2>/dev/null
-        fi
-        if [ -f "/tmp/shimmer-inx-indexer.lock" ]; then
-            sudo rm -rf /tmp/shimmer-inx-indexer.lock 2>/dev/null
-        fi
-        if [ -f "/tmp/shimmer-inx-participation.lock" ]; then
-            sudo rm -rf /tmp/shimmer-inx-participation.lock 2>/dev/null
-        fi
-        if [ -f "/tmp/shimmer-hornet.lock" ]; then
-            sudo rm -rf /tmp/shimmer-hornet.lock 2>/dev/null
-        fi
-        restartShimmerHornet=true
-        sudo sed -i 's/^shimmerHornetMainnetLauncher=.*/shimmerHornetMainnetLauncher=false/' $swarmConfigs/shimmer-hornet.cfg
+    done
+    unset shimmerInxPlugin
+    sudo touch /tmp/shimmer-hornet.lock 2>/dev/null
+    sudo systemctl stop shimmer-hornet 2>/dev/null
+    if [ -f "$shimmerHornetHome/config_testnet.json" ]; then
+        sudo rm -rf $shimmerHornetHome/config_testnet.json 2>/dev/null
     fi
+    if [ -f "$shimmerHornetHome/config_alphanet.json" ]; then
+        sudo rm -rf $shimmerHornetHome/config_alphanet.json 2>/dev/null
+    fi
+    shimmerHornetRelease="rc"
+    shimmerHornetNetwork="mainnet"
+    shimmerHornetConfig="config_mainnet"
+    sudo sed -i 's/^shimmerHornetRelease=.*/shimmerHornetRelease="rc"/' $swarmConfigs/shimmer-hornet.cfg
+    sudo sed -i 's/^shimmerHornetNetwork=.*/shimmerHornetNetwork="mainnet"/' $swarmConfigs/shimmer-hornet.cfg
+    echo "OPTIONS=\"--config config_mainnet.json\"" > /etc/default/shimmer-hornet
+    sudo -u hornet wget -q -O $shimmerHornetHome/$shimmerHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/shimmer/config_defaults.json
+    if [ -d "$shimmerHornetHome/shimmer" ]; then
+        sudo rm -rf $shimmerHornetHome/shimmer 2>/dev/null
+    fi
+    if [ -d "$shimmerHornetHome/testnet" ]; then
+        sudo rm -rf $shimmerHornetHome/testnet 2>/dev/null
+    fi
+    if [ -d "$shimmerHornetHome/alphanet" ]; then
+        sudo rm -rf $shimmerHornetHome/alphanet 2>/dev/null
+    fi
+    if [ -f "/tmp/shimmer-inx-indexer.lock" ]; then
+        sudo rm -rf /tmp/shimmer-inx-indexer.lock 2>/dev/null
+    fi
+    if [ -f "/tmp/shimmer-inx-participation.lock" ]; then
+        sudo rm -rf /tmp/shimmer-inx-participation.lock 2>/dev/null
+    fi
+    if [ -f "/tmp/shimmer-hornet.lock" ]; then
+        sudo rm -rf /tmp/shimmer-hornet.lock 2>/dev/null
+    fi
+    restartShimmerHornet=true
+    sudo sed -i 's/^shimmerHornetMainnetLauncher=.*/shimmerHornetMainnetLauncher=false/' $swarmConfigs/shimmer-hornet.cfg
 fi
