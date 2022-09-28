@@ -1,20 +1,24 @@
 #!/bin/bash
 
 if [ "$shimmerHornetMainnetLauncher" = "true" ]; then
-    if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-        sudo touch /tmp/shimmer-inx-indexer.lock 2>/dev/null
-        if [ -d "$shimmerInxIndexerHome/database" ]; then
-            sudo systemctl stop shimmer-inx-indexer 2>/dev/null
-            sudo rm -rf $shimmerInxIndexerHome/database 2>/dev/null
+    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+    do
+        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+            sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock 2>/dev/null
+            sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+            if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
+                if [ -d "$shimmerInxIndexerHome/database" ]; then
+                    sudo rm -rf $shimmerInxIndexerHome/database 2>/dev/null
+                fi
+            fi
+            if [ -f "/usr/bin/shimmer-inx-participation" ]; then
+                if [ -d "$shimmerInxParticipationHome/database" ]; then
+                    sudo rm -rf $shimmerInxParticipationHome/database 2>/dev/null
+                fi
+            fi
         fi
-    fi
-    if [ -f "/usr/bin/shimmer-inx-participation" ]; then
-        sudo touch /tmp/shimmer-inx-participation.lock 2>/dev/null
-        if [ -d "$shimmerInxParticipationHome/database" ]; then
-            sudo systemctl stop shimmer-inx-participation 2>/dev/null
-            sudo rm -rf $shimmerInxParticipationHome/database 2>/dev/null
-        fi
-    fi
+    done
+    unset shimmerInxPlugin
     sudo touch /tmp/shimmer-hornet.lock 2>/dev/null
     sudo systemctl stop shimmer-hornet 2>/dev/null
     if [ -f "$shimmerHornetHome/config_testnet.json" ]; then
