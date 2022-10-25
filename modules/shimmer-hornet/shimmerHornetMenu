@@ -477,64 +477,98 @@ while [ $exitCode -lt 1 ]; do
                         "5)")
                             if (whiptail --title "Hornet [SHIMMER] Management" --yesno --defaultno "Are you sure you want to delete the Hornet database?" 8 65); then
                                 if (whiptail --title "Hornet [SHIMMER] Management" --yesno --defaultno "Do you want to use an alternative source for the snapshot?" 8 65); then
-                                    shimmerHornetSnapshotSource=$(whiptail --inputbox "\nPlease specify the download url for the full snapshot" 10 65 --title "Hornet [SHIMMER] Management" 3>&1 1>&2 2>&3)
-                                    shimmerHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" $shimmerHornetSnapshotSource)
-                                    if [ "$shimmerHornetSnapshotSourceValid" != "200" ]; then
-                                        whiptail --title "Hornet [SHIMMER] Management" --msgbox "Snapshot url not valid and will be skipped." 8 65
-                                        unset shimmerHornetSnapshotSource
+                                    CHOICE=$(
+                                        whiptail --title "Hornet [SHIMMER] Management" --menu "\nChoose your option" 24 65 0 \
+                                        "" "" \
+                                        "1)" "Download Snapshot for genesis" \
+                                        "2)" "Download Snapshot via URL" 3>&2 2>&1 1>&3
+                                    )
+                                    exitstatus=$?
+                                    if [ "$exitstatus" != "1" ]; then
+                                        case $CHOICE in
+                                            "1)")
+                                                source $swarmModule/swarmAuth
+                                                if [ "$swarmAuth" = "200" ]; then
+                                                    shimmerHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/shimmer-mainnet/event/genesis_snapshot.bin)
+                                                    if [ "$iotaHornetSnapshotSourceValid" = "200" ]; then
+                                                        shimmerHornetSnapshotSource="https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/shimmer-mainnet/event/genesis_snapshot.bin"
+                                                    else
+                                                        unset shimmerHornetSnapshotSourceValid
+                                                        exitstatus=1
+                                                    fi
+                                                else
+                                                    exitstatus=1
+                                                fi
+                                            ;;
+                                            "2)")
+                                                shimmerHornetSnapshotSource=$(whiptail --inputbox "\nPlease specify the download url for the full snapshot" 10 65 --title "Hornet [SHIMMER] Management" 3>&1 1>&2 2>&3)
+                                                exitstatus=$?
+                                                if [ "$exitStatus" != 1 ]; then
+                                                    shimmerHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" $shimmerHornetSnapshotSource)
+                                                    if [ "$shimmerHornetSnapshotSourceValid" != "200" ]; then
+                                                        unset shimmerHornetSnapshotSource shimmerHornetSnapshotSourceValid
+                                                        exitstatus=1
+                                                    fi
+                                                else
+                                                    unset shimmerHornetSnapshotSource
+                                                    exitstatus=1
+                                                fi
+                                            ;;
+                                        esac
                                     fi
-                                    unset shimmerHornetSnapshotSourceValid
                                 fi
-                                source $swarmConfigs/shimmer-hornet.cfg
-                                if [ ! -f "/tmp/shimmer-hornet.lock" ]; then
-                                    sudo touch /tmp/shimmer-hornet.lock > /dev/null 2>&1
-                                fi
-                                {
-                                    echo 0
-                                    echo 10
-                                    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                    do
-                                        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                            if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                                sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                if [ "$exitstatus" != "1" ]; then
+                                    source $swarmConfigs/shimmer-hornet.cfg
+                                    if [ ! -f "/tmp/shimmer-hornet.lock" ]; then
+                                        sudo touch /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                                    fi
+                                    {
+                                        echo 0
+                                        echo 10
+                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                        do
+                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                                    sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                                fi
+                                                sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
                                             fi
-                                            sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                        done
+                                        unset shimmerInxPlugin
+                                        echo 20
+                                        if [ "$killall" = "true" ]; then
+                                            sudo killall -s SIGKILL shimmer-hornet > /dev/null 2>&1
+                                        else
+                                            sudo systemctl stop shimmer-hornet > /dev/null 2>&1
                                         fi
-                                    done
-                                    unset shimmerInxPlugin
-                                    echo 20
-                                    if [ "$killall" = "true" ]; then
-                                        sudo killall -s SIGKILL shimmer-hornet > /dev/null 2>&1
-                                    else
-                                        sudo systemctl stop shimmer-hornet > /dev/null 2>&1
-                                    fi
-                                    echo 40
-                                    sudo rm -rf $shimmerHornetHome/${shimmerHornetNetwork}/database $shimmerHornetHome/${shimmerHornetNetwork}/snapshots/*.bin > /dev/null 2>&1
-                                    if [ ! -z "$shimmerHornetSnapshotSource" ]; then
-                                        sudo -u hornet wget -q -O $shimmerHornetHome/${shimmerHornetNetwork}/snapshots/full_snapshot.bin $shimmerHornetSnapshotSource
-                                    fi
-                                    sudo sed -i 's/^shimmerHornetStatusCounter=.*/shimmerHornetStatusCounter=0/' $swarmConfigs/watchdog.cfg
-                                    sudo sed -i 's/^shimmerHornetSyncCounter=.*/shimmerHornetSyncCounter=0/' $swarmConfigs/watchdog.cfg
-                                    echo 60
-                                    sudo systemctl start shimmer-hornet > /dev/null 2>&1
-                                    echo 80
-                                    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                    do
-                                        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                            sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                                            if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                                sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                        echo 40
+                                        sudo rm -rf $shimmerHornetHome/${shimmerHornetNetwork}/database $shimmerHornetHome/${shimmerHornetNetwork}/snapshots/*.bin > /dev/null 2>&1
+                                        if [ ! -z "$shimmerHornetSnapshotSource" ]; then
+                                            sudo -u hornet wget -q -O $shimmerHornetHome/${shimmerHornetNetwork}/snapshots/full_snapshot.bin $shimmerHornetSnapshotSource
+                                        fi
+                                        sudo sed -i 's/^shimmerHornetStatusCounter=.*/shimmerHornetStatusCounter=0/' $swarmConfigs/watchdog.cfg
+                                        sudo sed -i 's/^shimmerHornetSyncCounter=.*/shimmerHornetSyncCounter=0/' $swarmConfigs/watchdog.cfg
+                                        echo 60
+                                        sudo systemctl start shimmer-hornet > /dev/null 2>&1
+                                        echo 80
+                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                        do
+                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                                if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                                    sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                                fi
                                             fi
-                                        fi
-                                    done
-                                    unset shimmerInxPlugin
-                                    echo 100
-                                    sleep 0.25
-                                } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
-                                if [ -f "/tmp/shimmer-hornet.lock" ]; then
-                                    sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                                        done
+                                        unset shimmerInxPlugin
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while the cleanup is running (this may take a while)..." 8 65 0
+                                    if [ -f "/tmp/shimmer-hornet.lock" ]; then
+                                        sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                                    fi
+                                    whiptail --title "Hornet [SHIMMER] Management" --msgbox "${shimmerHornetNetwork}DB successfully reset." 8 65
                                 fi
-                                whiptail --title "Hornet [SHIMMER] Management" --msgbox "${shimmerHornetNetwork}DB successfully reset." 8 65
                             fi
                         ;;
                         "6)")
