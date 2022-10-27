@@ -24,12 +24,31 @@ if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "staking" ]; then
         whiptail --title "SWARM - Events" --msgbox "The event could not be found in the database." 8 65
     else
         if [[ $eventStatus = *ended* ]]; then
-            if [ "$eventNetwork" = "iota" ]; then
-                sudo curl -Ls http://localhost:14265/api/plugins/participation/admin/events/${eventId}/rewards --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
-            fi
-            if [ "$eventNetwork" = "shimmer" ]; then
-                sudo curl -Ls http://localhost:14266/api/participation/v1/admin/events/${eventId}/rewards --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
-            fi
+            while [ $exitCode -lt 1 ]; do
+                if [ "$eventNetwork" = "iota" ]; then
+                    sudo curl -Ls http://localhost:14265/api/plugins/participation/admin/events/${eventId}/rewards --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
+                fi
+                if [ "$eventNetwork" = "shimmer" ]; then
+                    sudo curl -Ls http://localhost:14266/api/participation/v1/admin/events/${eventId}/rewards --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data' > $eventDataLog
+                fi
+                if [ -f "$eventDataLog" ]; then
+                    eventResult=$(cat $eventDataLog)
+                fi
+                if [[ $eventResult = *"missing or malformed jwt"* ]]; then
+                    if [ "$eventNetwork" = "iota" ]; then
+                        nodeJwtToken="$(cd $iotaHornetHome ; /usr/bin/iota-hornet tools jwt-api --salt $iotaHornetApiJwtSalt | awk '{print $NF}')"
+                        sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'"$nodeJwtToken"'"~' $swarmConfigs/iota-hornet.cfg
+                    fi
+                    if [ "$eventNetwork" = "shimmer" ]; then
+                        nodeJwtToken="$(cd $shimmerHornetHome/$shimmerHornetNetwork ; /usr/bin/shimmer-hornet tools jwt-api --salt $shimmerHornetApiJwtSalt | awk '{print $NF}')"
+                        sudo sed -i 's~^shimmerHornetApiJwtToken=.*~shimmerHornetApiJwtToken="'"$nodeJwtToken"'"~' $swarmConfigs/shimmer-hornet.cfg
+                    fi
+                else
+                    unset eventResult
+                    exitCode=1
+                fi
+            done
+            exitCode=0
             eventSymbol=$(printf "Symbol:          %s\n" "$(jq '.symbol' ${eventDataLog})")
             eventMilestone=$(printf "Milestone index: %s\n" "$(jq '.milestoneIndex' ${eventDataLog})")
             eventTotalRewards=$(printf "Total rewards:   %s\n" "$(jq '.totalRewards' ${eventDataLog})")
@@ -58,12 +77,27 @@ if [ ! -z "$nodeJwtToken" ] && [ "$eventType" = "ballot" ]; then
         whiptail --title "SWARM - Events" --msgbox "The event could not be found in the database." 8 65
     else
         if [[ $eventStatus = *ended* ]]; then
-            if [ "$eventNetwork" = "iota" ]; then
-                ballotChecksum=$(curl -Ls http://localhost:14265/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
-            fi
-            if [ "$eventNetwork" = "shimmer" ]; then
-                ballotChecksum=$(curl -Ls http://localhost:14266/api/participation/v1/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
-            fi
+            while [ $exitCode -lt 1 ]; do
+                if [ "$eventNetwork" = "iota" ]; then
+                    ballotChecksum=$(curl -Ls http://localhost:14265/api/plugins/participation/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
+                fi
+                if [ "$eventNetwork" = "shimmer" ]; then
+                    ballotChecksum=$(curl -Ls http://localhost:14266/api/participation/v1/events/${eventId}/status --max-time 5 -H 'Content-Type: application/json' -H "Authorization: Bearer ${nodeJwtToken}" | jq '.data.checksum')
+                fi
+                if [[ $ballotChecksum = *"missing or malformed jwt"* ]]; then
+                    if [ "$eventNetwork" = "iota" ]; then
+                        nodeJwtToken="$(cd $iotaHornetHome ; /usr/bin/iota-hornet tools jwt-api --salt $iotaHornetApiJwtSalt | awk '{print $NF}')"
+                        sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'"$nodeJwtToken"'"~' $swarmConfigs/iota-hornet.cfg
+                    fi
+                    if [ "$eventNetwork" = "shimmer" ]; then
+                        nodeJwtToken="$(cd $shimmerHornetHome/$shimmerHornetNetwork ; /usr/bin/shimmer-hornet tools jwt-api --salt $shimmerHornetApiJwtSalt | awk '{print $NF}')"
+                        sudo sed -i 's~^shimmerHornetApiJwtToken=.*~shimmerHornetApiJwtToken="'"$nodeJwtToken"'"~' $swarmConfigs/shimmer-hornet.cfg
+                    fi
+                else
+                    exitCode=1
+                fi
+            done
+            exitCode=0
             echo "Ballot ID: \"$eventId\"" > $eventDataLog
             echo "Checksum: $ballotChecksum" >> $eventDataLog
             whiptail --title "SWARM - Events" --msgbox "\nVoting ID: \"$eventId\"\n\nChecksum: $ballotChecksum" 24 65
