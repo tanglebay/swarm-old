@@ -20,6 +20,7 @@ if [ "$1" = "-h" ] || [ "$1" = "-help" ]; then
     echo "   -v, -version           prints the SWARM version and build"
     echo "   -ac, -authcheck        verifies the authentication of the CDN user credentials"
     echo "   -u, -update string     updates SWARM to \"latest\" or version e.g. \"1.0.0\""
+    echo "   -r. -reinstall         reinstall SWARM"
     echo "   -a, -about             prints information about SWARM"
     echo ""
     exit 0
@@ -79,6 +80,16 @@ if [ "$1" = "-u" ] || [ "$1" = "-update" ]; then
     exit 0
 fi
 
+if [ "$1" = "-r" ] || [ "$1" = "-reinstall" ]; then
+    source $swarmConfigs/swarm.cfg
+    source $swarmModules/swarmAuth
+    if [ "$swarmAuth" = "200" ]; then
+        keyboardInputUsername=$swarmAuthUser
+        keyboardInputPassword=$swarmAuthPwd
+    fi
+    sudo ${SHELL:-sh} -c "$(curl -Ls https://$cdnUrl/swarm/installer/installer.sh)"
+fi
+
 if [ "$1" = "-a" ] || [ "$1" = "-about" ]; then
     echo "SWARM is a script that allows you to easily install and manage an IOTA node."
     echo "The most important configuration options are given via simple and selectable menu items."
@@ -87,7 +98,8 @@ if [ "$1" = "-a" ] || [ "$1" = "-about" ]; then
     echo ""
     echo "Support: https://$swarmUrl"
     echo ""
-    echo "Donation address: $donationAddress"
+    echo "IOTA donation address: $iotaDonationAddress"
+    echo "Shimmer donation address: $shimmerDonationAddress"
     echo ""
     echo ""
     echo "$license - $copyright"

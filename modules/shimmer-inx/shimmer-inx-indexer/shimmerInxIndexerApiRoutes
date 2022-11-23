@@ -1,0 +1,31 @@
+#!/bin/bash
+
+source $swarmConfigs/shimmer-hornet.cfg
+
+#/api/indexer/v1/*
+if [[ $shimmerHornetApiRoutes != */api/indexer/v1/\** ]]; then
+    shimmerHornetApiPublicRoutes=$(echo "$shimmerHornetApiPublicRoutes,/api/indexer/v1/*")
+    shimmerHornetApiPublicRoutes=$(echo "$shimmerHornetApiPublicRoutes" | tr -s ',,' ',')
+    validateShimmerHornetApiPublicRoutes=$(echo "${shimmerHornetApiPublicRoutes: -1}")
+    if [ "$validateShimmerHornetApiPublicRoutes" = "," ]; then
+        shimmerHornetApiPublicRoutes="${shimmerHornetApiPublicRoutes%?}"
+    fi
+    sudo sed -i 's~^shimmerHornetApiPublicRoutes=.*~shimmerHornetApiPublicRoutes="'$shimmerHornetApiPublicRoutes'"~' $swarmConfigs/shimmer-hornet.cfg
+    if (whiptail --title "INX-Indexer [SHIMMER] Installer" --yesno --defaultno "Do you want to restart Hornet to apply the new public API routes?" 8 65); then
+        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+        do
+            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+            fi
+        done
+        unset shimmerInxPlugin
+        sudo systemctl restart shimmer-hornet 2>/dev/null
+        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+        do
+            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+            fi
+        done
+        unset shimmerInxPlugin
+    fi
+fi

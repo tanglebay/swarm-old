@@ -24,10 +24,14 @@ else
             swarmAlreadyExist=true
             swarmReinstall="re-"
         fi
-        read -p "Please enter your username: " keyboardInputUsername </dev/tty
-        echo ""
-        read -s -p "Please enter your password: " keyboardInputPassword </dev/tty
-        echo ""
+        if [ -z "$keyboardInputUsername" ]; then
+            read -p "Please enter your username: " keyboardInputUsername </dev/tty
+            echo ""
+        fi
+        if [ -z "$keyboardInputPassword" ]; then
+            read -s -p "Please enter your password: " keyboardInputPassword </dev/tty
+            echo ""
+        fi
         if [ ! -z "$keyboardInputUsername" ] && [ ! -z "$keyboardInputPassword" ]; then
             latestSwarmVersion=$(curl --max-time 5 -Ls https://cdn.tanglebay.com/swarm/version/stable | head -n 1)
             latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
@@ -117,19 +121,27 @@ else
                                 else
                                     echo ""
                                     echo -e $TEXT_RED_B && echo "-> SWARM successfully ${swarmReinstall}installed." && echo -e $TEXT_RESET
-                                    echo ""
-                                    read -p "Do you want to start SWARM now?(Y/n) " keyboardInput </dev/tty
-                                    keyboardInput=$(echo $keyboardInput | tr '[:upper:]' '[:lower:]')
-                                    if [ "$keyboardInput" = "y" ] || [ "$keyboardInput" = "yes" ] || [ -z "$keyboardInput" ]; then
-                                        source /var/lib/swarm/swarm
-                                    else
-                                        clear
+                                    if [ "$swarmAlreadyExist" = "true" ]; then
+                                        echo ""
+                                        read -rsn1 -p "Press any key to exit."
+                                        unset keyboardInputUsername keyboardInputPassword latestSwarmVersion swarmChkSum swarmUpdateChkSum swarmAlreadyExist swarmReinstall
                                         exit 0
+                                    else
+                                        echo ""
+                                        read -p "Do you want to start SWARM now?(Y/n) " keyboardInput </dev/tty
+                                        keyboardInput=$(echo $keyboardInput | tr '[:upper:]' '[:lower:]')
+                                        if [ "$keyboardInput" = "y" ] || [ "$keyboardInput" = "yes" ] || [ -z "$keyboardInput" ]; then
+                                            source /var/lib/swarm/swarm
+                                        else
+                                            clear
+                                            unset keyboardInputUsername keyboardInputPassword latestSwarmVersion swarmChkSum swarmUpdateChkSum swarmAlreadyExist swarmReinstall
+                                            exit 0
+                                        fi
                                     fi
                                 fi
                             else
                                 echo ""
-                                echo -e $TEXT_RED_B && echo "-> SWARM could not be successfully cloned from GitHub." && echo -e $TEXT_RESET
+                                echo -e $TEXT_RED_B && echo "-> SWARM could not be successfully installed." && echo -e $TEXT_RESET
                                 echo ""
                             fi
                             echo ""
