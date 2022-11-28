@@ -1,631 +1,1417 @@
 #!/bin/bash
-while [ $exitCode -lt 1 ]; do
-    clear
-    source $swarmConfigs/iota-hornet.cfg
-    source $iotaHornetModule/iotaHornetConfigs
-    CHOICE=$(
-        whiptail --title "Hornet [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
-        "" "" \
-        "1)" "Dashboard" \
-        "2)" "API & JWT" \
-        "3)" "Enable Plugins" \
-        "4)" "Disable Plugins" \
-        "5)" "Node Alias" \
-        "6)" "DB Pruning" \
-        "7)" "Proof of Work" \
-        "8)" "Local Snapshots" \
-        "9)" "P2P Identity" \
-        "10)" "Gossip Port" \
-        "11)" "Autopeering Port" \
-        "12)" "Unknown Peers Limit" \
-        "13)" "IOTA Network" \
-        "14)" "Hornet release Channel" 3>&2 2>&1 1>&3
-    )
 
-    exitstatus=$?
-    if [ "$exitstatus" = "1" ]; then
-        exitCode=1
-        if [ "$restartIotaHornet" = "true" ] && [ -f "/usr/bin/iota-hornet" ]; then
-            if (whiptail --title "Hornet [IOTA] Menu" --yesno "Would you like to apply the changes and restart hornet?" 8 65); then
-                if [ ! -f "/tmp/iota-hornet.lock" ]; then
-                    sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
-                fi
-                {
-                    echo 0
-                    echo 33
-                    source $iotaHornetModule/iotaHornetParser
-                    echo 50
-                    sudo systemctl restart iota-hornet > /dev/null 2>&1
-                    sleep 0.25
-                    echo 100
-                    sleep 0.25
-                } | whiptail --gauge "Please wait while the changes are applied and Hornet is restarted..." 8 65 0
-                unset restartIotaHornet
-                if [ -f "/tmp/iota-hornet.lock" ]; then
-                    sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+if [ "$(printf '%s\n' "$iotaHornetStardustMinVersion" "$iotaHornetVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    while [ $exitCode -lt 1 ]; do
+        clear
+        source $swarmConfigs/iota-hornet.cfg
+        source $iotaHornetModule/iotaHornetConfigs
+        if [ "$iotaHornetUpdateCheck" = "true" ]; then
+            menuIotaHornetUpdateCheck="Disable"
+        else
+            menuIotaHornetUpdateCheck="Enable"
+        fi
+        CHOICE=$(
+            whiptail --title "Hornet [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
+            "" "" \
+            "1)" "API & JWT" \
+            "2)" "INX Interface" \
+            "3)" "Autopeering" \
+            "4)" "Snapshots" \
+            "5)" "Database Pruning" \
+            "6)" "Proof of Work" \
+            "7)" "Local Snapshots" \
+            "8)" "P2P Identity" \
+            "9)" "Gossip (Peering)" \
+            "10)" "Node Alias" \
+            "11)" "Iota Network" \
+            "12)" "Hornet release Channel" \
+            "13)" "$menuIotaHornetUpdateCheck update check" 3>&2 2>&1 1>&3
+        )
+
+        exitstatus=$?
+        if [ "$exitstatus" = "1" ]; then
+            exitCode=1
+            if [ "$restartIotaHornet" = "true" ] && [ -f "/usr/bin/iota-hornet" ]; then
+                if (whiptail --title "Hornet [IOTA] Menu" --yesno "Would you like to apply the changes and restart hornet?" 8 65); then
+                    if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                        sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                    fi
+                    {
+                        echo 0
+                        echo 20
+                        source $iotaHornetModule/iotaHornetParser
+                        echo 40
+                        for iotaInxPlugin in ${iotaInxPlugins[@]}
+                        do
+                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                if [ ! -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                                    sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                fi
+                                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
+                            fi
+                        done
+                        unset iotaInxPlugin
+                        echo 60
+                        sudo systemctl restart iota-hornet > /dev/null 2>&1
+                        echo 80
+                        for iotaInxPlugin in ${iotaInxPlugins[@]}
+                        do
+                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                                if [ -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                                    sudo rm -rf /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                fi
+                            fi
+                        done
+                        unset iotaInxPlugin
+                        echo 100
+                        sleep 0.25
+                    } | whiptail --gauge "Please wait while the changes are applied and Hornet is restarted..." 8 65 0
+                    unset restartIotaHornet
+                    if [ -f "/tmp/iota-hornet.lock" ]; then
+                        sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                    fi
                 fi
             fi
         fi
-    fi
 
-    case $CHOICE in
-        "1)")
-            while [ $exitCode -lt 1 ]; do
-                clear
-                source $swarmConfigs/iota-hornet.cfg
-                # Hornet Dashboard
-                CHOICE=$(
-                    whiptail --title "Hornet [IOTA] Dashboard" --menu "\nChoose an option" 24 65 0 \
-                    "" "" \
-                    "1)" "Dashboard Username" \
-                    "2)" "Dashboard Password" 3>&2 2>&1 1>&3
-                )
-                exitstatus=$?
-                if [ "$exitstatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        if [ -f "/usr/bin/iota-hornet" ]; then
-                            iotaHornetUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $iotaHornetUsername --title "Hornet [IOTA] Dashboard" 3>&1 1>&2 2>&3)
-                            exitStatus=$?
-                            if [ $exitStatus != 1 ]; then
-                                if [ ! -z "$iotaHornetUsername" ]; then
-                                    source $iotaHornetConfigParsers/iotaHornetDashboardUsername
-                                    if [ "$newIotaHornetUsername" = "true" ]; then
-                                        sudo sed -i 's/^iotaHornetUsername=.*/iotaHornetUsername="'$iotaHornetUsername'"/' $swarmConfigs/iota-hornet.cfg
-                                        whiptail --title "Hornet [IOTA] Dashboard" --msgbox "New username \"$iotaHornetUsername\" applied!" 8 65
-                                        unset newIotaHornetUsername
-                                    else
-                                        whiptail --title "Hornet [IOTA] Dashboard" --msgbox "No username change detected." 8 65
-                                    fi
+        case $CHOICE in
+            "1)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    source $swarmConfigs/iota-hornet.cfg
+                    if [ "$iotaHornetApiEnabled" = "true" ]; then
+                        menuIotaHornetApiEnabled="Disable"
+                    else
+                        menuIotaHornetApiEnabled="Enable"
+                    fi
+                    # Hornet JWT
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] API & JWT" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "$menuIotaHornetApiEnabled API" \
+                        "2)" "API Routes" \
+                        "3)" "Generate new JWT token" \
+                        "4)" "Show all JWT token" \
+                        "5)" "Revoke all JWT token" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            menuIotaHornetApiEnabled=$(echo $menuIotaHornetApiEnabled | awk '{print tolower($0)}')
+                            if (whiptail --title "Hornet [IOTA] API" --yesno --defaultno "Are you sure you want to $menuIotaHornetApiEnabled the Hornet API?" 8 65); then
+                                source $swarmConfigs/iota-hornet.cfg
+                                if [ "$iotaHornetApiEnabled" = "true" ]; then
+                                    iotaHornetApiEnabled=false
+                                    menuIotaHornetApiEnabled="disabled"
                                 else
-                                    whiptail --title "Hornet [IOTA] Dashboard" --msgbox "No valid username, please try again." 8 65
+                                    iotaHornetApiEnabled=true
+                                    menuIotaHornetApiEnabled="enabled"
                                 fi
+                                restartIotaHornet=true
+                                sudo sed -i 's~^iotaHornetApiEnabled=.*~iotaHornetApiEnabled='$iotaHornetApiEnabled'~' $swarmConfigs/iota-hornet.cfg
+                                whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Hornet API $menuIotaHornetApiEnabled." 8 65
                             fi
-                        else
-                            whiptail --title "Hornet [IOTA] Dashboard" --msgbox "Please install Hornet (IOTA) first." 8 65
-                        fi
-                    ;;
-                    "2)")
-                        if [ -f "/usr/bin/iota-hornet" ]; then
-                            source $iotaHornetModule/iotaHornetDashboardPwdGen
-                        else
-                            whiptail --title "Hornet [IOTA] Dashboard" --msgbox "Please install Hornet (IOTA) first." 8 65
-                        fi
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-        "2)")
-            while [ $exitCode -lt 1 ]; do
-                clear
-                source $swarmConfigs/iota-hornet.cfg
-                # Hornet JWT
-                CHOICE=$(
-                    whiptail --title "Hornet [IOTA] API & JWT" --menu "\nChoose an option" 24 65 0 \
-                    "" "" \
-                    "1)" "API Routes" \
-                    "2)" "Generate new JWT token" \
-                    "3)" "Show all JWT token" \
-                    "4)" "Revoke all JWT token" 3>&2 2>&1 1>&3
-                )
-                exitstatus=$?
-                if [ "$exitstatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        source $swarmConfigs/iota-hornet.cfg
-                        iotaHornetApiRoutes=$iotaHornetApiPublicRoutes
-                        source $iotaHornetModule/iotaHornetApiRoutes
-                        iotaHornetApiRoutes=$(whiptail --title "Hornet [IOTA] API routes" --checklist "\nSelect (using the spacebar) the Hornet API routes that you want to protect. All routes not selected will be public:" 24 65 14 \
-                            "/health" "" $iotaHornetApiRoutesHealth \
-                            "/mqtt" "" $iotaHornetApiRoutesMqtt \
-                            "/api/v1/info" "" $iotaHornetApiRoutesInfo \
-                            "/api/v1/tips" "" $iotaHornetApiRoutesTips \
-                            "/api/v1/messages*" "" $iotaHornetApiRoutesMessages \
-                            "/api/v1/transactions*" "" $iotaHornetApiRoutesTransactions \
-                            "/api/v1/milestones*" "" $iotaHornetApiRoutesMilestones \
-                            "/api/v1/outputs*" "" $iotaHornetApiRoutesOutputs \
-                            "/api/v1/addresses*" "" $iotaHornetApiRoutesAddresses \
-                            "/api/v1/treasury" "" $iotaHornetApiRoutesTreasury \
-                            "/api/v1/receipts*" "" $iotaHornetApiRoutesReceipts \
-                            "/api/plugins/participation/events*" "" $iotaHornetApiRoutesParticipationEvents \
-                            "/api/plugins/participation/outputs*" "" $iotaHornetApiRoutesParticipationOutputs \
-                            "/api/plugins/participation/addresses*" "" $iotaHornetApiRoutesParticipationAddresses 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        iotaHornetApiRoutes=$(echo $iotaHornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-                        if [ "$exitStatus" != "1" ]; then
-                            iotaHornetUpdateApiRoutes=true
+                        ;;
+                        "2)")
+                            source $swarmConfigs/iota-hornet.cfg
+                            iotaHornetApiRoutes=$iotaHornetApiPublicRoutes
                             source $iotaHornetModule/iotaHornetApiRoutes
+                            iotaHornetApiRoutes=$(whiptail --title "Hornet [IOTA] API routes" --checklist "\nSelect (spacebar) routes you want to protect." 24 65 18 \
+                                "/health" "" $iotaHornetApiRoutesHealth \
+                                "/api/routes" "" $iotaHornetApiRoutesRoutes \
+                                "/api/core/v2/info" "" $iotaHornetApiRoutesInfo \
+                                "/api/core/v2/tips" "" $iotaHornetApiRoutesTips \
+                                "/api/core/v2/blocks*" "" $iotaHornetApiRoutesBlocks \
+                                "/api/core/v2/transactions*" "" $iotaHornetApiRoutesTransactions \
+                                "/api/core/v2/milestones*" "" $iotaHornetApiRoutesMilestones \
+                                "/api/core/v2/outputs*" "" $iotaHornetApiRoutesOutputs \
+                                "/api/core/v2/treasury" "" $iotaHornetApiRoutesTreasury \
+                                "/api/core/v2/receipts*" "" $iotaHornetApiRoutesReceipts \
+                                "/api/debug/v1/*" "" $iotaHornetApiRoutesDebug \
+                                "/api/indexer/v1/*" "" $iotaHornetApiRoutesIndexer \
+                                "/api/mqtt/v1" "" $iotaHornetApiRoutesMqtt \
+                                "/api/participation/v1/events*" "" $iotaHornetApiRoutesParticipationEvents \
+                                "/api/participation/v1/outputs*" "" $iotaHornetApiRoutesParticipationOutputs \
+                                "/api/participation/v1/addresses*" "" $iotaHornetApiRoutesParticipationAddresses \
+                                "/api/poi/v1/create/*" "" $iotaHornetApiRoutesPoiCreate \
+                                "/api/poi/v1/validate" "" $iotaHornetApiRoutesPoiValidate 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            iotaHornetApiRoutes=$(echo $iotaHornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+                            if [ "$exitStatus" != "1" ]; then
+                                iotaHornetUpdateApiRoutes=true
+                                source $iotaHornetModule/iotaHornetApiRoutes
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetConfigParsers/iotaHornetApiPublicRoutes
+                                fi
+                                unset iotaHornetUpdateApiRoutes
+                            fi
+                            unset iotaHornetApiRoutes
+                        ;;
+                        "3)")
                             if [ -f "/usr/bin/iota-hornet" ]; then
-                                source $iotaHornetConfigParsers/iotaHornetApiPublicRoutes
-                            fi
-                            unset iotaHornetUpdateApiRoutes
-                        fi
-                        unset iotaHornetApiRoutes
-                    ;;
-                    "2)")
-                        if [ -f "/usr/bin/iota-hornet" ]; then
-                            if (whiptail --title "Hornet [IOTA] API & JWT" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
-                                iotaHornetApiJwtToken=$( cd $iotaHornetHome ; /usr/bin/iota-hornet tools jwt-api --salt $iotaHornetApiJwtSalt | awk '{ print $5 }')
-                                if [ ! -z "$iotaHornetApiJwtToken" ]; then
-                                    sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'$iotaHornetApiJwtToken'"~' $swarmConfigs/iota-hornet.cfg
-                                    echo $iotaHornetApiJwtToken >> $swarmLogs/iotaHornetJwtToken.log
-                                    clear
-                                    echo ""
-                                    echo $iotaHornetApiJwtToken
-                                    echo ""
-                                    read -n 1 -s -r -p "Press any key to continue"
-                                else
-                                    whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Error generating JWT token, please try again later." 8 65
-                                fi
-                            fi
-                        else
-                            whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Please install Hornet (IOTA) first." 8 65
-                        fi
-                    ;;
-                    "3)")
-                        if [ -f "$swarmLogs/iotaHornetJwtToken.log" ]; then
-                            sudo $swarmCLEditor $swarmLogs/iotaHornetJwtToken.log
-                        else
-                            whiptail --title "Hornet [IOTA] API & JWT" --msgbox "No JWT token log found, please generate one first!" 8 65
-                        fi
-                    ;;
-                    "4)")
-                        if [ -f "/usr/bin/iota-hornet" ]; then
-                            if (whiptail --title "Hornet [IOTA] API & JWT" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
-                                iotaHornetApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
-                                sudo sed -i 's~^iotaHornetApiJwtSalt=.*~iotaHornetApiJwtSalt="'$iotaHornetApiJwtSalt'"~' $swarmConfigs/iota-hornet.cfg
-                                if [ ! -f "/tmp/iota-hornet.lock" ]; then
-                                    sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
-                                fi
-                                {
-                                    echo 0
-                                    echo 15
-                                    source $iotaHornetConfigParsers/iotaHornetApiJwtSalt
-                                    echo 30
-                                    sudo rm -rf $swarmLogs/iotaHornetJwt.log
-                                    echo 45
-                                    source $iotaHornetConfigParsers/iotaHornetIdentity
-                                    echo 60
-                                    sudo systemctl restart iota-hornet 2>/dev/null
-                                    echo 75
-                                    iotaHornetApiJwtToken=$( cd $iotaHornetHome ; /usr/bin/iota-hornet tools jwt-api --salt $iotaHornetApiJwtSalt | awk '{ print $5 }')
-                                    echo 90
+                                if (whiptail --title "Hornet [IOTA] API & JWT" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
+                                    iotaHornetApiJwtToken=$( cd $iotaHornetHome/$iotaHornetNetwork ; /usr/bin/iota-hornet tools jwt-api --salt $iotaHornetApiJwtSalt | awk '{ print $5 }')
                                     if [ ! -z "$iotaHornetApiJwtToken" ]; then
                                         sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'$iotaHornetApiJwtToken'"~' $swarmConfigs/iota-hornet.cfg
+                                        echo $iotaHornetApiJwtToken >> $swarmLogs/iotaHornetJwtToken.log
+                                        clear
+                                        echo ""
+                                        echo $iotaHornetApiJwtToken
+                                        echo ""
+                                        read -n 1 -s -r -p "Press any key to continue"
+                                    else
+                                        whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Error generating JWT token, please try again later." 8 65
                                     fi
-                                    echo 100
-                                } | whiptail --gauge "Please wait while all JWT tokens will be revoked..." 8 65 0
-                                if [ -f "/tmp/iota-hornet.lock" ]; then
-                                    sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                fi
+                            else
+                                whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Please install Hornet first." 8 65
+                            fi
+                        ;;
+                        "4)")
+                            if [ -f "$swarmLogs/iotaHornetJwtToken.log" ]; then
+                                sudo $swarmCLEditor $swarmLogs/iotaHornetJwtToken.log
+                            else
+                                whiptail --title "Hornet [IOTA] API & JWT" --msgbox "No JWT token log found, please generate one first." 8 65
+                            fi
+                        ;;
+                        "5)")
+                            if [ -f "/usr/bin/iota-hornet" ]; then
+                                if (whiptail --title "Hornet [IOTA] API & JWT" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
+                                    iotaHornetApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
+                                    sudo sed -i 's~^iotaHornetApiJwtSalt=.*~iotaHornetApiJwtSalt="'$iotaHornetApiJwtSalt'"~' $swarmConfigs/iota-hornet.cfg
+                                    if [ -f "/tmp/iota-hornet.lock" ]; then
+                                        sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                    fi
+                                    for iotaInxPlugin in ${iotaInxPlugins[@]}
+                                    do
+                                        if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                            if [ ! -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                                                sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                            fi
+                                            sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
+                                        fi
+                                    done
+                                    unset iotaInxPlugin
+                                    {
+                                        echo 0
+                                        echo 15
+                                        source $iotaHornetConfigParsers/iotaHornetApiJwtSalt
+                                        echo 30
+                                        sudo rm -rf $swarmLogs/iotaHornetJwt.log
+                                        echo 45
+                                        source $iotaHornetConfigParsers/iotaHornetIdentity
+                                        echo 60
+                                        sudo systemctl restart iota-hornet 2>/dev/null
+                                        echo 75
+                                        iotaHornetApiJwtToken=$( cd $iotaHornetHome/$iotaHornetNetwork ; /usr/bin/iota-hornet tools jwt-api --salt $iotaHornetApiJwtSalt | awk '{ print $5 }')
+                                        echo 90
+                                        if [ ! -z "$iotaHornetApiJwtToken" ]; then
+                                            sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'$iotaHornetApiJwtToken'"~' $swarmConfigs/iota-hornet.cfg
+                                        fi
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while all JWT tokens will be revoked..." 8 65 0
+                                    for iotaInxPlugin in ${iotaInxPlugins[@]}
+                                    do
+                                        if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                            if [ -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                                                sudo rm -rf /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                            fi
+                                            sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                                        fi
+                                    done
+                                    unset iotaInxPlugin
+                                    if [ -f "/tmp/iota-hornet.lock" ]; then
+                                        sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                    fi
+                                fi
+                            else
+                                whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Please install Hornet first." 8 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "2)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    source $swarmConfigs/iota-hornet.cfg
+                    if [ "$iotaHornetInxEnabled" = "true" ]; then
+                        menuIotaHornetInxEnabled="Disable"
+                    else
+                        menuIotaHornetInxEnabled="Enable"
+                    fi
+                    # Hornet JWT
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] INX" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "$menuIotaHornetInxEnabled INX interface" \
+                        "2)" "INX pow worker count" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            menuIotaHornetInxEnabled=$(echo $menuIotaHornetInxEnabled | awk '{print tolower($0)}')
+                            if (whiptail --title "Hornet [IOTA] INX" --yesno --defaultno "Are you sure you want to $menuIotaHornetInxEnabled INX interface?" 8 65); then
+                                source $swarmConfigs/iota-hornet.cfg
+                                if [ "$iotaHornetInxEnabled" = "true" ]; then
+                                    iotaHornetInxEnabled=false
+                                    menuIotaHornetInxEnabled="disabled"
+                                else
+                                    iotaHornetInxEnabled=true
+                                    menuIotaHornetInxEnabled="enabled"
+                                fi
+                                restartIotaHornet=true
+                                sudo sed -i 's/^iotaHornetInxEnabled=.*/iotaHornetInxEnabled='$iotaHornetInxEnabled'/' $swarmConfigs/iota-hornet.cfg
+                                whiptail --title "Hornet [IOTA] INX" --msgbox "INX interface $menuIotaHornetInxEnabled." 8 65
+                            fi
+                        ;;
+                        "2)")
+                            source $swarmConfigs/iota-hornet.cfg
+                            currentIotaHornetInxPowWorkerCount=$iotaHornetInxPowWorkerCount
+                            iotaHornetInxPowWorkerCount=$(whiptail --inputbox "\nSet the numbers of cores for INX pow." 10 65 $iotaHornetInxPowWorkerCount --title "Hornet [IOTA] INX" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$iotaHornetInxPowWorkerCount" ] && [ "$currentIotaHornetInxPowWorkerCount" != "$iotaHornetInxPowWorkerCount" ] && [ $iotaHornetInxPowWorkerCount -eq $iotaHornetInxPowWorkerCount ] 2>/dev/null; then
+                                    sudo sed -i 's/^iotaHornetInxPowWorkerCount=.*/iotaHornetInxPowWorkerCount='$iotaHornetInxPowWorkerCount'/' $swarmConfigs/iota-hornet.cfg
+                                    restartIotaHornet=true
                                 fi
                             fi
-                        else
-                            whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Please install Hornet (IOTA) first." 8 65
+                            whiptail --title "Hornet [IOTA] INX" --msgbox "INX pow worker counter set to $iotaHornetInxPowWorkerCount." 8 65
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "3)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    source $swarmConfigs/iota-hornet.cfg
+
+                    if [ "$iotaHornetAutopeeringEnabled" = "true" ]; then
+                        menuIotaHornetAutopeeringEnabled="disable"
+                    else
+                        menuIotaHornetAutopeeringEnabled="enable"
+                    fi
+                    # Hornet JWT
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Autopeering" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "${menuIotaHornetAutopeeringEnabled^} autopeering" \
+                        "2)" "Autopeering port (UDP)" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            if (whiptail --title "Hornet [IOTA] Autopeering" --yesno --defaultno "Are you sure you want to ${menuIotaHornetAutopeeringEnabled} autopeering?" 8 65); then
+                                source $swarmConfigs/iota-hornet.cfg
+                                if [ "$iotaHornetAutopeeringEnabled" = "true" ]; then
+                                    iotaHornetAutopeeringEnabled=false
+                                    menuIotaHornetAutopeeringEnabled="disabled"
+                                    if [ "$ufw" = "true" ]; then
+                                        sudo ufw delete allow $iotaHornetAutopeeringPort/udp > /dev/null 2>&1
+                                    fi
+                                    sudo sed -i 's/^iotaHornetAutopeeringEnabled=.*/iotaHornetAutopeeringEnabled='$iotaHornetAutopeeringEnabled'/' $swarmConfigs/iota-hornet.cfg
+                                else
+                                    iotaHornetAutopeeringEnabled=true
+                                    menuIotaHornetAutopeeringEnabled="enabled"
+                                    if [ "$ufw" = "true" ]; then
+                                        sudo ufw allow $iotaHornetAutopeeringPort/udp > /dev/null 2>&1
+                                    fi
+                                    sudo sed -i 's/^iotaHornetAutopeeringEnabled=.*/iotaHornetAutopeeringEnabled='$iotaHornetAutopeeringEnabled'/' $swarmConfigs/iota-hornet.cfg
+                                fi
+                                restartIotaHornet=true
+                                whiptail --title "Hornet [IOTA] Autopeering" --msgbox "Autopeering $menuIotaHornetAutopeeringEnabled." 8 65
+                            fi
+                        ;;
+                        "2)")
+                            source $swarmConfigs/iota-hornet.cfg
+                            currentIotaHornetAutopeeringPort=$iotaHornetAutopeeringPort
+                            iotaHornetAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port for the automatic neighbors detection." 10 65 $iotaHornetAutopeeringPort --title "Hornet [IOTA] Autopeering" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$iotaHornetAutopeeringPort" ] && [ "$currentIotaHornetAutopeeringPort" != "$iotaHornetAutopeeringPort" ] && [ $iotaHornetAutopeeringPort -eq $iotaHornetAutopeeringPort ] 2>/dev/null; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        if [ "$ufw" = "true" ]; then
+                                            sudo ufw delete allow $currentIotaHornetAutopeeringPort/udp > /dev/null 2>&1
+                                            sudo ufw allow $iotaHornetAutopeeringPort/udp > /dev/null 2>&1
+                                        fi
+                                        source $iotaHornetConfigParsers/iotaHornetAutopeeringPort
+                                    fi
+                                    sudo sed -i 's/^iotaHornetAutopeeringPort=.*/iotaHornetAutopeeringPort='$iotaHornetAutopeeringPort'/' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Autopeering" --msgbox "Autopeering port set to \"$iotaHornetAutopeeringPort/udp\"." 8 65
+                                fi
+                            fi
+                            unset currentIotaHornetAutopeeringPort
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "4)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    source $swarmConfigs/iota-hornet.cfg
+
+                    if [ "$iotaHornetSnapshotsEnabled" = "true" ]; then
+                        menuIotaHornetSnapshotsEnabled="disable"
+                    else
+                        menuIotaHornetSnapshotsEnabled="enable"
+                    fi
+                    # Hornet JWT
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Snapshots" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "${menuIotaHornetSnapshotsEnabled^} snapshots" \
+                        "2)" "Snapshot Interval" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            if (whiptail --title "Hornet [IOTA] Snapshots" --yesno --defaultno "Are you sure you want to $menuIotaHornetSnapshotsEnabled snapshots?" 8 65); then
+                                source $swarmConfigs/iota-hornet.cfg
+                                if [ "$iotaHornetSnapshotsEnabled" = "true" ]; then
+                                    iotaHornetSnapshotsEnabled=false
+                                    menuIotaHornetSnapshotsEnabled="disabled"
+                                    sudo sed -i 's/^iotaHornetSnapshotsEnabled=.*/iotaHornetSnapshotsEnabled='$iotaHornetSnapshotsEnabled'/' $swarmConfigs/iota-hornet.cfg
+                                else
+                                    iotaHornetSnapshotsEnabled=true
+                                    menuIotaHornetSnapshotsEnabled="enabled"
+                                    sudo sed -i 's/^iotaHornetSnapshotsEnabled=.*/iotaHornetSnapshotsEnabled='$iotaHornetSnapshotsEnabled'/' $swarmConfigs/iota-hornet.cfg
+                                fi
+                                restartIotaHornet=true
+                                whiptail --title "Hornet [IOTA] Snapshots" --msgbox "Snapshots $menuIotaHornetSnapshotsEnabled." 8 65
+                            fi
+                        ;;
+                        "2)")
+                            source $swarmConfigs/iota-hornet.cfg
+                            currentIotaHornetSnapshotInterval=$iotaHornetSnapshotInterval
+                            iotaHornetSnapshotInterval=$(whiptail --inputbox "\nSet the snapshot interval for Hornet." 10 65 $iotaHornetSnapshotInterval --title "Hornet [IOTA] Snapshots" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$iotaHornetSnapshotInterval" ] && [ "$currentIotaHornetSnapshotInterval" != "$iotaHornetSnapshotInterval" ] && [ $iotaHornetSnapshotInterval -eq $iotaHornetSnapshotInterval ] 2>/dev/null; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        source $iotaHornetConfigParsers/iotaHornetSnapshotInterval
+                                    fi
+                                    sudo sed -i 's/^iotaHornetSnapshotInterval=.*/iotaHornetSnapshotInterval='$iotaHornetSnapshotInterval'/' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Snapshots" --msgbox "Snapshot interval set to \"$iotaHornetSnapshotInterval\"." 8 65
+                                fi
+                            fi
+                            unset currentIotaHornetSnapshotInterval
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "5)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    source $swarmConfigs/iota-hornet.cfg
+                    # Hornet Pruning
+                    if [ "$iotaHornetPruningEnabled" = "true" ]; then
+                        iotaHornetPruningEnabledStatus="disable"
+                    else
+                        iotaHornetPruningEnabledStatus="enable"
+                    fi
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Pruning" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "${iotaHornetPruningEnabledStatus^} pruning" \
+                        "2)" "Set database size" \
+                        "3)" "Set pruning cooldown" \
+                        "4)" "Set pruning percentage" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            if (whiptail --title "Hornet [IOTA] Pruning" --yesno --defaultno "Are you sure you want to $iotaHornetPruningEnabledStatus pruning?" 8 65); then
+                                if [ "$iotaHornetPruningEnabled" = "true" ]; then
+                                    iotaHornetPruningEnabled=false
+                                    iotaHornetPruningEnabledStatus="disabled"
+                                else
+                                    iotaHornetPruningEnabled=true
+                                    iotaHornetPruningEnabledStatus="enabled"
+                                fi
+                                restartIotaHornet=true
+                                sudo sed -i 's/^iotaHornetPruningEnabled=.*/iotaHornetPruningEnabled='$iotaHornetPruningEnabled'/' $swarmConfigs/iota-hornet.cfg
+                                whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning of the database $iotaHornetPruningEnabledStatus." 8 65
+                            fi
+                        ;;
+                        "2)")
+                            if [[ $iotaHornetPruningDatabaseSize = *-* ]]; then
+                                unset iotaHornetPruningDatabaseSize
+                            fi
+                            currentIotaHornetPruningDatabaseSize=$iotaHornetPruningDatabaseSize
+                            iotaHornetPruningDatabaseSize=$(whiptail --inputbox "\nSet the maximum size of the database in gigabytes." 10 65 $currentIotaHornetPruningDatabaseSize --title "Hornet [IOTA] Pruning" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                iotaHornetPruningDatabaseSize=${iotaHornetPruningDatabaseSize//[!0-9]/}
+                                if [ $iotaHornetPruningDatabaseSize -gt 0 ] && [ $currentIotaHornetPruningDatabaseSize -ne $iotaHornetPruningDatabaseSize ] 2>/dev/null; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        source $iotaHornetConfigParsers/iotaHornetPruningDatabaseSize
+                                    fi
+                                    sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Pruning" --msgbox "The database size has been limited to ${iotaHornetPruningDatabaseSize} GB." 8 65
+                                else
+                                    whiptail --title "Hornet [IOTA] Pruning" --msgbox "Aborted - No change was made to the database size." 8 65
+                                fi
+                            fi
+                        ;;
+                        "3)")
+                            currentIotaHornetPruningCooldownTime=$iotaHornetPruningCooldownTime
+                            iotaHornetPruningCooldownTime=$(whiptail --inputbox "\nSet the interval (minutes) at which pruning is performed when the maximum DB size is reached." 10 65 $iotaHornetPruningCooldownTime --title "Hornet [IOTA] Pruning" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                iotaHornetPruningCooldownTime=${iotaHornetPruningCooldownTime//[!0-9]/}
+                                if [ $iotaHornetPruningCooldownTime -gt 0 ] && [ $iotaHornetPruningCooldownTime -lt 60 ] 2>/dev/null; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        source $iotaHornetConfigParsers/iotaHornetPruningCooldownTime
+                                    fi
+                                    sudo sed -i 's/^iotaHornetPruningCooldownTime=.*/iotaHornetPruningCooldownTime='$iotaHornetPruningCooldownTime'/' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning cooldown time set to ${iotaHornetPruningCooldownTime} minutes." 8 65
+                                fi
+                            fi
+                        ;;
+                        "4)")
+                            iotaHornetPruningPercentage=$(whiptail --inputbox "\nSet how much percent of history should be pruned from the database" 10 65 $iotaHornetPruningPercentage --title "Hornet [IOTA] Pruning" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$iotaHornetPruningPercentage" ] && [ $iotaHornetPruningPercentage -eq $iotaHornetPruningPercentage ] 2>/dev/null; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        source $iotaHornetConfigParsers/iotaHornetPruningPercentage
+                                    fi
+                                    sudo sed -i 's/^iotaHornetPruningPercentage=.*/iotaHornetPruningPercentage='$iotaHornetPruningPercentage'/' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning percentage set to ${iotaHornetPruningPercentage}%." 8 65
+                                fi
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "6)")
+                source $swarmConfigs/iota-hornet.cfg
+                if [ "$iotaHornetPowEnabled" = "true" ]; then
+                    iotaHornetPowEnabledStatus="disable"
+                else
+                    iotaHornetPowEnabledStatus="enable"
+                fi
+                if (whiptail --title "Hornet [IOTA] Proof of Work" --yesno --defaultno "Do you really want to $iotaHornetPowEnabledStatus proof of work?" 8 65); then
+                    if [ "$iotaHornetPowEnabled" = "true" ]; then
+                        iotaHornetPowEnabled=false
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            source $iotaHornetConfigParsers/iotaHornetPowEnabled
+                            source $iotaHornetConfigParsers/iotaHornetPowWorkerCount
+                            sudo sed -i 's/^iotaHornetPowWorkerCount=.*/iotaHornetPowWorkerCount='$iotaHornetPowWorkerCount'/' $swarmConfigs/iota-hornet.cfg
                         fi
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-        "3)")
-            useIotaHornetEnablePlugins=true
-            source $swarmConfigs/iota-hornet.cfg
-            currentIotaHornetEnablePlugins=$iotaHornetEnablePlugins
-            source $iotaHornetModule/iotaHornetPlugins
-            iotaHornetEnablePlugins=$(whiptail --title "Hornet [IOTA] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be activated:" 24 65 4 \
-                "Autopeering" "plugin for automatic peering" $iotaHornetPluginAutopeering \
-                "Participation" "plugin for voting/staking" $iotaHornetPluginParticipation \
-                "MQTT" "plugin to stream messages" $iotaHornetPluginMqtt \
-                "Prometheus" "plugin for metrics e.g. Grafana" $iotaHornetPluginPrometheus 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            iotaHornetEnablePlugins=$(echo $iotaHornetEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$iotaHornetEnablePlugins" ] || [[ $iotaHornetEnablePlugins = *autopeering* ]] || [[ $iotaHornetEnablePlugins = *participation* ]] || [[ $iotaHornetEnablePlugins = *mqtt* ]] || [[ $iotaHornetEnablePlugins = *prometheus* ]]; then
-                if [ "$iotaHornetEnablePlugins" != "$currentIotaHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/iota-hornet" ]; then
-                        source $iotaHornetConfigParsers/iotaHornetEnablePlugins
-                    fi
-                    sudo sed -i 's/^iotaHornetEnablePlugins=.*/iotaHornetEnablePlugins="'$iotaHornetEnablePlugins'"/' $swarmConfigs/iota-hornet.cfg
-                    if [ ! -z "$iotaHornetEnablePlugins" ]; then
-                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "The following plugins are enabled:\n$iotaHornetEnablePlugins" 14 65
+                        sudo sed -i 's/^iotaHornetPowEnabled=.*/iotaHornetPowEnabled='$iotaHornetPowEnabled'/' $swarmConfigs/iota-hornet.cfg
+                        whiptail --title "Hornet [IOTA] PoW" --msgbox "PoW has been disabled." 8 65
                     else
-                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "There are no plugins enabled for Hornet!" 8 65
+                        iotaHornetPowEnabled=true
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            source $iotaHornetConfigParsers/iotaHornetPowEnabled
+                            source $iotaHornetConfigParsers/iotaHornetPowWorkerCount
+                            sudo sed -i 's/^iotaHornetPowWorkerCount=.*/iotaHornetPowWorkerCount='$iotaHornetPowWorkerCount'/' $swarmConfigs/iota-hornet.cfg
+                        fi
+                        sudo sed -i 's/^iotaHornetPowEnabled=.*/iotaHornetPowEnabled='$iotaHornetPowEnabled'/' $swarmConfigs/iota-hornet.cfg
+                        whiptail --title "Hornet [IOTA] PoW" --msgbox "PoW has been enabled." 8 65
                     fi
                 fi
-                unset iotaHornetEnablePlugins
-            fi
-            unset useIotaHornetEnablePlugins
-        ;;
-        "4)")
-            useIotaHornetDisablePlugins=true
-            source $swarmConfigs/iota-hornet.cfg
-            currentIotaHornetDisablePlugins=$iotaHornetDisablePlugins
-            source $iotaHornetModule/iotaHornetPlugins
-            iotaHornetDisablePlugins=$(whiptail --title "Hornet [IOTA] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be deactivated:" 24 65 1 \
-                "Warpsync" "plugin to sync more faster" $iotaHornetPluginWarpsync 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            iotaHornetDisablePlugins=$(echo $iotaHornetDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-            if [ -z "$iotaHornetDisablePlugins" ] || [[ $iotaHornetDisablePlugins = *warpsync* ]]; then
-                if [ "$iotaHornetDisablePlugins" != "$currentIotaHornetDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
-                    if [ -f "/usr/bin/iota-hornet" ]; then
-                        source $iotaHornetConfigParsers/iotaHornetDisablePlugins
-                    fi
-                    sudo sed -i 's/^iotaHornetDisablePlugins=.*/iotaHornetDisablePlugins="'$iotaHornetDisablePlugins'"/' $swarmConfigs/iota-hornet.cfg
-                    if [ ! -z "$iotaHornetDisablePlugins" ]; then
-                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "The following plugins are disabled:\n$iotaHornetDisablePlugins" 14 65
-                    else
-                        whiptail --title "Hornet [IOTA] Plugins" --msgbox "There are no plugins disabled for Hornet!" 8 65
+            ;;
+            "7)")
+                source $swarmConfigs/iota-hornet.cfg
+                currentIotaHornetSnapshotInterval=$iotaHornetSnapshotInterval
+                iotaHornetSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $iotaHornetSnapshotInterval --title "Hornet [IOTA] Snapshots" 3>&1 1>&2 2>&3)
+                exitStatus=$?
+                if [ $exitStatus != 1 ]; then
+                    if [ ! -z "$iotaHornetSnapshotInterval" ] && [ $iotaHornetSnapshotInterval -eq $iotaHornetSnapshotInterval ] 2>/dev/null; then
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            source $iotaHornetConfigParsers/iotaHornetSnapshotInterval
+                        fi
+                        if [ "$currentIotaHornetSnapshotInterval" != "$iotaHornetSnapshotInterval" ]; then
+                            sudo sed -i 's/^iotaHornetSnapshotInterval=.*/iotaHornetSnapshotInterval='$iotaHornetSnapshotInterval'/' $swarmConfigs/iota-hornet.cfg
+                            whiptail --title "Hornet [IOTA] Snapshots" --msgbox "Snapshot interval changed to $iotaHornetSnapshotInterval milestones." 8 65
+                        else
+                            whiptail --title "Hornet [IOTA] Snapshots" --msgbox "No new snapshot interval detected." 8 65
+                        fi
                     fi
                 fi
-            else
-                unset iotaHornetDisablePlugins
-            fi
-            unset useIotaHornetDisablePlugins
-        ;;
-        "5)")
-            if [ -f "/usr/bin/iota-hornet" ]; then
-                iotaHornetAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 --title "Hornet [IOTA] Alias" 3>&1 1>&2 2>&3)
+            ;;
+            "8)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    source $swarmConfigs/iota-hornet.cfg
+                    iotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }')
+                    # Hornet Dashboard
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Identity" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "Set identity" \
+                        "2)" "Generate new Identity" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            source $swarmConfigs/iota-hornet.cfg
+                            currentIotaHornetIdentity=$iotaHornetIdentity
+                            iotaHornetIdentity=$(whiptail --inputbox "\nSet your own private key for the Identity" 10 65 --title "Hornet [IOTA] Identity" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ "$iotaHornetIdentity" != "$currentIotaHornetIdentity" ] && [ ! -z "$iotaHornetIdentity" ]; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        source $iotaHornetConfigParsers/iotaHornetIdentity
+                                    fi
+                                    sudo sed -i 's~^iotaHornetIdentity=.*~iotaHornetIdentity="'$iotaHornetIdentity'"~' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Identity" --msgbox "The following Identity key was set: \n$iotaHornetIdentity." 10 65
+                                fi
+                            fi
+                        ;;
+                        "2)")
+                            if [ -f "/usr/bin/iota-hornet" ]; then
+                                if (whiptail --title "Hornet [IOTA] Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
+                                    unset iotaHornetIdentity
+                                    sudo rm -rf $iotaHornetHome/$iotaHornetNetwork/p2pstore/identity.key 2>/dev/null
+                                    source $iotaHornetConfigParsers/iotaHornetIdentity
+                                    whiptail --title "Hornet [IOTA] Identity" --msgbox "The following p2pIdentity key was set: \n$iotaHornetIdentity" 12 65
+                                    source $swarmConfigs/iota-hornet.cfg
+                                fi
+                            else
+                                whiptail --title "Hornet [IOTA] Identity" --msgbox "Please install Hornet (Iota) first." 12 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "9)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    source $swarmConfigs/iota-hornet.cfg
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Gossip" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "Gossip port" \
+                        "2)" "Unknown peers limit" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            source $swarmConfigs/iota-hornet.cfg
+                            currentIotaHornetGossipPort=$iotaHornetGossipPort
+                            iotaHornetGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $iotaHornetGossipPort --title "Hornet [IOTA] Gossip" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$iotaHornetGossipPort" ] && [ "$currentIotaHornetGossipPort" != "$iotaHornetGossipPort" ] && [ $iotaHornetGossipPort -eq $iotaHornetGossipPort ] 2>/dev/null; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        if [ "$ufw" = "true" ]; then
+                                            sudo ufw delete allow $currentIotaHornetGossipPort/tcp > /dev/null 2>&1
+                                            sudo ufw allow $iotaHornetGossipPort/tcp > /dev/null 2>&1
+                                        fi
+                                        source $iotaHornetConfigParsers/iotaHornetGossipPort
+                                    fi
+                                    sudo sed -i 's/^iotaHornetGossipPort=.*/iotaHornetGossipPort='$iotaHornetGossipPort'/' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Gossip" --msgbox "Gossip port set to \"$iotaHornetGossipPort/tcp\"." 8 65
+                                    restartIotaHornet=true
+                                fi
+                            fi
+                        ;;
+                        "2)")
+                            source $swarmConfigs/iota-hornet.cfg
+                            currentIotaHornetUnknownPeersLimit=$iotaHornetUnknownPeersLimit
+                            iotaHornetUnknownPeersLimit=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentIotaHornetUnknownPeersLimit --title "Hornet [IOTA] Gossip" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ "$currentIotaHornetUnknownPeersLimit" != "$iotaHornetUnknownPeersLimit" ] && [ $iotaHornetUnknownPeersLimit -eq $iotaHornetUnknownPeersLimit ] && [ ! -z "$iotaHornetUnknownPeersLimit" ] 2>/dev/null; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        source $iotaHornetConfigParsers/iotaHornetGossipUnknownPeersLimit
+                                    fi
+                                    sudo sed -i 's/^iotaHornetUnknownPeersLimit=.*/iotaHornetUnknownPeersLimit='$iotaHornetUnknownPeersLimit'/' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Gossip" --msgbox "Maximum of unknown neighbors set to \"$iotaHornetUnknownPeersLimit\"." 8 65
+                                fi
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "10)")
+                iotaHornetAlias=$(whiptail --inputbox "\nDefine an alias of your node" 10 65 $iotaHornetAlias --title "Hornet [IOTA] Alias" 3>&1 1>&2 2>&3)
                 if [ ! -z "$iotaHornetAlias" ]; then
-                    sudo sed -i 's~^iotaHornetAlias=.*~iotaHornetAlias="'"$iotaHornetAlias"'"~' $swarmConfigs/iota-hornet.cfg
+                    sudo sed -i 's~^iotaHornetAlias=.*~iotaHornetAlias="'$iotaHornetAlias'"~' $swarmConfigs/iota-hornet.cfg
                     if [ -f "/usr/bin/iota-hornet" ]; then
                         source $iotaHornetConfigParsers/iotaHornetAlias
                         if [ "$newIotaHornetAlias" = "true" ]; then
-                            whiptail --title "Hornet [IOTA] Alias" --msgbox "New alias \"$iotaHornetAlias\" applied!" 8 65
+                            whiptail --title "Hornet [IOTA] Alias" --msgbox "New alias \"$iotaHornetAlias\" applied." 8 65
                             unset newIotaHornetAlias
                         else
-                            whiptail --title "Hornet [IOTA] Alias" --msgbox "No node alias change detected!" 8 65
+                            whiptail --title "Hornet [IOTA] Alias" --msgbox "No node alias change detected." 8 65
                         fi
                     else
-                        whiptail --title "Hornet [IOTA] Alias" --msgbox "Alias \"$iotaHornetAlias\" applied!" 8 65
+                        whiptail --title "Hornet [IOTA] Alias" --msgbox "Alias \"$iotaHornetAlias\" applied." 8 65
                     fi
                 fi
-            else
-                whiptail --title "Hornet [IOTA] Alias" --msgbox "Please install Hornet (IOTA) first." 8 65
+            ;;
+            "11)")
+                while [ $exitCode -lt 1 ]; do
+                    source $iotaHornetModule/iotaHornetConfigs
+                    # Hornet Networks
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Network" --menu "\nCurrent network: $iotaHornetNetwork\n\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "Mainnet (default)" \
+                        "2)" "Testnet (dev)" 3>&2 2>&1 1>&3
+                    )
+                    exitStatus=$?
+                    if [ "$exitStatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            if (whiptail --title "Hornet [IOTA] Network" --yesno --defaultno "Are you sure you want to change the network to mainnet (the old database will be deleted)?" 8 65); then
+                                currentIotaHornetNetwork=$iotaHornetNetwork
+                                iotaHornetNetwork=mainnet
+                                sudo sed -i 's/^iotaHornetNetwork=.*/iotaHornetNetwork='$iotaHornetNetwork'/' $swarmConfigs/iota-hornet.cfg
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetModule/iotaHornetNetwork
+                                fi
+                            fi
+                        ;;
+                        "2)")
+                            if (whiptail --title "Hornet [IOTA] Network" --yesno --defaultno "Are you sure you want to change the network to testnet (the old database will be deleted)?" 8 65); then
+                                currentIotaHornetNetwork=$iotaHornetNetwork
+                                iotaHornetNetwork=testnet
+                                sudo sed -i 's/^iotaHornetNetwork=.*/iotaHornetNetwork='$iotaHornetNetwork'/' $swarmConfigs/iota-hornet.cfg
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetModule/iotaHornetNetwork
+                                fi
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "12)")
+                while [ $exitCode -lt 1 ]; do
+                    source $swarmConfigs/iota-hornet.cfg
+                    # Hornet release channel
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Release" --menu "\nSet \"rc\" for official release or \"beta\"/\"alpha\" for releases under development\n\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "Release Candidate Channel (default)" 3>&2 2>&1 1>&3
+                    )
+                    exitStatus=$?
+                    if [ "$exitStatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            if (whiptail --title "Hornet [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"rc\" (Hornet will be reinstalled)?" 8 65); then
+                                currentIotaHornetRelease=$iotaHornetRelease
+                                iotaHornetRelease="rc"
+                                sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease='$iotaHornetRelease'/' $swarmConfigs/iota-hornet.cfg
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetModule/iotaHornetReleaseChannel
+                                    source $iotaHornetModule/iotaHornetParser
+                                fi
+                            fi
+                        ;;
+                        "2)")
+                            if (whiptail --title "Hornet [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"beta\" (Hornet will be reinstalled)?" 8 65); then
+                                currentIotaHornetRelease=$iotaHornetRelease
+                                iotaHornetRelease=beta
+                                sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease='$iotaHornetRelease'/' $swarmConfigs/iota-hornet.cfg
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetModule/iotaHornetReleaseChannel
+                                    source $iotaHornetModule/iotaHornetParser
+                                fi
+                            fi
+                        ;;
+                        "3)")
+                            if (whiptail --title "Hornet [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"alpha\" (Hornet will be reinstalled)?" 8 65); then
+                                currentIotaHornetRelease=$iotaHornetRelease
+                                iotaHornetRelease=alpha
+                                sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease='$iotaHornetRelease'/' $swarmConfigs/iota-hornet.cfg
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetModule/iotaHornetReleaseChannel
+                                    source $iotaHornetModule/iotaHornetParser
+                                fi
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "13)")
+                menuIotaHornetUpdateCheck=$(echo $menuIotaHornetUpdateCheck | awk '{print tolower($0)}')
+                if (whiptail --title "Hornet [IOTA] Update Check" --yesno --defaultno "Are you sure you want to $menuIotaHornetUpdateCheck the Hornet update check?" 8 65); then
+                    source $swarmConfigs/iota-hornet.cfg
+                    if [ "$iotaHornetUpdateCheck" = "true" ]; then
+                        iotaHornetUpdateCheck=false
+                        menuIotaHornetUpdateCheck="disabled"
+                        sudo sed -i 's/^iotaHornetUpdateCheck=.*/iotaHornetUpdateCheck='$iotaHornetUpdateCheck'/' $swarmConfigs/iota-hornet.cfg
+                    else
+                        iotaHornetUpdateCheck=true
+                        menuIotaHornetUpdateCheck="enabled"
+                        sudo sed -i 's/^iotaHornetUpdateCheck=.*/iotaHornetUpdateCheck='$iotaHornetUpdateCheck'/' $swarmConfigs/iota-hornet.cfg
+                    fi
+                    restartIotaHornet=true
+                    whiptail --title "Hornet [IOTA] Update Check" --msgbox "Hornet update check $menuIotaHornetUpdateCheck." 8 65
+                fi
+            ;;
+        esac
+    done
+    sudo chown -R hornet:hornet $iotaHornetHome/*.json
+else
+    while [ $exitCode -lt 1 ]; do
+        clear
+        source $swarmConfigs/iota-hornet.cfg
+        source $iotaHornetModule/iotaHornetConfigs
+        CHOICE=$(
+            whiptail --title "Hornet [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
+            "" "" \
+            "1)" "Dashboard" \
+            "2)" "API & JWT" \
+            "3)" "Enable Plugins" \
+            "4)" "Disable Plugins" \
+            "5)" "Node Alias" \
+            "6)" "DB Pruning" \
+            "7)" "Proof of Work" \
+            "8)" "Local Snapshots" \
+            "9)" "P2P Identity" \
+            "10)" "Gossip Port" \
+            "11)" "Autopeering Port" \
+            "12)" "Unknown Peers Limit" \
+            "13)" "IOTA Network" \
+            "14)" "Hornet release Channel" 3>&2 2>&1 1>&3
+        )
+
+        exitstatus=$?
+        if [ "$exitstatus" = "1" ]; then
+            exitCode=1
+            if [ "$restartIotaHornet" = "true" ] && [ -f "/usr/bin/iota-hornet" ]; then
+                if (whiptail --title "Hornet [IOTA] Menu" --yesno "Would you like to apply the changes and restart hornet?" 8 65); then
+                    if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                        sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                    fi
+                    {
+                        echo 0
+                        echo 33
+                        source $iotaHornetModule/iotaHornetParser
+                        echo 50
+                        sudo systemctl restart iota-hornet > /dev/null 2>&1
+                        sleep 0.25
+                        echo 100
+                        sleep 0.25
+                    } | whiptail --gauge "Please wait while the changes are applied and Hornet is restarted..." 8 65 0
+                    unset restartIotaHornet
+                    if [ -f "/tmp/iota-hornet.lock" ]; then
+                        sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                    fi
+                fi
             fi
-        ;;
-        "6)")
-            while [ $exitCode -lt 1 ]; do
-                clear
-                source $swarmConfigs/iota-hornet.cfg
-                # Hornet Pruning
-                if [ "$iotaHornetPruningEnabled" = "true" ]; then
-                    iotaHornetPruningEnabledStatus=enabled
-                else
-                    iotaHornetPruningEnabledStatus=disabled
-                fi
-                CHOICE=$(
-                    whiptail --title "Hornet [IOTA] Pruning" --menu "\nStatus: $iotaHornetPruningEnabledStatus\n\nChoose an option" 24 65 0 \
-                    "" "" \
-                    "1)" "Enable/Disable pruning" \
-                    "2)" "Set database size" \
-                    "3)" "Set pruning cooldown" \
-                    "4)" "Set pruning percentage" 3>&2 2>&1 1>&3
-                )
-                exitstatus=$?
-                if [ "$exitstatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        while [ $exitCode -lt 1 ]; do
-                            if [ "$iotaHornetPruning" = "true" ]; then
-                                iotaHornetPruningStatus=enabled
+        fi
+
+        case $CHOICE in
+            "1)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    source $swarmConfigs/iota-hornet.cfg
+                    # Hornet Dashboard
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Dashboard" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "Dashboard Username" \
+                        "2)" "Dashboard Password" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            if [ -f "/usr/bin/iota-hornet" ]; then
+                                iotaHornetUsername=$(whiptail --inputbox "\nDefine a username for the dashboard login" 10 65 $iotaHornetUsername --title "Hornet [IOTA] Dashboard" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ $exitStatus != 1 ]; then
+                                    if [ ! -z "$iotaHornetUsername" ]; then
+                                        source $iotaHornetConfigParsers/iotaHornetDashboardUsername
+                                        if [ "$newIotaHornetUsername" = "true" ]; then
+                                            sudo sed -i 's/^iotaHornetUsername=.*/iotaHornetUsername="'$iotaHornetUsername'"/' $swarmConfigs/iota-hornet.cfg
+                                            whiptail --title "Hornet [IOTA] Dashboard" --msgbox "New username \"$iotaHornetUsername\" applied!" 8 65
+                                            unset newIotaHornetUsername
+                                        else
+                                            whiptail --title "Hornet [IOTA] Dashboard" --msgbox "No username change detected." 8 65
+                                        fi
+                                    else
+                                        whiptail --title "Hornet [IOTA] Dashboard" --msgbox "No valid username, please try again." 8 65
+                                    fi
+                                fi
                             else
-                                iotaHornetPruningStatus=disabled
+                                whiptail --title "Hornet [IOTA] Dashboard" --msgbox "Please install Hornet (IOTA) first." 8 65
                             fi
-                            CHOICE=$(
-                                whiptail --title "Hornet [IOTA] Pruning" --menu "\nStatus: $iotaHornetPruningEnabledStatus\n\nChoose an option" 24 65 0 \
-                                "" "" \
-                                "1)" "Enable pruning" \
-                                "2)" "Disable pruning" 3>&2 2>&1 1>&3
-                            )
+                        ;;
+                        "2)")
+                            if [ -f "/usr/bin/iota-hornet" ]; then
+                                source $iotaHornetModule/iotaHornetDashboardPwdGen
+                            else
+                                whiptail --title "Hornet [IOTA] Dashboard" --msgbox "Please install Hornet (IOTA) first." 8 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "2)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    source $swarmConfigs/iota-hornet.cfg
+                    # Hornet JWT
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] API & JWT" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "API Routes" \
+                        "2)" "Generate new JWT token" \
+                        "3)" "Show all JWT token" \
+                        "4)" "Revoke all JWT token" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            source $swarmConfigs/iota-hornet.cfg
+                            iotaHornetApiRoutes=$iotaHornetApiPublicRoutes
+                            source $iotaHornetModule/iotaHornetApiRoutes
+                            iotaHornetApiRoutes=$(whiptail --title "Hornet [IOTA] API routes" --checklist "\nSelect (using the spacebar) the Hornet API routes that you want to protect. All routes not selected will be public:" 24 65 14 \
+                                "/health" "" $iotaHornetApiRoutesHealth \
+                                "/mqtt" "" $iotaHornetApiRoutesMqtt \
+                                "/api/v1/info" "" $iotaHornetApiRoutesInfo \
+                                "/api/v1/tips" "" $iotaHornetApiRoutesTips \
+                                "/api/v1/messages*" "" $iotaHornetApiRoutesMessages \
+                                "/api/v1/transactions*" "" $iotaHornetApiRoutesTransactions \
+                                "/api/v1/milestones*" "" $iotaHornetApiRoutesMilestones \
+                                "/api/v1/outputs*" "" $iotaHornetApiRoutesOutputs \
+                                "/api/v1/addresses*" "" $iotaHornetApiRoutesAddresses \
+                                "/api/v1/treasury" "" $iotaHornetApiRoutesTreasury \
+                                "/api/v1/receipts*" "" $iotaHornetApiRoutesReceipts \
+                                "/api/plugins/participation/events*" "" $iotaHornetApiRoutesParticipationEvents \
+                                "/api/plugins/participation/outputs*" "" $iotaHornetApiRoutesParticipationOutputs \
+                                "/api/plugins/participation/addresses*" "" $iotaHornetApiRoutesParticipationAddresses 3>&1 1>&2 2>&3)
                             exitStatus=$?
-                            if [ "$exitStatus" = "1" ]; then
-                                exitCode=1
+                            iotaHornetApiRoutes=$(echo $iotaHornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+                            if [ "$exitStatus" != "1" ]; then
+                                iotaHornetUpdateApiRoutes=true
+                                source $iotaHornetModule/iotaHornetApiRoutes
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetConfigParsers/iotaHornetApiPublicRoutes
+                                fi
+                                unset iotaHornetUpdateApiRoutes
                             fi
-                            case $CHOICE in
-                                "1)")
-                                    iotaHornetPruningEnabled=true
-                                    if [ -f "/usr/bin/iota-hornet" ]; then
-                                        source $iotaHornetConfigParsers/iotaHornetPruningEnabled
+                            unset iotaHornetApiRoutes
+                        ;;
+                        "2)")
+                            if [ -f "/usr/bin/iota-hornet" ]; then
+                                if (whiptail --title "Hornet [IOTA] API & JWT" --yesno --defaultno "Are you sure you want to generate a new JWT token?" 8 65); then
+                                    iotaHornetApiJwtToken=$( cd $iotaHornetHome ; /usr/bin/iota-hornet tools jwt-api --salt $iotaHornetApiJwtSalt | awk '{ print $5 }')
+                                    if [ ! -z "$iotaHornetApiJwtToken" ]; then
+                                        sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'$iotaHornetApiJwtToken'"~' $swarmConfigs/iota-hornet.cfg
+                                        echo $iotaHornetApiJwtToken >> $swarmLogs/iotaHornetJwtToken.log
+                                        clear
+                                        echo ""
+                                        echo $iotaHornetApiJwtToken
+                                        echo ""
+                                        read -n 1 -s -r -p "Press any key to continue"
+                                    else
+                                        whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Error generating JWT token, please try again later." 8 65
                                     fi
-                                    sudo sed -i 's/^iotaHornetPruningEnabeld=.*/iotaHornetPruningEnabled='$iotaHornetPruningEnabled'/' $swarmConfigs/iota-hornet.cfg
-                                    whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning was successfully activated!" 8 65
-                                ;;
-                                "2)")
-                                    iotaHornetPruningEnabled=false
-                                    if [ -f "/usr/bin/iota-hornet" ]; then
-                                        source $iotaHornetConfigParsers/iotaHornetPruningEnabled
+                                fi
+                            else
+                                whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Please install Hornet (IOTA) first." 8 65
+                            fi
+                        ;;
+                        "3)")
+                            if [ -f "$swarmLogs/iotaHornetJwtToken.log" ]; then
+                                sudo $swarmCLEditor $swarmLogs/iotaHornetJwtToken.log
+                            else
+                                whiptail --title "Hornet [IOTA] API & JWT" --msgbox "No JWT token log found, please generate one first!" 8 65
+                            fi
+                        ;;
+                        "4)")
+                            if [ -f "/usr/bin/iota-hornet" ]; then
+                                if (whiptail --title "Hornet [IOTA] API & JWT" --yesno --defaultno "Are you sure you want to revoke all JWT tokens?" 8 65); then
+                                    iotaHornetApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
+                                    sudo sed -i 's~^iotaHornetApiJwtSalt=.*~iotaHornetApiJwtSalt="'$iotaHornetApiJwtSalt'"~' $swarmConfigs/iota-hornet.cfg
+                                    if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                                        sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
                                     fi
-                                    sudo sed -i 's/^iotaHornetPruningEnabled=.*/iotaHornetPruningEnabled='$iotaHornetPruningEnabled'/' $swarmConfigs/iota-hornet.cfg
-                                    whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning was successfully deactivated!" 8 65
-                                ;;
-                            esac
-                        done
-                        exitCode=0
-                    ;;
-                    "2)")
-                        iotaHornetPruningDatabaseSize=$(whiptail --inputbox "\nSet the maximum size of the database in gigabyte." 10 65 $iotaHornetPruningDatabaseSize --title "Hornet [IOTA] Pruning" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ $exitStatus != 1 ]; then
-                            iotaHornetPruningDatabaseSize=${iotaHornetPruningDatabaseSize//[!0-9]/}
-                            if [ ! -z "$iotaHornetPruningDatabaseSize" ] && [ $iotaHornetPruningDatabaseSize -eq $iotaHornetPruningDatabaseSize ] 2>/dev/null; then
-                                if [ -f "/usr/bin/iota-hornet" ]; then
-                                    source $iotaHornetConfigParsers/iotaHornetPruningDatabaseSize
+                                    {
+                                        echo 0
+                                        echo 15
+                                        source $iotaHornetConfigParsers/iotaHornetApiJwtSalt
+                                        echo 30
+                                        sudo rm -rf $swarmLogs/iotaHornetJwt.log
+                                        echo 45
+                                        source $iotaHornetConfigParsers/iotaHornetIdentity
+                                        echo 60
+                                        sudo systemctl restart iota-hornet 2>/dev/null
+                                        echo 75
+                                        iotaHornetApiJwtToken=$( cd $iotaHornetHome ; /usr/bin/iota-hornet tools jwt-api --salt $iotaHornetApiJwtSalt | awk '{ print $5 }')
+                                        echo 90
+                                        if [ ! -z "$iotaHornetApiJwtToken" ]; then
+                                            sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'$iotaHornetApiJwtToken'"~' $swarmConfigs/iota-hornet.cfg
+                                        fi
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while all JWT tokens will be revoked..." 8 65 0
+                                    if [ -f "/tmp/iota-hornet.lock" ]; then
+                                        sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                                    fi
                                 fi
-                                sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
-                                whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning of the database set to ${iotaHornetPruningDatabaseSize}GB!" 8 65
+                            else
+                                whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Please install Hornet (IOTA) first." 8 65
                             fi
-                        fi
-                    ;;
-                    "3)")
-                        currentIotaHornetPruningCooldownTime=$iotaHornetPruningCooldownTime
-                        iotaHornetPruningCooldownTime=$(whiptail --inputbox "\nSet the interval (minutes) at which pruning is performed when the maximum DB size is reached." 10 65 $iotaHornetPruningCooldownTime --title "Hornet [IOTA] Pruning" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ $exitStatus != 1 ]; then
-                            iotaHornetPruningCooldownTime=${iotaHornetPruningCooldownTime//[!0-9]/}
-                            if [ $iotaHornetPruningCooldownTime -gt 0 ] && [ $iotaHornetPruningCooldownTime -lt 60 ]; then
-                                if [ -f "/usr/bin/iota-hornet" ]; then
-                                    source $iotaHornetConfigParsers/iotaHornetPruningCooldownTime
-                                fi
-                                sudo sed -i 's/^iotaHornetPruningCooldownTime=.*/iotaHornetPruningCooldownTime='$iotaHornetPruningCooldownTime'/' $swarmConfigs/iota-hornet.cfg
-                                whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning cooldown time set to ${iotaHornetPruningCooldownTime} minutes!" 8 65
-                            fi
-                        fi
-                    ;;
-                    "4)")
-                        iotaHornetPruningPercentage=$(whiptail --inputbox "\nSet how much percent of history should be pruned from the database" 10 65 $iotaHornetPruningPercentage --title "Hornet [IOTA] Pruning" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ $exitStatus != 1 ]; then
-                            if [ ! -z "$iotaHornetPruningPercentage" ] && [ $iotaHornetPruningPercentage -eq $iotaHornetPruningPercentage ]; then
-                                if [ -f "/usr/bin/iota-hornet" ]; then
-                                    source $iotaHornetConfigParsers/iotaHornetPruningPercentage
-                                fi
-                                sudo sed -i 's/^iotaHornetPruningPercentage=.*/iotaHornetPruningPercentage='$iotaHornetPruningPercentage'/' $swarmConfigs/iota-hornet.cfg
-                                whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning percentage set to ${iotaHornetPruningPercentage}%!" 8 65
-                            fi
-                        fi
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-        "7)")
-            source $swarmConfigs/iota-hornet.cfg
-            if [ "$iotaHornetPowEnabled" = "true" ]; then
-                iotaHornetPowEnabledStatus="disable"
-            else
-                iotaHornetPowEnabledStatus="enable"
-            fi
-            if (whiptail --title "Hornet [IOTA] Proof of Work" --yesno --defaultno "Are you sure you want to $iotaHornetPowEnabledStatus proof of work?" 8 65); then
-                if [ "$iotaHornetPowEnabled" = "true" ]; then
-                    iotaHornetPowEnabled=false
-                    iotaHornetPowEnabledStatus="disabled"
-                else
-                    iotaHornetPowEnabled=true
-                    iotaHornetPowEnabledStatus="enabled"
-                fi
-                restartIotaHornet=true
-                sudo sed -i 's/^iotaHornetPowEnabled=.*/iotaHornetPowEnabled='$iotaHornetPowEnabled'/' $swarmConfigs/iota-hornet.cfg
-                whiptail --title "Hornet [IOTA] Proof of Work" --msgbox "Proof of Work $iotaHornetPowEnabledStatus." 8 65
-            fi
-        ;;
-        "8)")
-            source $swarmConfigs/iota-hornet.cfg
-            currentIotaHornetSnapshotInterval=$iotaHornetSnapshotInterval
-            iotaHornetSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $iotaHornetSnapshotInterval --title "Hornet [IOTA] Snapshots" 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            if [ $exitStatus != 1 ]; then
-                if [ ! -z "$iotaHornetSnapshotInterval" ] && [ $iotaHornetSnapshotInterval -eq $iotaHornetSnapshotInterval ] 2>/dev/null; then
-                    if [ -f "/usr/bin/iota-hornet" ]; then
-                        source $iotaHornetConfigParsers/iotaHornetSnapshotInterval
-                    fi
-                    if [ "$currentIotaHornetSnapshotInterval" != "$iotaHornetSnapshotInterval" ]; then
-                        sudo sed -i 's/^iotaHornetSnapshotInterval=.*/iotaHornetSnapshotInterval='$iotaHornetSnapshotInterval'/' $swarmConfigs/iota-hornet.cfg
-                        whiptail --title "Hornet [IOTA] Snapshots" --msgbox "Snapshot interval changed to $iotaHornetSnapshotInterval milestones!" 8 65
-                    else
-                        whiptail --title "Hornet [IOTA] Snapshots" --msgbox "No new snapshot interval detected!" 8 65
-                    fi
-                fi
-            fi
-        ;;
-        "9)")
-            while [ $exitCode -lt 1 ]; do
-                clear
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "3)")
+                useIotaHornetEnablePlugins=true
                 source $swarmConfigs/iota-hornet.cfg
-                iotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }')
-                # Hornet Dashboard
-                CHOICE=$(
-                    whiptail --title "Hornet [IOTA] Identity" --menu "\nChoose an option" 24 65 0 \
-                    "" "" \
-                    "1)" "Set identity" \
-                    "2)" "Generate new Identity" 3>&2 2>&1 1>&3
-                )
-                exitstatus=$?
-                if [ "$exitstatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        source $swarmConfigs/iota-hornet.cfg
-                        currentIotaHornetIdentity=$iotaHornetIdentity
-                        iotaHornetIdentity=$(whiptail --inputbox "\nSet your own private key for the Identity" 10 65 --title "Hornet [IOTA] Identity" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ $exitStatus != 1 ]; then
-                            if [ "$iotaHornetIdentity" != "$currentIotaHornetIdentity" ] && [ ! -z "$iotaHornetIdentity" ]; then
-                                if [ -f "/usr/bin/iota-hornet" ]; then
-                                    source $iotaHornetConfigParsers/iotaHornetIdentity
-                                fi
-                                sudo sed -i 's~^iotaHornetIdentity=.*~iotaHornetIdentity="'$iotaHornetIdentity'"~' $swarmConfigs/iota-hornet.cfg
-                                whiptail --title "Hornet [IOTA] Identity" --msgbox "The following Identity key was set: \n$iotaHornetIdentity!" 10 65
-                            fi
-                        fi
-                    ;;
-                    "2)")
+                currentIotaHornetEnablePlugins=$iotaHornetEnablePlugins
+                source $iotaHornetModule/iotaHornetPlugins
+                iotaHornetEnablePlugins=$(whiptail --title "Hornet [IOTA] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be activated:" 24 65 4 \
+                    "Autopeering" "plugin for automatic peering" $iotaHornetPluginAutopeering \
+                    "Participation" "plugin for voting/staking" $iotaHornetPluginParticipation \
+                    "MQTT" "plugin to stream messages" $iotaHornetPluginMqtt \
+                    "Prometheus" "plugin for metrics e.g. Grafana" $iotaHornetPluginPrometheus 3>&1 1>&2 2>&3)
+                exitStatus=$?
+                iotaHornetEnablePlugins=$(echo $iotaHornetEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+                if [ -z "$iotaHornetEnablePlugins" ] || [[ $iotaHornetEnablePlugins = *autopeering* ]] || [[ $iotaHornetEnablePlugins = *participation* ]] || [[ $iotaHornetEnablePlugins = *mqtt* ]] || [[ $iotaHornetEnablePlugins = *prometheus* ]]; then
+                    if [ "$iotaHornetEnablePlugins" != "$currentIotaHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
                         if [ -f "/usr/bin/iota-hornet" ]; then
-                            if (whiptail --title "Hornet [IOTA] Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
-                                unset iotaHornetIdentity
-                                sudo rm -rf $iotaHornetHome/p2pstore/identity.key 2>/dev/null
-                                source $iotaHornetConfigParsers/iotaHornetIdentity
-                                whiptail --title "Hornet [IOTA] Identity" --msgbox "The following p2pIdentity key was set: \n$iotaHornetIdentity" 12 65
-                                source $swarmConfigs/iota-hornet.cfg
+                            source $iotaHornetConfigParsers/iotaHornetEnablePlugins
+                        fi
+                        sudo sed -i 's/^iotaHornetEnablePlugins=.*/iotaHornetEnablePlugins="'$iotaHornetEnablePlugins'"/' $swarmConfigs/iota-hornet.cfg
+                        if [ ! -z "$iotaHornetEnablePlugins" ]; then
+                            whiptail --title "Hornet [IOTA] Plugins" --msgbox "The following plugins are enabled:\n$iotaHornetEnablePlugins" 14 65
+                        else
+                            whiptail --title "Hornet [IOTA] Plugins" --msgbox "There are no plugins enabled for Hornet!" 8 65
+                        fi
+                    fi
+                    unset iotaHornetEnablePlugins
+                fi
+                unset useIotaHornetEnablePlugins
+            ;;
+            "4)")
+                useIotaHornetDisablePlugins=true
+                source $swarmConfigs/iota-hornet.cfg
+                currentIotaHornetDisablePlugins=$iotaHornetDisablePlugins
+                source $iotaHornetModule/iotaHornetPlugins
+                iotaHornetDisablePlugins=$(whiptail --title "Hornet [IOTA] Plugins" --checklist "\nSelect (with spacebar) the Hornet plugins to be deactivated:" 24 65 1 \
+                    "Warpsync" "plugin to sync more faster" $iotaHornetPluginWarpsync 3>&1 1>&2 2>&3)
+                exitStatus=$?
+                iotaHornetDisablePlugins=$(echo $iotaHornetDisablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+                if [ -z "$iotaHornetDisablePlugins" ] || [[ $iotaHornetDisablePlugins = *warpsync* ]]; then
+                    if [ "$iotaHornetDisablePlugins" != "$currentIotaHornetDisablePlugins" ] && [ "$exitStatus" != "1" ]; then
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            source $iotaHornetConfigParsers/iotaHornetDisablePlugins
+                        fi
+                        sudo sed -i 's/^iotaHornetDisablePlugins=.*/iotaHornetDisablePlugins="'$iotaHornetDisablePlugins'"/' $swarmConfigs/iota-hornet.cfg
+                        if [ ! -z "$iotaHornetDisablePlugins" ]; then
+                            whiptail --title "Hornet [IOTA] Plugins" --msgbox "The following plugins are disabled:\n$iotaHornetDisablePlugins" 14 65
+                        else
+                            whiptail --title "Hornet [IOTA] Plugins" --msgbox "There are no plugins disabled for Hornet!" 8 65
+                        fi
+                    fi
+                else
+                    unset iotaHornetDisablePlugins
+                fi
+                unset useIotaHornetDisablePlugins
+            ;;
+            "5)")
+                if [ -f "/usr/bin/iota-hornet" ]; then
+                    iotaHornetAlias=$(whiptail --inputbox "\nDefine an alias of your node in the dashboard" 10 65 --title "Hornet [IOTA] Alias" 3>&1 1>&2 2>&3)
+                    if [ ! -z "$iotaHornetAlias" ]; then
+                        sudo sed -i 's~^iotaHornetAlias=.*~iotaHornetAlias="'"$iotaHornetAlias"'"~' $swarmConfigs/iota-hornet.cfg
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            source $iotaHornetConfigParsers/iotaHornetAlias
+                            if [ "$newIotaHornetAlias" = "true" ]; then
+                                whiptail --title "Hornet [IOTA] Alias" --msgbox "New alias \"$iotaHornetAlias\" applied!" 8 65
+                                unset newIotaHornetAlias
+                            else
+                                whiptail --title "Hornet [IOTA] Alias" --msgbox "No node alias change detected!" 8 65
                             fi
                         else
-                            whiptail --title "Hornet [IOTA] Identity" --msgbox "Please install Hornet (IOTA) first." 10 65
+                            whiptail --title "Hornet [IOTA] Alias" --msgbox "Alias \"$iotaHornetAlias\" applied!" 8 65
                         fi
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-        "10)")
-            source $swarmConfigs/iota-hornet.cfg
-            currentIotaHornetGossipPort=$iotaHornetGossipPort
-            iotaHornetGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $iotaHornetGossipPort --title "Hornet [IOTA] Gossip" 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            if [ $exitStatus != 1 ]; then
-                if [ ! -z "$iotaHornetGossipPort" ] && [ "$currentIotaHornetGossipPort" != "$iotaHornetGossipPort" ] && [ $iotaHornetGossipPort -eq $iotaHornetGossipPort ] 2>/dev/null; then
-                    if [ -f "/usr/bin/iota-hornet" ]; then
-                        if [ "$ufw" = "true" ]; then
-                            sudo ufw delete allow $currentIotaHornetGossipPort/tcp > /dev/null 2>&1
-                            sudo ufw allow $iotaHornetGossipPort/tcp > /dev/null 2>&1
-                        fi
-                        source $iotaHornetConfigParsers/iotaHornetGossipPort
                     fi
-                    sudo sed -i 's/^iotaHornetGossipPort=.*/iotaHornetGossipPort='$iotaHornetGossipPort'/' $swarmConfigs/iota-hornet.cfg
-                    whiptail --title "Hornet [IOTA] Gossip" --msgbox "Gossip port set to \"$iotaHornetGossipPort/tcp\"!" 8 65
-                    restartIotaHornet=true
+                else
+                    whiptail --title "Hornet [IOTA] Alias" --msgbox "Please install Hornet (IOTA) first." 8 65
                 fi
-            fi
-        ;;
-        "11)")
-            source $swarmConfigs/iota-hornet.cfg
-            currentIotaHornetAutopeeringPort=$iotaHornetAutopeeringPort
-            iotaHornetAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port for the automatic neighbors detection." 10 65 $iotaHornetAutopeeringPort --title "Hornet [IOTA] Autopeering" 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            if [ $exitStatus != 1 ]; then
-                if [ ! -z "$iotaHornetAutopeeringPort" ] && [ "$currentIotaHornetAutopeeringPort" != "$iotaHornetAutopeeringPort" ] && [ $iotaHornetAutopeeringPort -eq $iotaHornetAutopeeringPort ] 2>/dev/null; then
-                    if [ -f "/usr/bin/iota-hornet" ]; then
-                        if [ "$ufw" = "true" ]; then
-                            sudo ufw delete allow $currentIotaHornetAutopeeringPort/udp > /dev/null 2>&1
-                            sudo ufw allow $iotaHornetAutopeeringPort/udp > /dev/null 2>&1
-                        fi
-                        source $iotaHornetConfigParsers/iotaHornetAutopeeringPort
+            ;;
+            "6)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    source $swarmConfigs/iota-hornet.cfg
+                    # Hornet Pruning
+                    if [ "$iotaHornetPruningEnabled" = "true" ]; then
+                        iotaHornetPruningEnabledStatus=enabled
+                    else
+                        iotaHornetPruningEnabledStatus=disabled
                     fi
-                    sudo sed -i 's/^iotaHornetAutopeeringPort=.*/iotaHornetAutopeeringPort='$iotaHornetAutopeeringPort'/' $swarmConfigs/iota-hornet.cfg
-                    whiptail --title "Hornet [IOTA] Autopeering" --msgbox "Autopeering port set to \"$iotaHornetAutopeeringPort/udp\"!" 8 65
-                fi
-            fi
-        ;;
-        "12)")
-            source $swarmConfigs/iota-hornet.cfg
-            currentIotaHornetUnknownPeersLimit=$iotaHornetUnknownPeersLimit
-            iotaHornetUnknownPeersLimit=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentIotaHornetUnknownPeersLimit --title "Hornet [IOTA] Gossip" 3>&1 1>&2 2>&3)
-            exitStatus=$?
-            if [ $exitStatus != 1 ]; then
-                if [ "$currentIotaHornetUnknownPeersLimit" != "$iotaHornetUnknownPeersLimit" ] && [ $iotaHornetUnknownPeersLimit -eq $iotaHornetUnknownPeersLimit ] && [ ! -z "$iotaHornetUnknownPeersLimit" ] 2>/dev/null; then
-                    if [ -f "/usr/bin/iota-hornet" ]; then
-                        source $iotaHornetConfigParsers/iotaHornetGossipUnknownPeersLimit
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Pruning" --menu "\nStatus: $iotaHornetPruningEnabledStatus\n\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "Enable/Disable pruning" \
+                        "2)" "Set database size" \
+                        "3)" "Set pruning cooldown" \
+                        "4)" "Set pruning percentage" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
                     fi
-                    sudo sed -i 's/^iotaHornetUnknownPeersLimit=.*/iotaHornetUnknownPeersLimit='$iotaHornetUnknownPeersLimit'/' $swarmConfigs/iota-hornet.cfg
-                    whiptail --title "Hornet [IOTA] Gossip" --msgbox "Maximum of unknown neighbors set to \"$iotaHornetUnknownPeersLimit\"." 8 65
-                fi
-            fi
-        ;;
-        "13)")
-            while [ $exitCode -lt 1 ]; do
-                source $iotaHornetModule/iotaHornetConfigs
-                # Hornet Networks
-                CHOICE=$(
-                    whiptail --title "Hornet [IOTA] Network" --menu "\nCurrent network: $iotaHornetNetwork\n\nChoose an option" 24 65 0 \
-                    "1)" "Mainnet (default)" 3>&2 2>&1 1>&3
-                )
-                exitStatus=$?
-                if [ "$exitStatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        if (whiptail --title "Hornet [IOTA] Network" --yesno --defaultno "Are you sure you want to change the network to mainnet (the old database will be deleted)?" 8 65); then
-                            currentIotaHornetNetwork=$iotaHornetNetwork
-                            iotaHornetNetwork=mainnet
-                            sudo sed -i 's/^iotaHornetNetwork=.*/iotaHornetNetwork='$iotaHornetNetwork'/' $swarmConfigs/iota-hornet.cfg
-                            if [ -f "/usr/bin/iota-hornet" ]; then
-                                source $iotaHornetModule/iotaHornetNetwork
+                    case $CHOICE in
+                        "1)")
+                            while [ $exitCode -lt 1 ]; do
+                                if [ "$iotaHornetPruning" = "true" ]; then
+                                    iotaHornetPruningStatus=enabled
+                                else
+                                    iotaHornetPruningStatus=disabled
+                                fi
+                                CHOICE=$(
+                                    whiptail --title "Hornet [IOTA] Pruning" --menu "\nStatus: $iotaHornetPruningEnabledStatus\n\nChoose an option" 24 65 0 \
+                                    "" "" \
+                                    "1)" "Enable pruning" \
+                                    "2)" "Disable pruning" 3>&2 2>&1 1>&3
+                                )
+                                exitStatus=$?
+                                if [ "$exitStatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        iotaHornetPruningEnabled=true
+                                        if [ -f "/usr/bin/iota-hornet" ]; then
+                                            source $iotaHornetConfigParsers/iotaHornetPruningEnabled
+                                        fi
+                                        sudo sed -i 's/^iotaHornetPruningEnabeld=.*/iotaHornetPruningEnabled='$iotaHornetPruningEnabled'/' $swarmConfigs/iota-hornet.cfg
+                                        whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning was successfully activated!" 8 65
+                                    ;;
+                                    "2)")
+                                        iotaHornetPruningEnabled=false
+                                        if [ -f "/usr/bin/iota-hornet" ]; then
+                                            source $iotaHornetConfigParsers/iotaHornetPruningEnabled
+                                        fi
+                                        sudo sed -i 's/^iotaHornetPruningEnabled=.*/iotaHornetPruningEnabled='$iotaHornetPruningEnabled'/' $swarmConfigs/iota-hornet.cfg
+                                        whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning was successfully deactivated!" 8 65
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
+                        ;;
+                        "2)")
+                            iotaHornetPruningDatabaseSize=$(whiptail --inputbox "\nSet the maximum size of the database in gigabyte." 10 65 $iotaHornetPruningDatabaseSize --title "Hornet [IOTA] Pruning" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                iotaHornetPruningDatabaseSize=${iotaHornetPruningDatabaseSize//[!0-9]/}
+                                if [ ! -z "$iotaHornetPruningDatabaseSize" ] && [ $iotaHornetPruningDatabaseSize -eq $iotaHornetPruningDatabaseSize ] 2>/dev/null; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        source $iotaHornetConfigParsers/iotaHornetPruningDatabaseSize
+                                    fi
+                                    sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning of the database set to ${iotaHornetPruningDatabaseSize}GB!" 8 65
+                                fi
                             fi
-                        fi
-                    ;;
-                    "2)")
-                        if (whiptail --title "Hornet [IOTA] Network" --yesno --defaultno "Are you sure you want to change the network to testnet (the old database will be deleted)?" 8 65); then
-                            currentIotaHornetNetwork=$iotaHornetNetwork
-                            iotaHornetNetwork=testnet
-                            sudo sed -i 's/^iotaHornetNetwork=.*/iotaHornetNetwork='$iotaHornetNetwork'/' $swarmConfigs/iota-hornet.cfg
-                            if [ -f "/usr/bin/iota-hornet" ]; then
-                                source $iotaHornetModule/iotaHornetNetwork
+                        ;;
+                        "3)")
+                            currentIotaHornetPruningCooldownTime=$iotaHornetPruningCooldownTime
+                            iotaHornetPruningCooldownTime=$(whiptail --inputbox "\nSet the interval (minutes) at which pruning is performed when the maximum DB size is reached." 10 65 $iotaHornetPruningCooldownTime --title "Hornet [IOTA] Pruning" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                iotaHornetPruningCooldownTime=${iotaHornetPruningCooldownTime//[!0-9]/}
+                                if [ $iotaHornetPruningCooldownTime -gt 0 ] && [ $iotaHornetPruningCooldownTime -lt 60 ]; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        source $iotaHornetConfigParsers/iotaHornetPruningCooldownTime
+                                    fi
+                                    sudo sed -i 's/^iotaHornetPruningCooldownTime=.*/iotaHornetPruningCooldownTime='$iotaHornetPruningCooldownTime'/' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning cooldown time set to ${iotaHornetPruningCooldownTime} minutes!" 8 65
+                                fi
                             fi
-                        fi
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-        "14)")
-            while [ $exitCode -lt 1 ]; do
+                        ;;
+                        "4)")
+                            iotaHornetPruningPercentage=$(whiptail --inputbox "\nSet how much percent of history should be pruned from the database" 10 65 $iotaHornetPruningPercentage --title "Hornet [IOTA] Pruning" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$iotaHornetPruningPercentage" ] && [ $iotaHornetPruningPercentage -eq $iotaHornetPruningPercentage ]; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        source $iotaHornetConfigParsers/iotaHornetPruningPercentage
+                                    fi
+                                    sudo sed -i 's/^iotaHornetPruningPercentage=.*/iotaHornetPruningPercentage='$iotaHornetPruningPercentage'/' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning percentage set to ${iotaHornetPruningPercentage}%!" 8 65
+                                fi
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "7)")
                 source $swarmConfigs/iota-hornet.cfg
-                # Hornet release channel
-                CHOICE=$(
-                    whiptail --title "Hornet [IOTA] Release" --menu "\nSet \"stable\" for official release or \"beta\" for releases under development\n\nChoose an option" 24 65 0 \
-                    "" "" \
-                    "1)" "Stable Release Channel (default)" \
-                    "2)" "Beta Release Channel" 3>&2 2>&1 1>&3
-                )
-                exitStatus=$?
-                if [ "$exitStatus" = "1" ]; then
-                    exitCode=1
+                if [ "$iotaHornetPowEnabled" = "true" ]; then
+                    iotaHornetPowEnabledStatus="disable"
+                else
+                    iotaHornetPowEnabledStatus="enable"
                 fi
-                case $CHOICE in
-                    "1)")
-                        if (whiptail --title "Hornet [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"stable\" (Hornet will be reinstalled)?" 8 65); then
-                            currentIotaHornetRelease=$iotaHornetRelease
-                            iotaHornetRelease=stable
-                            sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease='$iotaHornetRelease'/' $swarmConfigs/iota-hornet.cfg
-                            if [ -f "/usr/bin/iota-hornet" ]; then
-                                source $iotaHornetModule/iotaHornetReleaseChannel
-                                source $iotaHornetModule/iotaHornetParser
-                            fi
+                if (whiptail --title "Hornet [IOTA] Proof of Work" --yesno --defaultno "Are you sure you want to $iotaHornetPowEnabledStatus proof of work?" 8 65); then
+                    if [ "$iotaHornetPowEnabled" = "true" ]; then
+                        iotaHornetPowEnabled=false
+                        iotaHornetPowEnabledStatus="disabled"
+                    else
+                        iotaHornetPowEnabled=true
+                        iotaHornetPowEnabledStatus="enabled"
+                    fi
+                    restartIotaHornet=true
+                    sudo sed -i 's/^iotaHornetPowEnabled=.*/iotaHornetPowEnabled='$iotaHornetPowEnabled'/' $swarmConfigs/iota-hornet.cfg
+                    whiptail --title "Hornet [IOTA] Proof of Work" --msgbox "Proof of Work $iotaHornetPowEnabledStatus." 8 65
+                fi
+            ;;
+            "8)")
+                source $swarmConfigs/iota-hornet.cfg
+                currentIotaHornetSnapshotInterval=$iotaHornetSnapshotInterval
+                iotaHornetSnapshotInterval=$(whiptail --inputbox "\nDefine after how many milestones your node should take a snapshot" 10 65 $iotaHornetSnapshotInterval --title "Hornet [IOTA] Snapshots" 3>&1 1>&2 2>&3)
+                exitStatus=$?
+                if [ $exitStatus != 1 ]; then
+                    if [ ! -z "$iotaHornetSnapshotInterval" ] && [ $iotaHornetSnapshotInterval -eq $iotaHornetSnapshotInterval ] 2>/dev/null; then
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            source $iotaHornetConfigParsers/iotaHornetSnapshotInterval
                         fi
-                    ;;
-                    "2)")
-                        if (whiptail --title "Hornet [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"beta\" (Hornet will be reinstalled)?" 8 65); then
-                            currentIotaHornetRelease=$iotaHornetRelease
-                            iotaHornetRelease=beta
-                            sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease='$iotaHornetRelease'/' $swarmConfigs/iota-hornet.cfg
-                            if [ -f "/usr/bin/iota-hornet" ]; then
-                                source $iotaHornetModule/iotaHornetReleaseChannel
-                                source $iotaHornetModule/iotaHornetParser
-                            fi
+                        if [ "$currentIotaHornetSnapshotInterval" != "$iotaHornetSnapshotInterval" ]; then
+                            sudo sed -i 's/^iotaHornetSnapshotInterval=.*/iotaHornetSnapshotInterval='$iotaHornetSnapshotInterval'/' $swarmConfigs/iota-hornet.cfg
+                            whiptail --title "Hornet [IOTA] Snapshots" --msgbox "Snapshot interval changed to $iotaHornetSnapshotInterval milestones!" 8 65
+                        else
+                            whiptail --title "Hornet [IOTA] Snapshots" --msgbox "No new snapshot interval detected!" 8 65
                         fi
-                    ;;
-                    "3)")
-                        if (whiptail --title "Hornet [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"alpha\" (Hornet will be reinstalled)?" 8 65); then
-                            currentIotaHornetRelease=$iotaHornetRelease
-                            iotaHornetRelease=alpha
-                            sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease='$iotaHornetRelease'/' $swarmConfigs/iota-hornet.cfg
-                            if [ -f "/usr/bin/iota-hornet" ]; then
-                                source $iotaHornetModule/iotaHornetReleaseChannel
-                                source $iotaHornetModule/iotaHornetParser
+                    fi
+                fi
+            ;;
+            "9)")
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    source $swarmConfigs/iota-hornet.cfg
+                    iotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }')
+                    # Hornet Dashboard
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Identity" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "Set identity" \
+                        "2)" "Generate new Identity" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            source $swarmConfigs/iota-hornet.cfg
+                            currentIotaHornetIdentity=$iotaHornetIdentity
+                            iotaHornetIdentity=$(whiptail --inputbox "\nSet your own private key for the Identity" 10 65 --title "Hornet [IOTA] Identity" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ "$iotaHornetIdentity" != "$currentIotaHornetIdentity" ] && [ ! -z "$iotaHornetIdentity" ]; then
+                                    if [ -f "/usr/bin/iota-hornet" ]; then
+                                        source $iotaHornetConfigParsers/iotaHornetIdentity
+                                    fi
+                                    sudo sed -i 's~^iotaHornetIdentity=.*~iotaHornetIdentity="'$iotaHornetIdentity'"~' $swarmConfigs/iota-hornet.cfg
+                                    whiptail --title "Hornet [IOTA] Identity" --msgbox "The following Identity key was set: \n$iotaHornetIdentity!" 10 65
+                                fi
                             fi
+                        ;;
+                        "2)")
+                            if [ -f "/usr/bin/iota-hornet" ]; then
+                                if (whiptail --title "Hornet [IOTA] Identity" --yesno --defaultno "Are you sure you want to generate a new Identity (the existing one will be deleted)?" 8 65); then
+                                    unset iotaHornetIdentity
+                                    sudo rm -rf $iotaHornetHome/p2pstore/identity.key 2>/dev/null
+                                    source $iotaHornetConfigParsers/iotaHornetIdentity
+                                    whiptail --title "Hornet [IOTA] Identity" --msgbox "The following p2pIdentity key was set: \n$iotaHornetIdentity" 12 65
+                                    source $swarmConfigs/iota-hornet.cfg
+                                fi
+                            else
+                                whiptail --title "Hornet [IOTA] Identity" --msgbox "Please install Hornet (IOTA) first." 10 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "10)")
+                source $swarmConfigs/iota-hornet.cfg
+                currentIotaHornetGossipPort=$iotaHornetGossipPort
+                iotaHornetGossipPort=$(whiptail --inputbox "\nSet the gossip port for the neighbors communication." 10 65 $iotaHornetGossipPort --title "Hornet [IOTA] Gossip" 3>&1 1>&2 2>&3)
+                exitStatus=$?
+                if [ $exitStatus != 1 ]; then
+                    if [ ! -z "$iotaHornetGossipPort" ] && [ "$currentIotaHornetGossipPort" != "$iotaHornetGossipPort" ] && [ $iotaHornetGossipPort -eq $iotaHornetGossipPort ] 2>/dev/null; then
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            if [ "$ufw" = "true" ]; then
+                                sudo ufw delete allow $currentIotaHornetGossipPort/tcp > /dev/null 2>&1
+                                sudo ufw allow $iotaHornetGossipPort/tcp > /dev/null 2>&1
+                            fi
+                            source $iotaHornetConfigParsers/iotaHornetGossipPort
                         fi
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-    esac
-done
-sudo chown -R hornet:hornet $iotaHornetHome/*.json
-exitCode=0
+                        sudo sed -i 's/^iotaHornetGossipPort=.*/iotaHornetGossipPort='$iotaHornetGossipPort'/' $swarmConfigs/iota-hornet.cfg
+                        whiptail --title "Hornet [IOTA] Gossip" --msgbox "Gossip port set to \"$iotaHornetGossipPort/tcp\"!" 8 65
+                        restartIotaHornet=true
+                    fi
+                fi
+            ;;
+            "11)")
+                source $swarmConfigs/iota-hornet.cfg
+                currentIotaHornetAutopeeringPort=$iotaHornetAutopeeringPort
+                iotaHornetAutopeeringPort=$(whiptail --inputbox "\nSet the autopeering port for the automatic neighbors detection." 10 65 $iotaHornetAutopeeringPort --title "Hornet [IOTA] Autopeering" 3>&1 1>&2 2>&3)
+                exitStatus=$?
+                if [ $exitStatus != 1 ]; then
+                    if [ ! -z "$iotaHornetAutopeeringPort" ] && [ "$currentIotaHornetAutopeeringPort" != "$iotaHornetAutopeeringPort" ] && [ $iotaHornetAutopeeringPort -eq $iotaHornetAutopeeringPort ] 2>/dev/null; then
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            if [ "$ufw" = "true" ]; then
+                                sudo ufw delete allow $currentIotaHornetAutopeeringPort/udp > /dev/null 2>&1
+                                sudo ufw allow $iotaHornetAutopeeringPort/udp > /dev/null 2>&1
+                            fi
+                            source $iotaHornetConfigParsers/iotaHornetAutopeeringPort
+                        fi
+                        sudo sed -i 's/^iotaHornetAutopeeringPort=.*/iotaHornetAutopeeringPort='$iotaHornetAutopeeringPort'/' $swarmConfigs/iota-hornet.cfg
+                        whiptail --title "Hornet [IOTA] Autopeering" --msgbox "Autopeering port set to \"$iotaHornetAutopeeringPort/udp\"!" 8 65
+                    fi
+                fi
+            ;;
+            "12)")
+                source $swarmConfigs/iota-hornet.cfg
+                currentIotaHornetUnknownPeersLimit=$iotaHornetUnknownPeersLimit
+                iotaHornetUnknownPeersLimit=$(whiptail --inputbox "\nSet the maximum amount of unknown neighbors." 10 65 $currentIotaHornetUnknownPeersLimit --title "Hornet [IOTA] Gossip" 3>&1 1>&2 2>&3)
+                exitStatus=$?
+                if [ $exitStatus != 1 ]; then
+                    if [ "$currentIotaHornetUnknownPeersLimit" != "$iotaHornetUnknownPeersLimit" ] && [ $iotaHornetUnknownPeersLimit -eq $iotaHornetUnknownPeersLimit ] && [ ! -z "$iotaHornetUnknownPeersLimit" ] 2>/dev/null; then
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            source $iotaHornetConfigParsers/iotaHornetGossipUnknownPeersLimit
+                        fi
+                        sudo sed -i 's/^iotaHornetUnknownPeersLimit=.*/iotaHornetUnknownPeersLimit='$iotaHornetUnknownPeersLimit'/' $swarmConfigs/iota-hornet.cfg
+                        whiptail --title "Hornet [IOTA] Gossip" --msgbox "Maximum of unknown neighbors set to \"$iotaHornetUnknownPeersLimit\"." 8 65
+                    fi
+                fi
+            ;;
+            "13)")
+                while [ $exitCode -lt 1 ]; do
+                    source $iotaHornetModule/iotaHornetConfigs
+                    # Hornet Networks
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Network" --menu "\nCurrent network: $iotaHornetNetwork\n\nChoose an option" 24 65 0 \
+                        "1)" "Mainnet (default)" 3>&2 2>&1 1>&3
+                    )
+                    exitStatus=$?
+                    if [ "$exitStatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            if (whiptail --title "Hornet [IOTA] Network" --yesno --defaultno "Are you sure you want to change the network to mainnet (the old database will be deleted)?" 8 65); then
+                                currentIotaHornetNetwork=$iotaHornetNetwork
+                                iotaHornetNetwork=mainnet
+                                sudo sed -i 's/^iotaHornetNetwork=.*/iotaHornetNetwork='$iotaHornetNetwork'/' $swarmConfigs/iota-hornet.cfg
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetModule/iotaHornetNetwork
+                                fi
+                            fi
+                        ;;
+                        "2)")
+                            if (whiptail --title "Hornet [IOTA] Network" --yesno --defaultno "Are you sure you want to change the network to testnet (the old database will be deleted)?" 8 65); then
+                                currentIotaHornetNetwork=$iotaHornetNetwork
+                                iotaHornetNetwork=testnet
+                                sudo sed -i 's/^iotaHornetNetwork=.*/iotaHornetNetwork='$iotaHornetNetwork'/' $swarmConfigs/iota-hornet.cfg
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetModule/iotaHornetNetwork
+                                fi
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+            "14)")
+                while [ $exitCode -lt 1 ]; do
+                    source $swarmConfigs/iota-hornet.cfg
+                    # Hornet release channel
+                    CHOICE=$(
+                        whiptail --title "Hornet [IOTA] Release" --menu "\nSet \"stable\" for official release or \"beta\" for releases under development\n\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "Stable Release Channel (default)" \
+                        "2)" "Beta Release Channel" 3>&2 2>&1 1>&3
+                    )
+                    exitStatus=$?
+                    if [ "$exitStatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            if (whiptail --title "Hornet [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"stable\" (Hornet will be reinstalled)?" 8 65); then
+                                currentIotaHornetRelease=$iotaHornetRelease
+                                iotaHornetRelease=stable
+                                sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease='$iotaHornetRelease'/' $swarmConfigs/iota-hornet.cfg
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetModule/iotaHornetReleaseChannel
+                                    source $iotaHornetModule/iotaHornetParser
+                                fi
+                            fi
+                        ;;
+                        "2)")
+                            if (whiptail --title "Hornet [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"beta\" (Hornet will be reinstalled)?" 8 65); then
+                                currentIotaHornetRelease=$iotaHornetRelease
+                                iotaHornetRelease=beta
+                                sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease='$iotaHornetRelease'/' $swarmConfigs/iota-hornet.cfg
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetModule/iotaHornetReleaseChannel
+                                    source $iotaHornetModule/iotaHornetParser
+                                fi
+                            fi
+                        ;;
+                        "3)")
+                            if (whiptail --title "Hornet [IOTA] Release" --yesno --defaultno "Are you sure you want to change the release channel to \"alpha\" (Hornet will be reinstalled)?" 8 65); then
+                                currentIotaHornetRelease=$iotaHornetRelease
+                                iotaHornetRelease=alpha
+                                sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease='$iotaHornetRelease'/' $swarmConfigs/iota-hornet.cfg
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetModule/iotaHornetReleaseChannel
+                                    source $iotaHornetModule/iotaHornetParser
+                                fi
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            ;;
+        esac
+    done
+    sudo chown -R hornet:hornet $iotaHornetHome/*.json
+    exitCode=0
+fi
