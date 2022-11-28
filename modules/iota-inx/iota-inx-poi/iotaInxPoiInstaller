@@ -1,120 +1,120 @@
 #!/bin/bash
 
-echo "SHIMMER INX INSTALLER" > /tmp/shimmerInxPoiInstaller.log
+echo "SHIMMER INX INSTALLER" > /tmp/iotaInxPoiInstaller.log
 
 # General
 if ! id inx >/dev/null 2>&1; then
     useradd --no-create-home --system inx >/dev/null
-    echo "-> Added INX user" >> /tmp/shimmerInxPoiInstaller.log
+    echo "-> Added INX user" >> /tmp/iotaInxPoiInstaller.log
 fi
 
-if [ ! -d "$shimmerInxPoiHome" ]; then
-    sudo mkdir -p $shimmerInxPoiHome > /dev/null 2>&1
-    sudo chown -R inx:inx $shimmerInxPoiHome > /dev/null 2>&1
-    echo "-> Created INX-POI folder" >> /tmp/shimmerInxPoiInstaller.log
+if [ ! -d "$iotaInxPoiHome" ]; then
+    sudo mkdir -p $iotaInxPoiHome > /dev/null 2>&1
+    sudo chown -R inx:inx $iotaInxPoiHome > /dev/null 2>&1
+    echo "-> Created INX-POI folder" >> /tmp/iotaInxPoiInstaller.log
 fi
 
 # Install GO
 if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
     sudo snap install go --classic > /dev/null 2>&1
-    echo "-> Installed go via snap" >> /tmp/shimmerInxPoiInstaller.log
+    echo "-> Installed go via snap" >> /tmp/iotaInxPoiInstaller.log
 fi
 
 # Create Service
-if [ ! -f "/lib/systemd/system/shimmer-inx-poi.service" ]; then
-    sudo cp -rf $swarmTemplates/app-service/shimmer-inx-poi.service /lib/systemd/system/shimmer-inx-poi.service > /dev/null 2>&1
-    if [ ! -f "/etc/default/shimmer-inx-poi" ]; then
-        echo "OPTIONS=\"--config config.json\"" > /etc/default/shimmer-inx-poi
+if [ ! -f "/lib/systemd/system/iota-inx-poi.service" ]; then
+    sudo cp -rf $swarmTemplates/app-service/iota-inx-poi.service /lib/systemd/system/iota-inx-poi.service > /dev/null 2>&1
+    if [ ! -f "/etc/default/iota-inx-poi" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/iota-inx-poi
     fi
-    if [ ! -f "/etc/systemd/system/multi-user.target.wants/shimmer-inx-poi.service" ]; then
-        sudo systemctl enable shimmer-inx-poi > /dev/null 2>&1
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/iota-inx-poi.service" ]; then
+        sudo systemctl enable iota-inx-poi > /dev/null 2>&1
     fi
     sudo systemctl daemon-reload > /dev/null 2>&1
-    echo "-> Register service for INX-POI" >> /tmp/shimmerInxPoiInstaller.log
+    echo "-> Register service for INX-POI" >> /tmp/iotaInxPoiInstaller.log
 fi
 
 ##############################################################################################################################################
 
 # Create dir if not exist
-sudo mkdir -p /tmp/shimmer-inx-poi > /dev/null 2>&1
-echo "-> Created tmp folder for INX-POI" >> /tmp/shimmerInxPoiInstaller.log
+sudo mkdir -p /tmp/iota-inx-poi > /dev/null 2>&1
+echo "-> Created tmp folder for INX-POI" >> /tmp/iotaInxPoiInstaller.log
 
 source $swarmModule/swarmAuth
 if [ "$swarmAuth" = "200" ]; then
     # Download latest inx-poi
-    ( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-poi/v${latestShimmerInxPoiVersion}/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz )
-    echo "-> Downloading \"inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz\"" >> /tmp/shimmerInxPoiInstaller.log
-    if [ -f "/tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" ]; then
-        shimmerInxPoiDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-        echo "-> Calculated SHA512 hash of the downloaded tar.gz file: $shimmerInxPoiDownloadChecksum" >> /tmp/shimmerInxPoiInstaller.log
+    ( cd /tmp/iota-inx-poi/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-poi/v${latestIotaInxPoiVersion}/inx-poi-v${latestIotaInxPoiVersion}_linux_$osArchitecture.tar.gz )
+    echo "-> Downloading \"inx-poi-v${latestIotaInxPoiVersion}_linux_$osArchitecture.tar.gz\"" >> /tmp/iotaInxPoiInstaller.log
+    if [ -f "/tmp/iota-inx-poi/inx-poi-v${latestIotaInxPoiVersion}_linux_$osArchitecture.tar.gz" ]; then
+        iotaInxPoiDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-poi/inx-poi-v${latestIotaInxPoiVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        echo "-> Calculated SHA512 hash of the downloaded tar.gz file: $iotaInxPoiDownloadChecksum" >> /tmp/iotaInxPoiInstaller.log
 
         # Download checksum
-        ( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-poi/v${latestShimmerInxPoiVersion}/checksums_linux_$osArchitecture.txt )
-        echo "-> Downloading remote checksum of the tar.gz file" >> /tmp/shimmerInxPoiInstaller.log
-        if [ -f "/tmp/shimmer-inx-poi/checksums_linux_$osArchitecture.txt" ]; then
-            shimmerInxPoiChecksum=$(sudo grep "inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-poi/checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
-            echo $shimmerInxPoiChecksum > /tmp/shimmer-inx-poi.checksum
-            echo "-> Remote SHA512 hash of the downloaded tar.gz file: $shimmerInxPoiChecksum" >> /tmp/shimmerInxPoiInstaller.log
+        ( cd /tmp/iota-inx-poi/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-poi/v${latestIotaInxPoiVersion}/checksums_linux_$osArchitecture.txt )
+        echo "-> Downloading remote checksum of the tar.gz file" >> /tmp/iotaInxPoiInstaller.log
+        if [ -f "/tmp/iota-inx-poi/checksums_linux_$osArchitecture.txt" ]; then
+            iotaInxPoiChecksum=$(sudo grep "inx-poi-v${latestIotaInxPoiVersion}_linux_$osArchitecture.tar.gz" /tmp/iota-inx-poi/checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+            echo $iotaInxPoiChecksum > /tmp/iota-inx-poi.checksum
+            echo "-> Remote SHA512 hash of the downloaded tar.gz file: $iotaInxPoiChecksum" >> /tmp/iotaInxPoiInstaller.log
 
             # Unzip archive
-            if [ "$shimmerInxPoiDownloadChecksum" = "$shimmerInxPoiChecksum" ] && [ ! -z "$shimmerInxPoiDownloadChecksum" ] && [ ! -z "$shimmerInxPoiChecksum" ]; then
-                ( cd /tmp/shimmer-inx-poi ; sudo tar -xzf /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
-                echo "-> Unzip downloaded tar.gz file" >> /tmp/shimmerInxPoiInstaller.log
+            if [ "$iotaInxPoiDownloadChecksum" = "$iotaInxPoiChecksum" ] && [ ! -z "$iotaInxPoiDownloadChecksum" ] && [ ! -z "$iotaInxPoiChecksum" ]; then
+                ( cd /tmp/iota-inx-poi ; sudo tar -xzf /tmp/iota-inx-poi/inx-poi-v${latestIotaInxPoiVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+                echo "-> Unzip downloaded tar.gz file" >> /tmp/iotaInxPoiInstaller.log
                 # Copy binary
-                if [ -f "/tmp/shimmer-inx-poi/inx-poi" ]; then
-                    shimmerInxPoiStatus="$(systemctl show -p ActiveState --value shimmer-inx-poi)"
-                    if [ "$shimmerInxPoiStatus" = "active" ]; then
-                        sudo systemctl stop shimmer-inx-poi > /dev/null 2>&1
-                        echo "-> Stopped running service of INX-POI" >> /tmp/shimmerInxPoiInstaller.log
+                if [ -f "/tmp/iota-inx-poi/inx-poi" ]; then
+                    iotaInxPoiStatus="$(systemctl show -p ActiveState --value iota-inx-poi)"
+                    if [ "$iotaInxPoiStatus" = "active" ]; then
+                        sudo systemctl stop iota-inx-poi > /dev/null 2>&1
+                        echo "-> Stopped running service of INX-POI" >> /tmp/iotaInxPoiInstaller.log
                     fi
 
-                    sudo cp -rf /tmp/shimmer-inx-poi/inx-poi /usr/bin/shimmer-inx-poi > /dev/null 2>&1
-                    sudo chmod +x /usr/bin/shimmer-inx-poi > /dev/null 2>&1
-                    newShimmerInxPoiBinary=true
-                    echo "-> Copied new files to target folder and set permissions" >> /tmp/shimmerInxPoiInstaller.log
+                    sudo cp -rf /tmp/iota-inx-poi/inx-poi /usr/bin/iota-inx-poi > /dev/null 2>&1
+                    sudo chmod +x /usr/bin/iota-inx-poi > /dev/null 2>&1
+                    newIotaInxPoiBinary=true
+                    echo "-> Copied new files to target folder and set permissions" >> /tmp/iotaInxPoiInstaller.log
                 fi
             fi
         else
-            echo "-> ERROR - Failed downloading \"checksums_linux_$osArchitecture.txt\"" >> /tmp/shimmerInxPoiInstaller.log
+            echo "-> ERROR - Failed downloading \"checksums_linux_$osArchitecture.txt\"" >> /tmp/iotaInxPoiInstaller.log
         fi
     else
-        echo "-> ERROR - Failed downloading \"inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz\"" >> /tmp/shimmerInxPoiInstaller.log
+        echo "-> ERROR - Failed downloading \"inx-poi-v${latestIotaInxPoiVersion}_linux_$osArchitecture.tar.gz\"" >> /tmp/iotaInxPoiInstaller.log
     fi
 else
-    echo "-> ERROR - SWARM auth not valid" >> /tmp/shimmerInxPoiInstaller.log
+    echo "-> ERROR - SWARM auth not valid" >> /tmp/iotaInxPoiInstaller.log
 fi
 
 ##############################################################################################################################################
 
-if [ "$newShimmerInxPoiBinary" = "true" ]; then
-    if [ -f "/tmp/shimmer-inx-poi/config_defaults.json" ]; then
-        sudo cp -rf /tmp/shimmer-inx-poi/config_defaults.json /var/lib/shimmer-inx-poi/config.json > /dev/null 2>&1
-        sudo chmod 644 /var/lib/shimmer-inx-poi/*.json > /dev/null 2>&1
-        newShimmerInxPoiConfig=true
+if [ "$newIotaInxPoiBinary" = "true" ]; then
+    if [ -f "/tmp/iota-inx-poi/config_defaults.json" ]; then
+        sudo cp -rf /tmp/iota-inx-poi/config_defaults.json /var/lib/iota-inx-poi/config.json > /dev/null 2>&1
+        sudo chmod 644 /var/lib/iota-inx-poi/*.json > /dev/null 2>&1
+        newIotaInxPoiConfig=true
     else
         if [ -f "/tmp/inx-poi/config.json" ]; then
-            sudo cp -rf /tmp/shimmer-inx-poi/config.json /var/lib/shimmer-inx-poi/config.json > /dev/null 2>&1
-            sudo chmod 644 /var/lib/shimmer-inx-poi/*.json > /dev/null 2>&1
-            newShimmerInxPoiConfig=true
+            sudo cp -rf /tmp/iota-inx-poi/config.json /var/lib/iota-inx-poi/config.json > /dev/null 2>&1
+            sudo chmod 644 /var/lib/iota-inx-poi/*.json > /dev/null 2>&1
+            newIotaInxPoiConfig=true
         fi
     fi
-    echo "-> Copied new config file" >> /tmp/shimmerInxPoiInstaller.log
+    echo "-> Copied new config file" >> /tmp/iotaInxPoiInstaller.log
 fi
 
 ##############################################################################################################################################
 
-if [ "$newShimmerInxPoiConfig" = "true" ]; then
+if [ "$newIotaInxPoiConfig" = "true" ]; then
     # Run installer modules
-    sudo chown -R inx:inx $shimmerInxPoiHome > /dev/null 2>&1
-    sudo chmod 644 $shimmerInxPoiHome/*.json > /dev/null 2>&1
+    sudo chown -R inx:inx $iotaInxPoiHome > /dev/null 2>&1
+    sudo chmod 644 $iotaInxPoiHome/*.json > /dev/null 2>&1
 
-    restartShimmerInxPoi=true
-    shimmerInxPoiUpdated=true
-    echo "-> Installation of INX-POI finished" >> /tmp/shimmerInxPoiInstaller.log
+    restartIotaInxPoi=true
+    iotaInxPoiUpdated=true
+    echo "-> Installation of INX-POI finished" >> /tmp/iotaInxPoiInstaller.log
 fi
 
 # Remove temporary files
-sudo rm -rf /tmp/shimmer-inx-poi > /dev/null 2>&1
-echo "-> Remove tmp folder of INX-POI" >> /tmp/shimmerInxPoiInstaller.log
+sudo rm -rf /tmp/iota-inx-poi > /dev/null 2>&1
+echo "-> Remove tmp folder of INX-POI" >> /tmp/iotaInxPoiInstaller.log
 
-unset newShimmerInxPoiBinary newShimmerInxPoiConfig shimmerInxPoiDownloadChecksum
+unset newIotaInxPoiBinary newIotaInxPoiConfig iotaInxPoiDownloadChecksum

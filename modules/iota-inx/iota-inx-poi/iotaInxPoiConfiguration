@@ -1,42 +1,42 @@
 #!/bin/bash
 while [ $exitCode -lt 1 ]; do
     clear
-    source $swarmConfigs/shimmer-inx-poi.cfg
-    if [ "$shimmerInxPoiUpdateCheck" = "true" ]; then
-        menuShimmerInxPoiUpdateCheck="Disable"
+    source $swarmConfigs/iota-inx-poi.cfg
+    if [ "$iotaInxPoiUpdateCheck" = "true" ]; then
+        menuIotaInxPoiUpdateCheck="Disable"
     else
-        menuShimmerInxPoiUpdateCheck="Enable"
+        menuIotaInxPoiUpdateCheck="Enable"
     fi
-    source $shimmerInxPoiModule/shimmerInxPoiConfigs
+    source $iotaInxPoiModule/iotaInxPoiConfigs
     CHOICE=$(
-        whiptail --title "INX-POI [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
+        whiptail --title "INX-POI [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
         "" "" \
         "1)" "POI Address" \
         "2)" "INX Address" \
-        "3)" "$menuShimmerInxPoiUpdateCheck update check" 3>&2 2>&1 1>&3
+        "3)" "$menuIotaInxPoiUpdateCheck update check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
-        if [ "$restartShimmerInxPoi" = "true" ] && [ -f "/usr/bin/shimmer-inx-poi" ]; then
-            if (whiptail --title "INX-POI [SHIMMER] Menu" --yesno "Would you like to apply the changes and restart INX-POI?" 8 65); then
-                if [ ! -f "/tmp/shimmer-inx-poi.lock" ]; then
-                    sudo touch /tmp/shimmer-inx-poi.lock > /dev/null 2>&1
+        if [ "$restartIotaInxPoi" = "true" ] && [ -f "/usr/bin/iota-inx-poi" ]; then
+            if (whiptail --title "INX-POI [IOTA] Menu" --yesno "Would you like to apply the changes and restart INX-POI?" 8 65); then
+                if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
+                    sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
                 fi
                 {
                     echo 0
                     echo 33
-                    source $shimmerInxPoiModule/shimmerInxPoiParser
+                    source $iotaInxPoiModule/iotaInxPoiParser
                     echo 50
-                    sudo systemctl restart shimmer-inx-poi > /dev/null 2>&1
+                    sudo systemctl restart iota-inx-poi > /dev/null 2>&1
                     sleep 0.25
                     echo 100
                     sleep 0.25
                 } | whiptail --gauge "Please wait while the changes are applied and INX-POI is restarted..." 8 65 0
-                unset restartShimmerInxPoi
-                if [ -f "/tmp/shimmer-inx-poi.lock" ]; then
-                    sudo rm -rf /tmp/shimmer-inx-poi.lock > /dev/null 2>&1
+                unset restartIotaInxPoi
+                if [ -f "/tmp/iota-inx-poi.lock" ]; then
+                    sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
                 fi
             fi
         fi
@@ -44,61 +44,61 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
-            source $swarmConfigs/shimmer-inx-poi.cfg
-            shimmerInxPoiAddress=$(whiptail --inputbox "\nSet the address of the POI interface" 10 65 $shimmerInxPoiAddress --title "INX-POI [SHIMMER] Address" 3>&1 1>&2 2>&3)
+            source $swarmConfigs/iota-inx-poi.cfg
+            iotaInxPoiAddress=$(whiptail --inputbox "\nSet the address of the POI interface" 10 65 $iotaInxPoiAddress --title "INX-POI [IOTA] Address" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
-                if [ ! -z "$shimmerInxPoiAddress" ] && [[ $shimmerInxPoiAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
-                    source $shimmerInxPoiConfigParsers/shimmerInxPoiAddress
-                    if [ "$newShimmerInxPoiAddress" = "true" ]; then
-                        sudo sed -i 's/^shimmerInxPoiAddress=.*/shimmerInxPoiAddress="'$shimmerInxPoiAddress'"/' $swarmConfigs/shimmer-inx-poi.cfg
-                        whiptail --title "INX-POI [SHIMMER] Address" --msgbox "New POI address \"$shimmerInxPoiAddress\" applied!" 8 65
-                        unset newShimmerInxPoiAddress
+                if [ ! -z "$iotaInxPoiAddress" ] && [[ $iotaInxPoiAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                    source $iotaInxPoiConfigParsers/iotaInxPoiAddress
+                    if [ "$newIotaInxPoiAddress" = "true" ]; then
+                        sudo sed -i 's/^iotaInxPoiAddress=.*/iotaInxPoiAddress="'$iotaInxPoiAddress'"/' $swarmConfigs/iota-inx-poi.cfg
+                        whiptail --title "INX-POI [IOTA] Address" --msgbox "New POI address \"$iotaInxPoiAddress\" applied!" 8 65
+                        unset newIotaInxPoiAddress
                     else
-                        whiptail --title "INX-POI [SHIMMER] Address" --msgbox "No POI address change detected." 8 65
+                        whiptail --title "INX-POI [IOTA] Address" --msgbox "No POI address change detected." 8 65
                     fi
                 else
-                    whiptail --title "INX-POI [SHIMMER] Address" --msgbox "No valid POI address, please try again." 8 65
+                    whiptail --title "INX-POI [IOTA] Address" --msgbox "No valid POI address, please try again." 8 65
                 fi
             fi
         ;;
         "2)")
-            source $swarmConfigs/shimmer-inx-poi.cfg
-            shimmerInxPoiInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $shimmerInxPoiInxAddress --title "INX-POI [SHIMMER] INX Address" 3>&1 1>&2 2>&3)
+            source $swarmConfigs/iota-inx-poi.cfg
+            iotaInxPoiInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $iotaInxPoiInxAddress --title "INX-POI [IOTA] INX Address" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
-                if [ ! -z "$shimmerInxPoiInxAddress" ] && [[ $shimmerInxPoiInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
-                    source $shimmerInxPoiConfigParsers/shimmerInxPoiInxAddress
-                    if [ "$newShimmerInxPoiInxAddress" = "true" ]; then
-                        sudo sed -i 's/^shimmerInxPoiInxAddress=.*/shimmerInxPoiInxAddress="'$shimmerInxPoiInxAddress'"/' $swarmConfigs/shimmer-inx-poi.cfg
-                        whiptail --title "INX-POI [SHIMMER] INX Address" --msgbox "New INX address \"$shimmerInxPoiInxAddress\" applied!" 8 65
-                        unset newShimmerInxPoiInxAddress
+                if [ ! -z "$iotaInxPoiInxAddress" ] && [[ $iotaInxPoiInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                    source $iotaInxPoiConfigParsers/iotaInxPoiInxAddress
+                    if [ "$newIotaInxPoiInxAddress" = "true" ]; then
+                        sudo sed -i 's/^iotaInxPoiInxAddress=.*/iotaInxPoiInxAddress="'$iotaInxPoiInxAddress'"/' $swarmConfigs/iota-inx-poi.cfg
+                        whiptail --title "INX-POI [IOTA] INX Address" --msgbox "New INX address \"$iotaInxPoiInxAddress\" applied!" 8 65
+                        unset newIotaInxPoiInxAddress
                     else
-                        whiptail --title "INX-POI [SHIMMER] INX Address" --msgbox "No INX address change detected." 8 65
+                        whiptail --title "INX-POI [IOTA] INX Address" --msgbox "No INX address change detected." 8 65
                     fi
                 else
-                    whiptail --title "INX-POI [SHIMMER] INX Address" --msgbox "No valid INX address, please try again." 8 65
+                    whiptail --title "INX-POI [IOTA] INX Address" --msgbox "No valid INX address, please try again." 8 65
                 fi
             fi
         ;;
         "3)")
-            source $swarmConfigs/shimmer-inx-poi.cfg
-            if [ "$shimmerInxPoiUpdateCheck" = "true" ]; then
-                shimmerInxPoiUpdateCheckStatus="enabled"
+            source $swarmConfigs/iota-inx-poi.cfg
+            if [ "$iotaInxPoiUpdateCheck" = "true" ]; then
+                iotaInxPoiUpdateCheckStatus="enabled"
             else
-                shimmerInxPoiUpdateCheckStatus="disabled"
+                iotaInxPoiUpdateCheckStatus="disabled"
             fi
-            if (whiptail --title "INX-POI [SHIMMER] Update Check" --yesno "Would you like to \"$shimmerInxPoiUpdateCheckStatus\" update check?" 8 65); then
-                if [ "$shimmerInxPoiUpdateCheck" = "true" ]; then
-                    shimmerInxPoiUpdateCheck=false
+            if (whiptail --title "INX-POI [IOTA] Update Check" --yesno "Would you like to \"$iotaInxPoiUpdateCheckStatus\" update check?" 8 65); then
+                if [ "$iotaInxPoiUpdateCheck" = "true" ]; then
+                    iotaInxPoiUpdateCheck=false
                 else
-                    shimmerInxPoiUpdateCheck=true
+                    iotaInxPoiUpdateCheck=true
                 fi
-                source $shimmerInxPoiConfigParsers/shimmerInxPoiUpdateCheck
-                sudo sed -i 's~^shimmerInxPoiUpdateCheck=.*~shimmerInxPoiUpdateCheck='$shimmerInxPoiUpdateCheck'~g' $swarmConfigs/shimmer-inx-poi.cfg
+                source $iotaInxPoiConfigParsers/iotaInxPoiUpdateCheck
+                sudo sed -i 's~^iotaInxPoiUpdateCheck=.*~iotaInxPoiUpdateCheck='$iotaInxPoiUpdateCheck'~g' $swarmConfigs/iota-inx-poi.cfg
             fi
         ;;
     esac
 done
-sudo chown -R inx:inx $shimmerInxPoiHome/*.json
+sudo chown -R inx:inx $iotaInxPoiHome/*.json
 exitCode=0

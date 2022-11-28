@@ -1,41 +1,41 @@
 #!/bin/bash
 while [ $exitCode -lt 1 ]; do
     clear
-    source $swarmConfigs/shimmer-inx-indexer.cfg
-    if [ "$shimmerInxIndexerUpdateCheck" = "true" ]; then
-        menuShimmerInxIndexerUpdateCheck="Disable"
+    source $swarmConfigs/iota-inx-indexer.cfg
+    if [ "$iotaInxIndexerUpdateCheck" = "true" ]; then
+        menuIotaInxIndexerUpdateCheck="Disable"
     else
-        menuShimmerInxIndexerUpdateCheck="Enable"
+        menuIotaInxIndexerUpdateCheck="Enable"
     fi
-    source $shimmerInxIndexerModule/shimmerInxIndexerConfigs
+    source $iotaInxIndexerModule/iotaInxIndexerConfigs
     CHOICE=$(
-        whiptail --title "INX-Indexer [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
+        whiptail --title "INX-Indexer [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
         "" "" \
         "1)" "INX Address" \
-        "2)" "$menuShimmerInxIndexerUpdateCheck update check" 3>&2 2>&1 1>&3
+        "2)" "$menuIotaInxIndexerUpdateCheck update check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
-        if [ "$restartShimmerInxIndexer" = "true" ] && [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-            if (whiptail --title "INX-Indexer [SHIMMER] Menu" --yesno "Would you like to apply the changes and restart INX-Indexer?" 8 65); then
-                if [ ! -f "/tmp/shimmer-inx-indexer.lock" ]; then
-                    sudo touch /tmp/shimmer-inx-indexer.lock > /dev/null 2>&1
+        if [ "$restartIotaInxIndexer" = "true" ] && [ -f "/usr/bin/iota-inx-indexer" ]; then
+            if (whiptail --title "INX-Indexer [IOTA] Menu" --yesno "Would you like to apply the changes and restart INX-Indexer?" 8 65); then
+                if [ ! -f "/tmp/iota-inx-indexer.lock" ]; then
+                    sudo touch /tmp/iota-inx-indexer.lock > /dev/null 2>&1
                 fi
                 {
                     echo 0
                     echo 33
-                    source $shimmerInxIndexerModule/shimmerInxIndexerParser
+                    source $iotaInxIndexerModule/iotaInxIndexerParser
                     echo 50
-                    sudo systemctl restart shimmer-inx-indexer > /dev/null 2>&1
+                    sudo systemctl restart iota-inx-indexer > /dev/null 2>&1
                     sleep 0.25
                     echo 100
                     sleep 0.25
                 } | whiptail --gauge "Please wait while the changes are applied and INX-Indexer is restarted..." 8 65 0
-                unset restartShimmerInxIndexer
-                if [ -f "/tmp/shimmer-inx-indexer.lock" ]; then
-                    sudo rm -rf /tmp/shimmer-inx-indexer.lock > /dev/null 2>&1
+                unset restartIotaInxIndexer
+                if [ -f "/tmp/iota-inx-indexer.lock" ]; then
+                    sudo rm -rf /tmp/iota-inx-indexer.lock > /dev/null 2>&1
                 fi
             fi
         fi
@@ -43,42 +43,42 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
-            source $swarmConfigs/shimmer-inx-indexer.cfg
-            shimmerInxIndexerInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $shimmerInxIndexerInxAddress --title "INX-Indexer [SHIMMER] INX Address" 3>&1 1>&2 2>&3)
+            source $swarmConfigs/iota-inx-indexer.cfg
+            iotaInxIndexerInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $iotaInxIndexerInxAddress --title "INX-Indexer [IOTA] INX Address" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
-                if [ ! -z "$shimmerInxIndexerInxAddress" ] && [[ $shimmerInxIndexerInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
-                    source $shimmerInxIndexerConfigParsers/shimmerInxIndexerInxAddress
-                    if [ "$newShimmerInxIndexerInxAddress" = "true" ]; then
-                        sudo sed -i 's/^shimmerInxIndexerInxAddress=.*/shimmerInxIndexerInxAddress="'$shimmerInxIndexerInxAddress'"/' $swarmConfigs/shimmer-inx-indexer.cfg
-                        whiptail --title "INX-Indexer [SHIMMER] INX Address" --msgbox "New INX address \"$shimmerInxIndexerInxAddress\" applied!" 8 65
-                        unset newShimmerInxIndexerInxAddress
+                if [ ! -z "$iotaInxIndexerInxAddress" ] && [[ $iotaInxIndexerInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                    source $iotaInxIndexerConfigParsers/iotaInxIndexerInxAddress
+                    if [ "$newIotaInxIndexerInxAddress" = "true" ]; then
+                        sudo sed -i 's/^iotaInxIndexerInxAddress=.*/iotaInxIndexerInxAddress="'$iotaInxIndexerInxAddress'"/' $swarmConfigs/iota-inx-indexer.cfg
+                        whiptail --title "INX-Indexer [IOTA] INX Address" --msgbox "New INX address \"$iotaInxIndexerInxAddress\" applied!" 8 65
+                        unset newIotaInxIndexerInxAddress
                     else
-                        whiptail --title "INX-Indexer [SHIMMER] INX Address" --msgbox "No INX address change detected." 8 65
+                        whiptail --title "INX-Indexer [IOTA] INX Address" --msgbox "No INX address change detected." 8 65
                     fi
                 else
-                    whiptail --title "INX-Indexer [SHIMMER] INX Address" --msgbox "No valid INX address, please try again." 8 65
+                    whiptail --title "INX-Indexer [IOTA] INX Address" --msgbox "No valid INX address, please try again." 8 65
                 fi
             fi
         ;;
         "2)")
-            source $swarmConfigs/shimmer-inx-indexer.cfg
-            if [ "$shimmerInxIndexerUpdateCheck" = "true" ]; then
-                shimmerInxIndexerUpdateCheckStatus="enabled"
+            source $swarmConfigs/iota-inx-indexer.cfg
+            if [ "$iotaInxIndexerUpdateCheck" = "true" ]; then
+                iotaInxIndexerUpdateCheckStatus="enabled"
             else
-                shimmerInxIndexerUpdateCheckStatus="disabled"
+                iotaInxIndexerUpdateCheckStatus="disabled"
             fi
-            if (whiptail --title "INX-Indexer [SHIMMER] Update Check" --yesno "Would you like to \"$shimmerInxIndexerUpdateCheckStatus\" update check?" 8 65); then
-                if [ "$shimmerInxIndexerUpdateCheck" = "true" ]; then
-                    shimmerInxIndexerUpdateCheck=false
+            if (whiptail --title "INX-Indexer [IOTA] Update Check" --yesno "Would you like to \"$iotaInxIndexerUpdateCheckStatus\" update check?" 8 65); then
+                if [ "$iotaInxIndexerUpdateCheck" = "true" ]; then
+                    iotaInxIndexerUpdateCheck=false
                 else
-                    shimmerInxIndexerUpdateCheck=true
+                    iotaInxIndexerUpdateCheck=true
                 fi
-                source $shimmerInxIndexerConfigParsers/shimmerInxIndexerUpdateCheck
-                sudo sed -i 's~^shimmerInxIndexerUpdateCheck=.*~shimmerInxIndexerUpdateCheck='$shimmerInxIndexerUpdateCheck'~g' $swarmConfigs/shimmer-inx-indexer.cfg
+                source $iotaInxIndexerConfigParsers/iotaInxIndexerUpdateCheck
+                sudo sed -i 's~^iotaInxIndexerUpdateCheck=.*~iotaInxIndexerUpdateCheck='$iotaInxIndexerUpdateCheck'~g' $swarmConfigs/iota-inx-indexer.cfg
             fi
         ;;
     esac
 done
-sudo chown -R inx:inx $shimmerInxIndexerHome/*.json
+sudo chown -R inx:inx $iotaInxIndexerHome/*.json
 exitCode=0

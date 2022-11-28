@@ -1,41 +1,41 @@
 #!/bin/bash
 while [ $exitCode -lt 1 ]; do
     clear
-    source $swarmConfigs/shimmer-inx-participation.cfg
-    if [ "$shimmerInxParticipationUpdateCheck" = "true" ]; then
-        menuShimmerInxParticipationUpdateCheck="Disable"
+    source $swarmConfigs/iota-inx-participation.cfg
+    if [ "$iotaInxParticipationUpdateCheck" = "true" ]; then
+        menuIotaInxParticipationUpdateCheck="Disable"
     else
-        menuShimmerInxParticipationUpdateCheck="Enable"
+        menuIotaInxParticipationUpdateCheck="Enable"
     fi
-    source $shimmerInxParticipationModule/shimmerInxParticipationConfigs
+    source $iotaInxParticipationModule/iotaInxParticipationConfigs
     CHOICE=$(
-        whiptail --title "INX-Participation [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
+        whiptail --title "INX-Participation [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
         "" "" \
         "1)" "INX Address" \
-        "2)" "$menuShimmerInxParticipationUpdateCheck update check" 3>&2 2>&1 1>&3
+        "2)" "$menuIotaInxParticipationUpdateCheck update check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
-        if [ "$restartShimmerInxParticipation" = "true" ] && [ -f "/usr/bin/shimmer-inx-participation" ]; then
-            if (whiptail --title "INX-Participation [SHIMMER] Menu" --yesno "Would you like to apply the changes and restart INX-Participation?" 8 65); then
-                if [ ! -f "/tmp/shimmer-inx-participation.lock" ]; then
-                    sudo touch /tmp/shimmer-inx-participation.lock > /dev/null 2>&1
+        if [ "$restartIotaInxParticipation" = "true" ] && [ -f "/usr/bin/iota-inx-participation" ]; then
+            if (whiptail --title "INX-Participation [IOTA] Menu" --yesno "Would you like to apply the changes and restart INX-Participation?" 8 65); then
+                if [ ! -f "/tmp/iota-inx-participation.lock" ]; then
+                    sudo touch /tmp/iota-inx-participation.lock > /dev/null 2>&1
                 fi
                 {
                     echo 0
                     echo 33
-                    source $shimmerInxParticipationModule/shimmerInxParticipationParser
+                    source $iotaInxParticipationModule/iotaInxParticipationParser
                     echo 50
-                    sudo systemctl restart shimmer-inx-participation > /dev/null 2>&1
+                    sudo systemctl restart iota-inx-participation > /dev/null 2>&1
                     sleep 0.25
                     echo 100
                     sleep 0.25
                 } | whiptail --gauge "Please wait while the changes are applied and INX-Participation is restarted..." 8 65 0
-                unset restartShimmerInxParticipation
-                if [ -f "/tmp/shimmer-inx-participation.lock" ]; then
-                    sudo rm -rf /tmp/shimmer-inx-participation.lock > /dev/null 2>&1
+                unset restartIotaInxParticipation
+                if [ -f "/tmp/iota-inx-participation.lock" ]; then
+                    sudo rm -rf /tmp/iota-inx-participation.lock > /dev/null 2>&1
                 fi
             fi
         fi
@@ -43,42 +43,42 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
-            source $swarmConfigs/shimmer-inx-participation.cfg
-            shimmerInxParticipationInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $shimmerInxParticipationInxAddress --title "INX-Participation [SHIMMER] INX Address" 3>&1 1>&2 2>&3)
+            source $swarmConfigs/iota-inx-participation.cfg
+            iotaInxParticipationInxAddress=$(whiptail --inputbox "\nSet the address of the INX interface" 10 65 $iotaInxParticipationInxAddress --title "INX-Participation [IOTA] INX Address" 3>&1 1>&2 2>&3)
             exitStatus=$?
             if [ $exitStatus != 1 ]; then
-                if [ ! -z "$shimmerInxParticipationInxAddress" ] && [[ $shimmerInxParticipationInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
-                    source $shimmerInxParticipationConfigParsers/shimmerInxParticipationInxAddress
-                    if [ "$newShimmerInxParticipationInxAddress" = "true" ]; then
-                        sudo sed -i 's/^shimmerInxParticipationInxAddress=.*/shimmerInxParticipationInxAddress="'$shimmerInxParticipationInxAddress'"/' $swarmConfigs/shimmer-inx-participation.cfg
-                        whiptail --title "INX-Participation [SHIMMER] INX Address" --msgbox "New INX address \"$shimmerInxParticipationInxAddress\" applied." 8 65
-                        unset newShimmerInxParticipationInxAddress
+                if [ ! -z "$iotaInxParticipationInxAddress" ] && [[ $iotaInxParticipationInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                    source $iotaInxParticipationConfigParsers/iotaInxParticipationInxAddress
+                    if [ "$newIotaInxParticipationInxAddress" = "true" ]; then
+                        sudo sed -i 's/^iotaInxParticipationInxAddress=.*/iotaInxParticipationInxAddress="'$iotaInxParticipationInxAddress'"/' $swarmConfigs/iota-inx-participation.cfg
+                        whiptail --title "INX-Participation [IOTA] INX Address" --msgbox "New INX address \"$iotaInxParticipationInxAddress\" applied." 8 65
+                        unset newIotaInxParticipationInxAddress
                     else
-                        whiptail --title "INX-Participation [SHIMMER] INX Address" --msgbox "No INX address change detected." 8 65
+                        whiptail --title "INX-Participation [IOTA] INX Address" --msgbox "No INX address change detected." 8 65
                     fi
                 else
-                    whiptail --title "INX-Participation [SHIMMER] INX Address" --msgbox "No valid INX address, please try again." 8 65
+                    whiptail --title "INX-Participation [IOTA] INX Address" --msgbox "No valid INX address, please try again." 8 65
                 fi
             fi
         ;;
         "2)")
-            source $swarmConfigs/shimmer-inx-participation.cfg
-            if [ "$shimmerInxParticipationUpdateCheck" = "true" ]; then
-                shimmerInxParticipationUpdateCheckStatus="enabled"
+            source $swarmConfigs/iota-inx-participation.cfg
+            if [ "$iotaInxParticipationUpdateCheck" = "true" ]; then
+                iotaInxParticipationUpdateCheckStatus="enabled"
             else
-                shimmerInxParticipationUpdateCheckStatus="disabled"
+                iotaInxParticipationUpdateCheckStatus="disabled"
             fi
-            if (whiptail --title "INX-Participation [SHIMMER] Update Check" --yesno "Would you like to \"$shimmerInxParticipationUpdateCheckStatus\" update check?" 8 65); then
-                if [ "$shimmerInxParticipationUpdateCheck" = "true" ]; then
-                    shimmerInxParticipationUpdateCheck=false
+            if (whiptail --title "INX-Participation [IOTA] Update Check" --yesno "Would you like to \"$iotaInxParticipationUpdateCheckStatus\" update check?" 8 65); then
+                if [ "$iotaInxParticipationUpdateCheck" = "true" ]; then
+                    iotaInxParticipationUpdateCheck=false
                 else
-                    shimmerInxParticipationUpdateCheck=true
+                    iotaInxParticipationUpdateCheck=true
                 fi
-                source $shimmerInxParticipationConfigParsers/shimmerInxParticipationUpdateCheck
-                sudo sed -i 's~^shimmerInxParticipationUpdateCheck=.*~shimmerInxParticipationUpdateCheck='$shimmerInxParticipationUpdateCheck'~g' $swarmConfigs/shimmer-inx-participation.cfg
+                source $iotaInxParticipationConfigParsers/iotaInxParticipationUpdateCheck
+                sudo sed -i 's~^iotaInxParticipationUpdateCheck=.*~iotaInxParticipationUpdateCheck='$iotaInxParticipationUpdateCheck'~g' $swarmConfigs/iota-inx-participation.cfg
             fi
         ;;
     esac
 done
-sudo chown -R inx:inx $shimmerInxParticipationHome/*.json
+sudo chown -R inx:inx $iotaInxParticipationHome/*.json
 exitCode=0
