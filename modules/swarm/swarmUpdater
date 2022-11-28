@@ -58,6 +58,29 @@ if [ "$swarmManualUpdate" = "true" ]; then
                                 source ${!swarmAppModule}/${swarmAppPrefix}Parser
                                 swarmAppRestart=restart${swarmAppPrefix^}
                                 if [ "${!swarmAppRestart}" = "true" ]; then
+                                    if [ "$swarmApp" = "iota-hornet" ]; then
+                                        for iotaInxPlugin in ${iotaInxPlugins[@]}
+                                        do
+                                            if [ ! -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                                                sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                            fi
+                                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
+                                            fi
+                                        done
+                                        unset iotaInxPlugin
+                                        sudo systemctl restart $swarmApp > /dev/null 2>&1
+                                        for iotaInxPlugin in ${iotaInxPlugins[@]}
+                                        do
+                                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                                            fi
+                                            if [ -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                                                sudo rm -rf /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                            fi
+                                        done
+                                        unset iotaInxPlugin restartIotaHornet
+                                    fi
                                     if [ "$swarmApp" = "shimmer-hornet" ]; then
                                         for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                                         do
@@ -80,7 +103,8 @@ if [ "$swarmManualUpdate" = "true" ]; then
                                             fi
                                         done
                                         unset shimmerInxPlugin restartShimmerHornet
-                                    else
+                                    fi
+                                    if [[ $swarmApp != *hornet* ]]; then
                                         sudo systemctl restart $swarmApp > /dev/null 2>&1
                                     fi
                                 fi
