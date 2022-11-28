@@ -57,6 +57,17 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
                 sudo ufw allow $proxyIotaHornetPort/tcp > /dev/null 2>&1
             fi
         fi
+        if [ -f "/usr/bin/iota-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyIotaInxDashboardDomain" ] && [ ! -z "$proxyIotaInxDashboardPort" ] && [ "$proxyIotaInxDashboardSingle" = "true" ]; then
+            if [ -z "$defaultDomain" ]; then
+                defaultDomain="$proxyIotaInxDashboardDomain"
+            fi
+            sudo cp -rf $swarmTemplates/proxy/nginx_iota-inx-dashboard.template /etc/nginx/sites-enabled/iota-inx-dashboard
+            sudo sed -i 's/domain.tld/'$proxyIotaInxDashboardDomain'/g' /etc/nginx/sites-enabled/iota-inx-dashboard
+            sudo sed -i 's/443/'$proxyIotaInxDashboardPort'/g' /etc/nginx/sites-enabled/iota-inx-dashboard
+            if [ "$ufw" = "true" ]; then
+                sudo ufw allow $proxyIotaInxDashboardPort/tcp > /dev/null 2>&1
+            fi
+        fi
         if [ -f "/usr/bin/shimmer-hornet" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerHornetDomain" ] && [ ! -z "$proxyShimmerHornetPort" ]; then
             if [ -z "$defaultDomain" ]; then
                 defaultDomain="$proxyShimmerHornetDomain"
@@ -148,6 +159,8 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
                 sudo touch /etc/nginx/swarm/swarm.conf > /dev/null 2>&1
             fi
         fi
+        source $proxyModule/proxyIotaInxDashboard
+        source $proxyModule/proxyIotaInxMqtt
         source $proxyModule/proxyShimmerInxDashboard
         source $proxyModule/proxyShimmerInxMqtt
         source $proxyModule/proxySwarmEndpoint

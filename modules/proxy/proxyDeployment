@@ -61,6 +61,37 @@ if [ -f "/usr/bin/iota-hornet" ] && [ ! -z "$proxyIotaHornetUrl" ]; then
     fi
 fi
 
+if [ -f "/usr/bin/iota-inx-dashboard" ] && [ ! -z "$proxyIotaInxDashboardUrl" ] && [ "$proxyIotaInxDashboardSingle" = "true" ]; then
+    if [ ! -d "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain" ]; then
+        if [ -z "$emailAddress" ]; then
+            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+        fi
+        if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
+            {
+                echo 0
+                echo 10
+                if [ ! -f "/etc/nginx/nginx.conf" ]; then
+                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
+                fi
+                echo 25
+                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
+                if [ "$proxyStatus" != "active" ]; then
+                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
+                    sudo systemctl restart nginx
+                fi
+                echo 50
+                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyIotaInxDashboardDomain -m $emailAddress > /dev/null 2>&1
+                unset emailaddress
+                echo 100
+            } | whiptail --gauge "Requesting SSL certificate for INX-Dashboard (IOTA)..." 6 65 0  
+            if [ ! -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ]; then
+                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for INX-Dashboard (IOTA) not found!" 8 65
+            fi
+        fi
+    fi
+fi
+
 if [ -f "/usr/bin/shimmer-hornet" ] && [ ! -z "$proxyShimmerHornetUrl" ]; then
     if [ ! -d "/etc/letsencrypt/live/$proxyShimmerHornetDomain" ]; then
         if [ -z "$emailAddress" ]; then
@@ -317,6 +348,17 @@ if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "
         fi
     fi
     echo 45
+    if [ -f "/usr/bin/iota-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyIotaInxDashboardDomain" ] && [ ! -z "$proxyIotaInxDashboardPort" ] && [ "$proxyIotaInxDashboardSingle" = "true" ]; then
+        if [ -z "$defaultDomain" ]; then
+            defaultDomain="$proxyIotaInxDashboardDomain"
+        fi
+        sudo cp -rf $swarmTemplates/proxy/nginx_iota-inx-dashboard.template /etc/nginx/sites-enabled/iota-inx-dashboard
+        sudo sed -i 's/domain.tld/'$proxyIotaInxDashboardDomain'/g' /etc/nginx/sites-enabled/iota-inx-dashboard
+        sudo sed -i 's/443/'$proxyIotaInxDashboardPort'/g' /etc/nginx/sites-enabled/iota-inx-dashboard
+        if [ "$ufw" = "true" ]; then
+            sudo ufw allow $proxyIotaInxDashboardPort/tcp > /dev/null 2>&1
+        fi
+    fi
     if [ -f "/usr/bin/shimmer-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerInxDashboardDomain" ] && [ ! -z "$proxyShimmerInxDashboardPort" ] && [ "$proxyShimmerInxDashboardSingle" = "true" ]; then
         if [ -z "$defaultDomain" ]; then
             defaultDomain="$proxyShimmerInxDashboardDomain"
@@ -372,6 +414,8 @@ if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "
             sudo touch /etc/nginx/swarm/swarm.conf > /dev/null 2>&1
         fi
     fi
+    source $proxyModule/proxyIotaInxDashboard
+    source $proxyModule/proxyIotaInxMqtt
     source $proxyModule/proxyShimmerInxDashboard
     source $proxyModule/proxyShimmerInxMqtt
     source $proxyModule/proxySwarmEndpoint
