@@ -1,17 +1,37 @@
 #!/bin/bash
 
-if [ ! -s "$iotaHornetHome/$iotaHornetConfig.json" ]; then
-    if [ "$iotaHornetRelease" = "stable" ]; then
+if [ "$(printf '%s\n' "$iotaHornetStardustMinVersion" "$iotaHornetVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    if [ -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
+        checkConfigFile=$(cat $iotaHornetHome/$iotaHornetConfig.json)
+    fi
+
+    if [ -z "$checkConfigFile" ] || [ ! -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
+    ######
         if [ -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
             sudo chown hornet:hornet $iotaHornetHome/$iotaHornetConfig.json > /dev/null 2>&1
         fi
-        sudo -u hornet wget -q -O $iotaHornetHome/$iotaHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/mainnet/$iotaHornetConfig.json
+        sudo -u hornet wget -q -O $iotaHornetHome/$iotaHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/production/config_defaults.json
     fi
-fi
-if [ -f "$iotaHornetHome/event.json" ]; then
-    sudo -u hornet touch $iotaHornetHome/event.json
-fi
 
-if [ -f "/tmp/iotaHornetParsing" ]; then
-    sudo rm -rf /tmp/iotaHornetParsing > /dev/null 2>&1
+    if [ -f "/tmp/iotaHornetParsing" ]; then
+        sudo rm -rf /tmp/iotaHornetParsing > /dev/null 2>&1
+    fi
+
+    unset checkConfigFile
+else
+    if [ ! -s "$iotaHornetHome/$iotaHornetConfig.json" ]; then
+        if [ "$iotaHornetRelease" = "stable" ]; then
+            if [ -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
+                sudo chown hornet:hornet $iotaHornetHome/$iotaHornetConfig.json > /dev/null 2>&1
+            fi
+            sudo -u hornet wget -q -O $iotaHornetHome/$iotaHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/mainnet/$iotaHornetConfig.json
+        fi
+    fi
+    if [ -f "$iotaHornetHome/event.json" ]; then
+        sudo -u hornet touch $iotaHornetHome/event.json
+    fi
+
+    if [ -f "/tmp/iotaHornetParsing" ]; then
+        sudo rm -rf /tmp/iotaHornetParsing > /dev/null 2>&1
+    fi
 fi

@@ -1,46 +1,101 @@
 #!/bin/bash
 
-source $swarmConfigs/iota-hornet.cfg
-source $swarmConfigs/proxy.cfg
-source $proxyModule/proxyParser
+if [ "$(printf '%s\n' "$iotaHornetStardustMinVersion" "$iotaHornetVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    source $swarmConfigs/iota-hornet.cfg
+    source $swarmConfigs/proxy.cfg
+    source $proxyModule/proxyParser
 
-if [ "$killall" = "true" ]; then
-    sudo killall -s SIGKILL iota-hornet > /dev/null 2>&1
-else
-    sudo systemctl stop iota-hornet > /dev/null 2>&1
-fi
+    if [ "$killall" = "true" ]; then
+        sudo killall -s SIGKILL iota-hornet > /dev/null 2>&1
+    else
+        sudo systemctl stop iota-hornet > /dev/null 2>&1
+    fi
 
-sudo systemctl disable iota-hornet > /dev/null 2>&1
-
-sudo rm -rf /usr/bin/iota-hornet /var/lib/iota-hornet /lib/systemd/system/iota-hornet.service /etc/default/iota-hornet > /dev/null 2>&1
-
-sudo systemctl daemon-reload > /dev/null 2>&1
-
-if [ "$ufw" = "true" ]; then
-    sudo ufw delete allow $iotaHornetGossipPort/tcp > /dev/null 2>&1
-    sudo ufw delete allow $iotaHornetAutopeeringPort/udp > /dev/null 2>&1
-fi
-
-getInxInstallations=$(ls /usr/bin/ | grep -E 'dashboard|indexer|mqtt|participation')
-if [ -z "$getInxInstallations" ] && [ ! -f "/usr/bin/hornet-shimmer" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ]; then
-    sudo snap remove go > /dev/null 2>&1
-fi
-
-if [ -f "/etc/nginx/sites-enabled/iota-hornet" ]; then
-    if [ "$ufw" = "true" ]; then
-        if [ "$proxyIotaHornetPort" != "$proxyShimmerHornetPort" ] && [ "$proxyIotaHornetPort" != "$proxyIotaBeePort" ] && [ "$proxyIotaHornetPort" != "$proxyGoshimmerPort" ] && [ "$proxyIotaHornetPort" != "$proxyWaspDashboardPort" ] && [ "$proxyIotaHornetPort" != "$proxyWaspApiPort" ]; then
-            sudo ufw delete allow $proxyIotaHornetPort/tcp > /dev/null 2>&1
+    if [ "$iotaHornetRemoval" = "true" ]; then
+        if [ ! -f "/usr/bin/iota-hornet" ] || [ ! -f "/usr/bin/iota-hornet" ]; then
+            if id hornet >/dev/null 2>&1; then
+                sudo deluser hornet >/dev/null
+            fi
         fi
     fi
-    sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl=""/' $swarmConfigs/proxy.cfg
-    sudo rm -rf /etc/nginx/sites-enabled/iota-hornet > /dev/null 2>&1
-    sudo systemctl reload nginx
-fi
 
-if [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/shimmer-hornet" ]; then
-    if id hornet >/dev/null 2>&1; then
-        sudo deluser hornet >/dev/null
+    sudo systemctl disable iota-hornet > /dev/null 2>&1
+
+    if [ "$iotaHornetRemoval" = "true" ]; then
+        sudo rm -rf /usr/bin/iota-hornet /var/lib/iota-hornet /lib/systemd/system/iota-hornet.service /etc/default/iota-hornet > /dev/null 2>&1
+    else
+        sudo rm -rf /usr/bin/iota-hornet /etc/default/iota-hornet > /dev/null 2>&1
     fi
-fi
 
-unset getInxInstallations
+    sudo systemctl daemon-reload > /dev/null 2>&1
+
+    if [ "$ufw" = "true" ] && [ "$iotaHornetRemoval" = "true" ]; then
+        sudo ufw delete allow $iotaHornetGossipPort/tcp > /dev/null 2>&1
+        sudo ufw delete allow $iotaHornetAutopeeringPort/udp > /dev/null 2>&1
+    fi
+
+    if [ "$iotaHornetRemoval" = "true" ]; then
+        getInxInstallations=$(ls /usr/bin/ | grep -E 'dashboard|indexer|mqtt|participation')
+        if [ "$iotaHornetRemoval" = "true" ] && [ -z "$getInxInstallations" ] && [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/goiota" ] && [ ! -f "/usr/bin/wasp" ]; then
+            sudo snap remove go > /dev/null 2>&1
+        fi
+    fi
+
+    if [ -f "/etc/nginx/sites-enabled/iota-hornet" ] && [ "$iotaHornetRemoval" = "true" ]; then
+        if [ "$ufw" = "true" ]; then
+            if [ "$proxyIotaHornetPort" != "$proxyIotaHornetPort" ] && [ "$proxyIotaHornetPort" != "$proxyIotaBeePort" ] && [ "$proxyIotaHornetPort" != "$proxyIotaBeePort" ] && [ "$proxyIotaHornetPort" != "$proxyGoiotaPort" ] && [ "$proxyIotaHornetPort" != "$proxyWaspDashboardPort" ] && [ "$proxyIotaHornetPort" != "$proxyWaspApiPort" ]; then
+                sudo ufw delete allow $proxyIotaHornetPort/tcp > /dev/null 2>&1
+            fi
+        fi
+        sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl=""/' $swarmConfigs/proxy.cfg
+        sudo rm -rf /etc/nginx/sites-enabled/iota-hornet > /dev/null 2>&1
+        sudo systemctl reload nginx
+    fi
+
+    unset iotaHornetRemoval getInxInstallations
+else
+    source $swarmConfigs/iota-hornet.cfg
+    source $swarmConfigs/proxy.cfg
+    source $proxyModule/proxyParser
+
+    if [ "$killall" = "true" ]; then
+        sudo killall -s SIGKILL iota-hornet > /dev/null 2>&1
+    else
+        sudo systemctl stop iota-hornet > /dev/null 2>&1
+    fi
+
+    sudo systemctl disable iota-hornet > /dev/null 2>&1
+
+    sudo rm -rf /usr/bin/iota-hornet /var/lib/iota-hornet /lib/systemd/system/iota-hornet.service /etc/default/iota-hornet > /dev/null 2>&1
+
+    sudo systemctl daemon-reload > /dev/null 2>&1
+
+    if [ "$ufw" = "true" ]; then
+        sudo ufw delete allow $iotaHornetGossipPort/tcp > /dev/null 2>&1
+        sudo ufw delete allow $iotaHornetAutopeeringPort/udp > /dev/null 2>&1
+    fi
+
+    getInxInstallations=$(ls /usr/bin/ | grep -E 'dashboard|indexer|mqtt|participation')
+    if [ -z "$getInxInstallations" ] && [ ! -f "/usr/bin/hornet-iota" ] && [ ! -f "/usr/bin/goiota" ] && [ ! -f "/usr/bin/wasp" ]; then
+        sudo snap remove go > /dev/null 2>&1
+    fi
+
+    if [ -f "/etc/nginx/sites-enabled/iota-hornet" ]; then
+        if [ "$ufw" = "true" ]; then
+            if [ "$proxyIotaHornetPort" != "$proxyIotaHornetPort" ] && [ "$proxyIotaHornetPort" != "$proxyIotaBeePort" ] && [ "$proxyIotaHornetPort" != "$proxyGoiotaPort" ] && [ "$proxyIotaHornetPort" != "$proxyWaspDashboardPort" ] && [ "$proxyIotaHornetPort" != "$proxyWaspApiPort" ]; then
+                sudo ufw delete allow $proxyIotaHornetPort/tcp > /dev/null 2>&1
+            fi
+        fi
+        sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl=""/' $swarmConfigs/proxy.cfg
+        sudo rm -rf /etc/nginx/sites-enabled/iota-hornet > /dev/null 2>&1
+        sudo systemctl reload nginx
+    fi
+
+    if [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/iota-hornet" ]; then
+        if id hornet >/dev/null 2>&1; then
+            sudo deluser hornet >/dev/null
+        fi
+    fi
+
+    unset getInxInstallations
+fi

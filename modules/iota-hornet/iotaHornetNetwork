@@ -1,13 +1,68 @@
 #!/bin/bash
 
-# Check if network changed
-if [ "$iotaHornetNetwork" != "$currentIotaHornetNetwork" ]; then
-    if [ "$iotaHornetNetwork" = "mainnet" ]; then
-        echo "OPTIONS=\"--config config.json\"" > /etc/default/iota-hornet
+if [ "$(printf '%s\n' "$iotaHornetStardustMinVersion" "$iotaHornetVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    # Check if network changed
+    if [ "$iotaHornetNetwork" != "$currentIotaHornetNetwork" ]; then
+        if [ ! -f "/tmp/iota-hornet.lock" ]; then
+            sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+        fi
+        if [ "$iotaHornetNetwork" = "mainnet" ]; then
+            echo "OPTIONS=\"--config config_mainnet.json\"" > /etc/default/iota-hornet
+        fi
+        if [ "$iotaHornetNetwork" = "testnet" ]; then
+            echo "OPTIONS=\"--config config_testnet.json\"" > /etc/default/iota-hornet
+        fi
+
+        for iotaInxPlugin in ${iotaInxPlugins[@]}
+        do
+            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                if [ ! -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                    sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                fi
+                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
+            fi
+        done
+        unset iotaInxPlugin
+
+        sudo systemctl stop iota-hornet > /dev/null 2>&1
+        sudo rm -rf $iotaHornetHome/$currentIotaHornetNetwork
+        if [ ! -d "$iotaHornetHome/$iotaHornetNetwork" ]; then
+            sudo -u hornet mkdir -p $iotaHornetHome/$iotaHornetNetwork
+            sudo chmod 700 $iotaHornetHome/$iotaHornetNetwork
+        fi
+        source $iotaHornetModule/iotaHornetParser
+        if [ -f "/usr/bin/iota-hornet" ]; then
+            iotaHornetStatus="$(systemctl show -p ActiveState --value iota-hornet)"
+        fi
+        if [ "$iotaHornetStatus" != "active" ]; then
+            sudo systemctl start iota-hornet > /dev/null 2>&1
+        fi
+        newIotaHornetApiJwtToken=true
+        for iotaInxPlugin in ${iotaInxPlugins[@]}
+        do
+            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                if [ -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                    sudo rm -rf /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                fi
+                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+            fi
+        done
+        unset iotaInxPlugin
+        if [ -f "/tmp/iota-hornet.lock" ]; then
+            sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+        fi
+        whiptail --title "Hornet [IOTA] Configuration" --msgbox "Hornet was successfully changed to the $iotaHornetNetwork network!" 8 65
     fi
-    sudo rm -rf $iotaHornetHome/snapshots/$currentIotaHornetNetwork $iotaHornetHome/${currentIotaHornetNetwork}db $iotaHornetHome/config*db $iotaHornetHome/db $iotaHornetHome/p2pstore
-    source $iotaHornetConfigParsers/iotaHornetIdentity
-    restartIotaHornet=true
-    newIotaHornetApiJwtToken=true
-    whiptail --title "Hornet [IOTA] Configuration" --msgbox "Hornet was successfully changed to the $iotaHornetNetwork network!" 8 65
+else
+    # Check if network changed
+    if [ "$iotaHornetNetwork" != "$currentIotaHornetNetwork" ]; then
+        if [ "$iotaHornetNetwork" = "mainnet" ]; then
+            echo "OPTIONS=\"--config config.json\"" > /etc/default/iota-hornet
+        fi
+        sudo rm -rf $iotaHornetHome/snapshots/$currentIotaHornetNetwork $iotaHornetHome/${currentIotaHornetNetwork}db $iotaHornetHome/config*db $iotaHornetHome/db $iotaHornetHome/p2pstore
+        source $iotaHornetConfigParsers/iotaHornetIdentity
+        restartIotaHornet=true
+        newIotaHornetApiJwtToken=true
+        whiptail --title "Hornet [IOTA] Configuration" --msgbox "Hornet was successfully changed to the $iotaHornetNetwork network!" 8 65
+    fi
 fi
