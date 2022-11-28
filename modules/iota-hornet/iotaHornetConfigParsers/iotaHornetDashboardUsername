@@ -1,11 +1,14 @@
 #!/bin/bash
-if [ ! -z "$iotaHornetUsername" ]; then
-    parser="$(jq '.dashboard.auth.username' $iotaHornetHome/$iotaHornetConfig.json)"
-    parser=$(echo $parser | tr -d '"')
-    if [ "$iotaHornetUsername" != "$parser" ]; then
-        sudo jq '.dashboard.auth.username = "'$iotaHornetUsername'"' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-        restartIotaHornet=true
-        newIotaHornetUsername=true
-        echo "iotaHornetDashboardUsername" >> /tmp/iotaHornetParsing
+
+if [ "$(printf '%s\n' "$iotaHornetVersion" "$iotaHornetStardustMinVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    if [ ! -z "$iotaHornetUsername" ]; then
+        parser="$(jq '.dashboard.auth.username' $iotaHornetHome/$iotaHornetConfig.json)"
+        parser=$(echo $parser | tr -d '"')
+        if [ "$iotaHornetUsername" != "$parser" ]; then
+            sudo jq '.dashboard.auth.username = "'$iotaHornetUsername'"' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            restartIotaHornet=true
+            newIotaHornetUsername=true
+            echo "iotaHornetDashboardUsername" >> /tmp/iotaHornetParsing
+        fi
     fi
 fi

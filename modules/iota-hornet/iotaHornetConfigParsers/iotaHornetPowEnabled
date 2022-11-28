@@ -1,10 +1,21 @@
 #!/bin/bash
 
-parser="$(jq '.restAPI.powEnabled' $iotaHornetHome/$iotaHornetConfig.json)"
-if [ "$iotaHornetPowEnabled" = "true" ] || [ "$iotaHornetPowEnabled" = "false" ]; then
-    if [ "$parser" != "$iotaHornetPowEnabled" ]; then
-        sudo jq '.restAPI.powEnabled = '$iotaHornetPowEnabled'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-        restartIotaHornet=true
-        echo "iotaHornetPowEnabled" >> /tmp/iotaHornetParsing
+if [ "$(printf '%s\n' "$iotaHornetStardustMinVersion" "$iotaHornetVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    parser="$(jq '.restAPI.pow.enabled' $iotaHornetHome/$iotaHornetConfig.json)"
+    if [ "$iotaHornetPowEnabled" = "true" ] || [ "$iotaHornetPowEnabled" = "false" ]; then
+        if [ "$parser" != "$iotaHornetPowEnabled" ]; then
+            sudo jq '.restAPI.pow.enabled = '$iotaHornetPowEnabled'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            restartIotaHornet=true
+            echo "iotaHornetPowEnabled" >> /tmp/iotaHornetParsing
+        fi
+    fi
+else
+    parser="$(jq '.restAPI.powEnabled' $iotaHornetHome/$iotaHornetConfig.json)"
+    if [ "$iotaHornetPowEnabled" = "true" ] || [ "$iotaHornetPowEnabled" = "false" ]; then
+        if [ "$parser" != "$iotaHornetPowEnabled" ]; then
+            sudo jq '.restAPI.powEnabled = '$iotaHornetPowEnabled'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            restartIotaHornet=true
+            echo "iotaHornetPowEnabled" >> /tmp/iotaHornetParsing
+        fi
     fi
 fi

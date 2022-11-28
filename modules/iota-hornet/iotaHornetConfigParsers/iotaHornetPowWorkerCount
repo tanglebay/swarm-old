@@ -1,14 +1,29 @@
 #!/bin/bash
 
-iotaHornetPowWorkerCount=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
-let iotaHornetPowWorkerCount=$iotaHornetPowWorkerCount-1
+if [ "$(printf '%s\n' "$iotaHornetStardustMinVersion" "$iotaHornetVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    iotaHornetPowWorkerCount=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
+    let iotaHornetPowWorkerCount=$iotaHornetPowWorkerCount-1
 
-if [ "$iotaHornetPowWorkerCount" -ge 1 ] 2>/dev/null; then
-    parser="$(jq '.restAPI.powWorkerCount' $iotaHornetHome/$iotaHornetConfig.json)"
-    if [ "$parser" != "$iotaHornetPowWorkerCount" ]; then
-        sudo jq '.restAPI.powWorkerCount = '$iotaHornetPowWorkerCount'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-        sudo sed -i 's/^iotaHornetPowWorkerCount=.*/iotaHornetPowWorkerCount='$iotaHornetPowWorkerCount'/' $swarmConfigs/iota-hornet.cfg
-        restartIotaHornet=true
-        echo "iotaHornetPowWorkerCount" >> /tmp/iotaHornetParsing
+    if [ "$iotaHornetPowWorkerCount" -ge 1 ] 2>/dev/null; then
+        parser="$(jq '.restAPI.pow.workerCount' $iotaHornetHome/$iotaHornetConfig.json)"
+        if [ "$parser" != "$iotaHornetPowWorkerCount" ]; then
+            sudo jq '.restAPI.pow.workerCount = '$iotaHornetPowWorkerCount'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            sudo sed -i 's/^iotaHornetPowWorkerCount=.*/iotaHornetPowWorkerCount='$iotaHornetPowWorkerCount'/' $swarmConfigs/iota-hornet.cfg
+            restartIotaHornet=true
+            echo "iotaHornetPowWorkerCount" >> /tmp/iotaHornetParsing
+        fi
+    fi
+else
+    iotaHornetPowWorkerCount=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
+    let iotaHornetPowWorkerCount=$iotaHornetPowWorkerCount-1
+
+    if [ "$iotaHornetPowWorkerCount" -ge 1 ] 2>/dev/null; then
+        parser="$(jq '.restAPI.powWorkerCount' $iotaHornetHome/$iotaHornetConfig.json)"
+        if [ "$parser" != "$iotaHornetPowWorkerCount" ]; then
+            sudo jq '.restAPI.powWorkerCount = '$iotaHornetPowWorkerCount'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            sudo sed -i 's/^iotaHornetPowWorkerCount=.*/iotaHornetPowWorkerCount='$iotaHornetPowWorkerCount'/' $swarmConfigs/iota-hornet.cfg
+            restartIotaHornet=true
+            echo "iotaHornetPowWorkerCount" >> /tmp/iotaHornetParsing
+        fi
     fi
 fi

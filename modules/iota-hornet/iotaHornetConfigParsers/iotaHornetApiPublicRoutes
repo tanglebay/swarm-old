@@ -1,25 +1,49 @@
 #!/bin/bash
 
-IFS=', ' read -r -a ARRAYiotaHornetApiPublicRoutes <<< "$iotaHornetApiPublicRoutes"
-validateIotaHornetApiPublicRoutes=$(echo "${hornetApiPublicRoutes: -1}")
-if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
-    iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
-    sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
-    iotaHornetForceApiPublicRoutes=true
-fi
+if [ "$(printf '%s\n' "$iotaHornetStardustMinVersion" "$iotaHornetVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    IFS=', ' read -r -a ARRAYiotaHornetApiPublicRoutes <<< "$iotaHornetApiPublicRoutes"
+    validateIotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes: -1}")
+    if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
+        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
+        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+        iotaHornetForceApiPublicRoutes=true
+    fi
 
-parser="$(jq '.restAPI.publicRoutes' $iotaHornetHome/$iotaHornetConfig.json)"
-parser="$(echo $parser | tr -d '[]" ')"
+    parser="$(jq '.restAPI.publicRoutes' $iotaHornetHome/$iotaHornetConfig.json)"
+    parser="$(echo $parser | tr -d '[]" ')"
 
-if [ "$parser" != "$iotaHornetApiPublicRoutes" ] || [ "$iotaHornetForceApiPublicRoutes" = "true" ]; then
-    sudo jq '.restAPI.publicRoutes |= []' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-    for iotaHornetApiPublicRoute in "${ARRAYiotaHornetApiPublicRoutes[@]}"
-    do
-        sudo jq '.restAPI.publicRoutes |= .+ ["'$iotaHornetApiPublicRoute'"]' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-    done
-    restartIotaHornet=true
-    echo "iotaHornetApiPublicRoutes" >> /tmp/iotaHornetParsing
+    if [ "$parser" != "$iotaHornetApiPublicRoutes" ] || [ "$iotaHornetForceApiPublicRoutes" = "true" ]; then
+        sudo jq '.restAPI.publicRoutes |= []' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+        for iotaHornetApiPublicRoute in "${ARRAYiotaHornetApiPublicRoutes[@]}"
+        do
+            sudo jq '.restAPI.publicRoutes |= .+ ["'$iotaHornetApiPublicRoute'"]' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+        done
+        restartIotaHornet=true
+        echo "iotaHornetApiPublicRoutes" >> /tmp/iotaHornetParsing
+    fi
+    unset ARRAYiotaHornetApiPublicRoutes iotaHornetApiPublicRoute iotaHornetForceApiPublicRoutes
+else
+    IFS=', ' read -r -a ARRAYiotaHornetApiPublicRoutes <<< "$iotaHornetApiPublicRoutes"
+    validateIotaHornetApiPublicRoutes=$(echo "${hornetApiPublicRoutes: -1}")
+    if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
+        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
+        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+        iotaHornetForceApiPublicRoutes=true
+    fi
+
+    parser="$(jq '.restAPI.publicRoutes' $iotaHornetHome/$iotaHornetConfig.json)"
+    parser="$(echo $parser | tr -d '[]" ')"
+
+    if [ "$parser" != "$iotaHornetApiPublicRoutes" ] || [ "$iotaHornetForceApiPublicRoutes" = "true" ]; then
+        sudo jq '.restAPI.publicRoutes |= []' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+        for iotaHornetApiPublicRoute in "${ARRAYiotaHornetApiPublicRoutes[@]}"
+        do
+            sudo jq '.restAPI.publicRoutes |= .+ ["'$iotaHornetApiPublicRoute'"]' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+        done
+        restartIotaHornet=true
+        echo "iotaHornetApiPublicRoutes" >> /tmp/iotaHornetParsing
+    fi
+    unset ARRAYiotaHornetApiPublicRoutes
+    unset iotaHornetApiPublicRoute
+    unset iotaHornetForceApiPublicRoutes
 fi
-unset ARRAYiotaHornetApiPublicRoutes
-unset iotaHornetApiPublicRoute
-unset iotaHornetForceApiPublicRoutes

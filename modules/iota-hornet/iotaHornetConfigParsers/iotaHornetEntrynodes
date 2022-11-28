@@ -1,36 +1,56 @@
 #!/bin/bash
-if [ "$iotaHornetNetwork" = "mainnet" ]; then
-    parser="$(jq '.p2p.autopeering.entryNodes' $iotaHornetHome/config.json)"
-    iotaHornetEntryNodeOld="/dns/entry-0.mainnet.tanglebay.com/udp/14626/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
-    if [[ $parser = *$iotaHornetEntryNodeOld* ]]; then
-        iotaHornetEntryNode="/dns/entry-0.iota-mainnet.tanglebay.com/udp/14626/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
-        sudo sudo sed -i 's~'$iotaHornetEntryNodeOld'~'$iotaHornetEntryNode'~g' $iotaHornetHome/config.json
-        restartIotaHornet=true
-        echo "iotaHornetEntryNodes" >> /tmp/iotaHornetParsing
-    fi
-    iotaHornetEntryNodeOld="/dns/entry-1.iota-mainnet.tanglebay.com/udp/14636/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
-    if [[ $parser = *$iotaHornetEntryNodeOld* ]]; then
-        iotaHornetEntryNode="/dns/entry-1.iota-mainnet.tanglebay.com/udp/14626/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
-        sudo sudo sed -i 's~'$iotaHornetEntryNodeOld'~'$iotaHornetEntryNode'~g' $iotaHornetHome/config.json
-        restartiotaHornet=true
-        echo "iotaHornetEntryNodes" >> /tmp/iotaHornetParsing
-    fi
-    unset iotaHornetEntryNodeOld
-    ##############################################################################################################################
-    parser="$(jq '.p2p.autopeering.entryNodes' $iotaHornetHome/config.json)"
-    iotaHornetEntryNode="/dns/entry-0.iota-mainnet.tanglebay.com/udp/14626/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
-    if [[ $parser != *$iotaHornetEntryNode* ]]; then
-        sudo jq '.p2p.autopeering.entryNodes |= .+ ["'$iotaHornetEntryNode'"]' $iotaHornetHome/config.json|sponge $iotaHornetHome/config.json
-        restartIotaHornet=true
-        echo "iotaHornetEntryNodes" >> /tmp/iotaHornetParsing
-    fi
-    iotaHornetEntryNode="/dns/entry-1.iota-mainnet.tanglebay.com/udp/14626/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
-    if [[ $parser != *$iotaHornetEntryNode* ]]; then
-        sudo jq '.p2p.autopeering.entryNodes |= .+ ["'$iotaHornetEntryNode'"]' $iotaHornetHome/config.json|sponge $iotaHornetHome/config.json
-        restartIotaHornet=true
-        echo "iotaHornetEntryNodes" >> /tmp/iotaHornetParsing
-    fi
 
-    unset iotaHornetEntryNode
-    unset parser
+if [ "$(printf '%s\n' "$iotaHornetStardustMinVersion" "$iotaHornetVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    if [ "$shimmerHornetNetwork" = "mainnet" ] || [ "$shimmerHornetNetwork" = "testnet" ]; then
+        parser="$(jq '.p2p.autopeering.entryNodes' $shimmerHornetHome/$shimmerHornetConfig.json)"
+        shimmerHornetEntryNode="/dns/entry-0.shimmer-mainnet.tanglebay.com/udp/14636/autopeering/22aGL1rL7yh4emm1CSN5XyVXYC15GehZok3hNYHtMMnw"
+        if [[ $parser != *$shimmerHornetEntryNode* ]]; then
+            sudo jq '.p2p.autopeering.entryNodes |= .+ ["'$shimmerHornetEntryNode'"]' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
+            restartHornetShimmer=true
+            echo "shimmerHornetEntrynodes" >> /tmp/shimmerHornetParsing
+        fi
+        shimmerHornetEntryNode="/dns/entry-1.shimmer-mainnet.tanglebay.com/udp/14636/autopeering/CvF69T6NbVstwu6NfLVQHcDS1Dsd8XxCMTDHNC2rvJTZ"
+        if [[ $parser != *$shimmerHornetEntryNode* ]]; then
+            sudo jq '.p2p.autopeering.entryNodes |= .+ ["'$shimmerHornetEntryNode'"]' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
+            restartShimmerHornet=true
+            echo "shimmerHornetEntrynodes" >> /tmp/shimmerHornetParsing
+        fi
+        unset parser shimmerHornetEntryNode
+    fi
+else
+    if [ "$iotaHornetNetwork" = "mainnet" ]; then
+        parser="$(jq '.p2p.autopeering.entryNodes' $iotaHornetHome/config.json)"
+        iotaHornetEntryNodeOld="/dns/entry-0.mainnet.tanglebay.com/udp/14626/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
+        if [[ $parser = *$iotaHornetEntryNodeOld* ]]; then
+            iotaHornetEntryNode="/dns/entry-0.iota-mainnet.tanglebay.com/udp/14626/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
+            sudo sudo sed -i 's~'$iotaHornetEntryNodeOld'~'$iotaHornetEntryNode'~g' $iotaHornetHome/config.json
+            restartIotaHornet=true
+            echo "iotaHornetEntryNodes" >> /tmp/iotaHornetParsing
+        fi
+        iotaHornetEntryNodeOld="/dns/entry-1.iota-mainnet.tanglebay.com/udp/14636/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
+        if [[ $parser = *$iotaHornetEntryNodeOld* ]]; then
+            iotaHornetEntryNode="/dns/entry-1.iota-mainnet.tanglebay.com/udp/14626/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
+            sudo sudo sed -i 's~'$iotaHornetEntryNodeOld'~'$iotaHornetEntryNode'~g' $iotaHornetHome/config.json
+            restartiotaHornet=true
+            echo "iotaHornetEntryNodes" >> /tmp/iotaHornetParsing
+        fi
+        unset iotaHornetEntryNodeOld
+        ##############################################################################################################################
+        parser="$(jq '.p2p.autopeering.entryNodes' $iotaHornetHome/config.json)"
+        iotaHornetEntryNode="/dns/entry-0.iota-mainnet.tanglebay.com/udp/14626/autopeering/iot4By1FD4pFLrGJ6AAe7YEeSu9RbW9xnPUmxMdQenC"
+        if [[ $parser != *$iotaHornetEntryNode* ]]; then
+            sudo jq '.p2p.autopeering.entryNodes |= .+ ["'$iotaHornetEntryNode'"]' $iotaHornetHome/config.json|sponge $iotaHornetHome/config.json
+            restartIotaHornet=true
+            echo "iotaHornetEntryNodes" >> /tmp/iotaHornetParsing
+        fi
+        iotaHornetEntryNode="/dns/entry-1.iota-mainnet.tanglebay.com/udp/14626/autopeering/CATsx21mFVvQQPXeDineGs9DDeKvoBBQdzcmR6ffCkVA"
+        if [[ $parser != *$iotaHornetEntryNode* ]]; then
+            sudo jq '.p2p.autopeering.entryNodes |= .+ ["'$iotaHornetEntryNode'"]' $iotaHornetHome/config.json|sponge $iotaHornetHome/config.json
+            restartIotaHornet=true
+            echo "iotaHornetEntryNodes" >> /tmp/iotaHornetParsing
+        fi
+
+        unset iotaHornetEntryNode
+        unset parser
+    fi
 fi

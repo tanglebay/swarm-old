@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ "$(printf '%s\n' "$iotaHornetStardustMinVersion" "$iotaHornetVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    parser="$(jq '.profiling.bindAddress' $iotaHornetHome/$iotaHornetConfig.json)"
+    parser=$(echo $parser | tr -d '"')
+    if [ "$parser" != "localhost:6062" ]; then
+        sudo jq '.profiling.bindAddress = "localhost:6062"' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+        restartIotaHornet=true
+        echo "iotaHornetProfiling" >> /tmp/iotaHornetParsing
+    fi
+fi

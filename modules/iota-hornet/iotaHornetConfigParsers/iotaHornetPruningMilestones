@@ -1,8 +1,17 @@
 #!/bin/bash
 
-parser="$(jq '.pruning.milestones.enabled' $iotaHornetHome/$iotaHornetConfig.json)"
-if [ "$parser" != "false" ]; then
-    sudo jq '.pruning.milestones.enabled = false' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-    restartIotaHornet=true
-    echo "iotaHornetPruningMilestones" >> /tmp/iotaHornetParsing
+if [ "$(printf '%s\n' "$iotaHornetStardustMinVersion" "$iotaHornetVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    parser="$(jq '.pruning.milestones.enabled' $iotaHornetHome/$iotaHornetConfig.json)"
+    if [ "$parser" != "false" ]; then
+        sudo jq '.pruning.milestones.enabled = false' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+        restartIotaHornet=true
+        echo "iotaHornetPruningMilestones" >> /tmp/iotaHornetParsing
+    fi
+else
+    parser="$(jq '.pruning.milestones.enabled' $iotaHornetHome/$iotaHornetConfig.json)"
+    if [ "$parser" != "false" ]; then
+        sudo jq '.pruning.milestones.enabled = false' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+        restartIotaHornet=true
+        echo "iotaHornetPruningMilestones" >> /tmp/iotaHornetParsing
+    fi
 fi

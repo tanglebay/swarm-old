@@ -1,10 +1,21 @@
 #!/bin/bash
 
-parser="$(jq '.p2p.autopeering.runAsEntryNode' $iotaHornetHome/$iotaHornetConfig.json)"
-if [ "$iotaHornetRunAsEntryNode" = "true" ] || [ "$iotaHornetRunAsEntryNode" = "false" ]; then
-    if [ "$parser" != "$iotaHornetRunAsEntryNode" ]; then
-        sudo jq '.p2p.autopeering.runAsEntryNode = '$iotaHornetRunAsEntryNode'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-        restartIotaHornet=true
-        echo "iotaHornetRunAsEntryNode" >> /tmp/iotaHornetParsing
+if [ "$(printf '%s\n' "$iotaHornetStardustMinVersion" "$iotaHornetVersion" | sort -V | head -n1)" != "$iotaHornetStardustMinVersion" ] && [ ! -z "$iotaHornetVersion" ]; then
+    parser="$(jq '.p2p.autopeering.runAsEntryNode' $shimmerHornetHome/$shimmerHornetConfig.json)"
+    if [ "$shimmerHornetRunAsEntryNode" = "true" ] || [ "$shimmerHornetRunAsEntryNode" = "false" ]; then
+        if [ "$parser" != "$shimmerHornetRunAsEntryNode" ]; then
+            sudo jq '.p2p.autopeering.runAsEntryNode = '$shimmerHornetRunAsEntryNode'' $shimmerHornetHome/$shimmerHornetConfig.json|sponge $shimmerHornetHome/$shimmerHornetConfig.json
+            restartShimmerHornet=true
+            echo "shimmerHornetRunAsEntryNode" >> /tmp/shimmerHornetParsing
+        fi
+    fi
+else
+    parser="$(jq '.p2p.autopeering.runAsEntryNode' $iotaHornetHome/$iotaHornetConfig.json)"
+    if [ "$iotaHornetRunAsEntryNode" = "true" ] || [ "$iotaHornetRunAsEntryNode" = "false" ]; then
+        if [ "$parser" != "$iotaHornetRunAsEntryNode" ]; then
+            sudo jq '.p2p.autopeering.runAsEntryNode = '$iotaHornetRunAsEntryNode'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            restartIotaHornet=true
+            echo "iotaHornetRunAsEntryNode" >> /tmp/iotaHornetParsing
+        fi
     fi
 fi
