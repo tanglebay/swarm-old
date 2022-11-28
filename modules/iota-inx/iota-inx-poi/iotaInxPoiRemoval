@@ -1,0 +1,28 @@
+#!/bin/bash
+
+source $swarmConfigs/shimmer-inx-poi.cfg
+
+if [ "$killall" = "true" ]; then
+    sudo killall -s SIGKILL shimmer-inx-poi > /dev/null 2>&1
+else
+    sudo systemctl stop shimmer-inx-poi > /dev/null 2>&1
+fi
+
+getInxInstallations=$(ls /usr/bin/ | grep -E 'dashboard|indexer|mqtt|participation|inx-poi')
+if [ -z "$getInxInstallations" ]; then
+    if id inx >/dev/null 2>&1; then
+        sudo deluser inx >/dev/null
+    fi
+fi
+
+sudo systemctl disable shimmer-inx-poi > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/shimmer-inx-poi /var/lib/shimmer-inx-poi /lib/systemd/system/shimmer-inx-poi.service /etc/default/shimmer-inx-poi > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+if [ -z "$getInxInstallations" ] && [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/shimmer-hornet" ] && [ ! -f "/usr/bin/goshimmer" ] && [ ! -f "/usr/bin/wasp" ]; then
+    sudo snap remove go > /dev/null 2>&1
+fi
+
+unset getInxInstallations

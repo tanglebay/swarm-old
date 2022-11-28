@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Check if release is changed
+if [ "$shimmerInxPoiRelease" != "$currentShimmerInxPoiRelease" ]; then
+    {
+        echo 0
+        echo 20
+        source $shimmerInxPoiModule/shimmerInxPoiRemoval
+        echo 40
+        source $shimmerInxPoiModule/shimmerInxPoiInstaller
+        echo 60
+        source $shimmerInxPoiModule/shimmerInxPoiParser
+        echo 80
+        if [ "$shimmerInxPoiUpdated" = "true" ] || [ "$restartShimmerInxPoi" = "true" ]; then
+            sudo systemctl restart shimmer-inx-poi
+            unset restartShimmerInxPoi
+        fi
+        echo 100
+    } | whiptail --gauge "Please wait while INX-POI is prepared..." 8 65 0
+    whiptail --title "INX-POI [SHIMMER] Configuration" --msgbox "New release channel ($shimmerInxPoiRelease) applied and INX-POI was reinstalled!" 8 65
+fi
