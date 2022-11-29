@@ -234,11 +234,11 @@ while [ $exitCode -lt 1 ]; do
                                 unset whiptailGaugeNumber
                             } | whiptail --gauge "Please wait while all selected INX plugins are installed..." 8 65 0
                             if [[ $iotaInxPluginList = *dashboard* ]]; then
-                                if (whiptail --title "Proxy [IOTA] INX-Dashboard" --yesno --defaultno "Do you want to set up the proxy and use INX-Dashboard as single endpoint?" 8 65); then
+                                if (whiptail --title "Proxy [IOTA] INX-Dashboard" --yesno --defaultno "Before you change the settings, are you sure you want to separate the INX dashboard from the Hornet (Iota) proxy endpoint (its own subdomain or port)?\n\nAre you sure you want to continue?" 16 65); then
                                     source $swarmConfigs/proxy.cfg
-                                    if [ "$proxyIotaInxDashboardSingle" = "false" ]; then
-                                        proxyIotaInxDashboardSingle=true
-                                        sudo sed -i 's/^proxyIotaInxDashboardSingle=.*/proxyIotaInxDashboardSingle='$proxyIotaInxDashboardSingle'/' $swarmConfigs/proxy.cfg
+                                    if [ "$proxyIotaInxDashboardEnabled" = "false" ]; then
+                                        proxyIotaInxDashboardEnabled=true
+                                        sudo sed -i 's/^proxyIotaInxDashboardEnabled=.*/proxyIotaInxDashboardEnabled='$proxyIotaInxDashboardEnabled'/' $swarmConfigs/proxy.cfg
                                     fi
                                     if [ -z "$proxyIotaInxDashboardUrl" ]; then
                                         proxyUrl="example.com:443"
@@ -267,6 +267,24 @@ while [ $exitCode -lt 1 ]; do
                                 else
                                     source $proxyModule/proxyIotaInxDashboard
                                 fi
+                            fi
+                            if (whiptail --title "INX [IOTA] Plugins" --yesno --defaultno "Do you want to make the API routes public for all INX plugins?" 8 65); then
+                                for iotaInxPlugin in ${iotaInxPluginList[@]}
+                                do
+                                    if [ -f "/usr/bin/iota-inx-indexer" ] && [ "$iotaInxPlugin" = "indexer" ]; then
+                                        source $iotaInxIndexerModule/iotaInxIndexerApiRoutes
+                                    fi
+                                    if [ -f "/usr/bin/iota-inx-mqtt" ] && [ "$iotaInxPlugin" = "mqtt" ]; then
+                                        source $iotaInxMqttModule/iotaInxMqttApiRoutes
+                                    fi
+                                    if [ -f "/usr/bin/iota-inx-participation" ] && [ "$iotaInxPlugin" = "participation" ]; then
+                                        source $iotaInxParticipationModule/iotaInxParticipationApiRoutes
+                                    fi
+                                    if [ -f "/usr/bin/iota-inx-poi" ] && [ "$iotaInxPlugin" = "poi" ]; then
+                                        source $iotaInxPoiModule/iotaInxPoiApiRoutes
+                                    fi
+                                done
+                                unset iotaInxPlugin
                             fi
                             whiptail --title "INX [IOTA] Plugins" --msgbox "Installation of all selected INX plugins completed." 8 65
                         fi

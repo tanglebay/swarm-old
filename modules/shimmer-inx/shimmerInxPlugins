@@ -234,11 +234,11 @@ while [ $exitCode -lt 1 ]; do
                                 unset whiptailGaugeNumber
                             } | whiptail --gauge "Please wait while all selected INX plugins are installed..." 8 65 0
                             if [[ $shimmerInxPluginList = *dashboard* ]]; then
-                                if (whiptail --title "Proxy [SHIMMER] INX-Dashboard" --yesno --defaultno "Do you want to set up the proxy and use INX-Dashboard as single endpoint?" 8 65); then
+                                if (whiptail --title "Proxy [SHIMMER] INX-Dashboard" --yesno --defaultno "Before you change the settings, are you sure you want to separate the INX dashboard from the Hornet (Shimmer) proxy endpoint (its own subdomain or port)?\n\nAre you sure you want to continue?" 16 65); then
                                     source $swarmConfigs/proxy.cfg
-                                    if [ "$proxyShimmerInxDashboardSingle" = "false" ]; then
-                                        proxyShimmerInxDashboardSingle=true
-                                        sudo sed -i 's/^proxyShimmerInxDashboardSingle=.*/proxyShimmerInxDashboardSingle='$proxyShimmerInxDashboardSingle'/' $swarmConfigs/proxy.cfg
+                                    if [ "$proxyShimmerInxDashboardEnabled" = "false" ]; then
+                                        proxyShimmerInxDashboardEnabled=true
+                                        sudo sed -i 's/^proxyShimmerInxDashboardEnabled=.*/proxyShimmerInxDashboardEnabled='$proxyShimmerInxDashboardEnabled'/' $swarmConfigs/proxy.cfg
                                     fi
                                     if [ -z "$proxyShimmerInxDashboardUrl" ]; then
                                         proxyUrl="example.com:443"
@@ -267,6 +267,24 @@ while [ $exitCode -lt 1 ]; do
                                 else
                                     source $proxyModule/proxyShimmerInxDashboard
                                 fi
+                            fi
+                            if (whiptail --title "INX [SHIMMER] Plugins" --yesno --defaultno "Do you want to make the API routes public for all INX plugins?" 8 65); then
+                                for shimmerInxPlugin in ${shimmerInxPluginList[@]}
+                                do
+                                    if [ -f "/usr/bin/shimmer-inx-indexer" ] && [ "$shimmerInxPlugin" = "indexer" ]; then
+                                        source $shimmerInxIndexerModule/shimmerInxIndexerApiRoutes
+                                    fi
+                                    if [ -f "/usr/bin/shimmer-inx-mqtt" ] && [ "$shimmerInxPlugin" = "mqtt" ]; then
+                                        source $shimmerInxMqttModule/shimmerInxMqttApiRoutes
+                                    fi
+                                    if [ -f "/usr/bin/shimmer-inx-participation" ] && [ "$shimmerInxPlugin" = "participation" ]; then
+                                        source $shimmerInxParticipationModule/shimmerInxParticipationApiRoutes
+                                    fi
+                                    if [ -f "/usr/bin/shimmer-inx-poi" ] && [ "$shimmerInxPlugin" = "poi" ]; then
+                                        source $shimmerInxPoiModule/shimmerInxPoiApiRoutes
+                                    fi
+                                done
+                                unset shimmerInxPlugin
                             fi
                             whiptail --title "INX [SHIMMER] Plugins" --msgbox "Installation of all selected INX plugins completed." 8 65
                         fi
