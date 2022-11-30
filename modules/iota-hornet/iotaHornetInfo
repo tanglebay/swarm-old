@@ -1,69 +1,160 @@
 #!/bin/bash
-if [ -f "/usr/bin/iota-hornet" ]; then
 
-    source $swarmConfigs/iota-hornet.cfg
+if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
+    if [ -f "/usr/bin/iota-hornet" ]; then
 
-    iotaHornetStatus=$(systemctl show -p ActiveState --value iota-hornet)
+        source $swarmConfigs/iota-hornet.cfg
+        source $swarmConfigs/latest-versions.cfg
 
-    iotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }')
-    if [ -z "$iotaHornetVersion" ]; then
-        iotaHornetVersion="N/A"
-    else
-        if [ "$iotaHornetVersion" != "$latestIotaHornetVersion" ] && [ ! -z "$latestIotaHornetVersion" ]; then
-            iotaHornetVersion="$iotaHornetVersion (new version \"v$latestIotaHornetVersion\" available!)"
-        fi
-    fi
+        iotaHornetStatus=$(systemctl show -p ActiveState --value iota-hornet)
 
-    if [ "$iotaHornetStatus" = "active" ]; then
-        iotaHornetHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}"|jq -r '.data.isHealthy' 2> /dev/null)"
-        if [ -z "$iotaHornetHealthy" ]; then
-            iotaHornetHealthy="N/A"
+        iotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }')
+        if [ -z "$iotaHornetVersion" ]; then
+            iotaHornetVersion="N/A"
         else
-            if [ "$iotaHornetHealthy" = "true" ]; then
-                iotaHornetHealthy="✓"
-            else
-                iotaHornetHealthy="X"
+            if [ "$iotaHornetVersion" != "$latestIotaHornetVersion" ] && [ ! -z "$latestIotaHornetVersion" ]; then
+                iotaHornetVersion="$iotaHornetVersion (new version \"v$latestIotaHornetVersion\" available!)"
             fi
         fi
-    else
-        iotaHornetHealthy="N/A"
-    fi
 
-    # DB size
-    if [ -d "$iotaHornetHome/${iotaHornetNetwork}db" ]; then
-        getCurrentDbSize="$(du -sb $iotaHornetHome/${iotaHornetNetwork}db | cut -f1)"
-        let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
-        if [ $getCurrentDbSizeInMb -gt 999 ]; then
-            let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
-            currentIotaHornetDbSize="${getCurrentDbSizeInGb} GB"
+        if [ "$iotaHornetStatus" = "active" ]; then
+            iotaHornetHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14266/api/core/v2/info" -H  "accept: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}"|jq -r '.status.isHealthy' 2> /dev/null)"
+            if [ -z "$iotaHornetHealthy" ]; then
+                iotaHornetHealthy="N/A"
+            else
+                if [ "$iotaHornetHealthy" = "true" ]; then
+                    iotaHornetHealthy="✓"
+                else
+                    iotaHornetHealthy="X"
+                fi
+            fi
         else
-            currentIotaHornetDbSize="${getCurrentDbSizeInMb} MB"
+            iotaHornetHealthy="N/A"
         fi
-    else
-        currentIotaHornetDbSize="N/A"
-    fi
 
-    if [ "$iotaHornetPruningEnabled" = "true" ]; then
-        iotaHornetPruningEnabledStatus="✓"
-    else
-        iotaHornetPruningEnabledStatus="X"
-    fi
+        # DB size
+        if [ -d "$iotaHornetHome/$iotaHornetNetwork/database" ]; then
+            getCurrentDbSize="$(du -sb $iotaHornetHome/$iotaHornetNetwork/database | cut -f1)"
+            let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+            if [ $getCurrentDbSizeInMb -gt 999 ]; then
+                let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+                currentIotaHornetDbSize="${getCurrentDbSizeInGb} GB"
+            else
+                currentIotaHornetDbSize="${getCurrentDbSizeInMb} MB"
+            fi
+        else
+            currentIotaHornetDbSize="N/A"
+        fi
 
-    if [ "$iotaHornetPowEnabled" = "true" ]; then
-        iotaHornetPowEnabledStatus="✓"
-    else
-        iotaHornetPowEnabledStatus="X"
-    fi
+        if [ "$iotaHornetPruningEnabled" = "true" ]; then
+            iotaHornetPruningEnabledStatus="✓"
+        else
+            iotaHornetPruningEnabledStatus="X"
+        fi
 
-    if [ -f "/etc/nginx/sites-enabled/iota-hornet" ]; then
-        iotaHornetProxyStatus="✓"
-    else
-        iotaHornetProxyStatus="X"
-    fi
+        if [ "$iotaHornetSnapshotsEnabled" = "true" ]; then
+            iotaHornetSnapshotsEnabledStatus="✓"
+        else
+            iotaHornetSnapshotsEnabledStatus="X"
+        fi
 
-    # OUTPUT
-    whiptail --scrolltext --title "Hornet [IOTA] Info" --msgbox "Hornet: $iotaHornetStatus\nVersion: v$iotaHornetVersion\nNetwork: $iotaHornetNetwork\nHealthy: $iotaHornetHealthy\nDB size: $currentIotaHornetDbSize\nProxy: $iotaHornetProxyStatus\n\nAlias: $iotaHornetAlias\nPoW: $iotaHornetPowEnabledStatus\nLS Interval: $iotaHornetSnapshotInterval milestones\nGossip Port: ${iotaHornetGossipPort}/tcp\nAutopeering Port: ${iotaHornetAutopeeringPort}/udp\n\nPruning: $iotaHornetPruningEnabledStatus\nMax DB size: ${iotaHornetPruningDatabaseSize} GB\nPruning percentage: ${iotaHornetPruningPercentage}%\nPruning Cooldown: $iotaHornetPruningCooldownTime minutes\n\nEnabled Plugins: \"$iotaHornetEnablePlugins\"\nDisabled Plugins: \"$iotaHornetDisablePlugins\"" 24 65
+        if [ "$iotaHornetInxEnabled" = "true" ]; then
+            iotaHornetInxEnabledStatus="✓"
+        else
+            iotaHornetInxEnabledStatus="X"
+        fi
+
+        if [ "$iotaHornetAutopeeringEnabled" = "true" ]; then
+            iotaHornetAutopeeringEnabledStatus="✓"
+        else
+            iotaHornetAutopeeringEnabledStatus="X"
+        fi
+
+        if [ "$iotaHornetPowEnabled" = "true" ]; then
+            iotaHornetPowEnabledStatus="✓"
+        else
+            iotaHornetPowEnabledStatus="X"
+        fi
+
+        if [ -f "/etc/nginx/sites-enabled/iota-hornet" ]; then
+            iotaHornetProxyStatus="✓"
+        else
+            iotaHornetProxyStatus="X"
+        fi
+
+        # OUTPUT
+        whiptail --scrolltext --title "Hornet [IOTA] Info" --msgbox "Hornet: $iotaHornetStatus\nVersion: v$iotaHornetVersion\nNetwork: $iotaHornetNetwork\nDB size: $currentIotaHornetDbSize\nHealthy: $iotaHornetHealthy\nProxy: $iotaHornetProxyStatus\n\nAlias: $iotaHornetAlias\nINX: $iotaHornetInxEnabledStatus\nAutopeering: $iotaHornetAutopeeringEnabledStatus\nPoW: $iotaHornetPowEnabledStatus\nLocal Snapshots: $iotaHornetSnapshotEnabledStatus milestones\nGossip Port: ${iotaHornetGossipPort}/tcp\nAutopeering Port: ${iotaHornetAutopeeringPort}/udp\n\nPruning: $iotaHornetPruningEnabledStatus\nMax DB size: ${iotaHornetPruningDatabaseSize} GB\nPruning percentage: ${iotaHornetPruningPercentage}%\nPruning Cooldown: $iotaHornetPruningCooldownTime minutes" 24 65
+    else
+        # OUTPUT
+        whiptail --title "Hornet [IOTA] Info" --msgbox "Hornet not installed!" 8 65
+    fi
 else
-    # OUTPUT
-    whiptail --title "Hornet [IOTA] Info" --msgbox "Hornet [IOTA] not installed!" 8 65
+    if [ -f "/usr/bin/iota-hornet" ]; then
+
+        source $swarmConfigs/iota-hornet.cfg
+
+        iotaHornetStatus=$(systemctl show -p ActiveState --value iota-hornet)
+
+        iotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }')
+        if [ -z "$iotaHornetVersion" ]; then
+            iotaHornetVersion="N/A"
+        else
+            if [ "$iotaHornetVersion" != "$latestIotaHornetVersion" ] && [ ! -z "$latestIotaHornetVersion" ]; then
+                iotaHornetVersion="$iotaHornetVersion (new version \"v$latestIotaHornetVersion\" available!)"
+            fi
+        fi
+
+        if [ "$iotaHornetStatus" = "active" ]; then
+            iotaHornetHealthy="$(curl --max-time 2 -s -X GET "http://localhost:14265/api/v1/info" -H  "accept: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}"|jq -r '.data.isHealthy' 2> /dev/null)"
+            if [ -z "$iotaHornetHealthy" ]; then
+                iotaHornetHealthy="N/A"
+            else
+                if [ "$iotaHornetHealthy" = "true" ]; then
+                    iotaHornetHealthy="✓"
+                else
+                    iotaHornetHealthy="X"
+                fi
+            fi
+        else
+            iotaHornetHealthy="N/A"
+        fi
+
+        # DB size
+        if [ -d "$iotaHornetHome/${iotaHornetNetwork}db" ]; then
+            getCurrentDbSize="$(du -sb $iotaHornetHome/${iotaHornetNetwork}db | cut -f1)"
+            let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+            if [ $getCurrentDbSizeInMb -gt 999 ]; then
+                let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+                currentIotaHornetDbSize="${getCurrentDbSizeInGb} GB"
+            else
+                currentIotaHornetDbSize="${getCurrentDbSizeInMb} MB"
+            fi
+        else
+            currentIotaHornetDbSize="N/A"
+        fi
+
+        if [ "$iotaHornetPruningEnabled" = "true" ]; then
+            iotaHornetPruningEnabledStatus="✓"
+        else
+            iotaHornetPruningEnabledStatus="X"
+        fi
+
+        if [ "$iotaHornetPowEnabled" = "true" ]; then
+            iotaHornetPowEnabledStatus="✓"
+        else
+            iotaHornetPowEnabledStatus="X"
+        fi
+
+        if [ -f "/etc/nginx/sites-enabled/iota-hornet" ]; then
+            iotaHornetProxyStatus="✓"
+        else
+            iotaHornetProxyStatus="X"
+        fi
+
+        # OUTPUT
+        whiptail --scrolltext --title "Hornet [IOTA] Info" --msgbox "Hornet: $iotaHornetStatus\nVersion: v$iotaHornetVersion\nNetwork: $iotaHornetNetwork\nHealthy: $iotaHornetHealthy\nDB size: $currentIotaHornetDbSize\nProxy: $iotaHornetProxyStatus\n\nAlias: $iotaHornetAlias\nPoW: $iotaHornetPowEnabledStatus\nLS Interval: $iotaHornetSnapshotInterval milestones\nGossip Port: ${iotaHornetGossipPort}/tcp\nAutopeering Port: ${iotaHornetAutopeeringPort}/udp\n\nPruning: $iotaHornetPruningEnabledStatus\nMax DB size: ${iotaHornetPruningDatabaseSize} GB\nPruning percentage: ${iotaHornetPruningPercentage}%\nPruning Cooldown: $iotaHornetPruningCooldownTime minutes\n\nEnabled Plugins: \"$iotaHornetEnablePlugins\"\nDisabled Plugins: \"$iotaHornetDisablePlugins\"" 24 65
+    else
+        # OUTPUT
+        whiptail --title "Hornet [IOTA] Info" --msgbox "Hornet [IOTA] not installed!" 8 65
+    fi
 fi

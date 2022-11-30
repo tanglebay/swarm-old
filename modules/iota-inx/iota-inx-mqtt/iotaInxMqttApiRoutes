@@ -1,0 +1,31 @@
+#!/bin/bash
+
+source $swarmConfigs/iota-hornet.cfg
+
+#/api/mqtt/v1
+if [[ $iotaHornetApiRoutes != */api/mqtt/v1* ]]; then
+    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/mqtt/v1")
+    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes" | tr -s ',,' ',')
+    validateIotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes: -1}")
+    if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
+        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
+    fi
+    sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+    if (whiptail --title "INX-MQTT [IOTA] Installer" --yesno --defaultno "Do you want to restart Hornet to apply the new public API routes?" 8 65); then
+        for iotaInxPlugin in ${iotaInxPlugins[@]}
+        do
+            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
+            fi
+        done
+        unset iotaInxPlugin
+        sudo systemctl restart iota-hornet 2>/dev/null
+        for iotaInxPlugin in ${iotaInxPlugins[@]}
+        do
+            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+            fi
+        done
+        unset iotaInxPlugin
+    fi
+fi

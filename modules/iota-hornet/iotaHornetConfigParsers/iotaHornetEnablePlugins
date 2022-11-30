@@ -1,28 +1,30 @@
 #!/bin/bash
 
-useIotaHornetEnablePlugins=true
-source $iotaHornetModule/iotaHornetPlugins
+if [ "$iotaHornetReleaseVersion" != "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^1.* ]]; then
+    useIotaHornetEnablePlugins=true
+    source $iotaHornetModule/iotaHornetPlugins
 
-IFS=', ' read -r -a ARRAYiotaHornetEnablePlugins <<< "$iotaHornetEnablePlugins"
+    IFS=', ' read -r -a ARRAYiotaHornetEnablePlugins <<< "$iotaHornetEnablePlugins"
 
-parser="$(jq '.node.enablePlugins' $iotaHornetHome/$iotaHornetConfig.json)"
-parser="$(echo $parser | tr -d '[]" ')"
-if [ "$parser" != "$iotaHornetEnablePlugins" ] || [ "$iotaHornetDisableParticipation" = "true" ]; then
-    sudo jq '.node.enablePlugins |= []' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-    for iotaHornetEnablePlugin in "${ARRAYiotaHornetEnablePlugins[@]}"
-    do
-        if [ ! -z "$iotaHornetEnablePlugin" ]; then
-            if [ "$iotaHornetEnablePlugin" = "participation" ] && [ "$iotaHornetDisableParticipation" = "true" ]; then
-                unset iotaHornetDisableParticipation
-            else
-                sudo jq '.node.enablePlugins |= .+ ["'$iotaHornetEnablePlugin'"]' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+    parser="$(jq '.node.enablePlugins' $iotaHornetHome/$iotaHornetConfig.json)"
+    parser="$(echo $parser | tr -d '[]" ')"
+    if [ "$parser" != "$iotaHornetEnablePlugins" ] || [ "$iotaHornetDisableParticipation" = "true" ]; then
+        sudo jq '.node.enablePlugins |= []' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+        for iotaHornetEnablePlugin in "${ARRAYiotaHornetEnablePlugins[@]}"
+        do
+            if [ ! -z "$iotaHornetEnablePlugin" ]; then
+                if [ "$iotaHornetEnablePlugin" = "participation" ] && [ "$iotaHornetDisableParticipation" = "true" ]; then
+                    unset iotaHornetDisableParticipation
+                else
+                    sudo jq '.node.enablePlugins |= .+ ["'$iotaHornetEnablePlugin'"]' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+                fi
             fi
-        fi
-    done
-    restartIotaHornet=true
-    echo "iotaHornetEnablePlugins" >> /tmp/iotaHornetParsing
-fi
+        done
+        restartIotaHornet=true
+        echo "iotaHornetEnablePlugins" >> /tmp/iotaHornetParsing
+    fi
 
-unset ARRAYiotaHornetEnablePlugins
-unset iotaHornetEnablePlugin
-unset useIotaHornetEnablePlugins
+    unset ARRAYiotaHornetEnablePlugins
+    unset iotaHornetEnablePlugin
+    unset useIotaHornetEnablePlugins
+fi

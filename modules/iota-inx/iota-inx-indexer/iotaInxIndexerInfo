@@ -1,0 +1,43 @@
+#!/bin/bash
+if [ -f "/usr/bin/iota-inx-indexer" ]; then
+
+    source $swarmConfigs/iota-inx-indexer.cfg
+    source $swarmConfigs/latest-versions.cfg
+
+    iotaInxIndexerStatus=$(systemctl show -p ActiveState --value iota-inx-indexer)
+
+    iotaInxIndexerVersion=$(/usr/bin/iota-inx-indexer -v | awk '{ print $2 }')
+    if [ -z "$iotaInxIndexerVersion" ]; then
+        iotaInxIndexerVersion="N/A"
+    else
+        if [ "$iotaInxIndexerVersion" != "$latestIotaInxIndexerVersion" ] && [ ! -z "$latestIotaInxIndexerVersion" ]; then
+            iotaInxIndexerVersion="$iotaInxIndexerVersion (new version \"v$latestIotaInxIndexerVersion\" available!)"
+        fi
+    fi
+
+    # DB size
+    if [ -d "$iotaInxIndexerHome/database" ]; then
+        getCurrentDbSize="$(du -sb $iotaInxIndexerHome/database | cut -f1)"
+        let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+        if [ $getCurrentDbSizeInMb -gt 999 ]; then
+            let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+            currentIotaInxIndexerDbSize="${getCurrentDbSizeInGb} GB"
+        else
+            currentIotaInxIndexerDbSize="${getCurrentDbSizeInMb} MB"
+        fi
+    else
+        currentIotaInxIndexerDbSize="N/A"
+    fi
+
+    if [ "$iotaInxIndexerUpdateCheck" = "true" ]; then
+        iotaInxIndexerUpdateCheckStatus="✓"
+    else
+        iotaInxIndexerUpdateCheckStatus="X"
+    fi
+
+    # OUTPUT
+    whiptail --title "INX-Indexer [IOTA] Info" --msgbox "INX-Indexer: $iotaInxIndexerStatus\nVersion: v$iotaInxIndexerVersion\nUpdate Check: $iotaInxIndexerUpdateCheckStatus\nDB size: $currentIotaInxIndexerDbSize" 24 65
+else
+    # OUTPUT
+    whiptail --title "INX-Indexer [IOTA] Info" --msgbox "INX-Indexer not installed!" 8 65
+fi

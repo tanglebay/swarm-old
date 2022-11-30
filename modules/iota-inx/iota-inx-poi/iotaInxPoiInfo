@@ -1,0 +1,30 @@
+#!/bin/bash
+if [ -f "/usr/bin/iota-inx-poi" ]; then
+
+    source $swarmConfigs/iota-inx-poi.cfg
+    source $swarmConfigs/latest-versions.cfg
+
+    iotaInxPoiStatus=$(systemctl show -p ActiveState --value iota-inx-poi)
+
+    iotaInxPoiVersion=$(/usr/bin/iota-inx-poi -v | awk '{ print $2 }')
+    if [ -z "$iotaInxPoiVersion" ]; then
+        iotaInxPoiVersion="N/A"
+    else
+        if [ "$iotaInxPoiVersion" != "$latestIotaInxPoiVersion" ] && [ ! -z "$latestIotaInxPoiVersion" ]; then
+            iotaInxPoiVersion="$iotaInxPoiVersion (new version \"v$latestIotaInxPoiVersion\" available!)"
+        fi
+    fi
+
+    if [ "$iotaInxPoiUpdateCheck" = "true" ]; then
+        iotaInxPoiUpdateCheckStatus="✓"
+    else
+        iotaInxPoiUpdateCheckStatus="X"
+    fi
+
+
+    # OUTPUT
+    whiptail --title "INX-POI [SHIMMER] Info" --msgbox "INX-POI: $iotaInxPoiStatus\nVersion: v$iotaInxPoiVersion\nUpdate Check: $iotaInxPoiUpdateCheckStatus" 24 65
+else
+    # OUTPUT
+    whiptail --title "INX-POI [SHIMMER] Info" --msgbox "INX-POI not installed!" 8 65
+fi

@@ -1,0 +1,104 @@
+#!/bin/bash
+while [ $exitCode -lt 1 ]; do
+    clear
+    source $swarmConfigs/iota-inx-poi.cfg
+    if [ "$iotaInxPoiUpdateCheck" = "true" ]; then
+        menuIotaInxPoiUpdateCheck="Disable"
+    else
+        menuIotaInxPoiUpdateCheck="Enable"
+    fi
+    source $iotaInxPoiModule/iotaInxPoiConfigs
+    CHOICE=$(
+        whiptail --title "INX-POI [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
+        "" "" \
+        "1)" "Set POI Address" \
+        "2)" "Set INX Address" \
+        "3)" "$menuIotaInxPoiUpdateCheck Update Check" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+        if [ "$restartIotaInxPoi" = "true" ] && [ -f "/usr/bin/iota-inx-poi" ]; then
+            if (whiptail --title "INX-POI [IOTA] Menu" --yesno "Would you like to apply the changes and restart [IOTA] INX-POI?" 8 65); then
+                if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
+                    sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                fi
+                {
+                    echo 0
+                    echo 33
+                    source $iotaInxPoiModule/iotaInxPoiParser
+                    echo 50
+                    sudo systemctl restart iota-inx-poi > /dev/null 2>&1
+                    sleep 0.25
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while the changes are applied and [IOTA] INX-POI is restarted..." 8 65 0
+                unset restartIotaInxPoi
+                if [ -f "/tmp/iota-inx-poi.lock" ]; then
+                    sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                fi
+            fi
+        fi
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $swarmConfigs/iota-inx-poi.cfg
+            iotaInxPoiAddress=$(whiptail --inputbox "\nSet the address of the [IOTA] INX-POI interface" 10 65 $iotaInxPoiAddress --title "INX-POI [IOTA] Address" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ $exitStatus != 1 ]; then
+                if [ ! -z "$iotaInxPoiAddress" ] && [[ $iotaInxPoiAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                    source $iotaInxPoiConfigParsers/iotaInxPoiAddress
+                    if [ "$newIotaInxPoiAddress" = "true" ]; then
+                        sudo sed -i 's/^iotaInxPoiAddress=.*/iotaInxPoiAddress="'$iotaInxPoiAddress'"/' $swarmConfigs/iota-inx-poi.cfg
+                        whiptail --title "INX-POI [IOTA] Address" --msgbox "New [IOTA] INX-POI address \"$iotaInxPoiAddress\" applied!" 8 65
+                        unset newIotaInxPoiAddress
+                    else
+                        whiptail --title "INX-POI [IOTA] Address" --msgbox "No [IOTA] INX-POI address change detected." 8 65
+                    fi
+                else
+                    whiptail --title "INX-POI [IOTA] Address" --msgbox "No valid [IOTA] INX-POI address, please try again." 8 65
+                fi
+            fi
+        ;;
+        "2)")
+            source $swarmConfigs/iota-inx-poi.cfg
+            iotaInxPoiInxAddress=$(whiptail --inputbox "\nSet the address of the [IOTA] INX interface" 10 65 $iotaInxPoiInxAddress --title "INX-POI [IOTA] INX Address" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ $exitStatus != 1 ]; then
+                if [ ! -z "$iotaInxPoiInxAddress" ] && [[ $iotaInxPoiInxAddress =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:+[0-9]+|^localhost:[0-9]+$ ]]; then
+                    source $iotaInxPoiConfigParsers/iotaInxPoiInxAddress
+                    if [ "$newIotaInxPoiInxAddress" = "true" ]; then
+                        sudo sed -i 's/^iotaInxPoiInxAddress=.*/iotaInxPoiInxAddress="'$iotaInxPoiInxAddress'"/' $swarmConfigs/iota-inx-poi.cfg
+                        whiptail --title "INX-POI [IOTA] INX Address" --msgbox "New [IOTA] INX address \"$iotaInxPoiInxAddress\" applied!" 8 65
+                        unset newIotaInxPoiInxAddress
+                    else
+                        whiptail --title "INX-POI [IOTA] INX Address" --msgbox "No [IOTA] INX address change detected." 8 65
+                    fi
+                else
+                    whiptail --title "INX-POI [IOTA] INX Address" --msgbox "No valid [IOTA] INX address, please try again." 8 65
+                fi
+            fi
+        ;;
+        "3)")
+            source $swarmConfigs/iota-inx-poi.cfg
+            if [ "$iotaInxPoiUpdateCheck" = "true" ]; then
+                iotaInxPoiUpdateCheckStatus="enabled"
+            else
+                iotaInxPoiUpdateCheckStatus="disabled"
+            fi
+            if (whiptail --title "INX-POI [IOTA] Update Check" --yesno "Would you like to \"$iotaInxPoiUpdateCheckStatus\" [IOTA] INX-POI update check?" 8 65); then
+                if [ "$iotaInxPoiUpdateCheck" = "true" ]; then
+                    iotaInxPoiUpdateCheck=false
+                else
+                    iotaInxPoiUpdateCheck=true
+                fi
+                source $iotaInxPoiConfigParsers/iotaInxPoiUpdateCheck
+                sudo sed -i 's~^iotaInxPoiUpdateCheck=.*~iotaInxPoiUpdateCheck='$iotaInxPoiUpdateCheck'~g' $swarmConfigs/iota-inx-poi.cfg
+            fi
+        ;;
+    esac
+done
+sudo chown -R inx:inx $iotaInxPoiHome/*.json
+exitCode=0

@@ -1,0 +1,372 @@
+#!/bin/bash
+
+while [ $exitCode -lt 1 ]; do
+    source $swarmConfigs/iota-inx-poi.cfg
+    clear
+    CHOICE=$(
+        whiptail --title "INX [SHIMMER] POI" --menu "\nChoose an option" 24 65 0 \
+        "" "" \
+        "1)" "INX-POI Info" \
+        "2)" "INX-POI Configuration" \
+        "3)" "INX-POI Management" \
+        "4)" "INX-POI Installer" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $iotaInxPoiModule/iotaInxPoiInfo
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                CHOICE=$(
+                    whiptail --title "INX-POI [SHIMMER] Configuration" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
+                    "1)" "INX-POI Configuration" \
+                    "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
+                )
+
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        source $iotaInxPoiModule/iotaInxPoiConfiguration
+                    ;;
+                    "2)")
+                        while [ $exitCode -lt 1 ]; do
+                            clear
+                            CHOICE=$(
+                                whiptail --title "INX-POI [SHIMMER] Configuration" --menu "\nChoose an option" 24 65 0 \
+                                "" "" \
+                                "1)" "Config.json" \
+                                "2)" "IOTA-INX-POI.cfg (SWARM)" 3>&2 2>&1 1>&3
+                            )
+
+                            exitstatus=$?
+                            if [ "$exitstatus" = "1" ]; then
+                                exitCode=1
+                            fi
+
+                            case $CHOICE in
+                                "1)")
+                                    if [ -f "$iotaInxPoiHome/config.json" ]; then
+                                        sudo $swarmCLEditor $iotaInxPoiHome/config.json
+                                        if (whiptail --title "INX-POI [SHIMMER] Configuration" --yesno --defaultno "Would you like to restart INX-POI now?" 8 65); then
+                                            if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
+                                                sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                            fi
+                                            {
+                                                echo 0
+                                                echo 50
+                                                sudo systemctl restart iota-inx-poi > /dev/null 2>&1
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while INX-POI is restarting..." 8 65 0
+                                            if [ -f "/tmp/iota-inx-poi.lock" ]; then
+                                                sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                            fi
+                                        fi
+                                    else
+                                        whiptail --title "INX-POI [SHIMMER] Configuration" --msgbox "INX-POI is not installed." 8 65
+                                    fi
+                                ;;
+                                "2)")
+                                    sudo $swarmCLEditor $swarmConfigs/iota-inx-poi.cfg
+                                    if [ -f "/usr/bin/iota-inx-poi" ]; then
+                                        if (whiptail --title "INX-POI [SHIMMER] Configuration" --yesno --defaultno "Would you like to restart INX-POI now?" 8 65); then
+                                            if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
+                                                sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                            fi
+                                            {
+                                                echo 0
+                                                source $iotaInxPoiModule/iotaInxPoiParser
+                                                echo 50
+                                                sudo systemctl restart iota-inx-poi > /dev/null 2>&1
+                                                echo 100
+                                                sleep 0.25
+                                            } | whiptail --gauge "Please wait while INX-POI is restarting..." 8 65 0
+                                            if [ -f "/tmp/iota-inx-poi.lock" ]; then
+                                                sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                            fi
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            if [ -f "/usr/bin/iota-inx-poi" ]; then
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    CHOICE=$(
+                        whiptail --title "INX-POI [SHIMMER] Management" --menu "\nChoose an option" 24 65 0 \
+                        "" "" \
+                        "1)" "Show INX-POI Log" \
+                        "2)" "Stop/Start INX-POI" \
+                        "3)" "Reset INX-POI Config" 3>&2 2>&1 1>&3
+                    )
+
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+
+                    case $CHOICE in
+                        "1)")
+                            # Display last 65 lines of log
+                            sudo journalctl -fu iota-inx-poi | less -FRSXM
+                            clear
+                        ;;
+                        "2)")
+                            CHOICE=$(
+                                whiptail --title "INX-POI [SHIMMER] Management" --menu "\nChoose your option" 24 65 0 \
+                                "" "" \
+                                "1)" "Restart INX-POI" \
+                                "2)" "Start INX-POI" \
+                                "3)" "Stop INX-POI" \
+                                "4)" "Status INX-POI" 3>&2 2>&1 1>&3
+                            )
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
+                            fi
+                            case $CHOICE in
+                                "1)")
+                                    if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
+                                        sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                    fi
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl restart iota-inx-poi > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-POI is restarting..." 8 65 0
+                                    if [ -f "/tmp/iota-inx-poi.lock" ]; then
+                                        sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                    fi
+                                    whiptail --title "INX-POI [SHIMMER] Management" --msgbox "INX-POI successfully restarted." 8 65
+                                ;;
+                                "2)")
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl start iota-inx-poi > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-POI is starting..." 8 65 0
+                                    if [ -f "/tmp/iota-inx-poi.lock" ]; then
+                                        sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                    fi
+                                    whiptail --title "INX-POI [SHIMMER] Management" --msgbox "INX-POI successfully started." 8 65
+                                ;;
+                                "3)")
+                                    if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
+                                        sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                    fi
+                                    {
+                                        echo 0
+                                        echo 50
+                                        sudo systemctl stop iota-inx-poi > /dev/null 2>&1
+                                        echo 100
+                                        sleep 0.25
+                                    } | whiptail --gauge "Please wait while INX-POI is stopping..." 8 65 0
+                                    whiptail --title "INX-POI [SHIMMER] Management" --msgbox "INX-POI successfully stopped." 8 65
+                                ;;
+                                "4)")
+                                    iotaInxPoiStatus="$(sudo systemctl status iota-inx-poi)"
+                                    whiptail --title "INX-POI [SHIMMER] Management" --msgbox "$iotaInxPoiStatus" 15 65
+                                ;;
+                            esac
+                        ;;
+                        "3)")
+                            if (whiptail --title "INX-POI [SHIMMER] Management" --yesno --defaultno "Are you sure you want to reset the INX-POI config file?" 8 65); then
+                                source $swarmConfigs/iota-inx-poi.cfg
+                                if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
+                                    sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                fi
+                                {
+                                    echo 0
+                                    echo 20
+                                    sudo systemctl stop iota-inx-poi > /dev/null 2>&1
+                                    echo 40
+                                    sudo -u inx wget -q -O $iotaInxPoiHome/config.json https://raw.githubusercontent.com/iotaledger/inx-poi/develop/config_template.json
+                                    echo 60
+                                    source $iotaInxPoiModule/iotaInxPoiParser
+                                    echo 80
+                                    sudo systemctl start iota-inx-poi > /dev/null 2>&1
+                                    echo 100
+                                    sleep 0.25
+                                } | whiptail --gauge "Please wait while the config reset is running (this may take a while)..." 8 65 0
+                                if [ -f "/tmp/iota-inx-poi.lock" ]; then
+                                    sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                fi
+                                whiptail --title "INX-POI [SHIMMER] Debugging" --msgbox "INX-POI config successfully reset." 8 65
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            else
+                whiptail --title "INX [SHIMMER] POI" --msgbox "Sorry, but INX-POI is not installed." 8 65
+            fi
+        ;;
+        "4)")
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "INX-POI [SHIMMER] Installer" --menu "\nChoose your option" 24 65 0 \
+                    "" "" \
+                    "1)" "Update INX-POI" \
+                    "2)" "Install INX-POI" \
+                    "3)" "Remove INX-POI" 3>&2 2>&1 1>&3
+                )
+
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/iota-inx-poi" ]; then
+                            if (whiptail --title "INX-POI [SHIMMER] Installer" --yesno --defaultno "Do you really want to update INX-POI?" 8 65); then
+                                if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
+                                    sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                fi
+                                # Update INX-POI
+                                source $iotaInxPoiModule/iotaInxPoiVersion
+                                if [ ! -z "$latestIotaInxPoiVersion" ]; then
+                                    {
+                                        echo 0
+                                        echo 33
+                                        source $iotaInxPoiModule/iotaInxPoiVersion
+                                        echo 66
+                                        source $iotaInxPoiModule/iotaInxPoiInstaller                      
+                                        echo 100
+                                        sleep 0.5
+                                    } | whiptail --gauge "Please wait while INX-POI is updated..." 8 65 0
+                                    {
+                                        # CALL MODULE CONFIGPARSER
+                                        source $iotaInxPoiModule/iotaInxPoiParser
+                                        sudo systemctl restart iota-inx-poi 2>/dev/null
+                                    } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                    iotaInxPoiChecksum=$(cat /tmp/iota-inx-poi.checksum 2>/dev/null)
+                                    whiptail --title "INX-Poi [SHIMMER] Installer" --msgbox "INX-Poi successfully updated.\n\nChecksum: $iotaInxPoiChecksum" 10 65
+                                    if [ -f "/tmp/iota-inx-poi.checksum" ]; then
+                                        sudo rm -rf /tmp/iota-inx-poi.checksum 2>/dev/null
+                                        unset iotaInxPoiChecksum
+                                    fi
+                                else
+                                    whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "Sorry, but INX-POI update aborted." 8 65
+                                fi
+                                if [ -f "/tmp/iota-inx-poi.lock" ]; then
+                                    sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                fi
+                            fi
+                        else
+                            whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "Sorry, but INX-POI is not installed." 8 65
+                        fi
+                    ;;
+                    "2)")
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            # INSTALL INX-POI
+                            if [ ! -f "/usr/bin/iota-inx-poi" ]; then
+                                if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
+                                    sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                fi
+                                source $swarmConfigs/iota-inx-poi.cfg
+                                source $iotaInxPoiModule/iotaInxPoiVersion
+                                {
+                                    echo 0
+                                    echo 10
+                                    echo 30
+                                    source $iotaInxPoiModule/iotaInxPoiInstaller
+                                    echo 50
+                                    if [ -f "/usr/bin/iota-inx-poi" ]; then
+                                        source $swarmConfigs/iota-inx-poi.cfg
+                                        echo 60
+                                        # CALL MODULE CONFIGPARSER
+                                        source $iotaInxPoiModule/iotaInxPoiParser
+                                        echo 70
+                                        sudo systemctl start iota-inx-poi > /dev/null 2>&1
+                                        echo 80
+                                        sleep 2
+                                        iotaInxPoiStatus="$(systemctl show -p ActiveState --value iota-inx-poi)"
+                                        if [ "$iotaInxPoiStatus" != "active" ]; then
+                                            sudo systemctl restart iota-inx-poi > /dev/null 2>&1
+                                        fi
+                                        echo 100
+                                    fi
+                                } | whiptail --gauge "Please wait while installing INX-POI..." 8 65 0
+                                if [ -f "/usr/bin/iota-inx-poi" ]; then
+                                    if [ -f "/tmp/iota-inx-poi.checksum" ]; then
+                                        iotaInxPoiChecksum=$(cat /tmp/iota-inx-poi.checksum)
+                                    fi
+                                    whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "INX-POI installation finished!\n\nChecksum: $iotaInxPoiChecksum" 17 65
+                                    if [ -f "/tmp/iota-inx-poi.checksum" ]; then
+                                        sudo rm -rf /tmp/iota-inx-poi.checksum > /dev/null 2>&1
+                                    fi
+                                    if (whiptail --title "INX-POI [SHIMMER] Installer" --yesno --defaultno "Do you want to make the API routes public for INX-POI?" 8 65); then
+                                        source $iotaInxPoiModule/iotaInxPoiApiRoutes
+                                    fi
+                                else
+                                    {
+                                        echo 0
+                                        echo 25
+                                        source $swarmConfigs/iota-inx-poi.cfg
+                                        echo 50
+                                        source $iotaInxPoiModule/iotaInxPoiRemoval
+                                        echo 75
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while the INX-POI files are removed...." 8 65 0
+                                    whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "Error while installing INX-POI! Please try again later." 8 65
+                                fi
+                                if [ -f "/tmp/iota-inx-poi.lock" ]; then
+                                    sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                fi
+                            else
+                                if [ -f "/usr/bin/iota-inx-poi" ]; then
+                                    whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "INX-POI already installed." 8 65
+                                else
+                                    if [ "$iotaInxPoiSkipInstallation" = "true" ]; then
+                                        whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "Installation of INX-POI aborted." 8 65
+                                    fi
+                                fi
+                            fi
+                            unset iotaInxPoiSkipInstallation iotaInxPoiChecksum
+                        else
+                            whiptail --title "INX [SHIMMER] POI" --msgbox "To be able to install INX-POI, a compatible node must be installed first." 8 65
+                        fi
+                    ;;
+                    "3)")
+                        if (whiptail --title "INX-POI [SHIMMER] Installer" --yesno --defaultno "Do you really want to remove INX-POI?" 8 65); then
+                            {
+                                echo 0
+                                echo 50
+                                source $iotaInxPoiModule/iotaInxPoiRemoval
+                                echo 100
+                                sleep 0.5
+                            } | whiptail --gauge "Please wait while INX-POI will be removed..." 8 65 0
+                            whiptail --title "INX-POI [SHIMMER] Installer" --msgbox "INX-POI successfully removed." 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+    esac
+done
+exitCode=0

@@ -31,6 +31,15 @@ do
             fi
             if [ $swarmAppStatusCounter -lt 5 ] 2>/dev/null; then
                 if [ $swarmAppStatusCounter -ge 1 ] 2>/dev/null; then
+                    if [ "$swarmApp" = "iota-hornet" ]; then
+                        for iotaInxPlugin in ${iotaInxPlugins[@]}
+                        do
+                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
+                            fi
+                        done
+                        unset iotaInxPlugin
+                    fi
                     if [ "$swarmApp" = "shimmer-hornet" ]; then
                         for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                         do
@@ -66,6 +75,12 @@ do
                                     sudo rm -rf $goshimmerHome/mainnetdb $goshimmerHome/peerdb
                                     swarmAppDbDeleted=true
                                 fi
+                                if [[ $swarmApp = *iota-inx* ]]; then
+                                    if [ -d "${!swarmAppHome}/database" ]; then
+                                        sudo rm -rf ${!swarmAppHome}/database 2>/dev/null
+                                        swarmAppDbDeleted=true
+                                    fi
+                                fi
                                 if [[ $swarmApp = *shimmer-inx* ]]; then
                                     if [ -d "${!swarmAppHome}/database" ]; then
                                         sudo rm -rf ${!swarmAppHome}/database 2>/dev/null
@@ -88,6 +103,15 @@ do
                     if [ $swarmAppStatusCounter -eq 1 ] 2>/dev/null; then
                         telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Service restarted."
                         source $watchdogModule/watchdogTelegram
+                    fi
+                    if [ "$swarmApp" = "iota-hornet" ]; then
+                        for iotaInxPlugin in ${iotaInxPlugins[@]}
+                        do
+                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                            fi
+                        done
+                        unset iotaInxPlugin
                     fi
                     if [ "$swarmApp" = "shimmer-hornet" ]; then
                         for shimmerInxPlugin in ${shimmerInxPlugins[@]}

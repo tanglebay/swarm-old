@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Check if release is changed
+if [ "$iotaInxDashboardRelease" != "$currentIotaInxDashboardRelease" ]; then
+    {
+        echo 0
+        echo 20
+        source $iotaInxDashboardModule/iotaInxDashboardRemoval
+        echo 40
+        source $iotaInxDashboardModule/iotaInxDashboardInstaller
+        echo 60
+        source $iotaInxDashboardModule/iotaInxDashboardParser
+        echo 80
+        if [ "$iotaInxDashboardUpdated" = "true" ] || [ "$restartIotaInxDashboard" = "true" ]; then
+            sudo systemctl restart iota-inx-dashboard
+            unset restartIotaInxDashboard
+        fi
+        echo 100
+    } | whiptail --gauge "Please wait while INX-Dashboard is prepared..." 8 65 0
+    whiptail --title "INX-Dashboard [IOTA] Configuration" --msgbox "New release channel ($iotaInxDashboardRelease) applied and INX-Dashboard was reinstalled!" 8 65
+fi

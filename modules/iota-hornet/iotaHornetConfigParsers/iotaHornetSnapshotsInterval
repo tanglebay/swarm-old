@@ -1,0 +1,27 @@
+#!/bin/bash
+
+if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
+    parser="$(jq '.snapshots.intervalSynced' $iotaHornetHome/$iotaHornetConfig.json)"
+    if [ ! -z "$parser" ]; then
+        jq 'del(.snapshots.intervalSynced)' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+    fi
+    parser="$(jq '.snapshots.interval' $iotaHornetHome/$iotaHornetConfig.json)"
+    if [ "$iotaHornetSnapshotsInterval" != "$parser" ]; then
+        sudo jq '.snapshots.interval = '$iotaHornetSnapshotsInterval'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+        restartIotaHornet=true
+        newIotaHornetSnapshotsInterval=true
+        echo "iotaHornetSnapshotsInterval" >> /tmp/iotaHornetParsing
+    fi
+else
+    parser="$(jq '.snapshots.intervalSynced' $iotaHornetHome/$iotaHornetConfig.json)"
+    if [ ! -z "$parser" ]; then
+        jq 'del(.snapshots.intervalSynced)' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+    fi
+    parser="$(jq '.snapshots.interval' $iotaHornetHome/$iotaHornetConfig.json)"
+    if [ "$iotaHornetSnapshotsInterval" != "$parser" ]; then
+        sudo jq '.snapshots.interval = '$iotaHornetSnapshotsInterval'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+        restartIotaHornet=true
+        newIotaHornetSnapshotsInterval=true
+        echo "iotaHornetSnapshotsInterval" >> /tmp/iotaHornetParsing
+    fi
+fi

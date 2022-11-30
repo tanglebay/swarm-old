@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Check if release is changed
+if [ "$iotaInxPoiRelease" != "$currentIotaInxPoiRelease" ]; then
+    {
+        echo 0
+        echo 20
+        source $iotaInxPoiModule/iotaInxPoiRemoval
+        echo 40
+        source $iotaInxPoiModule/iotaInxPoiInstaller
+        echo 60
+        source $iotaInxPoiModule/iotaInxPoiParser
+        echo 80
+        if [ "$iotaInxPoiUpdated" = "true" ] || [ "$restartIotaInxPoi" = "true" ]; then
+            sudo systemctl restart iota-inx-poi
+            unset restartIotaInxPoi
+        fi
+        echo 100
+    } | whiptail --gauge "Please wait while INX-POI is prepared..." 8 65 0
+    whiptail --title "INX-POI [IOTA] Configuration" --msgbox "New release channel ($iotaInxPoiRelease) applied and INX-POI was reinstalled!" 8 65
+fi

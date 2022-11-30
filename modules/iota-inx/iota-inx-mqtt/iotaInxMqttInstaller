@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# General
+if ! id inx >/dev/null 2>&1; then
+    useradd --no-create-home --system inx >/dev/null
+fi
+
+if [ ! -d "$iotaInxMqttHome" ]; then
+    sudo mkdir -p $iotaInxMqttHome > /dev/null 2>&1
+    sudo chown -R inx:inx $iotaInxMqttHome > /dev/null 2>&1
+fi
+
+# Install GO
+if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    sudo snap install go --classic > /dev/null 2>&1
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/iota-inx-mqtt.service" ]; then
+    sudo cp -rf $swarmTemplates/app-service/iota-inx-mqtt.service /lib/systemd/system/iota-inx-mqtt.service > /dev/null 2>&1
+    if [ ! -f "/etc/default/iota-inx-mqtt" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/iota-inx-mqtt
+    fi
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/iota-inx-mqtt.service" ]; then
+        sudo systemctl enable iota-inx-mqtt > /dev/null 2>&1
+    fi
+    sudo systemctl daemon-reload > /dev/null 2>&1
+fi
+
+##############################################################################################################################################
+
+# Create dir if not exist
+sudo mkdir -p /tmp/iota-inx-mqtt > /dev/null 2>&1
+
+source $swarmModule/swarmAuth
+if [ "$swarmAuth" = "200" ]; then
+    # Download latest inx-mqtt
+    ( cd /tmp/iota-inx-mqtt/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-mqtt/v${latestIotaInxMqttVersion}/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz )
+    if [ -f "/tmp/iota-inx-mqtt/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz" ]; then
+        iotaInxMqttDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-mqtt/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+    fi
+
+    # Download checksum
+    ( cd /tmp/iota-inx-mqtt/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-mqtt/v${latestIotaInxMqttVersion}/checksums_linux_$osArchitecture.txt )
+    iotaInxMqttChecksum=$(sudo grep "inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz" /tmp/iota-inx-mqtt/checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+    echo $iotaInxMqttChecksum > /tmp/iota-inx-mqtt.checksum
+
+    # Unzip archive
+    if [ "$iotaInxMqttDownloadChecksum" = "$iotaInxMqttChecksum" ] && [ ! -z "$iotaInxMqttDownloadChecksum" ] && [ ! -z "$iotaInxMqttChecksum" ]; then
+        ( cd /tmp/iota-inx-mqtt ; sudo tar -xzf /tmp/iota-inx-mqtt/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+
+        # Copy binary
+        if [ -f "/tmp/iota-inx-mqtt/inx-mqtt" ]; then
+            iotaInxMqttStatus="$(systemctl show -p ActiveState --value iota-inx-mqtt)"
+            if [ "$iotaInxMqttStatus" = "active" ]; then
+                sudo systemctl stop iota-inx-mqtt > /dev/null 2>&1
+            fi
+
+            sudo cp -rf /tmp/iota-inx-mqtt/inx-mqtt /usr/bin/iota-inx-mqtt > /dev/null 2>&1
+            sudo chmod +x /usr/bin/iota-inx-mqtt > /dev/null 2>&1
+            newIotaInxMqttBinary=true
+        fi
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newIotaInxMqttBinary" = "true" ]; then
+    if [ -f "/tmp/iota-inx-mqtt/config_defaults.json" ]; then
+        sudo cp -rf /tmp/iota-inx-mqtt/config_defaults.json /var/lib/inx-mqtt/config.json > /dev/null 2>&1
+        sudo chmod 644 /var/lib/iota-inx-mqtt/*.json > /dev/null 2>&1
+        newIotaInxMqttConfig=true
+    else
+        if [ -f "/tmp/iota-inx-mqtt/config.json" ]; then
+            sudo cp -rf /tmp/iota-inx-mqtt/config.json /var/lib/iota-inx-mqtt/config.json > /dev/null 2>&1
+            sudo chmod 644 /var/lib/iota-inx-mqtt/*.json > /dev/null 2>&1
+            newIotaInxMqttConfig=true
+        fi
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newIotaInxMqttConfig" = "true" ]; then
+    # Run installer modules
+    sudo chown -R inx:inx $iotaInxMqttHome > /dev/null 2>&1
+    sudo chmod 644 $iotaInxMqttHome/*.json > /dev/null 2>&1
+
+    restartIotaInxMqtt=true
+    iotaInxMqttUpdated=true
+
+    source $proxyModule/proxyIotaInxMqtt
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/iota-inx-mqtt > /dev/null 2>&1
+
+
+unset newIotaInxMqttBinary newIotaInxMqttConfig iotaInxMqttDownloadChecksum

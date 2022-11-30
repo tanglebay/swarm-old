@@ -1,126 +1,301 @@
 #!/bin/bash
 
-# Unset VARS
-unset iotaHornetApiPublicRoutes
+if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
+    # Unset VARS
+    unset iotaHornetApiPublicRoutes
 
-# /health
-if [[ $iotaHornetApiRoutes = */health* ]]; then
-    iotaHornetApiRoutesHealth=OFF
+    # /health
+    if [[ $iotaHornetApiRoutes = */health* ]]; then
+        iotaHornetApiRoutesHealth=OFF
+    else
+        iotaHornetApiRoutesHealth=ON
+        iotaHornetApiPublicRoutes="/health"
+    fi
+
+    # /api/routes
+    if [[ $iotaHornetApiRoutes = */api/routes* ]]; then
+        iotaHornetApiRoutesRoutes=OFF
+    else
+        iotaHornetApiRoutesRoutes=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/routes")
+    fi
+
+    # /api/core/info
+    if [[ $iotaHornetApiRoutes = */api/core/v2/info* ]]; then
+        iotaHornetApiRoutesInfo=OFF
+    else
+        iotaHornetApiRoutesInfo=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/core/v2/info")
+    fi
+
+    # /api/core/tips
+    if [[ $iotaHornetApiRoutes = */api/core/v2/tips* ]]; then
+        iotaHornetApiRoutesTips=OFF
+    else
+        iotaHornetApiRoutesTips=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/core/v2/tips")
+    fi
+
+    # /api/core/blocks
+    if [[ $iotaHornetApiRoutes = */api/core/v2/blocks\** ]]; then
+        iotaHornetApiRoutesBlocks=OFF
+    else
+        iotaHornetApiRoutesBlocks=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/core/v2/blocks*")
+    fi
+
+    #/api/core/transactions
+    if [[ $iotaHornetApiRoutes = */api/core/v2/transactions\** ]]; then
+        iotaHornetApiRoutesTransactions=OFF
+    else
+        iotaHornetApiRoutesTransactions=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/core/v2/transactions*")
+    fi
+
+    #/api/core/milestones
+    if [[ $iotaHornetApiRoutes = */api/core/v2/milestones\** ]]; then
+        iotaHornetApiRoutesMilestones=OFF
+    else
+        iotaHornetApiRoutesMilestones=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/core/v2/milestones*")
+    fi
+
+    #/api/core/outputs
+    if [[ $iotaHornetApiRoutes = */api/core/v2/outputs\** ]]; then
+        iotaHornetApiRoutesOutputs=OFF
+    else
+        iotaHornetApiRoutesOutputs=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/core/v2/outputs*")
+    fi
+
+    #/api/core/treasury
+    if [[ $iotaHornetApiRoutes = */api/core/v2/treasury* ]]; then
+        iotaHornetApiRoutesTreasury=OFF
+    else
+        iotaHornetApiRoutesTreasury=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/core/v2/treasury")
+    fi
+
+    #/api/core/receipts
+    if [[ $iotaHornetApiRoutes = */api/core/v2/receipts\** ]]; then
+        iotaHornetApiRoutesReceipts=OFF
+    else
+        iotaHornetApiRoutesReceipts=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/core/v2/receipts*")
+    fi
+
+    #/api/debug/v1/*
+    if [[ $iotaHornetApiRoutes = */api/debug/v1/\** ]]; then
+        iotaHornetApiRoutesDebug=OFF
+    else
+        iotaHornetApiRoutesDebug=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/debug/v1/*")
+    fi
+
+    #/api/indexer/v1/*
+    if [[ $iotaHornetApiRoutes = */api/indexer/v1/\** ]]; then
+        iotaHornetApiRoutesIndexer=OFF
+    else
+        iotaHornetApiRoutesIndexer=ON
+        if [ -f "/usr/bin/iota-inx-indexer" ]; then
+            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/indexer/v1/*")
+        fi
+    fi
+
+    # /api/mqtt/v1
+    if [[ $iotaHornetApiRoutes = */api/mqtt/v1* ]]; then
+        iotaHornetApiRoutesMqtt=OFF
+    else
+        iotaHornetApiRoutesMqtt=ON
+        if [ -f "/usr/bin/iota-inx-mqtt" ]; then
+            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/mqtt/v1")
+        fi
+    fi
+
+    #/api/participation/v1/events*
+    if [[ $iotaHornetApiRoutes = */api/participation/v1/events\** ]]; then
+        iotaHornetApiRoutesParticipationEvents=OFF
+    else
+        iotaHornetApiRoutesParticipationEvents=ON
+        if [ -f "/usr/bin/iota-inx-participation" ]; then
+            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/participation/v1/events*")
+        fi
+    fi
+
+    #/api/participation/v1/outputs*
+    if [[ $iotaHornetApiRoutes = */api/participation/v1/outputs\** ]]; then
+        iotaHornetApiRoutesParticipationOutputs=OFF
+    else
+        iotaHornetApiRoutesParticipationOutputs=ON
+        if [ -f "/usr/bin/iota-inx-participation" ]; then
+            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/participation/v1/outputs*")
+        fi
+    fi
+
+    #/api/participation/v1/addresses*
+    if [[ $iotaHornetApiRoutes = */api/participation/v1/addresses\** ]]; then
+        iotaHornetApiRoutesParticipationAddresses=OFF
+    else
+        iotaHornetApiRoutesParticipationAddresses=ON
+        if [ -f "/usr/bin/iota-inx-participation" ]; then
+            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/participation/v1/addresses*")
+        fi
+    fi
+
+    #/api/poi/v1/create/*
+    if [[ $iotaHornetApiRoutes = */api/poi/v1/create/\** ]]; then
+        iotaHornetApiRoutesPoiCreate=OFF
+    else
+        iotaHornetApiRoutesPoiCreate=ON
+        if [ -f "/usr/bin/iota-inx-poi" ]; then
+            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/poi/v1/create/*")
+        fi
+    fi
+
+    #/api/poi/v1/validate
+    if [[ $iotaHornetApiRoutes = */api/poi/v1/validate* ]]; then
+        iotaHornetApiRoutesPoiValidate=OFF
+    else
+        iotaHornetApiRoutesPoiValidate=ON
+        if [ -f "/usr/bin/iota-inx-poi" ]; then
+            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/poi/v1/validate")
+        fi
+    fi
+
+    ######
+
+    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes" | tr -s ',,' ',')
+    validateIotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes: -1}")
+    if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
+        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
+    fi
+
+    if [ "$iotaHornetUpdateApiRoutes" = "true" ]; then
+        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+    fi
 else
-    iotaHornetApiRoutesHealth=ON
-    iotaHornetApiPublicRoutes="/health"
-fi
+    # Unset VARS
+    unset iotaHornetApiPublicRoutes
 
-# /mqtt
-if [[ $iotaHornetApiRoutes = */mqtt* ]]; then
-    iotaHornetApiRoutesMqtt=OFF
-else
-    iotaHornetApiRoutesMqtt=ON
-    iotaHornetApiPublicRoutes="$iotaHornetApiPublicRoutes,/mqtt"
-fi
+    # /health
+    if [[ $iotaHornetApiRoutes = */health* ]]; then
+        iotaHornetApiRoutesHealth=OFF
+    else
+        iotaHornetApiRoutesHealth=ON
+        iotaHornetApiPublicRoutes="/health"
+    fi
 
-# /api/v1/info
-if [[ $iotaHornetApiRoutes = */api/v1/info* ]]; then
-    iotaHornetApiRoutesInfo=OFF
-else
-    iotaHornetApiRoutesInfo=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/info")
-fi
+    # /mqtt
+    if [[ $iotaHornetApiRoutes = */mqtt* ]]; then
+        iotaHornetApiRoutesMqtt=OFF
+    else
+        iotaHornetApiRoutesMqtt=ON
+        iotaHornetApiPublicRoutes="$iotaHornetApiPublicRoutes,/mqtt"
+    fi
 
-# /api/v1/tips
-if [[ $iotaHornetApiRoutes = */api/v1/tips* ]]; then
-    iotaHornetApiRoutesTips=OFF
-else
-    iotaHornetApiRoutesTips=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/tips")
-fi
+    # /api/v1/info
+    if [[ $iotaHornetApiRoutes = */api/v1/info* ]]; then
+        iotaHornetApiRoutesInfo=OFF
+    else
+        iotaHornetApiRoutesInfo=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/info")
+    fi
 
-# /api/v1/messages
-if [[ $iotaHornetApiRoutes = */api/v1/messages\** ]]; then
-    iotaHornetApiRoutesMessages=OFF
-else
-    iotaHornetApiRoutesMessages=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/messages*")
-fi
+    # /api/v1/tips
+    if [[ $iotaHornetApiRoutes = */api/v1/tips* ]]; then
+        iotaHornetApiRoutesTips=OFF
+    else
+        iotaHornetApiRoutesTips=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/tips")
+    fi
 
-#/api/v1/transactions
-if [[ $iotaHornetApiRoutes = */api/v1/transactions\** ]]; then
-    iotaHornetApiRoutesTransactions=OFF
-else
-    iotaHornetApiRoutesTransactions=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/transactions*")
-fi
+    # /api/v1/messages
+    if [[ $iotaHornetApiRoutes = */api/v1/messages\** ]]; then
+        iotaHornetApiRoutesMessages=OFF
+    else
+        iotaHornetApiRoutesMessages=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/messages*")
+    fi
 
-#/api/v1/milestones
-if [[ $iotaHornetApiRoutes = */api/v1/milestones\** ]]; then
-    iotaHornetApiRoutesMilestones=OFF
-else
-    iotaHornetApiRoutesMilestones=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/milestones*")
-fi
+    #/api/v1/transactions
+    if [[ $iotaHornetApiRoutes = */api/v1/transactions\** ]]; then
+        iotaHornetApiRoutesTransactions=OFF
+    else
+        iotaHornetApiRoutesTransactions=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/transactions*")
+    fi
 
-#/api/v1/outputs
-if [[ $iotaHornetApiRoutes = */api/v1/outputs\** ]]; then
-    iotaHornetApiRoutesOutputs=OFF
-else
-    iotaHornetApiRoutesOutputs=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/outputs*")
-fi
+    #/api/v1/milestones
+    if [[ $iotaHornetApiRoutes = */api/v1/milestones\** ]]; then
+        iotaHornetApiRoutesMilestones=OFF
+    else
+        iotaHornetApiRoutesMilestones=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/milestones*")
+    fi
 
-#/api/v1/addresses
-if [[ $iotaHornetApiRoutes = */api/v1/addresses\** ]]; then
-    iotaHornetApiRoutesAddresses=OFF
-else
-    iotaHornetApiRoutesAddresses=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/addresses*")
-fi
+    #/api/v1/outputs
+    if [[ $iotaHornetApiRoutes = */api/v1/outputs\** ]]; then
+        iotaHornetApiRoutesOutputs=OFF
+    else
+        iotaHornetApiRoutesOutputs=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/outputs*")
+    fi
 
-#/api/v1/treasury
-if [[ $iotaHornetApiRoutes = */api/v1/treasury* ]]; then
-    iotaHornetApiRoutesTreasury=OFF
-else
-    iotaHornetApiRoutesTreasury=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/treasury")
-fi
+    #/api/v1/addresses
+    if [[ $iotaHornetApiRoutes = */api/v1/addresses\** ]]; then
+        iotaHornetApiRoutesAddresses=OFF
+    else
+        iotaHornetApiRoutesAddresses=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/addresses*")
+    fi
 
-#/api/v1/receipts
-if [[ $iotaHornetApiRoutes = */api/v1/receipts\** ]]; then
-    iotaHornetApiRoutesReceipts=OFF
-else
-    iotaHornetApiRoutesReceipts=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/receipts*")
-fi
+    #/api/v1/treasury
+    if [[ $iotaHornetApiRoutes = */api/v1/treasury* ]]; then
+        iotaHornetApiRoutesTreasury=OFF
+    else
+        iotaHornetApiRoutesTreasury=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/treasury")
+    fi
 
-#/api/plugins/participation/events*
-if [[ $iotaHornetApiRoutes = */api/plugins/participation/events\** ]]; then
-    iotaHornetApiRoutesParticipationEvents=OFF
-else
-    iotaHornetApiRoutesParticipationEvents=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/plugins/participation/events*")
-fi
+    #/api/v1/receipts
+    if [[ $iotaHornetApiRoutes = */api/v1/receipts\** ]]; then
+        iotaHornetApiRoutesReceipts=OFF
+    else
+        iotaHornetApiRoutesReceipts=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/v1/receipts*")
+    fi
 
-if [[ $iotaHornetApiRoutes = */api/plugins/participation/outputs\** ]]; then
-    iotaHornetApiRoutesParticipationOutputs=OFF
-else
-    iotaHornetApiRoutesParticipationOutputs=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/plugins/participation/outputs*")
-fi
+    #/api/plugins/participation/events*
+    if [[ $iotaHornetApiRoutes = */api/plugins/participation/events\** ]]; then
+        iotaHornetApiRoutesParticipationEvents=OFF
+    else
+        iotaHornetApiRoutesParticipationEvents=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/plugins/participation/events*")
+    fi
 
-if [[ $iotaHornetApiRoutes = */api/plugins/participation/addresses\** ]]; then
-    iotaHornetApiRoutesParticipationAddresses=OFF
-else
-    iotaHornetApiRoutesParticipationAddresses=ON
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/plugins/participation/addresses*")
-fi
+    if [[ $iotaHornetApiRoutes = */api/plugins/participation/outputs\** ]]; then
+        iotaHornetApiRoutesParticipationOutputs=OFF
+    else
+        iotaHornetApiRoutesParticipationOutputs=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/plugins/participation/outputs*")
+    fi
 
-######
+    if [[ $iotaHornetApiRoutes = */api/plugins/participation/addresses\** ]]; then
+        iotaHornetApiRoutesParticipationAddresses=OFF
+    else
+        iotaHornetApiRoutesParticipationAddresses=ON
+        iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/plugins/participation/addresses*")
+    fi
 
-iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes" | tr -s ',,' ',')
-validateIotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes: -1}")
-if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
-    iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
-fi
+    ######
 
-if [ "$iotaHornetUpdateApiRoutes" = "true" ]; then
-    sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes" | tr -s ',,' ',')
+    validateIotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes: -1}")
+    if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
+        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
+    fi
+
+    if [ "$iotaHornetUpdateApiRoutes" = "true" ]; then
+        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+    fi
 fi

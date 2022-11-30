@@ -1,23 +1,25 @@
 #!/bin/bash
 
-useIotaHornetDisablePlugins=true
-source $iotaHornetModule/iotaHornetPlugins
+if [ "$iotaHornetReleaseVersion" != "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^1.* ]]; then
+    useIotaHornetDisablePlugins=true
+    source $iotaHornetModule/iotaHornetPlugins
 
-IFS=', ' read -r -a ARRAYiotaHornetDisablePlugins <<< "$iotaHornetDisablePlugins"
+    IFS=', ' read -r -a ARRAYiotaHornetDisablePlugins <<< "$iotaHornetDisablePlugins"
 
-parser="$(jq '.node.disablePlugins' $iotaHornetHome/$iotaHornetConfig.json)"
-parser="$(echo $parser | tr -d '[]" ')"
-if [ "$parser" != "$iotaHornetDisablePlugins" ]; then
-    sudo jq '.node.disablePlugins |= []' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-    for iotaHornetDisablePlugin in "${ARRAYiotaHornetDisablePlugins[@]}"
-    do
-        if [ ! -z "$iotaHornetDisablePlugin" ]; then
-            sudo jq '.node.disablePlugins |= .+ ["'$iotaHornetDisablePlugin'"]' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-        fi
-    done
-    restartIotaHornet=true
-    echo "iotaHornetDisablePlugins" >> /tmp/iotaHornetParsing
+    parser="$(jq '.node.disablePlugins' $iotaHornetHome/$iotaHornetConfig.json)"
+    parser="$(echo $parser | tr -d '[]" ')"
+    if [ "$parser" != "$iotaHornetDisablePlugins" ]; then
+        sudo jq '.node.disablePlugins |= []' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+        for iotaHornetDisablePlugin in "${ARRAYiotaHornetDisablePlugins[@]}"
+        do
+            if [ ! -z "$iotaHornetDisablePlugin" ]; then
+                sudo jq '.node.disablePlugins |= .+ ["'$iotaHornetDisablePlugin'"]' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            fi
+        done
+        restartIotaHornet=true
+        echo "iotaHornetDisablePlugins" >> /tmp/iotaHornetParsing
+    fi
+    unset ARRAYiotaHornetDisablePlugins
+    unset iotaHornetDisablePlugin
+    unset useIotaHornetDisablePlugins
 fi
-unset ARRAYiotaHornetDisablePlugins
-unset iotaHornetDisablePlugin
-unset useIotaHornetDisablePlugins

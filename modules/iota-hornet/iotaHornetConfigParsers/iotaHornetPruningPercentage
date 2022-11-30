@@ -1,16 +1,33 @@
 #!/bin/bash
 
-if [ -z "$iotaHornetPruningPercentage" ]; then
-    iotaHornetPruningPercentage=5
-else
-    iotaHornetPruningPercentage=$(echo ${iotaHornetPruningPercentage%.*})
-fi
+if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
+    if [ -z "$iotaHornetPruningPercentage" ]; then
+        iotaHornetPruningPercentage=5
+    else
+        iotaHornetPruningPercentage=$(echo ${iotaHornetPruningPercentage%.*})
+    fi
 
-if [ "$iotaHornetPruning" = "true" ]; then
-    parser="$(jq '.pruning.size.thresholdPercentage' $iotaHornetHome/$iotaHornetConfig.json)"
-    if [ "$parser" != "$iotaHornetPruningPercentage" ]; then
-        sudo jq '.pruning.size.thresholdPercentage = '$iotaHornetPruningPercentage'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-        restartIotaHornet=true
-        echo "iotaHornetPruningPercentage" >> /tmp/iotaHornetParsing
+    if [ "$iotaHornetPruning" = "true" ]; then
+        parser="$(jq '.pruning.size.thresholdPercentage' $iotaHornetHome/$iotaHornetConfig.json)"
+        if [ "$parser" != "$iotaHornetPruningPercentage" ]; then
+            sudo jq '.pruning.size.thresholdPercentage = '$iotaHornetPruningPercentage'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            restartIotaHornet=true
+            echo "iotaHornetPruningPercentage" >> /tmp/iotaHornetParsing
+        fi
+    fi
+else
+    if [ -z "$iotaHornetPruningPercentage" ]; then
+        iotaHornetPruningPercentage=5
+    else
+        iotaHornetPruningPercentage=$(echo ${iotaHornetPruningPercentage%.*})
+    fi
+
+    if [ "$iotaHornetPruning" = "true" ]; then
+        parser="$(jq '.pruning.size.thresholdPercentage' $iotaHornetHome/$iotaHornetConfig.json)"
+        if [ "$parser" != "$iotaHornetPruningPercentage" ]; then
+            sudo jq '.pruning.size.thresholdPercentage = '$iotaHornetPruningPercentage'' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            restartIotaHornet=true
+            echo "iotaHornetPruningPercentage" >> /tmp/iotaHornetParsing
+        fi
     fi
 fi

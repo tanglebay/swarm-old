@@ -1,0 +1,41 @@
+#!/bin/bash
+if [ -f "/usr/bin/iota-inx-mqtt" ]; then
+
+    source $swarmConfigs/iota-inx-mqtt.cfg
+    source $swarmConfigs/latest-versions.cfg
+
+    iotaInxMqttStatus=$(systemctl show -p ActiveState --value iota-inx-mqtt)
+
+    iotaInxMqttVersion=$(/usr/bin/iota-inx-mqtt -v | awk '{ print $2 }')
+    if [ -z "$iotaInxMqttVersion" ]; then
+        iotaInxMqttVersion="N/A"
+    else
+        if [ "$iotaInxMqttVersion" != "$latestIotaInxMqttVersion" ] && [ ! -z "$latestIotaInxMqttVersion" ]; then
+            iotaInxMqttVersion="$iotaInxMqttVersion (new version \"v$latestIotaInxMqttVersion\" available!)"
+        fi
+    fi
+
+    if [ "$iotaInxMqttUpdateCheck" = "true" ]; then
+        iotaInxMqttUpdateCheckStatus="✓"
+    else
+        iotaInxMqttUpdateCheckStatus="X"
+    fi
+
+    if [ "$iotaInxMqttWebsocketEnabled" = "true" ]; then
+        iotaInxMqttWebsocketEnabledStatus="✓"
+    else
+        iotaInxMqttWebsocketEnabledStatus="X"
+    fi
+
+    if [ "$iotaInxMqttTcpEnabled" = "true" ]; then
+        iotaInxMqttTcpEnabledStatus="✓"
+    else
+        iotaInxMqttTcpEnabledStatus="X"
+    fi
+
+    # OUTPUT
+    whiptail --title "INX-Mqtt [IOTA] Info" --msgbox "INX-Mqtt: $iotaInxMqttStatus\nVersion: v$iotaInxMqttVersion\nUpdate Check: $iotaInxMqttUpdateCheckStatus\nWebsocket: $iotaInxMqttWebsocketEnabledStatus\nTCP: $iotaInxMqttTcpEnabledStatus" 24 65
+else
+    # OUTPUT
+    whiptail --title "INX-Mqtt [IOTA] Info" --msgbox "INX-Mqtt not installed!" 8 65
+fi

@@ -1,12 +1,25 @@
 #!/bin/bash
 
-parser="$(jq '.restAPI.jwtAuth.salt' $iotaHornetHome/$iotaHornetConfig.json)"
-parser=$(echo $parser | tr -d '"')
-if [ "$iotaHornetApiJwtSalt" != "$parser" ]; then
-    if [ ! -z "$iotaHornetApiJwtSalt" ] 2>/dev/null; then
-        sudo jq '.restAPI.jwtAuth.salt = "'$iotaHornetApiJwtSalt'"' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
-        restartIotaHornet=true
-        newIotaHornetApiJwtToken=true
-        echo "iotaHornetApiJwtSalt" >> /tmp/iotaHornetParsing
+if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
+    parser="$(jq '.restAPI.jwtAuth.salt' $iotaHornetHome/$iotaHornetConfig.json)"
+    parser=$(echo $parser | tr -d '"')
+    if [ "$iotaHornetApiJwtSalt" != "$parser" ]; then
+        if [ ! -z "$iotaHornetApiJwtSalt" ] 2>/dev/null; then
+            sudo jq '.restAPI.jwtAuth.salt = "'$iotaHornetApiJwtSalt'"' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            restartIotaHornet=true
+            newIotaHornetApiJwtToken=true
+            echo "iotaHornetApiJwtSalt" >> /tmp/iotaHornetParsing
+        fi
+    fi
+else
+    parser="$(jq '.restAPI.jwtAuth.salt' $iotaHornetHome/$iotaHornetConfig.json)"
+    parser=$(echo $parser | tr -d '"')
+    if [ "$iotaHornetApiJwtSalt" != "$parser" ]; then
+        if [ ! -z "$iotaHornetApiJwtSalt" ] 2>/dev/null; then
+            sudo jq '.restAPI.jwtAuth.salt = "'$iotaHornetApiJwtSalt'"' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            restartIotaHornet=true
+            newIotaHornetApiJwtToken=true
+            echo "iotaHornetApiJwtSalt" >> /tmp/iotaHornetParsing
+        fi
     fi
 fi

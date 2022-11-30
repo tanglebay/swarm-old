@@ -1,8 +1,9 @@
 #!/bin/bash
+
 while [ $exitCode -lt 1 ]; do
     clear
     CHOICE=$(
-        whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
+        whiptail --title "Proxy [-] Menu" --menu "\nChoose an option" 24 65 0 \
         "" "" \
         "1)" "Proxy Info" \
         "2)" "Proxy Configuration" \
@@ -20,6 +21,7 @@ while [ $exitCode -lt 1 ]; do
             source $proxyModule/proxyInfo
         ;;
         "2)")
+            source $proxyModule/proxyAppCheck
             while [ $exitCode -lt 1 ]; do
                 clear
                 if [ "$proxySwarmEndpoint" = "true" ]; then
@@ -28,19 +30,28 @@ while [ $exitCode -lt 1 ]; do
                     menuProxySwarmEndpoint="Enable"
                 fi
                 CHOICE=$(
-                    whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Proxy [-] Menu" --menu "\nChoose an option" 24 65 0 \
                     "" "" \
                     "1)" "$menuProxySwarmEndpoint SWARM Endpoint" \
-                    "2)" "Hornet [IOTA] proxy settings" \
-                    "3)" "Hornet [SHIMMER] proxy settings" \
-                    "4)" "INX-Dashboard [SHIMMER] proxy settings" \
-                    "5)" "GoShimmer proxy settings" \
-                    "6)" "Advanced Settings" 3>&2 2>&1 1>&3
+                    "2)" "Hornet [IOTA] Proxy Settings" \
+                    "3)" "Hornet [SHIMMER] Proxy Settings" \
+                    "4)" "INX-Dashboard [IOTA] Proxy Settings" \
+                    "5)" "INX-Dashboard [SHIMMER] Proxy Settings" \
+                    "6)" "GoShimmer Proxy Settings" \
+                    "7)" "Advanced Settings" 3>&2 2>&1 1>&3
                 )
 
                 exitStatus=$?
                 if [ "$exitStatus" = "1" ]; then
                     exitCode=1
+                    if [ "$proxyDeployNeeded" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
+                        if (whiptail --title "Proxy [-] Menu" --yesno "Would you like to apply the changes and install/deploy the proxy?" 8 65); then
+                            source $swarmConfigs/proxy.cfg
+                            source $proxyModule/proxyDeployment
+                            clear
+                            unset proxyDeployNeeded
+                        fi
+                    fi
                 fi
 
                 case $CHOICE in
@@ -54,228 +65,360 @@ while [ $exitCode -lt 1 ]; do
                         fi
                         sudo sed -i 's/^proxySwarmEndpoint=.*/proxySwarmEndpoint='$proxySwarmEndpoint'/' $swarmConfigs/proxy.cfg
                         source $proxyModule/proxySwarmEndpoint
-                        whiptail --title "Proxy - SWARM" --msgbox "SWARM endpoint $proxySwarmEndpointMenu." 8 65
+                        whiptail --title "Proxy [-] SWARM" --msgbox "SWARM endpoint $proxySwarmEndpointMenu." 8 65
                     ;;
                     "2)")
-                        source $swarmConfigs/proxy.cfg
-                        currentProxyIotaHornetUrl="$proxyIotaHornetUrl"
-                        if [ -z "$proxyIotaHornetUrl" ]; then
-                            proxyIotaHornetUrl="my.example.com:443"
-                        fi
-                        proxyUrl=$(whiptail --inputbox "\nSet your domain and port for Hornet" 10 65 $proxyIotaHornetUrl --title "Proxy [IOTA] Hornet" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ "$proxyUrl" = "my.example.com:443" ]; then
-                            unset proxyUrl
-                        fi
-                        if [ "$exitStatus" != "1" ]; then
-                            source $proxyModule/proxyUrlValidation
-                            if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
-                                if [ "$currentProxyIotaHornetUrl" != "$proxyUrl" ]; then
-                                    sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
-                                    whiptail --title "Proxy [IOTA] Hornet" --msgbox "URL for Hornet proxy set to \"$proxyUrl\"." 8 65
-                                else
-                                    whiptail --title "Proxy [IOTA] Hornet" --msgbox "No Hornet url change detected." 8 65
-                                fi
-                                unset proxyUrl proxyUrlValid
-                            else
-                                whiptail --title "Proxy [IOTA] Hornet" --msgbox "No valid Hornet url." 8 65
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            source $swarmConfigs/proxy.cfg
+                            currentProxyUrl="$proxyIotaHornetUrl"
+                            currentProxyPort=$(echo $currentProxyUrl | sed 's/.*://')
+                            if [ -z "$proxyIotaHornetUrl" ]; then
+                                proxyIotaHornetUrl="my.example.com:443"
                             fi
+                            proxyUrl=$(whiptail --inputbox "\nSet your domain and port for Hornet" 10 65 $proxyIotaHornetUrl --title "Proxy [IOTA] Hornet" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ "$proxyUrl" = "my.example.com:443" ]; then
+                                unset proxyUrl
+                            fi
+                            if [ "$exitStatus" != "1" ]; then
+                                source $proxyModule/proxyUrlValidation
+                                if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
+                                    if [ "$currentProxyUrl" != "$proxyUrl" ]; then
+                                        proxyDeployNeeded=true
+                                        sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
+                                        source $proxyModule/proxySharedPortCheck
+                                        whiptail --title "Proxy [IOTA] Hornet" --msgbox "URL for (IOTA) Hornet proxy set to \"$proxyUrl\"." 8 65
+                                    else
+                                        whiptail --title "Proxy [IOTA] Hornet" --msgbox "No (IOTA) Hornet url change detected." 8 65
+                                    fi
+                                    unset proxyUrl proxyUrlValid
+                                else
+                                    whiptail --title "Proxy [IOTA] Hornet" --msgbox "No valid (IOTA) Hornet url." 8 65
+                                fi
+                            fi
+                            unset currentProxyUrl currentProxyPort
+                        else
+                            whiptail --title "Proxy [IOTA] Hornet" --msgbox "Please install (IOTA) Hornet first." 8 65
                         fi
                     ;;
                     "3)")
-                        source $swarmConfigs/proxy.cfg
-                        currentProxyShimmerHornetUrl="$proxyShimmerHornetUrl"
-                        if [ -z "$proxyShimmerHornetUrl" ]; then
-                            proxyShimmerHornetUrl="my.example.com:443"
-                        fi
-                        proxyUrl=$(whiptail --inputbox "\nSet your domain and port for Hornet-Shimmer" 10 65 $proxyShimmerHornetUrl --title "Proxy [Shimmer] Hornet" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ "$proxyUrl" = "my.example.com:443" ]; then
-                            unset proxyUrl
-                        fi
-                        if [ "$exitStatus" != "1" ]; then
-                            source $proxyModule/proxyUrlValidation
-                            if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
-                                if [ "$currentProxyShimmerHornetUrl" != "$proxyUrl" ]; then
-                                    sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
-                                    whiptail --title "Proxy [Shimmer] Hornet" --msgbox "URL for Hornet-Shimmer proxy set to \"$proxyUrl\"." 8 65
-                                else
-                                    whiptail --title "Proxy [Shimmer] Hornet" --msgbox "No Hornet-Shimmer url change detected." 8 65
-                                fi
-                                unset proxyUrl proxyUrlValid
-                            else
-                                whiptail --title "Proxy [Shimmer] Hornet" --msgbox "No valid Hornet-Shimmer url." 8 65
+                        if [ -f "/usr/bin/shimmer-hornet" ]; then
+                            source $swarmConfigs/proxy.cfg
+                            currentProxyUrl="$proxyShimmerHornetUrl"
+                            currentProxyPort=$(echo $currentProxyUrl | sed 's/.*://')
+                            if [ -z "$proxyShimmerHornetUrl" ]; then
+                                proxyShimmerHornetUrl="my.example.com:443"
                             fi
+                            proxyUrl=$(whiptail --inputbox "\nSet your domain and port for (Shimmer) Hornet" 10 65 $proxyShimmerHornetUrl --title "Proxy [Shimmer] Hornet" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ "$proxyUrl" = "my.example.com:443" ]; then
+                                unset proxyUrl
+                            fi
+                            if [ "$exitStatus" != "1" ]; then
+                                source $proxyModule/proxyUrlValidation
+                                if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
+                                    if [ "$currentProxyUrl" != "$proxyUrl" ]; then
+                                        proxyDeployNeeded=true
+                                        sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
+                                        source $proxyModule/proxySharedPortCheck
+                                        whiptail --title "Proxy [Shimmer] Hornet" --msgbox "URL for (Shimmer) Hornet proxy set to \"$proxyUrl\"." 8 65
+                                    else
+                                        whiptail --title "Proxy [Shimmer] Hornet" --msgbox "No (Shimmer) Hornet url change detected." 8 65
+                                    fi
+                                    unset proxyUrl proxyUrlValid
+                                else
+                                    whiptail --title "Proxy [Shimmer] Hornet" --msgbox "No valid (Shimmer) Hornet url." 8 65
+                                fi
+                            fi
+                            unset currentProxyUrl currentProxyPort
+                        else
+                            whiptail --title "Proxy [SHIMMER] Hornet" --msgbox "Please install (Shimmer) Hornet first." 8 65
                         fi
                     ;;
                     "4)")
-                        while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/proxy.cfg
-                            clear
-                            if [ "$proxyShimmerInxDashboardSingle" = "true" ]; then
-                                proxyShimmerInxDashboardSingleMenu="Disable"
-                            else
-                                proxyShimmerInxDashboardSingleMenu="Enable"
-                            fi
-                            CHOICE=$(
-                                whiptail --title "Proxy [SHIMMER] INX-Dashboard" --menu "\nChoose an option" 24 65 0 \
-                                "" "" \
-                                "1)" "$proxyShimmerInxDashboardSingleMenu INX-Dashboard as single endpoint" \
-                                "2)" "Set INX-Dashboard url" 3>&2 2>&1 1>&3
-                            )
-                            exitStatus=$?
-                            if [ "$exitStatus" = "1" ]; then
-                                exitCode=1
-                            fi
-                            case $CHOICE in
-                                "1)")
+                        if [ -f  "/usr/bin/iota-inx-dashboard" ]; then
+                            if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
+                                while [ $exitCode -lt 1 ]; do
                                     source $swarmConfigs/proxy.cfg
-                                    if [ ! -z "$proxyShimmerInxDashboardUrl" ]; then
-                                        if [ "$proxyShimmerInxDashboardSingle" = "true" ]; then
-                                            proxyShimmerInxDashboardSingle=false
-                                            sudo sed -i 's/^proxyShimmerInxDashboardSingle=.*/proxyShimmerInxDashboardSingle='$proxyShimmerInxDashboardSingle'/' $swarmConfigs/proxy.cfg
-                                            whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "INX-Dashboard as single endpoint disabled successfully." 8 65
-                                        else
-                                            if (whiptail --title "Proxy [SHIMMER] INX-Dashboard" --yesno --defaultno "Before you change the settings, are you sure you want to separate the INX dashboard from the Hornet (Shimmer) proxy endpoint (its own subdomain or port)?\n\nAre you sure you want to continue?" 16 65); then
-                                                proxyShimmerInxDashboardSingle=true
-                                                sudo sed -i 's/^proxyShimmerInxDashboardSingle=.*/proxyShimmerInxDashboardSingle='$proxyShimmerInxDashboardSingle'/' $swarmConfigs/proxy.cfg
-                                                whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "INX-Dashboard as single endpoint enabled successfully." 8 65
-                                            fi
-                                        fi
+                                    clear
+                                    if [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
+                                        proxyIotaInxDashboardEnabledMenu="Disable"
                                     else
-                                        proxyShimmerInxDashboardSingle=false
-                                        sudo sed -i 's/^proxyShimmerInxDashboardSingle=.*/proxyShimmerInxDashboardSingle='$proxyShimmerInxDashboardSingle'/' $swarmConfigs/proxy.cfg
-                                        whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "Aborted - To change this setting please set the url first." 8 65
+                                        proxyIotaInxDashboardEnabledMenu="Enable"
                                     fi
-                                ;;
-                                "2)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyShimmerInxDashboardUrl="$proxyShimmerInxDashboardUrl"
-                                    if [ -z "$proxyShimmerInxDashboardUrl" ]; then
-                                        proxyUrl="my.example.com:443"
-                                    fi
-                                    proxyUrl=$(whiptail --inputbox "\nSet your domain and port for the INX-Dashboard (single endpoint)" 10 65 $proxyShimmerInxDashboardUrl --title "Proxy [SHIMMER] INX-Dashboard" 3>&1 1>&2 2>&3)
+                                    CHOICE=$(
+                                        whiptail --title "Proxy [IOTA] INX-Dashboard" --menu "\nChoose an option" 24 65 0 \
+                                        "" "" \
+                                        "1)" "$proxyIotaInxDashboardEnabledMenu INX-Dashboard" \
+                                        "2)" "Set INX-Dashboard url" 3>&2 2>&1 1>&3
+                                    )
                                     exitStatus=$?
-                                    if [ "$proxyUrl" = "my.example.com:443" ]; then
-                                        unset proxyUrl
+                                    if [ "$exitStatus" = "1" ]; then
+                                        exitCode=1
                                     fi
-                                    if [ "$exitStatus" != "1" ]; then
-                                        source $proxyModule/proxyUrlValidation
-                                        if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
-                                            if [ "$currentProxyShimmerInxDashboardUrl" != "$proxyUrl" ]; then
-                                                sudo sed -i 's/^proxyShimmerInxDashboardUrl=.*/proxyShimmerInxDashboardUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
-                                                whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "URL for INX-Dashboard (Shimmer) proxy set to \"$proxyUrl\"." 8 65
+                                    case $CHOICE in
+                                        "1)")
+                                            source $swarmConfigs/proxy.cfg
+                                            if [ ! -z "$proxyIotaInxDashboardUrl" ]; then
+                                                if [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
+                                                    proxyDeployNeeded=true
+                                                    proxyIotaInxDashboardEnabled=false
+                                                    sudo sed -i 's/^proxyIotaInxDashboardEnabled=.*/proxyIotaInxDashboardEnabled='$proxyIotaInxDashboardEnabled'/' $swarmConfigs/proxy.cfg
+                                                    whiptail --title "Proxy [IOTA] INX-Dashboard" --msgbox "INX-Dashboard disabled successfully and Hornet dasboard via url enabled." 8 65
+                                                else
+                                                    if (whiptail --title "Proxy [IOTA] INX-Dashboard" --yesno --defaultno "Before you change the settings, are you sure you want to separate the INX dashboard from the Hornet (Shimmer) proxy endpoint (its own subdomain or port)?\n\nAre you sure you want to continue?" 16 65); then
+                                                        proxyShimmerInxDashboardEnabled=true
+                                                        proxyDeployNeeded=true
+                                                        sudo sed -i 's/^proxyIotaInxDashboardEnabled=.*/proxyIotaInxDashboardEnabled='$proxyIotaInxDashboardEnabled'/' $swarmConfigs/proxy.cfg
+                                                        whiptail --title "Proxy [IOTA] INX-Dashboard" --msgbox "INX-Dashboard enabled successfully and Hornet dashboard url disabled." 8 65
+                                                    fi
+                                                fi
                                             else
-                                                whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "No INX-Dashboard (Shimmer) url change detected." 8 65
+                                                proxyIotaInxDashboardEnabled=false
+                                                proxyDeployNeeded=true
+                                                sudo sed -i 's/^proxyIotaInxDashboardEnabled=.*/proxyIotaInxDashboardEnabled='$proxyIotaInxDashboardEnabled'/' $swarmConfigs/proxy.cfg
+                                                whiptail --title "Proxy [IOTA] INX-Dashboard" --msgbox "Aborted - To change this setting please set the url first." 8 65
                                             fi
-                                            unset proxyUrl proxyUrlValid
-                                        else
-                                            whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "No valid INX-Dashboard (Shimmer) url." 8 65
-                                        fi
-                                    fi
-                                ;;
-                            esac
-                        done
-                        exitCode=0
+                                        ;;
+                                        "2)")
+                                            source $swarmConfigs/proxy.cfg
+                                            currentProxyUrl="$proxyIotaInxDashboardUrl"
+                                            currentProxyPort=$(echo $currentProxyUrl | sed 's/.*://')
+                                            if [ -z "$proxyIotaInxDashboardUrl" ]; then
+                                                proxyUrl="my.example.com:443"
+                                            fi
+                                            proxyUrl=$(whiptail --inputbox "\nSet your domain and port for the INX-Dashboard" 10 65 $proxyIotaInxDashboardUrl --title "Proxy [IOTA] INX-Dashboard" 3>&1 1>&2 2>&3)
+                                            exitStatus=$?
+                                            if [ "$proxyUrl" = "my.example.com:443" ]; then
+                                                unset proxyUrl
+                                            fi
+                                            if [ "$exitStatus" != "1" ]; then
+                                                source $proxyModule/proxyUrlValidation
+                                                if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
+                                                    if [ "$currentProxyUrl" != "$proxyUrl" ]; then
+                                                        proxyDeployNeeded=true
+                                                        sudo sed -i 's/^proxyIotaInxDashboardUrl=.*/proxyIotaInxDashboardUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
+                                                        source $proxyModule/proxySharedPortCheck
+                                                        whiptail --title "Proxy [IOTA] INX-Dashboard" --msgbox "URL for INX-Dashboard (IOTA) proxy set to \"$proxyUrl\"." 8 65
+                                                    else
+                                                        whiptail --title "Proxy [IOTA] INX-Dashboard" --msgbox "No INX-Dashboard (IOTA) url change detected." 8 65
+                                                    fi
+                                                    unset proxyUrl proxyUrlValid
+                                                else
+                                                    whiptail --title "Proxy [IOTA] INX-Dashboard" --msgbox "No valid INX-Dashboard (IOTA) url." 8 65
+                                                fi
+                                            fi
+                                            unset currentProxyUrl currentProxyPort
+                                        ;;
+                                    esac
+                                done
+                                exitCode=0
+                            else
+                                whiptail --title "Proxy [IOTA] INX-Dashboard" --msgbox "This option will be available only with Hornet v2 (Stardust)." 8 65
+                            fi
+                        else
+                            whiptail --title "Proxy [IOTA] INX-Dashboard" --msgbox "Please install (IOTA) INX-Dashboard first." 8 65
+                        fi
                     ;;
                     "5)")
-                        source $swarmConfigs/proxy.cfg
-                        currentProxyGoshimmerUrl="$proxyGoshimmerUrl"
-                        if [ -z "$proxyGoshimmerUrl" ]; then
-                            proxyUrl="my.example.com:443"
-                        fi
-                        proxyUrl=$(whiptail --inputbox "\nSet your domain and port for Goshimmer" 10 65 $proxyGoshimmerUrl --title "Proxy - Goshimmer" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ "$proxyUrl" = "my.example.com:443" ]; then
-                            unset proxyUrl
-                        fi
-                        if [ "$exitStatus" != "1" ]; then
-                            source $proxyModule/proxyUrlValidation
-                            if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
-                                if [ "$currentProxyGoshimmerUrl" != "$proxyUrl" ]; then
-                                    sudo sed -i 's/^proxyGoshimmerUrl=.*/proxyGoshimmerUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
-                                    whiptail --title "Proxy - Goshimmer" --msgbox "URL for Goshimmer proxy set to \"$proxyUrl\"." 8 65
+                        if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
+                            while [ $exitCode -lt 1 ]; do
+                                source $swarmConfigs/proxy.cfg
+                                clear
+                                if [ "$proxyShimmerInxDashboardEnabled" = "true" ]; then
+                                    proxyShimmerInxDashboardEnabledMenu="Disable"
                                 else
-                                    whiptail --title "Proxy - Goshimmer" --msgbox "No Goshimmer url change detected." 8 65
+                                    proxyShimmerInxDashboardEnabledMenu="Enable"
                                 fi
-                                unset proxyUrl proxyUrlValid
-                            else
-                                whiptail --title "Proxy - Goshimmer" --msgbox "No valid Goshimmer url." 8 65
+                                CHOICE=$(
+                                    whiptail --title "Proxy [SHIMMER] INX-Dashboard" --menu "\nChoose an option" 24 65 0 \
+                                    "" "" \
+                                    "1)" "$proxyShimmerInxDashboardEnabledMenu INX-Dashboard" \
+                                    "2)" "Set INX-Dashboard URL" 3>&2 2>&1 1>&3
+                                )
+                                exitStatus=$?
+                                if [ "$exitStatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        source $swarmConfigs/proxy.cfg
+                                        if [ ! -z "$proxyShimmerInxDashboardUrl" ]; then
+                                            if [ "$proxyShimmerInxDashboardEnabled" = "true" ]; then
+                                                proxyDeployNeeded=true
+                                                proxyShimmerInxDashboardEnabled=false
+                                                sudo sed -i 's/^proxyShimmerInxDashboardEnabled=.*/proxyShimmerInxDashboardEnabled='$proxyShimmerInxDashboardEnabled'/' $swarmConfigs/proxy.cfg
+                                                whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "INX-Dashboard disabled successfully and Hornet dashboard url enabled." 8 65
+                                            else
+                                                if (whiptail --title "Proxy [SHIMMER] INX-Dashboard" --yesno --defaultno "Before you change the settings, are you sure you want to separate the INX dashboard from the Hornet (Shimmer) proxy endpoint (its own subdomain or port)?\n\nAre you sure you want to continue?" 16 65); then
+                                                    proxyDeployNeeded=true
+                                                    proxyShimmerInxDashboardEnabled=true
+                                                    sudo sed -i 's/^proxyShimmerInxDashboardEnabled=.*/proxyShimmerInxDashboardEnabled='$proxyShimmerInxDashboardEnabled'/' $swarmConfigs/proxy.cfg
+                                                    whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "INX-Dashboard enabled successfully and Hornet dashboard url disabled." 8 65
+                                                fi
+                                            fi
+                                        else
+                                            proxyDeployNeeded=true
+                                            proxyShimmerInxDashboardEnabled=false
+                                            sudo sed -i 's/^proxyShimmerInxDashboardEnabled=.*/proxyShimmerInxDashboardEnabled='$proxyShimmerInxDashboardEnabled'/' $swarmConfigs/proxy.cfg
+                                            whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "Aborted - To change this setting please set the url first." 8 65
+                                        fi
+                                    ;;
+                                    "2)")
+                                        source $swarmConfigs/proxy.cfg
+                                        currentProxyUrl="$proxyShimmerInxDashboardUrl"
+                                        currentProxyPort=$(echo $currentProxyUrl | sed 's/.*://')
+                                        if [ -z "$proxyShimmerInxDashboardUrl" ]; then
+                                            proxyUrl="my.example.com:443"
+                                        fi
+                                        proxyUrl=$(whiptail --inputbox "\nSet your domain and port for the INX-Dashboard" 10 65 $proxyShimmerInxDashboardUrl --title "Proxy [SHIMMER] INX-Dashboard" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ "$proxyUrl" = "my.example.com:443" ]; then
+                                            unset proxyUrl
+                                        fi
+                                        if [ "$exitStatus" != "1" ]; then
+                                            source $proxyModule/proxyUrlValidation
+                                            if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
+                                                if [ "$currentProxyUrl" != "$proxyUrl" ]; then
+                                                    proxyDeployNeeded=true
+                                                    sudo sed -i 's/^proxyShimmerInxDashboardUrl=.*/proxyShimmerInxDashboardUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
+                                                    source $proxyModule/proxySharedPortCheck
+                                                    whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "URL for INX-Dashboard (Shimmer) proxy set to \"$proxyUrl\"." 8 65
+                                                else
+                                                    whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "No INX-Dashboard (Shimmer) url change detected." 8 65
+                                                fi
+                                                unset proxyUrl proxyUrlValid
+                                            else
+                                                whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "No valid INX-Dashboard (Shimmer) url." 8 65
+                                            fi
+                                        fi
+                                        unset currentProxyUrl currentProxyPort
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
+                        else
+                            whiptail --title "Proxy [SHIMMER] INX-Dashboard" --msgbox "Please install (SHIMMER) INX-Dashboard first." 8 65
+                        fi
+                    ;;
+                    "6)")
+                        if [ -f "/usr/bin/goshimmer" ]; then
+                            source $swarmConfigs/proxy.cfg
+                            currentProxyUrl="$proxyGoshimmerUrl"
+                            currentProxyPort=$(echo $currentProxyUrl | sed 's/.*://')
+                            if [ -z "$proxyGoshimmerUrl" ]; then
+                                proxyUrl="my.example.com:443"
                             fi
+                            proxyUrl=$(whiptail --inputbox "\nSet your domain and port for Goshimmer" 10 65 $proxyGoshimmerUrl --title "Proxy [-] Goshimmer" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ "$proxyUrl" = "my.example.com:443" ]; then
+                                unset proxyUrl
+                            fi
+                            if [ "$exitStatus" != "1" ]; then
+                                source $proxyModule/proxyUrlValidation
+                                if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
+                                    if [ "$currentProxyUrl" != "$proxyUrl" ]; then
+                                        proxyDeployNeeded=true
+                                        sudo sed -i 's/^proxyGoshimmerUrl=.*/proxyGoshimmerUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
+                                        source $proxyModule/proxySharedPortCheck
+                                        whiptail --title "Proxy [-] Goshimmer" --msgbox "URL for Goshimmer proxy set to \"$proxyUrl\"." 8 65
+                                    else
+                                        whiptail --title "Proxy [-] Goshimmer" --msgbox "No Goshimmer url change detected." 8 65
+                                    fi
+                                    unset proxyUrl proxyUrlValid
+                                else
+                                    whiptail --title "Proxy [-] Goshimmer" --msgbox "No valid Goshimmer url." 8 65
+                                fi
+                            fi
+                            unset currentProxyUrl currentProxyPort
+                        else
+                            whiptail --title "Proxy [-] GoShimmer" --msgbox "Please install GoShimmer first." 8 65
                         fi
                     ;;
                     "X)")
-                        while [ $exitCode -lt 1 ]; do
-                            source $swarmConfigs/proxy.cfg
-                            clear
-                            CHOICE=$(
-                                whiptail --title "Proxy [SHIMMER] WASP" --menu "\nChoose an option" 24 65 0 \
-                                "" "" \
-                                "1)" "WASP Dashboard" \
-                                "2)" "WASP API" 3>&2 2>&1 1>&3
-                            )
-                            exitStatus=$?
-                            if [ "$exitStatus" = "1" ]; then
-                                exitCode=1
-                            fi
-                            case $CHOICE in
-                                "1)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyShimmerWaspDashboardUrl="$proxyShimmerWaspDashboardUrl"
-                                    if [ -z "$proxyShimmerWaspDashboardUrl" ]; then
-                                        proxyUrl="my.example.com:443"
-                                    fi
-                                    proxyUrl=$(whiptail --inputbox "\nSet your domain and port for the WASP dashboard" 10 65 $proxyShimmerWaspDashboardUrl --title "Proxy [SHIMMER] WASP Dashboard" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$proxyUrl" = "my.example.com:443" ]; then
-                                        unset proxyUrl
-                                    fi
-                                    if [ "$exitStatus" != "1" ]; then
-                                        source $proxyModule/proxyUrlValidation
-                                        if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
-                                            if [ "$currentProxyShimmerWaspDashboardUrl" != "$proxyUrl" ]; then
-                                                sudo sed -i 's/^proxyShimmerWaspDashboardUrl=.*/proxyShimmerWaspDashboardUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
-                                                whiptail --title "Proxy [SHIMMER] WASP Dashboard" --msgbox "URL for WASP dashboard proxy set to \"$proxyUrl\"." 8 65
-                                            else
-                                                whiptail --title "Proxy [SHIMMER] WASP Dashboard" --msgbox "No WASP dashboard url change detected." 8 65
-                                            fi
-                                            unset proxyUrl proxyUrlValid
-                                        else
-                                            whiptail --title "Proxy [SHIMMER] WASP Dashboard" --msgbox "No valid WASP dashboard url." 8 65
+                        if [ -f "/usr/bin/shimmer-wasp" ]; then
+                            while [ $exitCode -lt 1 ]; do
+                                source $swarmConfigs/proxy.cfg
+                                clear
+                                CHOICE=$(
+                                    whiptail --title "Proxy [SHIMMER] WASP" --menu "\nChoose an option" 24 65 0 \
+                                    "" "" \
+                                    "1)" "Set WASP Dashboard URL" \
+                                    "2)" "Set WASP API URL" 3>&2 2>&1 1>&3
+                                )
+                                exitStatus=$?
+                                if [ "$exitStatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        source $swarmConfigs/proxy.cfg
+                                        currentProxyUrl="$proxyShimmerWaspDashboardUrl"
+                                        currentProxyPort=$(echo $currentProxyUrl | sed 's/.*://')
+                                        if [ -z "$proxyShimmerWaspDashboardUrl" ]; then
+                                            proxyUrl="my.example.com:443"
                                         fi
-                                    fi
-                                ;;
-                                "2)")
-                                    source $swarmConfigs/proxy.cfg
-                                    currentProxyShimmerWaspApiUrl="$proxyShimmerWaspApiUrl"
-                                    if [ -z "$proxyShimmerWaspApiUrl" ]; then
-                                        proxyUrl="my.example.com:443"
-                                    fi
-                                    proxyUrl=$(whiptail --inputbox "\nSet your domain and port for the WASP API" 10 65 $proxyShimmerWaspApiUrl --title "Proxy [SHIMMER] WASP API" 3>&1 1>&2 2>&3)
-                                    exitStatus=$?
-                                    if [ "$proxyUrl" = "my.example.com:443" ]; then
-                                        unset proxyUrl
-                                    fi
-                                    if [ "$exitStatus" != "1" ]; then
-                                        source $proxyModule/proxyUrlValidation
-                                        if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
-                                            if [ "$currentProxyShimmerWaspApiUrl" != "$proxyUrl" ]; then
-                                                sudo sed -i 's/^proxyShimmerWaspApiUrl=.*/proxyShimmerWaspApiUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
-                                                whiptail --title "Proxy [SHIMMER] WASP API" --msgbox "URL for WASP API proxy set to \"$proxyUrl\"." 8 65
-                                            else
-                                                whiptail --title "Proxy [SHIMMER] WASP API" --msgbox "No WASP API url change detected." 8 65
-                                            fi
-                                            unset proxyUrl proxyUrlValid
-                                        else
-                                            whiptail --title "Proxy [SHIMMER] WASP API" --msgbox "No valid WASP API url." 8 65
+                                        proxyUrl=$(whiptail --inputbox "\nSet your domain and port for the (Shimmer) WASP dashboard" 10 65 $proxyShimmerWaspDashboardUrl --title "Proxy [SHIMMER] WASP Dashboard" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ "$proxyUrl" = "my.example.com:443" ]; then
+                                            unset proxyUrl
                                         fi
-                                    fi
-                                ;;
-                            esac
-                        done
-                        exitCode=0
+                                        if [ "$exitStatus" != "1" ]; then
+                                            source $proxyModule/proxyUrlValidation
+                                            if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
+                                                if [ "$currentProxyUrl" != "$proxyUrl" ]; then
+                                                    proxyDeployNeeded=true
+                                                    sudo sed -i 's/^proxyShimmerWaspDashboardUrl=.*/proxyShimmerWaspDashboardUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
+                                                    source $proxyModule/proxySharedPortCheck
+                                                    whiptail --title "Proxy [SHIMMER] WASP Dashboard" --msgbox "URL for (Shimmer) WASP dashboard proxy set to \"$proxyUrl\"." 8 65
+                                                else
+                                                    whiptail --title "Proxy [SHIMMER] WASP Dashboard" --msgbox "No (Shimmer) WASP dashboard url change detected." 8 65
+                                                fi
+                                                unset proxyUrl proxyUrlValid
+                                            else
+                                                whiptail --title "Proxy [SHIMMER] WASP Dashboard" --msgbox "No valid (Shimmer) WASP dashboard url." 8 65
+                                            fi
+                                        fi
+                                        unset currentProxyUrl currentProxyPort
+                                    ;;
+                                    "2)")
+                                        source $swarmConfigs/proxy.cfg
+                                        currentProxyUrl="$proxyShimmerWaspApiUrl"
+                                        currentProxyPort=$(echo $currentProxyUrl | sed 's/.*://')
+                                        if [ -z "$proxyShimmerWaspApiUrl" ]; then
+                                            proxyUrl="my.example.com:443"
+                                        fi
+                                        proxyUrl=$(whiptail --inputbox "\nSet your domain and port for the (Shimmer) WASP API" 10 65 $proxyShimmerWaspApiUrl --title "Proxy [SHIMMER] WASP API" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ "$proxyUrl" = "my.example.com:443" ]; then
+                                            unset proxyUrl
+                                        fi
+                                        if [ "$exitStatus" != "1" ]; then
+                                            source $proxyModule/proxyUrlValidation
+                                            if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
+                                                if [ "$currentProxyUrl" != "$proxyUrl" ]; then
+                                                    proxyDeployNeeded=true
+                                                    sudo sed -i 's/^proxyShimmerWaspApiUrl=.*/proxyShimmerWaspApiUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
+                                                    source $proxyModule/proxySharedPortCheck
+                                                    whiptail --title "Proxy [SHIMMER] WASP API" --msgbox "URL for (Shimmer) WASP API proxy set to \"$proxyUrl\"." 8 65
+                                                else
+                                                    whiptail --title "Proxy [SHIMMER] WASP API" --msgbox "No (Shimmer) WASP API url change detected." 8 65
+                                                fi
+                                                unset proxyUrl proxyUrlValid
+                                            else
+                                                whiptail --title "Proxy [SHIMMER] WASP API" --msgbox "No valid (Shimmer) WASP API url." 8 65
+                                            fi
+                                        fi
+                                        unset currentProxyUrl currentProxyPort
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
+                        else
+                            whiptail --title "Proxy [SHIMMER] WASP" --msgbox "Please install (Shimmer) WASP first." 8 65
+                        fi
                     ;;
-                    "6)")
+                    "7)")
                         while [ $exitCode -lt 1 ]; do
                             source $swarmConfigs/proxy.cfg
                             clear
@@ -285,9 +428,9 @@ while [ $exitCode -lt 1 ]; do
                                 proxyAutomaticDeploymentMenu="Enable"
                             fi
                             CHOICE=$(
-                                whiptail --title "Proxy - Advanced Settings" --menu "\nChoose an option" 24 65 0 \
+                                whiptail --title "Proxy [-] Advanced" --menu "\nChoose an option" 24 65 0 \
                                 "" "" \
-                                "1)" "$proxyAutomaticDeploymentMenu automatic proxy deployment" 3>&2 2>&1 1>&3
+                                "1)" "$proxyAutomaticDeploymentMenu Automatic Proxy Deployment" 3>&2 2>&1 1>&3
                             )
                             exitStatus=$?
                             if [ "$exitStatus" = "1" ]; then
@@ -312,15 +455,16 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                 esac
             done
+            source $proxyModule/proxyAppCheck
             exitCode=0
         ;;
         "3)")
             while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
-                    whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Proxy [-] Menu" --menu "\nChoose an option" 24 65 0 \
                     "" "" \
-                    "1)" "Show proxy status" \
-                    "2)" "Start/stop proxy" 3>&2 2>&1 1>&3
+                    "1)" "Show Proxy Status" \
+                    "2)" "Start/Stop Proxy" 3>&2 2>&1 1>&3
                 )
                 exitStatus=$?
                 if [ "$exitStatus" = "1" ]; then
@@ -329,11 +473,11 @@ while [ $exitCode -lt 1 ]; do
                 case $CHOICE in
                     "1)")
                         proxyStatus="$(sudo systemctl status nginx)"
-                        whiptail --title "Proxy Status" --msgbox "$proxyStatus" 15 65
+                        whiptail --title "Proxy [-] Status" --msgbox "$proxyStatus" 15 65
                     ;;
                     "2)")
                         CHOICE=$(
-                            whiptail --title "Proxy Menu" --menu "\nChoose your option" 24 65 0 \
+                            whiptail --title "Proxy [-] Menu" --menu "\nChoose your option" 24 65 0 \
                             "" "" \
                             "1)" "Restart Proxy" \
                             "2)" "Start Proxy" \
@@ -353,7 +497,7 @@ while [ $exitCode -lt 1 ]; do
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while re-starting the proxy..." 6 65 0
-                                whiptail --scrolltext --title "Proxy Menu" --msgbox "Proxy restarted successfully!" 8 65
+                                whiptail --scrolltext --title "Proxy [-] Menu" --msgbox "Proxy restarted successfully!" 8 65
                             ;;
                             "2)")
                                 {
@@ -364,7 +508,7 @@ while [ $exitCode -lt 1 ]; do
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while starting the proxy..." 6 65 0
-                                whiptail --title "Proxy Menu" --msgbox "Proxy started successfully!" 8 65
+                                whiptail --title "Proxy [-] Menu" --msgbox "Proxy started successfully!" 8 65
                             ;;
                             "3)")
                                 {
@@ -375,7 +519,7 @@ while [ $exitCode -lt 1 ]; do
                                     echo 100
                                     sleep 0.25
                                 } | whiptail --gauge "Please wait while stopping the proxy..." 6 65 0
-                                whiptail --title "Proxy Menu" --msgbox "Proxy stopped successfully!" 8 65
+                                whiptail --title "Proxy [-] Menu" --msgbox "Proxy stopped successfully!" 8 65
                             ;;
                         esac
                     ;;
@@ -386,11 +530,11 @@ while [ $exitCode -lt 1 ]; do
         "4)")
             while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
-                    whiptail --title "Proxy Menu" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Proxy [-] Menu" --menu "\nChoose an option" 24 65 0 \
                     "" "" \
-                    "1)" "Install/Deploy the proxy" \
-                    "2)" "Remove the proxy" \
-                    "3)" "Renew SSL certificate" 3>&2 2>&1 1>&3
+                    "1)" "Install/Deploy The Proxy" \
+                    "2)" "Remove The Proxy" \
+                    "3)" "Renew SSL Certificate" 3>&2 2>&1 1>&3
                 )
                 exitStatus=$?
                 if [ "$exitStatus" = "1" ]; then
@@ -405,11 +549,11 @@ while [ $exitCode -lt 1 ]; do
                                 clear
                             fi
                         else
-                            whiptail --title "Proxy - Deployment" --msgbox "No node software found on the system, please install a node first before you can install the proxy." 8 65
+                            whiptail --title "Proxy [-] Deployment" --msgbox "No node software found on the system, please install a node first before you can install the proxy." 8 65
                         fi
                     ;;
                     "2)")
-                        if (whiptail --title "Proxy - Removal" --yesno --defaultno "Do you really want to remove the proxy?" 8 65); then
+                        if (whiptail --title "Proxy [-] Removal" --yesno --defaultno "Do you really want to remove the proxy?" 8 65); then
                             {
                                 echo 0
                                 if [ "$ufw" = "true" ]; then
@@ -436,29 +580,30 @@ while [ $exitCode -lt 1 ]; do
                                 if [ -d "/etc/letsencrypt" ]; then
                                     sudo rm -rf /etc/letsencrypt > /dev/null 2>&1
                                 fi
-                                sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetDomain=""/' $swarmConfigs/proxy.cfg
-                                sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetDomain=""/' $swarmConfigs/proxy.cfg
-                                sudo sed -i 's/^proxyShimmerInxDashboardUrl=.*/proxyShimmerInxDashboardDomain=""/' $swarmConfigs/proxy.cfg
+                                sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl=""/' $swarmConfigs/proxy.cfg
+                                sudo sed -i 's/^proxyIotaInxDashboardUrl=.*/proxyIotaInxDashboardUrl=""/' $swarmConfigs/proxy.cfg
+                                sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl=""/' $swarmConfigs/proxy.cfg
+                                sudo sed -i 's/^proxyShimmerInxDashboardUrl=.*/proxyShimmerInxDashboardUrl=""/' $swarmConfigs/proxy.cfg
                                 sudo sed -i 's/^proxyGoshimmerUrl=.*/proxyGoshimmerUrl=""/' $swarmConfigs/proxy.cfg
                                 sudo sed -i 's/^proxyWaspDashboardUrl=.*/proxyWaspDashboardUrl=/' $swarmConfigs/proxy.cfg
                                 sudo sed -i 's/^proxyWaspApiUrl=.*/proxyWaspApiUrl=/' $swarmConfigs/proxy.cfg
                                 echo 100
                                 sleep 0.25
                             } | whiptail --gauge "Please wait while removing the proxy..." 6 65 0
-                            whiptail --title "Proxy - Removal" --msgbox "Proxy removed successfully!" 8 65
+                            whiptail --title "Proxy [-] Removal" --msgbox "Proxy removed successfully!" 8 65
                         fi
                     ;;
                     "3)")
                         # Manual renew certificate if installed
                         source $proxyModule/proxyParser
-                        if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiDomain/fullchain.pem" ]; then
+                        if [ -f "/etc/letsencrypt/live/$proxyIotaHornetUrl/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardUrl/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetUrl/fullchain.pem" ]|| [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardUrl/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerUrl/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspDashboardUrl/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyWaspApiUrl/fullchain.pem" ]; then
                             sudo certbot renew --force-renewal
                             echo ""
                             echo ""
                             echo "#############################################################"
                             read -p "Press any key to continue..."
                         else
-                            whiptail --title "Proxy Menu" --msgbox "Error! No SSL Certificate installed!" 8 65
+                            whiptail --title "Proxy [-] Menu" --msgbox "Error! No SSL Certificate installed!" 8 65
                         fi
                     ;;
                 esac

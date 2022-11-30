@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# General
+if ! id inx >/dev/null 2>&1; then
+    useradd --no-create-home --system inx >/dev/null
+fi
+
+if [ ! -d "$iotaInxDashboardHome" ]; then
+    sudo mkdir -p $iotaInxDashboardHome > /dev/null 2>&1
+    sudo chown -R inx:inx $iotaInxDashboardHome > /dev/null 2>&1
+fi
+
+# Install GO
+if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    sudo snap install go --classic > /dev/null 2>&1
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/iota-inx-dashboard.service" ]; then
+    sudo cp -rf $swarmTemplates/app-service/iota-inx-dashboard.service /lib/systemd/system/iota-inx-dashboard.service > /dev/null 2>&1
+    if [ ! -f "/etc/default/iota-inx-dashboard" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/iota-inx-dashboard
+    fi
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/iota-inx-dashboard.service" ]; then
+        sudo systemctl enable iota-inx-dashboard > /dev/null 2>&1
+    fi
+    sudo systemctl daemon-reload > /dev/null 2>&1
+fi
+
+##############################################################################################################################################
+
+# Create dir if not exist
+sudo mkdir -p /tmp/iota-inx-dashboard > /dev/null 2>&1
+
+source $swarmModule/swarmAuth
+if [ "$swarmAuth" = "200" ]; then
+    # Download latest inx-dashboard
+    ( cd /tmp/iota-inx-dashboard/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-dashboard/v${latestIotaInxDashboardVersion}/inx-dashboard-v${latestIotaInxDashboardVersion}_linux_$osArchitecture.tar.gz )
+    if [ -f "/tmp/iota-inx-dashboard/inx-dashboard-v${latestIotaInxDashboardVersion}_linux_$osArchitecture.tar.gz" ]; then
+        iotaInxDashboardDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-dashboard/inx-dashboard-v${latestIotaInxDashboardVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+    fi
+
+    # Download checksum
+    ( cd /tmp/iota-inx-dashboard/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-dashboard/v${latestIotaInxDashboardVersion}/checksums_linux_$osArchitecture.txt )
+    iotaInxDashboardChecksum=$(sudo grep "inx-dashboard-v${latestIotaInxDashboardVersion}_linux_$osArchitecture.tar.gz" /tmp/iota-inx-dashboard/checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+    echo $iotaInxDashboardChecksum > /tmp/iota-inx-dashboard.checksum
+
+    # Unzip archive
+    if [ "$iotaInxDashboardDownloadChecksum" = "$iotaInxDashboardChecksum" ] && [ ! -z "$iotaInxDashboardDownloadChecksum" ] && [ ! -z "$iotaInxDashboardChecksum" ]; then
+        ( cd /tmp/iota-inx-dashboard ; sudo tar -xzf /tmp/iota-inx-dashboard/inx-dashboard-v${latestIotaInxDashboardVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+
+        # Copy binary
+        if [ -f "/tmp/iota-inx-dashboard/inx-dashboard" ]; then
+            iotaInxDashboardStatus="$(systemctl show -p ActiveState --value iota-inx-dashboard)"
+            if [ "$iotaInxDashboardStatus" = "active" ]; then
+                sudo systemctl stop iota-inx-dashboard > /dev/null 2>&1
+            fi
+
+            sudo cp -rf /tmp/iota-inx-dashboard/inx-dashboard /usr/bin/iota-inx-dashboard > /dev/null 2>&1
+            sudo chmod +x /usr/bin/iota-inx-dashboard > /dev/null 2>&1
+            newIotaInxDashboardBinary=true
+        fi
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newIotaInxDashboardBinary" = "true" ]; then
+    if [ -f "/tmp/iota-inx-dashboard/config_defaults.json" ]; then
+        sudo cp -rf /tmp/iota-inx-dashboard/config_defaults.json /var/lib/iota-inx-dashboard/config.json > /dev/null 2>&1
+        sudo chmod 644 /var/lib/iota-inx-dashboard/*.json > /dev/null 2>&1
+        newIotaInxDashboardConfig=true
+    else
+        if [ -f "/tmp/inx-dashboard/config.json" ]; then
+            sudo cp -rf /tmp/iota-inx-dashboard/config.json /var/lib/iota-inx-dashboard/config.json > /dev/null 2>&1
+            sudo chmod 644 /var/lib/iota-inx-dashboard/*.json > /dev/null 2>&1
+            newIotaInxDashboardConfig=true
+        fi
+    fi
+fi
+
+##############################################################################################################################################
+
+if [ "$newIotaInxDashboardConfig" = "true" ]; then
+    # Run installer modules
+    sudo chown -R inx:inx $iotaInxDashboardHome > /dev/null 2>&1
+    sudo chmod 644 $iotaInxDashboardHome/*.json > /dev/null 2>&1
+
+    restartIotaInxDashboard=true
+    iotaInxDashboardUpdated=true
+
+    source $proxyModule/proxyIotaInxDashboard
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/iota-inx-dashboard > /dev/null 2>&1
+
+
+unset newIotaInxDashboardBinary newIotaInxDashboardConfig iotaInxDashboardDownloadChecksum

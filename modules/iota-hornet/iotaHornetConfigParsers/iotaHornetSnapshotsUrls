@@ -1,0 +1,37 @@
+#!/bin/bash
+
+if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
+    if [ "$iotaHornetNetwork" = "mainnet" ]; then
+        iotaHornetFullSnapshot="https://cdn.tanglebay.com/snapshots/iota-mainnet/full_snapshot.bin"
+        iotaHornetDeltaSnapshot="https://cdn.tanglebay.com/snapshots/iota-mainnet/delta_snapshot.bin"
+        parser="$(jq '.snapshots.downloadURLs' $iotaHornetHome/$iotaHornetConfig.json)"
+        if [[ $parser = *$iotaHornetFullSnapshot* ]] && [[ $parser = *$iotaHornetDeltaSnapshot* ]]; then
+            sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . - {"full": "'$iotaHornetFullSnapshot'","delta": "'$iotaHornetDeltaSnapshot'"}' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
+            restartIotaHornet=true
+            echo "iotaHornetSnapshotUrl" >> /tmp/iotaHornetParsing
+        fi
+        unset parser iotaHornetFullSnapshot
+    fi
+else
+    if [ "$iotaHornetNetwork" = "mainnet" ]; then
+        iotaHornetFullSnapshotOld="https://cdn.tanglebay.com/snapshots/mainnet/full_snapshot.bin"
+        iotaHornetDeltaSnapshotOld="https://cdn.tanglebay.com/snapshots/mainnet/delta_snapshot.bin"
+        iotaHornetFullSnapshot="https://cdn.tanglebay.com/snapshots/iota-mainnet/full_snapshot.bin"
+        iotaHornetDeltaSnapshot="https://cdn.tanglebay.com/snapshots/iota-mainnet/delta_snapshot.bin"
+        parser="$(jq '.snapshots.downloadURLs' $iotaHornetHome/config.json)"
+        if [[ $parser = *$iotaHornetFullSnapshotOld* ]] && [[ $parser = *$iotaHornetDeltaSnapshotOld* ]]; then
+            sudo sudo sed -i 's~'$iotaHornetFullSnapshotOld'~'$iotaHornetFullSnapshot'~g' $iotaHornetHome/config.json
+            sudo sudo sed -i 's~'$iotaHornetDeltaSnapshotOld'~'$iotaHornetDeltaSnapshot'~g' $iotaHornetHome/config.json
+            restartIotaHornet=true
+            echo "iotaHornetSnapshotUrl" >> /tmp/iotaHornetParsing
+        fi
+        parser="$(jq '.snapshots.downloadURLs' $iotaHornetHome/config.json)"
+        if [[ $parser != *$iotaHornetFullSnapshot* ]] && [[ $parser != *$iotaHornetDeltaSnapshot* ]]; then
+            sudo jq '.snapshots.downloadURLs[.snapshots.downloadURLs| length] |= . + {"full": "'$iotaHornetFullSnapshot'","delta": "'$iotaHornetDeltaSnapshot'"}' $iotaHornetHome/config.json|sponge $iotaHornetHome/config.json
+            restartIotaHornet=true
+            echo "iotaHornetSnapshotUrl" >> /tmp/iotaHornetParsing
+        fi
+        unset iotaHornetFullSnapshot iotaHornetDeltaSnapshot iotaHornetFullSnapshotOld iotaHornetDeltaSnapshotOld
+        unset parser
+    fi
+fi

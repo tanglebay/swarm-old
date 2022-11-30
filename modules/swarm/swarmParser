@@ -28,6 +28,18 @@ if [ -f "$swarmTmpPath/iota-hornet.cfg" ]; then
         sudo sed -i 's~^iotaHornetAlias=.*~iotaHornetAlias="'"$iotaHornetAlias"'"~g' $swarmConfigs/iota-hornet.cfg
     fi
     ####
+    if [ -z "$iotaHornetApiEnabled" ]; then
+        sudo sed -i 's~^iotaHornetApiEnabled=.*~iotaHornetApiEnabled=true~g' $swarmConfigs/iota-hornet.cfg
+    else
+        sudo sed -i 's~^iotaHornetApiEnabled=.*~iotaHornetApiEnabled='$iotaHornetApiEnabled'~g' $swarmConfigs/iota-hornet.cfg
+    fi
+    ####
+    if [ -z "$iotaHornetUpdateCheck" ]; then
+        sudo sed -i 's~^iotaHornetUpdateCheck=.*~iotaHornetUpdateCheck=true~g' $swarmConfigs/iota-hornet.cfg
+    else
+        sudo sed -i 's~^iotaHornetUpdateCheck=.*~iotaHornetUpdateCheck='$iotaHornetUpdateCheck'~g' $swarmConfigs/iota-hornet.cfg
+    fi
+    ####
     if [ -z "$iotaHornetDisablePlugins" ]; then
         sudo sed -i 's/^iotaHornetDisablePlugins=.*/iotaHornetDisablePlugins=""/' $swarmConfigs/iota-hornet.cfg
     else
@@ -46,16 +58,25 @@ if [ -f "$swarmTmpPath/iota-hornet.cfg" ]; then
         sudo sed -i 's/^iotaHornetUnknownPeersLimit=.*/iotaHornetUnknownPeersLimit='$iotaHornetUnknownPeersLimit'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$iotaHornetSnapshotInterval" ]; then
-        sudo sed -i 's/^iotaHornetSnapshotInterval=.*/iotaHornetSnapshotInterval=200/' $swarmConfigs/iota-hornet.cfg
+    if [ ! -z "$iotaHornetSnapshotInterval" ]; then
+        iotaHornetSnapshotsInterval=$iotaHornetSnapshotInterval
+    fi
+    if [ -z "$iotaHornetSnapshotsInterval" ]; then
+        sudo sed -i 's/^iotaHornetSnapshotsInterval=.*/iotaHornetSnapshotsInterval=200/' $swarmConfigs/iota-hornet.cfg
     else
-        sudo sed -i 's/^iotaHornetSnapshotInterval=.*/iotaHornetSnapshotInterval='$iotaHornetSnapshotInterval'/' $swarmConfigs/iota-hornet.cfg
+        sudo sed -i 's/^iotaHornetSnapshotsInterval=.*/iotaHornetSnapshotsInterval='$iotaHornetSnapshotsInterval'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
     if [ -z "$iotaHornetGossipPort" ]; then
         sudo sed -i 's/^iotaHornetGossipPort=.*/iotaHornetGossipPort=15600/' $swarmConfigs/iota-hornet.cfg
     else
         sudo sed -i 's/^iotaHornetGossipPort=.*/iotaHornetGossipPort='$iotaHornetGossipPort'/' $swarmConfigs/iota-hornet.cfg
+    fi
+    ####
+    if [ -z "$iotaHornetAutopeeringEnabled" ]; then
+        sudo sed -i 's/^iotaHornetAutopeeringEnabled=.*/iotaHornetAutopeeringEnabled=false/' $swarmConfigs/iota-hornet.cfg
+    else
+        sudo sed -i 's/^iotaHornetAutopeeringEnabled=.*/iotaHornetAutopeeringEnabled='$iotaHornetAutopeeringEnabled'/' $swarmConfigs/iota-hornet.cfg
     fi
     ####
     if [ -z "$iotaHornetAutopeeringPort" ]; then
@@ -143,10 +164,42 @@ if [ -f "$swarmTmpPath/iota-hornet.cfg" ]; then
         sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'"$iotaHornetApiJwtToken"'"~' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ -z "$iotaHornetApiPublicRoutes" ]; then
-        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="/health,/mqtt,/api/v1/info,/api/v1/tips,/api/v1/messages*,/api/v1/transactions*,/api/v1/milestones*,/api/v1/outputs*,/api/v1/addresses*,/api/v1/treasury,/api/v1/receipts*,/api/plugins/participation/events*,/api/plugins/participation/outputs*,/api/plugins/participation/addresses*"~' $swarmConfigs/iota-hornet.cfg
+    if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
+        if [ -z "$iotaHornetApiPublicRoutes" ]; then
+            sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="/health,/api/routes,/api/core/v2/info,/api/core/v2/tips,/api/core/v2/blocks*,/api/core/v2/transactions*,/api/core/v2/milestones*,/api/core/v2/outputs*,/api/core/v2/treasury,/api/core/v2/receipts*,/api/debug/v1/*"~' $swarmConfigs/iota-hornet.cfg
+        else
+            sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'"$iotaHornetApiPublicRoutes"'"~' $swarmConfigs/iota-hornet.cfg
+        fi
     else
-        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+        if [ -z "$iotaHornetApiPublicRoutes" ]; then
+            sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="/health,/mqtt,/api/v1/info,/api/v1/tips,/api/v1/messages*,/api/v1/transactions*,/api/v1/milestones*,/api/v1/outputs*,/api/v1/addresses*,/api/v1/treasury,/api/v1/receipts*,/api/plugins/participation/events*,/api/plugins/participation/outputs*,/api/plugins/participation/addresses*"~' $swarmConfigs/iota-hornet.cfg
+        else
+            sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+        fi
+    fi
+    ####
+    if [ -z "$iotaHornetInxEnabled" ]; then
+        sudo sed -i 's~^iotaHornetInxEnabled=.*~iotaHornetInxEnabled=true~g' $swarmConfigs/iota-hornet.cfg
+    else
+        sudo sed -i 's~^iotaHornetInxEnabled=.*~iotaHornetInxEnabled='$iotaHornetInxEnabled'~g' $swarmConfigs/iota-hornet.cfg
+    fi
+    ####
+    if [ -z "$iotaHornetInxAddress" ]; then
+        sudo sed -i 's~^iotaHornetInxAddress=.*~iotaHornetInxAddress="localhost:9030"~' $swarmConfigs/iota-hornet.cfg
+    else
+        sudo sed -i 's~^iotaHornetInxAddress=.*~iotaHornetInxAddress="'$iotaHornetInxAddress'"~' $swarmConfigs/iota-hornet.cfg
+    fi
+    ####
+    if [ -z "$iotaHornetInxPowWorkerCount" ]; then
+        sudo sed -i 's~^iotaHornetInxPowWorkerCount=.*~iotaHornetInxPowWorkerCount=0~' $swarmConfigs/iota-hornet.cfg
+    else
+        sudo sed -i 's~^iotaHornetInxPowWorkerCount=.*~iotaHornetInxPowWorkerCount='$iotaHornetInxPowWorkerCount'~' $swarmConfigs/iota-hornet.cfg
+    fi
+    ####
+    if [ -z "$iotaHornetSnapshotsEnabled" ]; then
+        sudo sed -i 's~^iotaHornetSnapshotsEnabled=.*~iotaHornetSnapshotsEnabled=false~' $swarmConfigs/iota-hornet.cfg
+    else
+        sudo sed -i 's~^iotaHornetSnapshotsEnabled=.*~iotaHornetSnapshotsEnabled='$iotaHornetSnapshotsEnabled'~' $swarmConfigs/iota-hornet.cfg
     fi
 fi
 
@@ -192,10 +245,10 @@ if [ -f "$swarmTmpPath/shimmer-hornet.cfg" ]; then
         sudo sed -i 's/^shimmerHornetUnknownPeersLimit=.*/shimmerHornetUnknownPeersLimit='$shimmerHornetUnknownPeersLimit'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
-    if [ -z "$shimmerHornetSnapshotInterval" ]; then
-        sudo sed -i 's/^shimmerHornetSnapshotInterval=.*/shimmerHornetSnapshotInterval=200/' $swarmConfigs/shimmer-hornet.cfg
+    if [ -z "$shimmerHornetSnapshotsInterval" ]; then
+        sudo sed -i 's/^shimmerHornetSnapshotsInterval=.*/shimmerHornetSnapshotsInterval=200/' $swarmConfigs/shimmer-hornet.cfg
     else
-        sudo sed -i 's/^shimmerHornetSnapshotInterval=.*/shimmerHornetSnapshotInterval='$shimmerHornetSnapshotInterval'/' $swarmConfigs/shimmer-hornet.cfg
+        sudo sed -i 's/^shimmerHornetSnapshotsInterval=.*/shimmerHornetSnapshotsInterval='$shimmerHornetSnapshotInterval'/' $swarmConfigs/shimmer-hornet.cfg
     fi
     ####
     if [ -z "$shimmerHornetGossipPort" ]; then
@@ -434,6 +487,192 @@ fi
 
 ####################################################################################################################################
 
+if [ -f "$swarmTmpPath/iota-inx-dashboard.cfg" ]; then
+    source $swarmTmpPath/iota-inx-dashboard.cfg
+
+    if [ -z "$iotaInxDashboardRelease" ]; then
+        sudo sed -i 's~^iotaInxDashboardRelease=.*~iotaInxDashboardRelease="stable"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    else
+        sudo sed -i 's~^iotaInxDashboardRelease=.*~iotaInxDashboardRelease="stable"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    fi
+
+    if [ -z "$iotaInxDashboardUpdateCheck" ]; then
+        sudo sed -i 's~^iotaInxDashboardUpdateCheck=.*~iotaInxDashboardUpdateCheck=true~g' $swarmConfigs/iota-inx-dashboard.cfg
+    else
+        sudo sed -i 's~^iotaInxDashboardUpdateCheck=.*~iotaInxDashboardUpdateCheck="'$iotaInxDashboardUpdateCheck'"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    fi
+
+    if [ -z "$iotaInxDashboardAddress" ]; then
+        sudo sed -i 's~^iotaInxDashboardAddress=.*~iotaInxDashboardAddress="localhost:8081"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    else
+        sudo sed -i 's~^iotaInxDashboardAddress=.*~iotaInxDashboardAddress="'$iotaInxDashboardAddress'"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    fi
+
+    if [ -z "$iotaInxDashboardAuthUsername" ]; then
+        sudo sed -i 's~^iotaInxDashboardAuthUsername=.*~iotaInxDashboardAuthUsername="admin"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    else
+        sudo sed -i 's~^iotaInxDashboardAuthUsername=.*~iotaInxDashboardAuthUsername="'$iotaInxDashboardAuthUsername'"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    fi
+
+    if [ -z "$iotaInxDashboardAuthPasswordHash" ]; then
+        sudo sed -i 's~^iotaInxDashboardAuthPasswordHash=.*~iotaInxDashboardAuthPasswordHash=""~g' $swarmConfigs/iota-inx-dashboard.cfg
+    else
+        sudo sed -i 's~^iotaInxDashboardAuthPasswordHash=.*~iotaInxDashboardAuthPasswordHash="'$iotaInxDashboardAuthPasswordHash'"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    fi
+
+    if [ -z "$iotaInxDashboardAuthPasswordSalt" ]; then
+        sudo sed -i 's~^iotaInxDashboardAuthPasswordSalt=.*~iotaInxDashboardAuthPasswordSalt=""~g' $swarmConfigs/iota-inx-dashboard.cfg
+    else
+        sudo sed -i 's~^iotaInxDashboardAuthPasswordSalt=.*~iotaInxDashboardAuthPasswordSalt="'$iotaInxDashboardAuthPasswordSalt'"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    fi
+
+    if [ -z "$iotaInxDashboardAuthIdentityFilePath" ]; then
+        sudo sed -i 's~^iotaInxDashboardAuthIdentityFilePath=.*~iotaInxDashboardAuthIdentityFilePath="identity.key"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    else
+        sudo sed -i 's~^iotaInxDashboardAuthIdentityFilePath=.*~iotaInxDashboardAuthIdentityFilePath="'$iotaInxDashboardAuthIdentityFilePath'"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    fi
+
+    if [ -z "$iotaInxDashboardAuthIdentityPrivateKey" ]; then
+        sudo sed -i 's~^iotaInxDashboardAuthIdentityPrivateKey=.*~iotaInxDashboardAuthIdentityPrivateKey=""~g' $swarmConfigs/iota-inx-dashboard.cfg
+    else
+        sudo sed -i 's~^iotaInxDashboardAuthIdentityPrivateKey=.*~iotaInxDashboardAuthIdentityPrivateKey="'$iotaInxDashboardAuthIdentityPrivateKey'"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    fi
+
+    if [ -z "$iotaInxDashboardInxAddress" ]; then
+        sudo sed -i 's~^iotaInxDashboardInxAddress=.*~iotaInxDashboardInxAddress="localhost:9029"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    else
+        sudo sed -i 's~^iotaInxDashboardInxAddress=.*~iotaInxDashboardInxAddress="'$iotaInxDashboardInxAddress'"~g' $swarmConfigs/iota-inx-dashboard.cfg
+    fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmpPath/iota-inx-indexer.cfg" ]; then
+    source $swarmTmpPath/iota-inx-indexer.cfg
+
+    if [ -z "$iotaInxIndexerRelease" ]; then
+        sudo sed -i 's~^iotaInxIndexerRelease=.*~iotaInxIndexerRelease="stable"~g' $swarmConfigs/iota-inx-indexer.cfg
+    else
+        sudo sed -i 's~^iotaInxIndexerRelease=.*~iotaInxIndexerRelease="stable"~g' $swarmConfigs/iota-inx-indexer.cfg
+    fi
+
+    if [ -z "$iotaInxIndexerUpdateCheck" ]; then
+        sudo sed -i 's~^iotaInxIndexerUpdateCheck=.*~iotaInxIndexerUpdateCheck=true~g' $swarmConfigs/iota-inx-indexer.cfg
+    else
+        sudo sed -i 's~^iotaInxIndexerUpdateCheck=.*~iotaInxIndexerUpdateCheck="'$iotaInxIndexerUpdateCheck'"~g' $swarmConfigs/iota-inx-indexer.cfg
+    fi
+
+    if [ -z "$iotaInxIndexerInxAddress" ]; then
+        sudo sed -i 's~^iotaInxIndexerInxAddress=.*~iotaInxIndexerInxAddress="localhost:9029"~g' $swarmConfigs/iota-inx-indexer.cfg
+    else
+        sudo sed -i 's~^iotaInxIndexerInxAddress=.*~iotaInxIndexerInxAddress="'$iotaInxIndexerInxAddress'"~g' $swarmConfigs/iota-inx-indexer.cfg
+    fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmpPath/iota-inx-mqtt.cfg" ]; then
+    source $swarmTmpPath/iota-inx-mqtt.cfg
+
+    if [ -z "$iotaInxMqttRelease" ]; then
+        sudo sed -i 's~^iotaInxMqttRelease=.*~iotaInxMqttRelease="stable"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttRelease=.*~iotaInxMqttRelease="stable"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttUpdateCheck" ]; then
+        sudo sed -i 's~^iotaInxMqttUpdateCheck=.*~iotaInxMqttUpdateCheck=true~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttUpdateCheck=.*~iotaInxMqttUpdateCheck="'$iotaInxMqttUpdateCheck'"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttInxAddress" ]; then
+        sudo sed -i 's~^iotaInxMqttInxAddress=.*~iotaInxMqttInxAddress="localhost:9029"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttInxAddress=.*~iotaInxMqttInxAddress="'$iotaInxMqttInxAddress'"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttWebsocketEnabled" ]; then
+        sudo sed -i 's~^iotaInxMqttWebsocketEnabled=.*~iotaInxMqttWebsocketEnabled=true~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttWebsocketEnabled=.*~iotaInxMqttWebsocketEnabled='$iotaInxMqttWebsocketEnabled'~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttWebsocketAddress" ]; then
+        sudo sed -i 's~^iotaInxMqttWebsocketAddress=.*~iotaInxMqttWebsocketAddress="localhost:1888"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttWebsocketAddress=.*~iotaInxMqttWebsocketAddress="'$iotaInxMqttWebsocketAddress'"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttTcpEnabled" ]; then
+        sudo sed -i 's~^iotaInxMqttTcpEnabled=.*~iotaInxMqttTcpEnabled=true~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttTcpEnabled=.*~iotaInxMqttTcpEnabled='$iotaInxMqttTcpEnabled'~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+
+    if [ -z "$iotaInxMqttTcpAddress" ]; then
+        sudo sed -i 's~^iotaInxMqttTcpAddress=.*~iotaInxMqttTcpAddress="localhost:1883"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    else
+        sudo sed -i 's~^iotaInxMqttTcpAddress=.*~iotaInxMqttTcpAddress="'$iotaInxMqttTcpAddress'"~g' $swarmConfigs/iota-inx-mqtt.cfg
+    fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmpPath/iota-inx-participation.cfg" ]; then
+    source $swarmTmpPath/iota-inx-participation.cfg
+
+    if [ -z "$iotaInxParticipationRelease" ]; then
+        sudo sed -i 's~^iotaInxParticipationRelease=.*~iotaInxParticipationRelease="stable"~g' $swarmConfigs/iota-inx-participation.cfg
+    else
+        sudo sed -i 's~^iotaInxParticipationRelease=.*~iotaInxParticipationRelease="stable"~g' $swarmConfigs/iota-inx-participation.cfg
+    fi
+
+    if [ -z "$iotaInxParticipationUpdateCheck" ]; then
+        sudo sed -i 's~^iotaInxParticipationUpdateCheck=.*~iotaInxParticipationUpdateCheck=true~g' $swarmConfigs/iota-inx-participation.cfg
+    else
+        sudo sed -i 's~^iotaInxParticipationUpdateCheck=.*~iotaInxParticipationUpdateCheck="'$iotaInxParticipationUpdateCheck'"~g' $swarmConfigs/iota-inx-participation.cfg
+    fi
+
+    if [ -z "$iotaInxParticipationInxAddress" ]; then
+        sudo sed -i 's~^iotaInxParticipationInxAddress=.*~iotaInxParticipationInxAddress="localhost:9029"~g' $swarmConfigs/iota-inx-participation.cfg
+    else
+        sudo sed -i 's~^iotaInxParticipationInxAddress=.*~iotaInxParticipationInxAddress="'$iotaInxParticipationInxAddress'"~g' $swarmConfigs/iota-inx-participation.cfg
+    fi
+fi
+
+####################################################################################################################################
+
+if [ -f "$swarmTmpPath/iota-inx-poi.cfg" ]; then
+    source $swarmTmpPath/iota-inx-poi.cfg
+
+    if [ -z "$iotaInxPoiRelease" ]; then
+        sudo sed -i 's~^iotaInxPoiRelease=.*~iotaInxPoiRelease="stable"~g' $swarmConfigs/iota-inx-poi.cfg
+    else
+        sudo sed -i 's~^iotaInxPoiRelease=.*~iotaInxPoiRelease="stable"~g' $swarmConfigs/iota-inx-poi.cfg
+    fi
+
+    if [ -z "$iotaInxPoiUpdateCheck" ]; then
+        sudo sed -i 's~^iotaInxPoiUpdateCheck=.*~iotaInxPoiUpdateCheck=true~g' $swarmConfigs/iota-inx-poi.cfg
+    else
+        sudo sed -i 's~^iotaInxPoiUpdateCheck=.*~iotaInxPoiUpdateCheck="'$iotaInxPoiUpdateCheck'"~g' $swarmConfigs/iota-inx-poi.cfg
+    fi
+
+    if [ -z "$iotaInxPoiInxAddress" ]; then
+        sudo sed -i 's~^iotaInxPoiAddress=.*~iotaInxPoiAddress="localhost:9687"~g' $swarmConfigs/iota-inx-poi.cfg
+    else
+        sudo sed -i 's~^iotaInxPoiAddress=.*~iotaInxPoiAddress="'$iotaInxPoiAddress'"~g' $swarmConfigs/iota-inx-poi.cfg
+    fi
+
+    if [ -z "$iotaInxPoiInxAddress" ]; then
+        sudo sed -i 's~^iotaInxPoiInxAddress=.*~iotaInxPoiInxAddress="localhost:9029"~g' $swarmConfigs/iota-inx-poi.cfg
+    else
+        sudo sed -i 's~^iotaInxPoiInxAddress=.*~iotaInxPoiInxAddress="'$iotaInxPoiInxAddress'"~g' $swarmConfigs/iota-inx-poi.cfg
+    fi
+fi
+
+####################################################################################################################################
+
 if [ -f "$swarmTmpPath/shimmer-inx-dashboard.cfg" ]; then
     source $swarmTmpPath/shimmer-inx-dashboard.cfg
 
@@ -643,16 +882,30 @@ if [ -f "$swarmTmpPath/proxy.cfg" ]; then
         sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl="'$proxyIotaHornetUrl'"/' $swarmConfigs/proxy.cfg
     fi
     ####
+    if [ -z "$proxyIotaInxDashboardEnabled" ]; then
+        sudo sed -i 's/^proxyIotaInxDashboardEnabled=.*/proxyIotaInxDashboardEnabled=false/' $swarmConfigs/proxy.cfg
+    else
+        sudo sed -i 's/^proxyIotaInxDashboardEnabled=.*/proxyIotaInxDashboardEnabled='$proxyIotaInxDashboardEnabled'/' $swarmConfigs/proxy.cfg
+    fi
+    if [ -z "$proxyIotaInxDashboardUrl" ]; then
+        sudo sed -i 's/^proxyIotaInxDashboardUrl=.*/proxyIotaInxDashboardUrl=""/' $swarmConfigs/proxy.cfg
+    else
+        sudo sed -i 's/^proxyIotaInxDashboardUrl=.*/proxyIotaInxDashboardUrl="'$proxyIotaInxDashboardUrl'"/' $swarmConfigs/proxy.cfg
+    fi
+    ####
     if [ -z "$proxyShimmerHornetUrl" ]; then
         sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl=""/' $swarmConfigs/proxy.cfg
     else
         sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl="'$proxyShimmerHornetUrl'"/' $swarmConfigs/proxy.cfg
     fi
     ####
-    if [ -z "$proxyShimmerInxDashboardSingle" ]; then
-        sudo sed -i 's/^proxyShimmerInxDashboardSingle=.*/proxyShimmerInxDashboardSingle=false/' $swarmConfigs/proxy.cfg
+    if [ ! -z "$proxyShimmerInxDashboardSingle" ]; then
+        proxyShimmerInxDashboardEnabled=$proxyShimmerInxDashboardSingle
+    fi
+    if [ -z "$proxyShimmerInxDashboardEnabled" ]; then
+        sudo sed -i 's/^proxyShimmerInxDashboardEnabled=.*/proxyShimmerInxDashboardEnabled=false/' $swarmConfigs/proxy.cfg
     else
-        sudo sed -i 's/^proxyShimmerInxDashboardSingle=.*/proxyShimmerInxDashboardSingle='$proxyShimmerInxDashboardSingle'/' $swarmConfigs/proxy.cfg
+        sudo sed -i 's/^proxyShimmerInxDashboardEnabled=.*/proxyShimmerInxDashboardEnabled='$proxyShimmerInxDashboardEnabled'/' $swarmConfigs/proxy.cfg
     fi
     if [ -z "$proxyShimmerInxDashboardUrl" ]; then
         sudo sed -i 's/^proxyShimmerInxDashboardUrl=.*/proxyShimmerInxDashboardUrl=""/' $swarmConfigs/proxy.cfg
@@ -878,6 +1131,89 @@ if [ -f "$swarmTmpPath/watchdog.cfg" ]; then
         sudo sed -i 's/^watchdogShimmerWaspServiceStatusCheck=.*/watchdogShimmerWaspServiceStatusCheck=true/' $swarmConfigs/watchdog.cfg
     else
         sudo sed -i 's/^watchdogShimmerWaspServiceStatusCheck=.*/watchdogShimmerWaspServiceStatusCheck='$watchdogShimmerWaspServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+    fi
+    #################################################################################
+    # INX-Dashboard (IOTA)
+    if [ -z "$watchdogIotaInxDashboardAutoUpdate" ]; then
+        sudo sed -i 's/^watchdogIotaInxDashboardAutoUpdate=.*/watchdogIotaInxDashboardAutoUpdate=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxDashboardAutoUpdate=.*/watchdogIotaInxDashboardAutoUpdate='$watchdogIotaInxDashboardAutoUpdate'/' $swarmConfigs/watchdog.cfg
+    fi
+    ####
+    if [ -z "$watchdogIotaInxDashboardServiceStatusCheck" ]; then
+        sudo sed -i 's/^watchdogIotaInxDashboardServiceStatusCheck=.*/watchdogIotaInxDashboardServiceStatusCheck=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxDashboardServiceStatusCheck=.*/watchdogIotaInxDashboardServiceStatusCheck='$watchdogIotaInxDashboardServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+    fi
+    #################################################################################
+    # INX-Indexer (IOTA)
+    if [ -z "$watchdogIotaInxIndexerAutoUpdate" ]; then
+        sudo sed -i 's/^watchdogIotaInxIndexerAutoUpdate=.*/watchdogIotaInxIndexerAutoUpdate=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxIndexerAutoUpdate=.*/watchdogIotaInxIndexerAutoUpdate='$watchdogIotaInxIndexerAutoUpdate'/' $swarmConfigs/watchdog.cfg
+    fi
+    ###
+    if [ -z "$watchdogIotaInxIndexerAllowDbReset" ]; then
+        sudo sed -i 's/^watchdogIotaInxIndexerAllowDbReset=.*/watchdogIotaInxIndexerAllowDbReset=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxIndexerAllowDbReset=.*/watchdogIotaInxIndexerAllowDbReset='$watchdogIotaInxIndexerAllowDbReset'/' $swarmConfigs/watchdog.cfg
+    fi
+    ####
+    if [ -z "$watchdogIotaInxIndexerServiceStatusCheck" ]; then
+        sudo sed -i 's/^watchdogIotaInxIndexerServiceStatusCheck=.*/watchdogIotaInxIndexerServiceStatusCheck=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxIndexerServiceStatusCheck=.*/watchdogIotaInxIndexerServiceStatusCheck='$watchdogIotaInxIndexerServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+    fi
+    #################################################################################
+    # INX-MQTT (IOTA)
+    if [ -z "$watchdogIotaInxMqttAutoUpdate" ]; then
+        sudo sed -i 's/^watchdogIotaInxMqttAutoUpdate=.*/watchdogIotaInxMqttAutoUpdate=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxMqttAutoUpdate=.*/watchdogIotaInxMqttAutoUpdate='$watchdogIotaInxMqttAutoUpdate'/' $swarmConfigs/watchdog.cfg
+    fi
+    ####
+    if [ -z "$watchdogIotaInxMqttServiceStatusCheck" ]; then
+        sudo sed -i 's/^watchdogIotaInxMqttServiceStatusCheck=.*/watchdogIotaInxMqttServiceStatusCheck=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxMqttServiceStatusCheck=.*/watchdogIotaInxMqttServiceStatusCheck='$watchdogIotaInxMqttServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+    fi
+    #################################################################################
+    # INX-Participation (IOTA)
+    if [ -z "$watchdogIotaInxParticipationAutoUpdate" ]; then
+        sudo sed -i 's/^watchdogIotaInxParticipationAutoUpdate=.*/watchdogIotaInxParticipationAutoUpdate=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxParticipationAutoUpdate=.*/watchdogIotaInxParticipationAutoUpdate='$watchdogIotaInxParticipationAutoUpdate'/' $swarmConfigs/watchdog.cfg
+    fi
+    ####
+    if [ -z "$watchdogIotaInxParticipationAllowDbReset" ]; then
+        sudo sed -i 's/^watchdogIotaInxParticipationAllowDbReset=.*/watchdogIotaInxParticipationAllowDbReset=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxParticipationAllowDbReset=.*/watchdogIotaInxParticipationAllowDbReset='$watchdogIotaInxParticipationAllowDbReset'/' $swarmConfigs/watchdog.cfg
+    fi
+    ####
+    if [ -z "$watchdogIotaInxParticipationServiceStatusCheck" ]; then
+        sudo sed -i 's/^watchdogIotaInxParticipationServiceStatusCheck=.*/watchdogIotaInxParticipationServiceStatusCheck=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxParticipationServiceStatusCheck=.*/watchdogIotaInxParticipationServiceStatusCheck='$watchdogIotaInxParticipationServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
+    fi
+    ####
+    if [ -z "$watchdogIotaInxParticipationAutoAdd" ]; then
+        sudo sed -i 's/^watchdogIotaInxParticipationAutoAdd=.*/watchdogIotaInxParticipationAutoAdd=false/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxParticipationAutoAdd=.*/watchdogIotaInxParticipationAutoAdd='$watchdogIotaInxParticipationAutoAdd'/' $swarmConfigs/watchdog.cfg
+    fi
+    #################################################################################
+    # INX-POI (IOTA)
+    if [ -z "$watchdogIotaInxPoiAutoUpdate" ]; then
+        sudo sed -i 's/^watchdogIotaInxPoiAutoUpdate=.*/watchdogIotaInxPoiAutoUpdate=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxPoiAutoUpdate=.*/watchdogIotaInxPoiAutoUpdate='$watchdogIotaInxPoiAutoUpdate'/' $swarmConfigs/watchdog.cfg
+    fi
+    ####
+    if [ -z "$watchdogIotaInxPoiServiceStatusCheck" ]; then
+        sudo sed -i 's/^watchdogIotaInxPoiServiceStatusCheck=.*/watchdogIotaInxPoiServiceStatusCheck=true/' $swarmConfigs/watchdog.cfg
+    else
+        sudo sed -i 's/^watchdogIotaInxPoiServiceStatusCheck=.*/watchdogIotaInxPoiServiceStatusCheck='$watchdogIotaInxPoiServiceStatusCheck'/' $swarmConfigs/watchdog.cfg
     fi
     #################################################################################
     # INX-Dashboard (Shimmer)

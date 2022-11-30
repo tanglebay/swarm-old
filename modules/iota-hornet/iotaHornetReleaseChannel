@@ -1,29 +1,79 @@
 #!/bin/bash
 
-# Check if release is changed
-if [ "$iotaHornetRelease" != "$currentIotaHornetRelease" ]; then
-    {
-        echo 0
-        echo 20
-        source $iotaHornetModule/iotaHornetRemoval
-        echo 40
-        source $iotaHornetModule/iotaHornetInstaller
-        echo 60
-        source $iotaHornetModule/iotaHornetParser
-        echo 80
-        source $proxyModule/proxyAutomaticDeployment
-        echo 90
-        if [ "$iotaHornetUpdated" = "true" ] || [ "$restartIotaHornet" = "true" ]; then
-            if [ ! -f "/tmp/iota-hornet.lock" ]; then
-                sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
+    if [ "$iotaHornetRelease" != "$currentIotaHornetRelease" ]; then
+        {
+            echo 0
+            unset latestIotaHornetVersion
+            sudo sed -i 's~^latestIotaHornetVersion=.*~latestIotaHornetVersion=""~' $swarmConfigs/latest-versions.cfg
+            source $iotaHornetModule/iotaHornetVersion
+            echo 20
+            source $iotaHornetModule/iotaHornetRemoval
+            echo 40
+            source $iotaHornetModule/iotaHornetInstaller
+            echo 60
+            source $iotaHornetModule/iotaHornetParser
+            echo 80
+            source $proxyModule/proxyAutomaticDeployment
+            echo 90
+            if [ "$iotaHornetUpdated" = "true" ] || [ "$restartIotaHornet" = "true" ]; then
+                if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                    sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                fi
+                for iotaInxPlugin in ${iotaInxPlugins[@]}
+                do
+                    if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                        if [ ! -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                            sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                        fi
+                        sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
+                    fi
+                done
+                unset iotaInxPlugin
+                sudo systemctl restart iota-hornet
+                for iotaInxPlugin in ${iotaInxPlugins[@]}
+                do
+                    if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                        if [ -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                            sudo rm -rf /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                        fi
+                        sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                    fi
+                done
+                unset restartIotaHornet iotaInxPlugin
+                if [ -f "/tmp/iota-hornet.lock" ]; then
+                    sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                fi
             fi
-            sudo systemctl restart iota-hornet
-            unset restartIotaHornet
-            if [ -f "/tmp/iota-hornet.lock" ]; then
-                sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+            echo 100
+        } | whiptail --gauge "Please wait while Hornet is prepared..." 8 65 0
+        whiptail --title "[SHIMMER] Hornet - Configuration" --msgbox "New release channel ($iotaHornetRelease) applied and Hornet was reinstalled!" 8 65
+    fi
+else
+    # Check if release is changed
+    if [ "$iotaHornetRelease" != "$currentIotaHornetRelease" ]; then
+        {
+            echo 0
+            echo 20
+            source $iotaHornetModule/iotaHornetRemoval
+            echo 40
+            source $iotaHornetModule/iotaHornetInstaller
+            echo 60
+            source $iotaHornetModule/iotaHornetParser
+            echo 80
+            source $proxyModule/proxyAutomaticDeployment
+            echo 90
+            if [ "$iotaHornetUpdated" = "true" ] || [ "$restartIotaHornet" = "true" ]; then
+                if [ ! -f "/tmp/iota-hornet.lock" ]; then
+                    sudo touch /tmp/iota-hornet.lock > /dev/null 2>&1
+                fi
+                sudo systemctl restart iota-hornet
+                unset restartIotaHornet
+                if [ -f "/tmp/iota-hornet.lock" ]; then
+                    sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
+                fi
             fi
-        fi
-        echo 100
-    } | whiptail --gauge "Please wait while Hornet- is prepared..." 8 65 0
-    whiptail --title "Hornet [IOTA] Configuration" --msgbox "New release channel ($iotaHornetRelease) applied and Hornet was reinstalled!" 8 65
-fi
+            echo 100
+        } | whiptail --gauge "Please wait while Hornet- is prepared..." 8 65 0
+        whiptail --title "Hornet [IOTA] Configuration" --msgbox "New release channel ($iotaHornetRelease) applied and Hornet was reinstalled!" 8 65
+    fi

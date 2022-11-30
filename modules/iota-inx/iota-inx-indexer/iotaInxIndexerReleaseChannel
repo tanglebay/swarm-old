@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Check if release is changed
+if [ "$iotaInxIndexerRelease" != "$currentIotaInxIndexerRelease" ]; then
+    {
+        echo 0
+        echo 20
+        source $iotaInxIndexerModule/iotaInxIndexerRemoval
+        echo 40
+        source $iotaInxIndexerModule/iotaInxIndexerInstaller
+        echo 60
+        source $iotaInxIndexerModule/iotaInxIndexerParser
+        echo 80
+        if [ "$iotaInxIndexerUpdated" = "true" ] || [ "$restartIotaInxIndexer" = "true" ]; then
+            sudo systemctl restart iota-inx-indexer
+            unset restartIotaInxIndexer
+        fi
+        echo 100
+    } | whiptail --gauge "Please wait while INX-Indexer is prepared..." 8 65 0
+    whiptail --title "[IOTA] INX-Indexer - Configuration" --msgbox "New release channel ($iotaInxIndexerRelease) applied and INX-Indexer was reinstalled!" 8 65
+fi
