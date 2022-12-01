@@ -164,11 +164,15 @@ if [ -f "$swarmTmpPath/iota-hornet.cfg" ]; then
         sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'"$iotaHornetApiJwtToken"'"~' $swarmConfigs/iota-hornet.cfg
     fi
     ####
-    if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
-        if [ -z "$iotaHornetApiPublicRoutes" ]; then
+    if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ]; then
+        if [[ $iotaHornetEnablePlugins = *autopeering* ]] && [[ $iotaHornetApiPublicRoutes != */api/core/v2/info* ]]; then
             sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="/health,/api/routes,/api/core/v2/info,/api/core/v2/tips,/api/core/v2/blocks*,/api/core/v2/transactions*,/api/core/v2/milestones*,/api/core/v2/outputs*,/api/core/v2/treasury,/api/core/v2/receipts*,/api/debug/v1/*"~' $swarmConfigs/iota-hornet.cfg
         else
-            sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'"$iotaHornetApiPublicRoutes"'"~' $swarmConfigs/iota-hornet.cfg
+            if [ -z "$iotaHornetApiPublicRoutes" ]; then
+                sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="/health,/api/routes,/api/core/v2/info,/api/core/v2/tips,/api/core/v2/blocks*,/api/core/v2/transactions*,/api/core/v2/milestones*,/api/core/v2/outputs*,/api/core/v2/treasury,/api/core/v2/receipts*,/api/debug/v1/*"~' $swarmConfigs/iota-hornet.cfg
+            else
+                sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'"$iotaHornetApiPublicRoutes"'"~' $swarmConfigs/iota-hornet.cfg
+            fi
         fi
     else
         if [ -z "$iotaHornetApiPublicRoutes" ]; then
