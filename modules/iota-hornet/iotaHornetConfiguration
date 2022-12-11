@@ -769,7 +769,8 @@ else
             "9)" "P2P Identity" \
             "10)" "Gossip Port" \
             "11)" "Autopeering Port" \
-            "12)" "Unknown Peers Limit" 3>&2 2>&1 1>&3
+            "12)" "Unknown Peers Limit" \
+            "13)" "Stardust Upgrade Settings" 3>&2 2>&1 1>&3
         )
 
         exitstatus=$?
@@ -1288,40 +1289,24 @@ else
             ;;
             "13)")
                 while [ $exitCode -lt 1 ]; do
-                    source $iotaHornetModule/iotaHornetConfigs
-                    # Hornet Networks
-                    CHOICE=$(
-                        whiptail --title "Hornet [IOTA] Network" --menu "\nCurrent network: $iotaHornetNetwork\n\nChoose an option" 24 65 0 \
-                        "" "" \
-                        "1)" "Select IOTA Mainnet (Default)" 3>&2 2>&1 1>&3
-                    )
-                    exitStatus=$?
-                    if [ "$exitStatus" = "1" ]; then
-                        exitCode=1
-                    fi
-                    case $CHOICE in
-                        "1)")
-                            if (whiptail --title "Hornet [IOTA] Network" --yesno --defaultno "Are you sure you want to change the [IOTA] Hornet network to mainnet (the old database will be deleted)?" 8 65); then
-                                currentIotaHornetNetwork=$iotaHornetNetwork
-                                iotaHornetNetwork=mainnet
-                                sudo sed -i 's/^iotaHornetNetwork=.*/iotaHornetNetwork='$iotaHornetNetwork'/' $swarmConfigs/iota-hornet.cfg
-                                if [ -f "/usr/bin/iota-hornet" ]; then
-                                    source $iotaHornetModule/iotaHornetNetwork
-                                fi
-                            fi
-                        ;;
-                    esac
-                done
-                exitCode=0
-            ;;
-            "14)")
-                while [ $exitCode -lt 1 ]; do
                     source $swarmConfigs/iota-hornet.cfg
-                    # Hornet release channel
+                    if [ "$iotaHornetKeepChrysalisDatabase" = "true" ]; then
+                        iotaHornetKeepChrysalisDatabaseStatus="disable"
+                    else
+                        iotaHornetKeepChrysalisDatabaseStatus="enable"
+                    fi
+
+                    if [ "$iotaHornetKeepChrysalisParticipationDatabase" = "true" ]; then
+                        iotaHornetKeepChrysalisParticipationDatabaseStatus="disable"
+                    else
+                        iotaHornetKeepChrysalisParticipationDatabaseStatus="enable"
+                    fi
+
                     CHOICE=$(
-                        whiptail --title "Hornet [IOTA] Releases" --menu "\nSet \"stable\" for official [IOTA] Hornet release or \"beta\"/\"alpha\" for [IOTA] Hornet releases under development\n\nChoose an option" 24 65 0 \
+                        whiptail --title "Hornet [IOTA] Stardust" --menu "\nChoose an option" 24 65 0 \
                         "" "" \
-                        "1)" "Select Stable Release Channel (Default)" 3>&2 2>&1 1>&3
+                        "1)" "${iotaHornetKeepChrysalisDatabaseStatus^} keep Chrysalis event db with Stardust upgrade" \
+                        "2)" "${iotaHornetKeepChrysalisParticipationDatabaseStatus^} keep Chrysalis db with Stardust upgrade" 3>&2 2>&1 1>&3
                     )
                     exitStatus=$?
                     if [ "$exitStatus" = "1" ]; then
@@ -1329,19 +1314,29 @@ else
                     fi
                     case $CHOICE in
                         "1)")
-                            if (whiptail --title "Hornet [IOTA] Releases" --yesno --defaultno "Are you sure you want to change the [IOTA] Hornet release channel to \"stable\" (Hornet will be reinstalled)?" 8 65); then
-                                currentIotaHornetRelease=$iotaHornetRelease
-                                iotaHornetRelease="stable"
-                                sudo sed -i 's/^iotaHornetRelease=.*/iotaHornetRelease='$iotaHornetRelease'/' $swarmConfigs/iota-hornet.cfg
-                                if [ -f "/usr/bin/iota-hornet" ]; then
-                                    source $iotaHornetModule/iotaHornetReleaseChannel
-                                    source $iotaHornetModule/iotaHornetParser
-                                fi
+                            if [ "$iotaHornetKeepChrysalisDatabase" = "true" ]; then
+                                sudo sed -i 's/^iotaHornetKeepChrysalisDatabase=.*/iotaHornetKeepChrysalisDatabase=false/' $swarmConfigs/iota-hornet.cfg
+                                iotaHornetKeepChrysalisDatabaseStatus="disabled"
+                            else
+                                sudo sed -i 's/^iotaHornetKeepChrysalisDatabase=.*/iotaHornetKeepChrysalisDatabase=true/' $swarmConfigs/iota-hornet.cfg
+                                iotaHornetKeepChrysalisDatabaseStatus="enabled"
                             fi
+                            whiptail --title "Hornet [IOTA] Stardust" --msgbox "Keeping the Chrysalis database with the Stardust upgrade has been ${iotaHornetKeepChrysalisDatabaseStatus}." 8 65
+                        ;;
+                        "2)")
+                            if [ "$iotaHornetKeepChrysalisParticipationDatabase" = "true" ]; then
+                                sudo sed -i 's/^iotaHornetKeepChrysalisParticipationDatabase=.*/iotaHornetKeepChrysalisParticipationDatabase=false/' $swarmConfigs/iota-hornet.cfg
+                                iotaHornetKeepChrysalisParticipationDatabaseStatus="disabled"
+                            else
+                                sudo sed -i 's/^iotaHornetKeepChrysalisParticipationDatabase=.*/iotaHornetKeepChrysalisParticipationDatabase=true/' $swarmConfigs/iota-hornet.cfg
+                                iotaHornetKeepChrysalisParticipationDatabaseStatus="enabled"
+                            fi
+                            whiptail --title "Hornet [IOTA] Stardust" --msgbox "Keeping the Chrysalis event database with the Stardust upgrade has been ${iotaHornetKeepChrysalisParticipationDatabaseStatus}." 8 65
                         ;;
                     esac
                 done
                 exitCode=0
+                unset iotaHornetKeepChrysalisDatabaseStatus iotaHornetKeepChrysalisParticipationDatabaseStatus
             ;;
         esac
     done
