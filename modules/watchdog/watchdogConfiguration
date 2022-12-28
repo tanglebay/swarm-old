@@ -1,12 +1,6 @@
 #!/bin/bash
 
 while [ $exitCode -lt 1 ]; do
-    if [ "$watchdogSwarmAutoUpdate" = "true" ]; then
-        watchdogSwarmAutoUpdateMenu="Disable"
-    else
-        watchdogSwarmAutoUpdateMenu="Enable"
-    fi
-
     CHOICE=$(
         whiptail --title "Watchdog [-] Configuration" --menu "\nChoose an option" 24 65 0 \
         "" "" \
@@ -14,7 +8,8 @@ while [ $exitCode -lt 1 ]; do
         "2)" "INX" \
         "3)" "GoShimmer" \
         "4)" "Telegram Notifications" \
-        "5)" "SWARM" 3>&2 2>&1 1>&3
+        "5)" "SWARM" \
+        "6)" "System" 3>&2 2>&1 1>&3
     )
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
@@ -949,7 +944,7 @@ while [ $exitCode -lt 1 ]; do
         "X)")
             while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
-                    whiptail --title "Watchdog [-] WASP " --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Watchdog [-] WASP" --menu "\nChoose an option" 24 65 0 \
                     "" "" \
                     "1)" "[Shimmer] WASP" 3>&2 2>&1 1>&3
                 )
@@ -1117,6 +1112,54 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                 esac
             done
+            exitCode=0
+        ;;
+        "6)")
+            while [ $exitCode -lt 1 ]; do
+                if [ "$watchdogMemoryCheck" = "true" ]; then
+                    watchdogMemoryCheckStatus="disable"
+                else
+                    watchdogMemoryCheckStatus="enable"
+                fi
+                CHOICE=$(
+                    whiptail --title "Watchdog [-] System" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
+                    "1)" "${watchdogMemoryCheckStatus^} Memory Check" \
+                    "2)" "Set Memory Limit" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if (whiptail --title "Watchdog [-] System" --yesno --defaultno "Do you really want to $watchdogMemoryCheckStatus memory check?" 8 65); then
+                            if [ "$watchdogMemoryCheck" = "true" ]; then
+                                watchdogMemoryCheck=false
+                                watchdogMemoryCheckStatus="disabled"
+                            else
+                                watchdogMemoryCheck=true
+                                watchdogMemoryCheckStatus="enabled"
+                            fi
+                            sudo sed -i 's/^watchdogMemoryCheck=.*/watchdogMemoryCheck='$watchdogMemoryCheck'/' $swarmConfigs/watchdog.cfg
+                            whiptail --title "Watchdog [-] System" --msgbox "Memory check by Watchdog $watchdogMemoryCheckStatus." 8 65
+                        fi
+                    ;;
+                    "2)")
+                        watchdogMemoryLimitTmp=$(whiptail --inputbox "Set the memory limit (MB) before restarting all services:" 10 65 "$watchdogMemoryLimit" --title "Watchdog [-] System" 3>&1 1>&2 2>&3)
+                        exitstatus=$?
+                        if [ "$exitstatus" != "1" ]; then
+                            if [ $watchdogMemoryLimitTmp -eq $watchdogMemoryLimitTmp ] && [ $watchdogMemoryLimitTmp -ne $watchdogMemoryLimit ] > /dev/null 2>&1; then
+                                watchdogMemoryLimit=$watchdogMemoryLimitTmp
+                                sudo sed -i 's/^watchdogMemoryLimit=.*/watchdogMemoryLimit='$watchdogMemoryLimit'/' $swarmConfigs/watchdog.cfg
+                                whiptail --title "Watchdog [-] System" --msgbox "Memory limit set to \"$watchdogMemoryLimit\"." 8 65
+                            fi
+                        fi
+                        unset watchdogMemoryLimitTmp
+                    ;;
+                esac
+            done
+            unset watchdogMemoryCheckStatus
             exitCode=0
         ;;
     esac
