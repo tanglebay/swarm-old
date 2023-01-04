@@ -1,5 +1,21 @@
 #!/bin/bash
 
+systemUsers=$(ls /home/)
+if [ ! -z "$systemusers" ]; then
+    for systemUser in ${systemUsers[@]}
+    do
+        if ! (grep -o "source /etc/profile.d/00-swarm.sh" /home/$systemUser/.bashrc) > /dev/null 2>&1; then
+            if [ -f "/home/$systemUser/.bashrc" ]; then
+                echo "source /etc/profile.d/00-swarm.sh" >> /home/$systemUser/.bashrc
+                swarmAliasAllUsersNotExists=false
+            fi
+        else
+            swarmAliasAllUsersExists=true
+        fi
+    done
+    unset systemUser
+fi
+
 if ! (grep -o "source /etc/profile.d/00-swarm.sh" /root/.bashrc) > /dev/null 2>&1; then
     echo "source /etc/profile.d/00-swarm.sh" >> /root/.bashrc
 else
@@ -12,14 +28,18 @@ else
     swarmAliasFileExists=true
 fi
 
-if [ "$swarmAliasRootExists" = "true" ] && [ "$swarmAliasFileExists" = "true" ]; then 
-    swarmAliasExists=true
+if [[ ! -x "/etc/profile.d/00-swarm.sh" ]]; then
+    sudo chmod +x /etc/profile.d/00-swarm.sh > /dev/null 2>&1
 else
+    swarmAliasFileExe=true
+fi
+
+if [ "$swarmAliasRootExists" = "true" ] && [ "$swarmAliasFileExists" = "true" ] && [ "$swarmAliasFileExe" = "true" ] && [ "$swarmAliasAllUsersNotExists" != "false" ]; then
     whiptail --title "Welcome to SWARM!" --msgbox "The alias \"swarm\" has been added to your system! To make the change effective you will be logged out once now.\nYou can then log in again and use the command \"swarm\" (without the quotes) to run the script." 14 65
     clear
-    user=$(who | awk '{ print $1 }')
-    sudo pkill -KILL -u $user > /dev/null 2>&1
+    systemUser=$(who | awk '{ print $1 }')
+    sudo pkill -KILL -u $systemUser > /dev/null 2>&1
     exit 0
 fi
 
-unset swarmAliasRootExists swarmAliasFileExists user
+unset systemUsers swarmAliasAllUsersExists swarmAliasAllUsersNotExists swarmAliasRootExists swarmAliasFileExists user
