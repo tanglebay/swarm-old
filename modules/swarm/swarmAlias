@@ -1,15 +1,25 @@
 #!/bin/bash
+
+if ! (grep -o "source /etc/profile.d/00-swarm.sh" /root/.bashrc) > /dev/null 2>&1; then
+    echo "source /etc/profile.d/00-swarm.sh" >> /root/.bashrc
+else
+    swarmAliasRootExists=true
+fi
+
 if [ ! -f "/etc/profile.d/00-swarm.sh" ] || [ ! -s "/etc/profile.d/00-swarm.sh" ]; then
     sudo cat /var/lib/swarm/templates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
-    if ! (grep -o "source /etc/profile.d/00-swarm.sh" /root/.bashrc > /dev/null 2>&1); then
-        echo "source /etc/profile.d/00-swarm.sh" >> /root/.bashrc
-    fi
+else
+    swarmAliasFileExists=true
+fi
+
+if [ "$swarmAliasRootExists" = "true" ] && [ "$swarmAliasFileExists" = "true" ]; then 
+    swarmAliasExists=true
+else
     whiptail --title "Welcome to SWARM!" --msgbox "The alias \"swarm\" has been added to your system! To make the change effective you will be logged out once now.\nYou can then log in again and use the command \"swarm\" (without the quotes) to run the script." 14 65
     clear
     user=$(who | awk '{ print $1 }')
     sudo pkill -KILL -u $user > /dev/null 2>&1
     exit 0
-else
-    swarmAliasExists=true
 fi
-unset user
+
+unset swarmAliasRootExists swarmAliasFileExists user
