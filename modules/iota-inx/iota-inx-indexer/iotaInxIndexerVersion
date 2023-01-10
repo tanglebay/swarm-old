@@ -4,22 +4,9 @@ source $swarmConfigs/latest-versions.cfg
 if [ -z "$latestIotaInxIndexerVersion" ] || [ "$latestIotaInxIndexerVersion" = "\"\"" ] || [ "$latestIotaInxIndexerVersion" = "null" ] || ! [[ $latestIotaInxIndexerVersion =~ [0-9] ]]; then
     source $swarmModule/swarmAuth
     if [ "$swarmAuth" = "200" ]; then
-        if [ "$iotaInxIndexerRelease" = "stable" ]; then
-            latestIotaInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-indexer | grep $iotaInxIndexerReleaseVersion | awk '!/(-rc|-beta|-alpha)/' | head -n 1)
-            latestIotaInxIndexerVersion=$(echo $latestIotaInxIndexerVersion | tr -d 'v"')
-        fi
-        if [ "$iotaInxIndexerRelease" = "rc" ]; then
-            latestIotaInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-indexer | grep $iotaInxIndexerReleaseVersion | awk '/-rc/' | head -n 1)
-            latestIotaInxIndexerVersion=$(echo $latestIotaInxIndexerVersion | tr -d 'v"')
-        fi
-        if [ "$iotaInxIndexerRelease" = "beta" ]; then
-            latestIotaInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-indexer | grep $iotaInxIndexerReleaseVersion | awk '/-beta/' | head -n 1)
-            latestIotaInxIndexerVersion=$(echo $latestIotaInxIndexerVersion | tr -d 'v"')
-        fi
-        if [ "$iotaInxIndexerRelease" = "alpha" ]; then
-            latestIotaInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-indexer | grep $iotaInxIndexerReleaseVersion | awk '/-alpha/' | head -n 1)
-            latestIotaInxIndexerVersion=$(echo $latestIotaInxIndexerVersion | tr -d 'v"')
-        fi
+        latestIotaInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases.json | jq '.inx.indexer.'$iotaInxIndexerRelease'')
+        latestIotaInxIndexerVersion=$(echo $latestIotaInxIndexerVersion | tr -d 'v"')
+
         if [ ! -z "$latestIotaInxIndexerVersion" ] && [ "$latestIotaInxIndexerVersion" != "\"\"" ] && [ "$latestIotaInxIndexerVersion" != "null" ]; then
             sudo sed -i 's~^latestIotaInxIndexerVersion=.*~latestIotaInxIndexerVersion="'$latestIotaInxIndexerVersion'"~' $swarmConfigs/latest-versions.cfg
         fi

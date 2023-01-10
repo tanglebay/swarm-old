@@ -4,22 +4,9 @@ source $swarmConfigs/latest-versions.cfg
 if [ -z "$latestIotaInxParticipationVersion" ] || [ "$latestIotaInxParticipationVersion" = "\"\"" ] || [ "$latestIotaInxParticipationVersion" = "null" ] || ! [[ $latestIotaInxParticipationVersion =~ [0-9] ]]; then
     source $swarmModule/swarmAuth
     if [ "$swarmAuth" = "200" ]; then
-        if [ "$iotaInxParticipationRelease" = "stable" ]; then
-            latestIotaInxParticipationVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-participation | grep $iotaInxParticipationReleaseVersion | awk '!/(-rc|-beta|-alpha)/' | head -n 1)
-            latestIotaInxParticipationVersion=$(echo $latestIotaInxParticipationVersion | tr -d 'v"')
-        fi
-        if [ "$iotaInxParticipationRelease" = "rc" ]; then
-            latestIotaInxParticipationVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-participation | grep $iotaInxParticipationReleaseVersion | awk '/-rc/' | head -n 1)
-            latestIotaInxParticipationVersion=$(echo $latestIotaInxParticipationVersion | tr -d 'v"')
-        fi
-        if [ "$iotaInxParticipationRelease" = "beta" ]; then
-            latestIotaInxParticipationVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-participation | grep $iotaInxParticipationReleaseVersion | awk '/-beta/' | head -n 1)
-            latestIotaInxParticipationVersion=$(echo $latestIotaInxParticipationVersion | tr -d 'v"')
-        fi
-        if [ "$iotaInxParticipationRelease" = "alpha" ]; then
-            latestIotaInxParticipationVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-participation | grep $iotaInxParticipationReleaseVersion | awk '/-alpha/' | head -n 1)
-            latestIotaInxParticipationVersion=$(echo $latestIotaInxParticipationVersion | tr -d 'v"')
-        fi
+        latestIotaInxParticipationVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases.json | jq '.inx.participation.'$iotaInxParticipationRelease'')
+        latestIotaInxParticipationVersion=$(echo $latestIotaInxParticipationVersion | tr -d 'v"')
+
         if [ ! -z "$latestIotaInxParticipationVersion" ] && [ "$latestIotaInxParticipationVersion" != "\"\"" ] && [ "$latestIotaInxParticipationVersion" != "null" ]; then
             sudo sed -i 's~^latestIotaInxParticipationVersion=.*~latestIotaInxParticipationVersion="'$latestIotaInxParticipationVersion'"~' $swarmConfigs/latest-versions.cfg
         fi
