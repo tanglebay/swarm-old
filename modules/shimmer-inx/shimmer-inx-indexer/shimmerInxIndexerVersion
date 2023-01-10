@@ -4,22 +4,8 @@ source $swarmConfigs/latest-versions.cfg
 if [ -z "$latestShimmerInxIndexerVersion" ] || [ "$latestShimmerInxIndexerVersion" = "\"\"" ] || [ "$latestShimmerInxIndexerVersion" = "null" ] || ! [[ $latestShimmerInxIndexerVersion =~ [0-9] ]]; then
     source $swarmModule/swarmAuth
     if [ "$swarmAuth" = "200" ]; then
-        if [ "$shimmerInxIndexerRelease" = "stable" ]; then
-            latestShimmerInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-indexer | grep $shimmerInxIndexerReleaseVersion | awk '!/(-rc|-beta|-alpha)/' | head -n 1)
-            latestShimmerInxIndexerVersion=$(echo $latestShimmerInxIndexerVersion | tr -d 'v"')
-        fi
-        if [ "$shimmerInxIndexerRelease" = "rc" ]; then
-            latestShimmerInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-indexer | grep $shimmerInxIndexerReleaseVersion | awk '/-rc/' | head -n 1)
-            latestShimmerInxIndexerVersion=$(echo $latestShimmerInxIndexerVersion | tr -d 'v"')
-        fi
-        if [ "$shimmerInxIndexerRelease" = "beta" ]; then
-            latestShimmerInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-indexer | grep $shimmerInxIndexerReleaseVersion | awk '/-beta/' | head -n 1)
-            latestShimmerInxIndexerVersion=$(echo $latestShimmerInxIndexerVersion | tr -d 'v"')
-        fi
-        if [ "$shimmerInxIndexerRelease" = "alpha" ]; then
-            latestShimmerInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-indexer | grep $shimmerInxIndexerReleaseVersion | awk '/-alpha/' | head -n 1)
-            latestShimmerInxIndexerVersion=$(echo $latestShimmerInxIndexerVersion | tr -d 'v"')
-        fi
+        latestShimmerInxIndexerVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases.json | jq '.inx.indexer.'$shimmerInxIndexerRelease'')
+        latestShimmerInxIndexerVersion=$(echo $latestShimmerInxIndexerVersion | tr -d 'v"')
         if [ ! -z "$latestShimmerInxIndexerVersion" ] && [ "$latestShimmerInxIndexerVersion" != "\"\"" ] && [ "$latestShimmerInxIndexerVersion" != "null" ]; then
             sudo sed -i 's~^latestShimmerInxIndexerVersion=.*~latestShimmerInxIndexerVersion="'$latestShimmerInxIndexerVersion'"~' $swarmConfigs/latest-versions.cfg
         fi

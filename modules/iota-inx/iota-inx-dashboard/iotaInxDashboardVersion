@@ -4,22 +4,9 @@ source $swarmConfigs/latest-versions.cfg
 if [ -z "$latestIotaInxDashboardVersion" ] || [ "$latestIotaInxDashboardVersion" = "\"\"" ] || [ "$latestIotaInxDashboardVersion" = "null" ] || ! [[ $latestIotaInxDashboardVersion =~ [0-9] ]]; then
     source $swarmModule/swarmAuth
     if [ "$swarmAuth" = "200" ]; then
-        if [ "$iotaInxDashboardRelease" = "stable" ]; then
-            latestIotaInxDashboardVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-dashboard | grep $iotaInxDashboardReleaseVersion | awk '!/(-rc|-beta|-alpha)/' | head -n 1)
-            latestIotaInxDashboardVersion=$(echo $latestIotaInxDashboardVersion | tr -d 'v"')
-        fi
-        if [ "$iotaInxDashboardRelease" = "rc" ]; then
-            latestIotaInxDashboardVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-dashboard | grep $iotaInxDashboardReleaseVersion | awk '/-rc/' | head -n 1)
-            latestIotaInxDashboardVersion=$(echo $latestIotaInxDashboardVersion | tr -d 'v"')
-        fi
-        if [ "$iotaInxDashboardRelease" = "beta" ]; then
-            latestIotaInxDashboardVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-dashboard | grep $iotaInxDashboardReleaseVersion | awk '/-beta/' | head -n 1)
-            latestIotaInxDashboardVersion=$(echo $latestIotaInxDashboardVersion | tr -d 'v"')
-        fi
-        if [ "$iotaInxDashboardRelease" = "alpha" ]; then
-            latestIotaInxDashboardVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases/inx-dashboard | grep $iotaInxDashboardReleaseVersion | awk '/-alpha/' | head -n 1)
-            latestIotaInxDashboardVersion=$(echo $latestIotaInxDashboardVersion | tr -d 'v"')
-        fi
+        latestIotaInxDashboardVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/github/releases.json | jq '.inx.dashboard.'$iotaInxDashboardRelease'')
+        latestIotaInxDashboardVersion=$(echo $latestIotaInxDashboardVersion | tr -d 'v"')
+
         if [ ! -z "$latestIotaInxDashboardVersion" ] && [ "$latestIotaInxDashboardVersion" != "\"\"" ] && [ "$latestIotaInxDashboardVersion" != "null" ]; then
             sudo sed -i 's~^latestIotaInxDashboardVersion=.*~latestIotaInxDashboardVersion="'$latestIotaInxDashboardVersion'"~' $swarmConfigs/latest-versions.cfg
         fi
