@@ -1,15 +1,20 @@
 #!/bin/bash
 
-if [[ $iotaHornetVersion =~ ^2.* ]]; then
-    source $swarmConfigs/iota-hornet.cfg
+source $swarmConfigs/iota-hornet.cfg
 
-    if [ "$iotaHornetNetwork" = "mainnet" ]; then
-        iotaHornetConfig="config_mainnet"
+if [ "$iotaHornetNetwork" = "mainnet" ]; then
+    iotaHornetConfig="config_mainnet"
+
+    iotaHornetDefaultCheck=$(cat /etc/default/iota-hornet)
+    if [[ $iotaHornetDefaultCheck != *config_mainnet.json* ]]; then
+        echo "OPTIONS=\"--config config_mainnet.json\"" > /etc/default/iota-hornet
+        echo "-> Replace old config.json and set config_mainnet.json" >> /tmp/iotaHornetInstaller.log
+        restartIotaHornet=true
     fi
-else
-    source $swarmConfigs/iota-hornet.cfg
-
-    if [ "$iotaHornetNetwork" = "mainnet" ]; then
-        iotaHornetConfig="config"
+    if [ -f "$iotaHornetHome/config.json" ]; then
+        sudo rm -rf $iotaHornetHome/config.json > /dev/null 2>&1
+    fi
+    if [ -d "$iotaHornetHome/configdb" ]; then
+        sudo rm -rf $iotaHornetHome/configdb > /dev/null 2>&1
     fi
 fi
