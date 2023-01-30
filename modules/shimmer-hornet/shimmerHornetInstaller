@@ -45,41 +45,34 @@ fi
 
 ##############################################################################################################################################
 
-# Create dir if not exist
-sudo mkdir -p /tmp/shimmer-hornet > /dev/null 2>&1
+source $swarmModule/swarmAuth
+if [ "$swarmAuth" = "200" ]; then
+    # Create dir if not exist
+    sudo mkdir -p /tmp/shimmer-hornet > /dev/null 2>&1
 
-if [ "$osArchitecture" = "amd64" ]; then
-    shimmerHornetArchitecture="x86_64"
-fi
-if [ "$osArchitecture" = "arm64" ]; then
-    shimmerHornetArchitecture="ARM64"
-fi
-
-if [ ! -z "$shimmerHornetArchitecture" ]; then
     # Download latest shimmer-hornet
-    ( cd /tmp/shimmer-hornet/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestShimmerHornetVersion}/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture.tar.gz )
-    if [ -f "/tmp/shimmer-hornet/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture.tar.gz" ]; then
-        shimmerHornetDownloadChecksum=$(sudo shasum -a 256 /tmp/shimmer-hornet/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture.tar.gz | awk '{ print $1 }')
+    ( cd /tmp/shimmer-hornet/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/hornet/v${latestShimmerHornetVersion}/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz )
+    if [ -f "/tmp/shimmer-hornet/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz" ]; then
+        shimmerHornetDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-hornet/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
     fi
+
     # Download checksum
-    ( cd /tmp/shimmer-hornet/ ; sudo wget -q https://github.com/iotaledger/hornet/releases/download/v${latestShimmerHornetVersion}/checksums.txt )
-    if [ -f "/tmp/shimmer-hornet/checksums.txt" ]; then
-        shimmerHornetChecksum=$(sudo grep "HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture.tar.gz" /tmp/shimmer-hornet/checksums.txt | awk '{ print $1 }')
-        echo $shimmerHornetChecksum > /tmp/shimmer-hornet.checksum
-    fi
+    ( cd /tmp/shimmer-hornet/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/hornet/v${latestShimmerHornetVersion}/hornet_checksums_linux_$osArchitecture.txt )
+    shimmerHornetChecksum=$(sudo cat /tmp/shimmer-hornet/hornet_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+    echo $shimmerHornetChecksum > /tmp/shimmer-hornet.checksum
 
     # Unzip archive
     if [ "$shimmerHornetDownloadChecksum" = "$shimmerHornetChecksum" ] && [ ! -z "$shimmerHornetDownloadChecksum" ] && [ ! -z "$shimmerHornetChecksum" ]; then
-        ( cd /tmp/shimmer-hornet ; sudo tar -xzf /tmp/shimmer-hornet/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture.tar.gz ) > /dev/null 2>&1
+        ( cd /tmp/shimmer-hornet ; sudo tar -xzf /tmp/shimmer-hornet/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
         # Copy binary
-        if [ -f "/tmp/shimmer-hornet/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/hornet" ]; then
+        if [ -f "/tmp/shimmer-hornet/hornet" ]; then
             shimmerHornetStatus="$(systemctl show -p ActiveState --value shimmer-hornet)"
             if [ "$shimmerHornetStatus" = "active" ]; then
                 sudo systemctl stop shimmer-hornet > /dev/null 2>&1
             fi
 
-            sudo cp -rf /tmp/shimmer-hornet/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/hornet /usr/bin/shimmer-hornet > /dev/null 2>&1
+            sudo cp -rf /tmp/shimmer-hornet/hornet /usr/bin/shimmer-hornet > /dev/null 2>&1
             sudo chmod +x /usr/bin/shimmer-hornet > /dev/null 2>&1
             newShimmerHornetBinary=true
         fi
@@ -92,8 +85,8 @@ fi
 if [ "$newShimmerHornetBinary" = "true" ]; then
     ### Mainnet Config
     if [ "$shimmerHornetNetwork" = "mainnet" ]; then
-        if [ -f "/tmp/shimmer-hornet/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_defaults.json" ]; then
-            sudo cp -rf /tmp/shimmer-hornet/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_defaults.json $shimmerHornetHome/config_mainnet.json > /dev/null 2>&1
+        if [ -f "/tmp/shimmer-hornet/hornet-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_defaults.json" ]; then
+            sudo cp -rf /tmp/shimmer-hornet/hornet-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_defaults.json $shimmerHornetHome/config_mainnet.json > /dev/null 2>&1
             if [ -s "$shimmerHornetHome/config_mainnet.json" ]; then
                 newShimmerHornetConfig=true
             fi
@@ -102,8 +95,8 @@ if [ "$newShimmerHornetBinary" = "true" ]; then
 
     ### Testnet Config
     if [ "$shimmerHornetNetwork" = "testnet" ]; then
-        if [ -f "/tmp/shimmer-hornet/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_testnet.json" ]; then
-            sudo cp -rf /tmp/shimmer-hornet/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_testnet.json $shimmerHornetHome/config_testnet.json > /dev/null 2>&1
+        if [ -f "/tmp/shimmer-hornet/hornet-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_testnet.json" ]; then
+            sudo cp -rf /tmp/shimmer-hornet/hornet-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_testnet.json $shimmerHornetHome/config_testnet.json > /dev/null 2>&1
         if [ -s "$shimmerHornetHome/config_testnet.json" ]; then
             newShimmerHornetConfig=true
         fi
@@ -112,8 +105,8 @@ if [ "$newShimmerHornetBinary" = "true" ]; then
 
     ### Alphanet Config
     if [ "$shimmerHornetNetwork" = "alphanet" ]; then
-        if [ -f "/tmp/shimmer-hornet/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_alphanet.json" ]; then
-            sudo cp -rf /tmp/shimmer-hornet/HORNET-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_alphanet.json $shimmerHornetHome/config_alphanet.json > /dev/null 2>&1
+        if [ -f "/tmp/shimmer-hornet/hornet-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_alphanet.json" ]; then
+            sudo cp -rf /tmp/shimmer-hornet/hornet-${latestShimmerHornetVersion}_Linux_$shimmerHornetArchitecture/config_alphanet.json $shimmerHornetHome/config_alphanet.json > /dev/null 2>&1
             if [ -s "$shimmerHornetHome/config_alphanet.json" ]; then
                 newShimmerHornetConfig=true
             fi
