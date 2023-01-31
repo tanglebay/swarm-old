@@ -1,24 +1,27 @@
 #!/bin/bash
 
 if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
-    if [ "$iotaHornetReleaseVersion" = "v2" ] && [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
+    if [ -f "/usr/bin/iota-hornet" ]; then
+        iotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }' | tr -d 'v')
+    fi
+    if [ ! -z "$iotaHornetReleaseVersion" ] && [[ $iotaHornetVersion =~ ^2.* ]]; then
         if [ "$watchdogIotaInxParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/iota-hornet" ] && [ -f "/usr/bin/iota-inx-participation" ] && [ "$iotaHornetApiEnabled" = "true" ] && [ "$iotaHornetNetwork" = "mainnet" ]; then
             source $swarmModule/swarmAuth
             if [ "$swarmAuth" = "200" ]; then
                 latestIotaParticipationEvents=$(curl -s https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/participation/iota-events.json |jq '.eventIds' | tr -d '[]",')
                 latestIotaParticipationEvents=$(echo $latestIotaParticipationEvents)
-                iotaInxParticipationList=$(curl -s localhost:14266/api/participation/v1/events -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" |jq '.data.eventIds' | tr -d '[]",')
+                iotaInxParticipationList=$(curl -s localhost:14265/api/participation/v1/events -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" |jq '.data.eventIds' | tr -d '[]",')
                 iotaInxParticipationList=$(echo $iotaHornetParticipationList)
                 if [ ! -z "$latestIotaParticipationEvents" ]; then
                     for latestIotaParticipationEvent in ${latestIotaParticipationEvents[@]}
                     do
                         iotaInxParticipationEvent=$(echo $iotaInxParticipationList | grep -o "$latestIotaParticipationEvent")
                         if [ -z "$iotaInxParticipationEvent" ] && [ "$iotaInxParticipationEvent" != "$latestIotaParticipationEvent" ]; then
-                            iotaHornetPruningIndex=$(curl -s localhost:14266/api/core/v2/info -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" | jq '.status.pruningIndex')
+                            iotaHornetPruningIndex=$(curl -s localhost:14265/api/core/v2/info -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" | jq '.status.pruningIndex')
                             latestIotaParticipationEventDetails=$(curl -s https://raw.githubusercontent.com/tanglebay/participation/main/iota-mainnet/templates/$latestIotaParticipationEvent.json)
                             latestIotaParticipationEventCommencingIndex=$(echo $latestIotaParticipationEventDetails | jq '.milestoneIndexCommence')
                             if [ ! -z "$iotaHornetPruningIndex" ] && [ ! -z "$latestIotaParticipationEventDetails" ] && [ ! -z "$latestIotaParticipationEventCommencingIndex" ] && [ $iotaHornetPruningIndex -le $latestIotaParticipationEventCommencingIndex ] 2>/dev/null; then
-                                iotaInxParticipationAddResponse=$(curl http://localhost:14266/api/participation/v1/admin/events -s --http1.1 -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" -d "${latestIotaParticipationEventDetails}")
+                                iotaInxParticipationAddResponse=$(curl http://localhost:14265/api/participation/v1/admin/events -s --http1.1 -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" -d "${latestIotaParticipationEventDetails}")
                                 if [[ $iotaInxParticipationAddResponse = *code\=400* ]] || [[ $iotaInxParticipationAddResponse = *code\=401* ]]; then
                                     iotaHornetApiJwtToken=$( cd $iotaHornetHome/$iotaHornetNetwork ; /usr/bin/iota-hornet tools jwt-api --salt $iotaHornetApiJwtSalt | awk '{ print $5 }')
                                     if [ ! -z "$iotaHornetApiJwtToken" ]; then
