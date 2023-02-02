@@ -969,9 +969,9 @@ else
                                                         sudo touch /tmp/iota-hornet-validate-poi.json > /dev/null 2>&1
                                                     fi
                                                     sudo $swarmCLEditor /tmp/iota-hornet-validate-poi.json
-                                                    if [ -s "/tmp/iota-hornet-validate-poi.json" ]; then
+                                                    iotaHornetPoiValidateData=$(cat /tmp/iota-hornet-validate-poi.json)
+                                                    if jq -e . >/dev/null 2>&1 <<<"$iotaHornetPoiValidateData"; then
                                                         source $swarmConfigs/iota-hornet.cfg
-                                                        iotaHornetPoiValidateData=$(cat /tmp/iota-hornet-validate-poi.json)
                                                         iotaHornetPoiValidateResult=$(curl -s -X POST localhost:14265/api/plugins/poi/validate -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" -d ''$iotaHornetPoiValidateData'')
                                                         if [[ $iotaHornetPoiValidateResult = *\"valid\":*true* ]]; then
                                                             iotaHornetPoiValidateResult="valid"
@@ -979,11 +979,12 @@ else
                                                             iotaHornetPoiValidateResult="invalid"
                                                         fi
                                                         whiptail --title "Hornet [IOTA] POI" --msgbox "The validated poi is $iotaHornetPoiValidateResult." 8 65
-                                                        echo "" > /tmp/iota-hornet-validate-poi.json
                                                         unset iotaHornetPoiValidateResult
                                                     else
-                                                        whiptail --title "Hornet [IOTA] POI" --msgbox "PoI validation aborted because file is empty." 8 65
+                                                        whiptail --title "Hornet [IOTA] POI" --msgbox "PoI validation aborted because content is not valid json data." 8 65
                                                     fi
+                                                    echo "" > /tmp/iota-hornet-validate-poi.json
+                                                    unset iotaHornetPoiValidateData
                                                 fi
                                             else
                                                 whiptail --title "Hornet [IOTA] POI" --msgbox "Please install [IOTA] Hornet first." 8 65
