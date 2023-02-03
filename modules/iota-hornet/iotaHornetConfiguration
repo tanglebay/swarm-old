@@ -90,7 +90,7 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
                         whiptail --title "Hornet [IOTA] API & JWT" --menu "\nChoose an option" 24 65 0 \
                         "" "" \
                         "1)" "$menuIotaHornetApiEnabled API" \
-                        "2)" "Set API Routes" \
+                        "2)" "Set protected API Routes" \
                         "3)" "Generate new JWT Token" \
                         "4)" "Show All JWT Token" \
                         "5)" "Revoke All JWT Token" 3>&2 2>&1 1>&3
@@ -120,7 +120,7 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
                             source $swarmConfigs/iota-hornet.cfg
                             iotaHornetApiRoutes=$iotaHornetApiPublicRoutes
                             source $iotaHornetModule/iotaHornetApiRoutes
-                            iotaHornetApiRoutes=$(whiptail --title "Hornet [IOTA] API routes" --checklist "\nSelect (spacebar) [IOTA] Hornet routes you want to protect." 24 65 18 \
+                            iotaHornetApiRoutes=$(whiptail --title "Hornet [IOTA] API routes" --checklist "" 24 65 18 \
                                 "/health" "" $iotaHornetApiRoutesHealth \
                                 "/api/routes" "" $iotaHornetApiRoutesRoutes \
                                 "/api/core/v2/info" "" $iotaHornetApiRoutesInfo \
@@ -857,7 +857,7 @@ else
                     CHOICE=$(
                         whiptail --title "Hornet [IOTA] API & JWT" --menu "\nChoose an option" 24 65 0 \
                         "" "" \
-                        "1)" "Set API Routes" \
+                        "1)" "Set protected API Routes" \
                         "2)" "Generate New JWT Token" \
                         "3)" "Show All JWT Token" \
                         "4)" "Revoke All JWT Token" 3>&2 2>&1 1>&3
@@ -871,7 +871,7 @@ else
                             source $swarmConfigs/iota-hornet.cfg
                             iotaHornetApiRoutes=$iotaHornetApiPublicRoutes
                             source $iotaHornetModule/iotaHornetApiRoutes
-                            iotaHornetApiRoutes=$(whiptail --title "Hornet [IOTA] API routes" --checklist "\nSelect (using the spacebar) the [IOTA] Hornet API routes that you want to protect. All routes not selected will be public:" 24 65 15 \
+                            iotaHornetApiRoutes=$(whiptail --title "Hornet [IOTA] API routes" --checklist "" 24 65 17 \
                                 "/health" "" $iotaHornetApiRoutesHealth \
                                 "/mqtt" "" $iotaHornetApiRoutesMqtt \
                                 "/api/routes" "" $iotaHornetApiRoutesRoutes \
@@ -886,7 +886,9 @@ else
                                 "/api/v1/receipts*" "" $iotaHornetApiRoutesReceipts \
                                 "/api/plugins/participation/events*" "" $iotaHornetApiRoutesParticipationEvents \
                                 "/api/plugins/participation/outputs*" "" $iotaHornetApiRoutesParticipationOutputs \
-                                "/api/plugins/participation/addresses*" "" $iotaHornetApiRoutesParticipationAddresses 3>&1 1>&2 2>&3)
+                                "/api/plugins/participation/addresses*" "" $iotaHornetApiRoutesParticipationAddresses \
+                                "/api/plugins/poi/create/*" "" $iotaHornetApiRoutesPoiCreate \
+                                "/api/plugins/poi/validate*" "" $iotaHornetApiRoutesPoiValidate 3>&1 1>&2 2>&3)
                             exitStatus=$?
                             iotaHornetApiRoutes=$(echo $iotaHornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
                             if [ "$exitStatus" != "1" ]; then
@@ -969,14 +971,15 @@ else
                 source $swarmConfigs/iota-hornet.cfg
                 currentIotaHornetEnablePlugins=$iotaHornetEnablePlugins
                 source $iotaHornetModule/iotaHornetPlugins
-                iotaHornetEnablePlugins=$(whiptail --title "Hornet [IOTA] Plugins" --checklist "\nSelect (with spacebar) the [IOTA] Hornet plugins to be activated:" 24 65 4 \
+                iotaHornetEnablePlugins=$(whiptail --title "Hornet [IOTA] Plugins" --checklist "\nSelect (with spacebar) the [IOTA] Hornet plugins to be activated:" 24 65 5 \
                     "Autopeering" "plugin for automatic peering" $iotaHornetPluginAutopeering \
                     "Participation" "plugin for voting/staking" $iotaHornetPluginParticipation \
                     "MQTT" "plugin to stream messages" $iotaHornetPluginMqtt \
+                    "POI" "plugin to create/validate POIs" $iotaHornetPluginPoi \
                     "Prometheus" "plugin for metrics e.g. Grafana" $iotaHornetPluginPrometheus 3>&1 1>&2 2>&3)
                 exitStatus=$?
                 iotaHornetEnablePlugins=$(echo $iotaHornetEnablePlugins | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-                if [ -z "$iotaHornetEnablePlugins" ] || [[ $iotaHornetEnablePlugins = *autopeering* ]] || [[ $iotaHornetEnablePlugins = *participation* ]] || [[ $iotaHornetEnablePlugins = *mqtt* ]] || [[ $iotaHornetEnablePlugins = *prometheus* ]]; then
+                if [ -z "$iotaHornetEnablePlugins" ] || [[ $iotaHornetEnablePlugins = *autopeering* ]] || [[ $iotaHornetEnablePlugins = *participation* ]] || [[ $iotaHornetEnablePlugins = *mqtt* ]] || [[ $iotaHornetEnablePlugins = *poi* ]] || [[ $iotaHornetEnablePlugins = *prometheus* ]]; then
                     if [ "$iotaHornetEnablePlugins" != "$currentIotaHornetEnablePlugins" ] && [ "$exitStatus" != "1" ]; then
                         if [ -f "/usr/bin/iota-hornet" ]; then
                             source $iotaHornetConfigParsers/iotaHornetEnablePlugins
