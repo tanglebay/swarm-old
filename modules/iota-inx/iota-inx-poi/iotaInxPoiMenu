@@ -7,9 +7,10 @@ while [ $exitCode -lt 1 ]; do
         whiptail --title "INX [SHIMMER] POI" --menu "\nChoose an option" 24 65 0 \
         "" "" \
         "1)" "INX-POI Info" \
-        "2)" "INX-POI Configuration" \
-        "3)" "INX-POI Management" \
-        "4)" "INX-POI Installer" 3>&2 2>&1 1>&3
+        "2)" "INX-POI Tools" \
+        "3)" "INX-POI Configuration" \
+        "4)" "INX-POI Management" \
+        "5)" "INX-POI Installer" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -22,6 +23,106 @@ while [ $exitCode -lt 1 ]; do
             source $iotaInxPoiModule/iotaInxPoiInfo
         ;;
         "2)")
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "INX-POI [IOTA] Tools" --menu "\nChoose your option" 24 65 0 \
+                    "" "" \
+                    "1)" "Validate Poi" \
+                    "2)" "Create PoI" \
+                    "3)" "View Last Created PoI" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/iota-inx-poi" ]; then
+                            if (whiptail --title "INX-POI [IOTA] Tools" --yesno --defaultno "In the following file, please insert the proof of inclusion to be validated. Do you want to continue?" 8 65); then
+                                if [ ! -f "/tmp/iota-inx-poi-validate.json" ]; then
+                                    sudo touch /tmp/iota-inx-poi-validate.json > /dev/null 2>&1
+                                fi
+                                sudo $swarmCLEditor /tmp/iota-inx-poi-validate.json
+                                iotaInxPoiValidateData=$(cat /tmp/iota-inx-poi-validate.json)
+                                if jq -e . >/dev/null 2>&1 <<<"$iotaInxPoiValidateData"; then
+                                    source $swarmConfigs/iota-hornet.cfg
+                                    iotaInxPoiValidateResult=$(curl -s -X POST "localhost:14265/api/plugins/poi/validate" -H "accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" -d "$iotaInxPoiValidateData")
+                                    if [[ $iotaInxPoiValidateResult = *\"valid\":*true* ]]; then
+                                        iotaInxPoiValidateResult="valid"
+                                    else
+                                        iotaInxPoiValidateResult="invalid"
+                                    fi
+                                    whiptail --title "INX-POI [IOTA] Tools" --msgbox "The validated poi is $iotaInxPoiValidateResult." 8 65
+                                    unset iotaInxPoiValidateResult
+                                else
+                                    whiptail --title "INX-POI [IOTA] Tools" --msgbox "PoI validation aborted because content is not valid json data." 8 65
+                                fi
+                                echo "" > /tmp/iota-inx-poi-validate.json
+                                unset iotaInxPoiValidateData
+                            fi
+                        else
+                            whiptail --title "INX-POI [IOTA] Tools" --msgbox "Please install [IOTA] INX-POI plugin first." 8 65
+                        fi
+                    ;;
+                    "2)")
+                        if [ -f "/usr/bin/iota-inx-poi" ]; then
+                            iotaInxPoiCreateId=$(whiptail --inputbox "\nPlease enter the message id of which you want to create a poi" 10 65 --title "INX-POI [IOTA] Tools" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ] && [ ! -z "$iotaInxPoiCreateId" ]; then
+                                source $swarmConfigs/iota-hornet.cfg
+                                iotaInxPoiCreateResult=$(sudo curl -s "localhost:14265/api/poi/v1/create/$iotaInxPoiCreateId" -H "accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}")
+                                if [[ $iotaInxPoiCreateResult = *code* ]]; then
+                                    if [[ $iotaInxPoiCreateResult = *400* ]]; then
+                                        whiptail --title "INX-POI [IOTA] Tools" --msgbox "PoI creation aborted because invalid data provided (400)." 8 65
+                                    fi
+                                    if [[ $iotaInxPoiCreateResult = *403* ]]; then
+                                        whiptail --title "INX-POI [IOTA] Tools" --msgbox "PoI creation aborted because not available for public use (403)." 8 65
+                                    fi
+                                    if [[ $iotaInxPoiCreateResult = *404* ]]; then
+                                        whiptail --title "INX-POI [IOTA] Tools" --msgbox "PoI creation aborted because could not find data (404)." 8 65
+                                    fi
+                                    if [[ $iotaInxPoiCreateResult = *500* ]]; then
+                                        whiptail --title "INX-POI [IOTA] Tools" --msgbox "PoI creation aborted because internal server error (500)." 8 65
+                                    fi
+                                else
+                                    echo $iotaInxPoiCreateResult | jq -r '.data' > /tmp/iota-inx-poi-create.json
+                                    if [ -s "/tmp/iota-inx-poi-create.json" ]; then
+                                        clear
+                                        sudo cat /tmp/iota-inx-poi-create.json |jq
+                                        echo ""
+                                        echo ""
+                                        read -n 1 -s -r -p "Press any key to continue"
+                                        clear
+                                    else
+                                        whiptail --title "INX-POI [IOTA] Tools" --msgbox "Aborted - PoI creation file is empty." 8 65
+                                    fi
+                                fi
+                            fi
+                        else
+                            whiptail --title "INX-POI [IOTA] Tools" --msgbox "Please install [IOTA] INX-POI plugin first." 8 65
+                        fi
+                    ;;
+                    "3)")
+                        if [ -f "/usr/bin/iota-inx-poi" ]; then
+                            if [ -s "/tmp/iota-inx-poi-create.json" ]; then
+                                clear
+                                sudo cat /tmp/iota-inx-poi-create.json |jq
+                                echo ""
+                                echo ""
+                                read -n 1 -s -r -p "Press any key to continue"
+                                clear
+                            else
+                                whiptail --title "INX-POI [IOTA] Tools" --msgbox "Aborted - PoI creation file is empty." 8 65
+                            fi
+                        else
+                            whiptail --title "INX-POI [IOTA] Tools" --msgbox "Please install [IOTA] INX-POI plugin first." 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
@@ -107,7 +208,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "3)")
+        "4)")
             if [ -f "/usr/bin/iota-inx-poi" ]; then
                 while [ $exitCode -lt 1 ]; do
                     clear
