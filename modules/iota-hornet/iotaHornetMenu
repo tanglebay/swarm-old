@@ -972,7 +972,7 @@ else
                                                     iotaHornetPoiValidateData=$(cat /tmp/iota-hornet-validate-poi.json)
                                                     if jq -e . >/dev/null 2>&1 <<<"$iotaHornetPoiValidateData"; then
                                                         source $swarmConfigs/iota-hornet.cfg
-                                                        iotaHornetPoiValidateResult=$(curl -s -X POST localhost:14265/api/plugins/poi/validate -H "accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" -d ''$iotaHornetPoiValidateData'')
+                                                        iotaHornetPoiValidateResult=$(curl -s -X POST "localhost:14265/api/plugins/poi/validate" -H "accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" -d "$iotaHornetPoiValidateData")
                                                         if [[ $iotaHornetPoiValidateResult = *\"valid\":*true* ]]; then
                                                             iotaHornetPoiValidateResult="valid"
                                                         else
@@ -996,7 +996,7 @@ else
                                                 exitStatus=$?
                                                 if [ $exitStatus != 1 ] && [ ! -z "$iotaHornetPoiCreateId" ]; then
                                                     source $swarmConfigs/iota-hornet.cfg
-                                                    iotaHornetPoiCreateResult=$(sudo curl -s localhost:14265/api/plugins/poi/create/$iotaHornetPoiCreateId -H "accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}")
+                                                    iotaHornetPoiCreateResult=$(sudo curl -s "localhost:14265/api/plugins/poi/create/$iotaHornetPoiCreateId" -H "accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}")
                                                     if [[ $iotaHornetPoiCreateResult = *code* ]]; then
                                                         if [[ $iotaHornetPoiCreateResult = *400* ]]; then
                                                             whiptail --title "Hornet [IOTA] POI" --msgbox "PoI creation aborted because invalid data provided (400)." 8 65
@@ -1011,7 +1011,7 @@ else
                                                             whiptail --title "Hornet [IOTA] POI" --msgbox "PoI creation aborted because internal server error (500)." 8 65
                                                         fi
                                                     else
-                                                        echo $iotaHornetPoiCreateResult | jq > /tmp/iota-hornet-create-poi.json
+                                                        echo $iotaHornetPoiCreateResult | jq -r '.data' > /tmp/iota-hornet-create-poi.json
                                                         if [ -s "/tmp/iota-hornet-create-poi.json" ]; then
                                                             clear
                                                             sudo cat /tmp/iota-hornet-create-poi.json |jq
