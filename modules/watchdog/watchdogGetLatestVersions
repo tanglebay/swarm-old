@@ -22,13 +22,7 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             swarmAppReleaseVersion=${swarmAppPrefix}ReleaseVersion
             swarmAppModule=${swarmAppPrefix}Module
 
-            if [[ $swarmAppGithubName =~ ^inx-* ]]; then
-                swarmAppGithubNameJson=$(echo $swarmAppGithubName | sed 's/-/./g')
-            else
-                swarmAppGithubNameJson=$swarmAppGithubName
-            fi
-
-            swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases.json | jq '.'$swarmAppGithubNameJson'.'${!swarmAppRelease}'')
+            swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases.json | jq '."'$swarmAppGithubName'".'${!swarmAppRelease}'')
             swarmAppLatestVersion=$(echo $swarmAppLatestVersion | tr -d 'v"')
 
             if [ "$swarmAppLatestVersion" = "\"\"" ] || [ -z "$swarmAppLatestVersion" ] || [ "$swarmAppLatestVersion" = "null" ] || ! [[ $swarmAppLatestVersion =~ [0-9] ]]; then
@@ -48,7 +42,7 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 sudo sed -i 's~^latest'${swarmAppPrefix^}'Version=.*~latest'${swarmAppPrefix^}'Version=""~' $swarmConfigs/latest-versions.cfg
             fi
         fi
-        unset swarmAppGithubName swarmAppPrefix swarmAppCurrentLatestVersion swarmAppRelease swarmAppReleaseVersion swarmAppModule swarmAppLatestVersion swarmAppGithubNameJson
+        unset swarmAppGithubName swarmAppPrefix swarmAppCurrentLatestVersion swarmAppRelease swarmAppReleaseVersion swarmAppModule swarmAppLatestVersion
     done
     unset swarmApp
 fi
