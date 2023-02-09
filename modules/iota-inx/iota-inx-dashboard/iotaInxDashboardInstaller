@@ -1,27 +1,34 @@
 #!/bin/bash
 
+echo "====== INSTALLATION STARTED ======" > /tmp/iotaInxDashboardInstaller.log
 # General
 if ! id inx >/dev/null 2>&1; then
+    echo "-> Create user" >> /tmp/iotaInxDashboardInstaller.log
     useradd --no-create-home --system inx >/dev/null
 fi
 
 if [ ! -d "$iotaInxDashboardHome" ]; then
+    echo "-> Create home folder" >> /tmp/iotaInxDashboardInstaller.log
     sudo mkdir -p $iotaInxDashboardHome > /dev/null 2>&1
     sudo chown -R inx:inx $iotaInxDashboardHome > /dev/null 2>&1
 fi
 
 # Install GO
 if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    echo "-> Install go via snap" >> /tmp/iotaInxDashboardInstaller.log
     sudo snap install go --classic > /dev/null 2>&1
 fi
 
 # Create Service
 if [ ! -f "/lib/systemd/system/iota-inx-dashboard.service" ]; then
+    echo "-> Copy new service file from templates" >> /tmp/iotaInxDashboardInstaller.log
     sudo cp -rf $swarmTemplates/app-service/iota-inx-dashboard.service /lib/systemd/system/iota-inx-dashboard.service > /dev/null 2>&1
     if [ ! -f "/etc/default/iota-inx-dashboard" ]; then
+        echo "-> Create OPTIONS file for service" >> /tmp/iotaInxDashboardInstaller.log
         echo "OPTIONS=\"--config config.json\"" > /etc/default/iota-inx-dashboard
     fi
     if [ ! -f "/etc/systemd/system/multi-user.target.wants/iota-inx-dashboard.service" ]; then
+        echo "-> Register service" >> /tmp/iotaInxDashboardInstaller.log
         sudo systemctl enable iota-inx-dashboard > /dev/null 2>&1
     fi
     sudo systemctl daemon-reload > /dev/null 2>&1
@@ -32,30 +39,38 @@ fi
 source $swarmModule/swarmAuth
 if [ "$swarmAuth" = "200" ]; then
     # Create dir if not exist
+    echo "-> Create tmp folder" >> /tmp/iotaInxDashboardInstaller.log
     sudo mkdir -p /tmp/iota-inx-dashboard > /dev/null 2>&1
 
     # Download latest inx-dashboard
+    echo "-> Download archive for v${latestIotaInxDashboardVersion}" >> /tmp/iotaInxDashboardInstaller.log
     ( cd /tmp/iota-inx-dashboard/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-dashboard/v${latestIotaInxDashboardVersion}/inx-dashboard-v${latestIotaInxDashboardVersion}_linux_$osArchitecture.tar.gz )
     if [ -f "/tmp/iota-inx-dashboard/inx-dashboard-v${latestIotaInxDashboardVersion}_linux_$osArchitecture.tar.gz" ]; then
         iotaInxDashboardDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-dashboard/inx-dashboard-v${latestIotaInxDashboardVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        echo "-> Gen local checksum for archive: $iotaInxDashboardDownloadChecksum" >> /tmp/iotaInxDashboardInstaller.log
     fi
 
     # Download checksum
+    echo "-> Download remote checksum file" >> /tmp/iotaInxDashboardInstaller.log
     ( cd /tmp/iota-inx-dashboard/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-dashboard/v${latestIotaInxDashboardVersion}/inx-dashboard_checksums_linux_$osArchitecture.txt )
     iotaInxDashboardChecksum=$(sudo grep "inx-dashboard-v${latestIotaInxDashboardVersion}_linux_$osArchitecture.tar.gz" /tmp/iota-inx-dashboard/inx-dashboard_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
     echo $iotaInxDashboardChecksum > /tmp/iota-inx-dashboard.checksum
+    echo "-> Remote checksum: $iotaInxDashboardChecksum" >> /tmp/iotaInxDashboardInstaller.log
 
     # Unzip archive
     if [ "$iotaInxDashboardDownloadChecksum" = "$iotaInxDashboardChecksum" ] && [ ! -z "$iotaInxDashboardDownloadChecksum" ] && [ ! -z "$iotaInxDashboardChecksum" ]; then
+        echo "-> Unzip archive" >> /tmp/iotaInxDashboardInstaller.log
         ( cd /tmp/iota-inx-dashboard ; sudo tar -xzf /tmp/iota-inx-dashboard/inx-dashboard-v${latestIotaInxDashboardVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
         # Copy binary
         if [ -f "/tmp/iota-inx-dashboard/inx-dashboard" ]; then
             iotaInxDashboardStatus="$(systemctl show -p ActiveState --value iota-inx-dashboard)"
             if [ "$iotaInxDashboardStatus" = "active" ]; then
+                echo "-> Stop service" >> /tmp/iotaInxDashboardInstaller.log
                 sudo systemctl stop iota-inx-dashboard > /dev/null 2>&1
             fi
 
+            echo "-> Copy new binary file" >> /tmp/iotaInxDashboardInstaller.log
             sudo cp -rf /tmp/iota-inx-dashboard/inx-dashboard /usr/bin/iota-inx-dashboard > /dev/null 2>&1
             sudo chmod +x /usr/bin/iota-inx-dashboard > /dev/null 2>&1
             newIotaInxDashboardBinary=true
@@ -67,11 +82,13 @@ fi
 
 if [ "$newIotaInxDashboardBinary" = "true" ]; then
     if [ -f "/tmp/iota-inx-dashboard/config_defaults.json" ]; then
+        echo "-> Copy new config file" >> /tmp/iotaInxDashboardInstaller.log
         sudo cp -rf /tmp/iota-inx-dashboard/config_defaults.json /var/lib/iota-inx-dashboard/config.json > /dev/null 2>&1
         sudo chmod 644 /var/lib/iota-inx-dashboard/*.json > /dev/null 2>&1
         newIotaInxDashboardConfig=true
     else
         if [ -f "/tmp/inx-dashboard/config.json" ]; then
+            echo "-> Copy new config file" >> /tmp/iotaInxDashboardInstaller.log
             sudo cp -rf /tmp/iota-inx-dashboard/config.json /var/lib/iota-inx-dashboard/config.json > /dev/null 2>&1
             sudo chmod 644 /var/lib/iota-inx-dashboard/*.json > /dev/null 2>&1
             newIotaInxDashboardConfig=true
@@ -83,17 +100,20 @@ fi
 
 if [ "$newIotaInxDashboardConfig" = "true" ]; then
     # Run installer modules
+    echo "-> Set permissions" >> /tmp/iotaInxDashboardInstaller.log
     sudo chown -R inx:inx $iotaInxDashboardHome > /dev/null 2>&1
     sudo chmod 644 $iotaInxDashboardHome/*.json > /dev/null 2>&1
 
     restartIotaInxDashboard=true
     iotaInxDashboardUpdated=true
 
+    echo "-> Run proxy module" >> /tmp/iotaInxDashboardInstaller.log
     source $proxyModule/proxyIotaInxDashboard
 fi
 
 # Remove temporary files
+echo "-> Remove tmp folder" >> /tmp/iotaInxDashboardInstaller.log
 sudo rm -rf /tmp/iota-inx-dashboard > /dev/null 2>&1
 
-
+echo "====== INSTALLATION FINISHED ======" >> /tmp/iotaInxDashboardInstaller.log
 unset newIotaInxDashboardBinary newIotaInxDashboardConfig iotaInxDashboardDownloadChecksum

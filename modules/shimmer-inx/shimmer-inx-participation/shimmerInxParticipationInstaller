@@ -1,27 +1,34 @@
 #!/bin/bash
 
+echo "====== INSTALLER STARTED ======" > /tmp/shimmerInxParticipationInstaller.log
 # General
 if ! id inx >/dev/null 2>&1; then
+    echo "-> Create inx user" >> /tmp/shimmerInxParticipationInstaller.log
     useradd --no-create-home --system inx >/dev/null
 fi
 
 if [ ! -d "$shimmerInxParticipationHome" ]; then
+    echo "-> " >> /tmp/shimmerInxParticipationInstaller.log
     sudo mkdir -p $shimmerInxParticipationHome > /dev/null 2>&1
     sudo chown -R inx:inx $shimmerInxParticipationHome > /dev/null 2>&1
 fi
 
 # Install GO
 if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    echo "-> Install go via snap" >> /tmp/shimmerInxParticipationInstaller.log
     sudo snap install go --classic > /dev/null 2>&1
 fi
 
 # Create Service
 if [ ! -f "/lib/systemd/system/shimmer-inx-participation.service" ]; then
+    echo "-> Copy service file from templates" >> /tmp/shimmerInxParticipationInstaller.log
     sudo cp -rf $swarmTemplates/app-service/shimmer-inx-participation.service /lib/systemd/system/shimmer-inx-participation.service > /dev/null 2>&1
     if [ ! -f "/etc/default/shimmer-inx-participation" ]; then
+        echo "-> Create options file for service" >> /tmp/shimmerInxParticipationInstaller.log
         echo "OPTIONS=\"--config config.json\"" > /etc/default/shimmer-inx-participation
     fi
     if [ ! -f "/etc/systemd/system/multi-user.target.wants/shimmer-inx-participation.service" ]; then
+        echo "-> Enable service" >> /tmp/shimmerInxParticipationInstaller.log
         sudo systemctl enable shimmer-inx-participation > /dev/null 2>&1
     fi
     sudo systemctl daemon-reload > /dev/null 2>&1
@@ -32,30 +39,38 @@ fi
 source $swarmModule/swarmAuth
 if [ "$swarmAuth" = "200" ]; then
     # Create dir if not exist
+    echo "-> Create tmp dir" >> /tmp/shimmerInxParticipationInstaller.log
     sudo mkdir -p /tmp/shimmer-inx-participation > /dev/null 2>&1
 
     # Download latest inx-participation
+    echo "-> Download archive for v${latestShimmerInxParticipationVersion}" >> /tmp/shimmerInxParticipationInstaller.log
     ( cd /tmp/shimmer-inx-participation/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-participation/v${latestShimmerInxParticipationVersion}/inx-participation-v${latestShimmerInxParticipationVersion}_linux_$osArchitecture.tar.gz )
     if [ -f "/tmp/shimmer-inx-participation/inx-participation-v${latestShimmerInxParticipationVersion}_linux_$osArchitecture.tar.gz" ]; then
         shimmerInxParticipationDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-participation/inx-participation-v${latestShimmerInxParticipationVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        echo "-> Generate local checksum from archive: $shimmerInxParticipationDownloadChecksum" >> /tmp/shimmerInxParticipationInstaller.log
     fi
 
     # Download checksum
+    echo "-> Download remote checksum file" >> /tmp/shimmerInxParticipationInstaller.log
     ( cd /tmp/shimmer-inx-participation/ ; sudo wget -q https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/inx/inx-participation/v${latestShimmerInxParticipationVersion}/inx-participation_checksums_linux_$osArchitecture.txt )
     shimmerInxParticipationChecksum=$(sudo grep "inx-participation-v${latestShimmerInxParticipationVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-participation/inx-participation_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
     echo $shimmerInxParticipationChecksum > /tmp/shimmer-inx-participation.checksum
+    echo "-> Remote checksum: $shimmerInxParticipationChecksum" >> /tmp/shimmerInxParticipationInstaller.log
 
     # Unzip archive
     if [ "$shimmerInxParticipationDownloadChecksum" = "$shimmerInxParticipationChecksum" ] && [ ! -z "$shimmerInxParticipationDownloadChecksum" ] && [ ! -z "$shimmerInxParticipationChecksum" ]; then
+        echo "-> Unzip archive" >> /tmp/shimmerInxParticipationInstaller.log
         ( cd /tmp/shimmer-inx-participation ; sudo tar -xzf /tmp/shimmer-inx-participation/inx-participation-v${latestShimmerInxParticipationVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
         # Copy binary
         if [ -f "/tmp/shimmer-inx-participation/inx-participation" ]; then
             shimmerInxParticipationStatus="$(systemctl show -p ActiveState --value shimmer-inx-participation)"
             if [ "$shimmerInxParticipationStatus" = "active" ]; then
+                echo "-> Stop service" >> /tmp/shimmerInxParticipationInstaller.log
                 sudo systemctl stop shimmer-inx-participation > /dev/null 2>&1
             fi
 
+            echo "-> Copy new binary file" >> /tmp/shimmerInxParticipationInstaller.log
             sudo cp -rf /tmp/shimmer-inx-participation/inx-participation /usr/bin/shimmer-inx-participation > /dev/null 2>&1
             sudo chmod +x /usr/bin/shimmer-inx-participation > /dev/null 2>&1
             newShimmerInxParticipationBinary=true
@@ -67,11 +82,13 @@ fi
 
 if [ "$newShimmerInxParticipationBinary" = "true" ]; then
     if [ -f "/tmp/shimmer-inx-participation/config_defaults.json" ]; then
+        echo "-> Copy new config file" >> /tmp/shimmerInxParticipationInstaller.log
         sudo cp -rf /tmp/shimmer-inx-participation/config_defaults.json /var/lib/shimmer-inx-participation/config.json > /dev/null 2>&1
         sudo chmod 644 /var/lib/shimmer-inx-participation/*.json > /dev/null 2>&1
         newShimmerInxParticipationConfig=true
     else
         if [ -f "/tmp/shimmer-inx-participation/config.json" ]; then
+            echo "-> Copy new config file" >> /tmp/shimmerInxParticipationInstaller.log
             sudo cp -rf /tmp/inx-participation/config.json /var/lib/shimmer-inx-participation/config.json > /dev/null 2>&1
             sudo chmod 644 /var/lib/shimmer-inx-participation/*.json > /dev/null 2>&1
             newShimmerInxParticipationConfig=true
@@ -83,6 +100,7 @@ fi
 
 if [ "$newShimmerInxParticipationConfig" = "true" ]; then
     # Run installer modules
+    echo "-> Set permissions" >> /tmp/shimmerInxParticipationInstaller.log
     sudo chown -R inx:inx $shimmerInxParticipationHome > /dev/null 2>&1
     sudo chmod 644 $shimmerInxParticipationHome/*.json > /dev/null 2>&1
 
@@ -91,7 +109,8 @@ if [ "$newShimmerInxParticipationConfig" = "true" ]; then
 fi
 
 # Remove temporary files
+echo "-> Remove tmp folder" >> /tmp/shimmerInxParticipationInstaller.log
 sudo rm -rf /tmp/shimmer-inx-participation > /dev/null 2>&1
 
-
+echo "====== INSTALLATION FINISHED ======" >> /tmp/shimmerInxParticipationInstaller.log
 unset newShimmerInxParticipationBinary newShimmerInxParticipationConfig shimmerInxParticipationDownloadChecksum
