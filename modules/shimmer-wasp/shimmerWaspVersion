@@ -1,0 +1,24 @@
+#!/bin/bash
+source $swarmConfigs/latest-versions.cfg
+
+if [ -z "$latestShimmerWaspVersion" ] || [ "$latestShimmerWaspVersion" = "null" ] || [ "$latestShimmerWaspVersion" = "\"\"" ] || ! [[ $latestShimmerWaspVersion =~ [0-9] ]]; then
+    latestShimmerWaspVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases.json | jq '.wasp.rc')
+    latestShimmerWaspVersion=$(echo $latestShimmerWaspVersion | tr -d 'v"')
+    if [ ! -z "$latestShimmerWaspVersion" ] && [ "$latestShimmerWaspVersion" != "null" ] && [ "$latestShimmerWaspVersion" != "\"\"" ]; then
+        sudo sed -i 's~^latestShimmerWaspVersion=.*~latestShimmerWaspVersion="'$latestShimmerWaspVersion'"~' $swarmConfigs/latest-versions.cfg
+    fi
+fi
+
+# Latest WASP version
+if [ -f "/usr/bin/shimmer-wasp" ]; then
+    shimmerWaspVersion=$(cd $shimmerWaspHome ; /usr/bin/shimmer-wasp -v | awk '{print $2}' | tr -d 'v')
+fi
+
+# Replace var if empty
+if [ -z "$latestShimmerWaspVersion" ]; then
+    latestShimmerWaspVersion=$shimmerWaspVersion
+fi
+
+if [ -z "$shimmerWaspVersion" ]; then
+    shimmerWaspVersion=$latestShimmerWaspVersion
+fi
