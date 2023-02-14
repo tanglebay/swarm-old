@@ -1,0 +1,180 @@
+#!/bin/bash
+
+while [ $exitCode -lt 1 ]; do
+    CHOICE=$(
+        whiptail --title "Hornet [IOTA] Tools" --menu "\nChoose your option" 24 65 0 \
+        "" "" \
+        "1)" "Event Validation" \
+        "2)" "Proof of Inclusion" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+    fi
+
+    case $CHOICE in
+        "1)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                CHOICE=$(
+                    whiptail --title "Hornet [IOTA] Events" --menu "\nChoose your option" 24 65 0 \
+                    "" "" \
+                    "1)" "Event Validation" \
+                    "2)" "Show Latest Event Results" 3>&2 2>&1 1>&3
+                )
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        while [ $exitCode -lt 1 ]; do
+                            CHOICE=$(
+                                whiptail --title "Hornet [IOTA] Events" --menu "\nChoose your option" 24 65 0 \
+                                "" "" \
+                                "1)" "Validate Staking Event" \
+                                "2)" "Validate Voting Event" 3>&2 2>&1 1>&3
+                            )
+                            exitStatus=$?
+                            if [ "$exitStatus" = "1" ]; then
+                                exitCode=1
+                            fi
+                            if [ "$exitStatus" = "0" ]; then
+                                case $CHOICE in
+                                    "1)")
+                                        eventType="staking"
+                                    ;;
+                                    "2)")
+                                        eventType="ballot"
+                                    ;;
+                                esac
+                                eventId=$(whiptail --inputbox "\nPlease enter the [IOTA] event id you want to validate" 10 65 --title "Hornet [IOTA] Events" 3>&1 1>&2 2>&3)
+                                exitStatus=$?
+                                if [ $exitStatus != 1 ] && [ ! -z "$eventId" ]; then
+                                    eventNetwork="iota"
+                                    source $swarmSharedModule/eventValidation
+                                fi
+                            fi
+                        done
+                        exitCode=0
+                    ;;
+                    "2)")
+                        if [ -f "/tmp/participation-event.log" ]; then
+                            clear
+                            echo ""
+                            cat /tmp/participation-event.log
+                            echo ""
+                            echo ""
+                            read -n 1 -s -r -p "Press any key to continue"
+                        else
+                            whiptail --title "Hornet [IOTA] Events" --msgbox "No [IOTA] event log file was found, please validate an event first." 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "Hornet [IOTA] POI" --menu "\nChoose your option" 24 65 0 \
+                    "" "" \
+                    "1)" "Validate Poi" \
+                    "2)" "Create PoI" \
+                    "3)" "View Last Created PoI" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            if (whiptail --title "Hornet [IOTA] POI" --yesno --defaultno "In the following file, please insert the proof of inclusion to be validated. Do you want to continue?" 8 65); then
+                                if [ ! -f "/tmp/iota-hornet-validate-poi.json" ]; then
+                                    sudo touch /tmp/iota-hornet-validate-poi.json > /dev/null 2>&1
+                                fi
+                                sudo $swarmCLEditor /tmp/iota-hornet-validate-poi.json
+                                iotaHornetPoiValidateData=$(cat /tmp/iota-hornet-validate-poi.json)
+                                if jq -e . >/dev/null 2>&1 <<<"$iotaHornetPoiValidateData"; then
+                                    source $swarmConfigs/iota-hornet.cfg
+                                    iotaHornetPoiValidateResult=$(curl -s -X POST "localhost:14265/api/plugins/poi/validate" -H "accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" -d "$iotaHornetPoiValidateData")
+                                    if [[ $iotaHornetPoiValidateResult = *\"valid\":*true* ]]; then
+                                        iotaHornetPoiValidateResult="valid"
+                                    else
+                                        iotaHornetPoiValidateResult="invalid"
+                                    fi
+                                    whiptail --title "Hornet [IOTA] POI" --msgbox "The validated poi is $iotaHornetPoiValidateResult." 8 65
+                                    unset iotaHornetPoiValidateResult
+                                else
+                                    whiptail --title "Hornet [IOTA] POI" --msgbox "PoI validation aborted because content is not valid json data." 8 65
+                                fi
+                                echo "" > /tmp/iota-hornet-validate-poi.json
+                                unset iotaHornetPoiValidateData
+                            fi
+                        else
+                            whiptail --title "Hornet [IOTA] POI" --msgbox "Please install [IOTA] Hornet first." 8 65
+                        fi
+                    ;;
+                    "2)")
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            iotaHornetPoiCreateId=$(whiptail --inputbox "\nPlease enter the message id of which you want to create a poi" 10 65 --title "Hornet [IOTA] POI" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ] && [ ! -z "$iotaHornetPoiCreateId" ]; then
+                                source $swarmConfigs/iota-hornet.cfg
+                                iotaHornetPoiCreateResult=$(sudo curl -s "localhost:14265/api/plugins/poi/create/$iotaHornetPoiCreateId" -H "accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}")
+                                if [[ $iotaHornetPoiCreateResult = *code* ]]; then
+                                    if [[ $iotaHornetPoiCreateResult = *400* ]]; then
+                                        whiptail --title "Hornet [IOTA] POI" --msgbox "PoI creation aborted because invalid data provided (400)." 8 65
+                                    fi
+                                    if [[ $iotaHornetPoiCreateResult = *403* ]]; then
+                                        whiptail --title "Hornet [IOTA] POI" --msgbox "PoI creation aborted because not available for public use (403)." 8 65
+                                    fi
+                                    if [[ $iotaHornetPoiCreateResult = *404* ]]; then
+                                        whiptail --title "Hornet [IOTA] POI" --msgbox "PoI creation aborted because could not find data (404)." 8 65
+                                    fi
+                                    if [[ $iotaHornetPoiCreateResult = *500* ]]; then
+                                        whiptail --title "Hornet [IOTA] POI" --msgbox "PoI creation aborted because internal server error (500)." 8 65
+                                    fi
+                                else
+                                    echo $iotaHornetPoiCreateResult | jq -r '.data' > /tmp/iota-hornet-create-poi.json
+                                    if [ -s "/tmp/iota-hornet-create-poi.json" ]; then
+                                        clear
+                                        sudo cat /tmp/iota-hornet-create-poi.json |jq
+                                        echo ""
+                                        echo ""
+                                        read -n 1 -s -r -p "Press any key to continue"
+                                        clear
+                                    else
+                                        whiptail --title "Hornet [IOTA] POI" --msgbox "Aborted - PoI creation file is empty." 8 65
+                                    fi
+                                fi
+                            fi
+                        else
+                            whiptail --title "Hornet [IOTA] POI" --msgbox "Please install [IOTA] Hornet first." 8 65
+                        fi
+                    ;;
+                    "3)")
+                        if [ -f "/usr/bin/iota-hornet" ]; then
+                            if [ -s "/tmp/iota-hornet-create-poi.json" ]; then
+                                clear
+                                sudo cat /tmp/iota-hornet-create-poi.json |jq
+                                echo ""
+                                echo ""
+                                read -n 1 -s -r -p "Press any key to continue"
+                                clear
+                            else
+                                whiptail --title "Hornet [IOTA] POI" --msgbox "Aborted - PoI creation file is empty." 8 65
+                            fi
+                        else
+                            whiptail --title "Hornet [IOTA] POI" --msgbox "Please install [IOTA] Hornet first." 8 65
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+    esac
+done
+exitCode=0
