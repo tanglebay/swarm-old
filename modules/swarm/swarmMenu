@@ -123,7 +123,7 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "4)")
                         if [ -d "$swarmBackupPath" ]; then
-                            swarmConfigFiles=$(whiptail --title "SWARM [RESTORE] Config" --checklist "\nSelect (spacebar) the configs you want to restore." 24 65 12 \
+                            swarmConfigFiles=$(whiptail --title "SWARM [RESTORE] Config" --checklist "\nSelect (spacebar) the configs you want to restore." 24 65 16 \
                                 "SWARM.cfg" "" OFF \
                                 "Watchdog.cfg" "" OFF \
                                 "Proxy.cfg" "" OFF \
@@ -139,8 +139,7 @@ while [ $exitCode -lt 1 ]; do
                                 "Shimmer-INX-Participation.cfg" "" OFF \
                                 "Shimmer-INX-MQTT.cfg" "" OFF \
                                 "Shimmer-INX-POI.cfg" "" OFF \
-                                "GoShimmer.cfg" "" OFF \
-                                "Shimmer-WASP.cfg" "" OFF 3>&1 1>&2 2>&3)
+                                "GoShimmer.cfg" "" OFF 3>&1 1>&2 2>&3)
                             exitStatus=$?
                             if [ "$exitStatus" != "1" ] && [ ! -z "$swarmConfigFiles" ]; then
                                 swarmConfigFiles=$(echo $swarmConfigFiles | tr '[:upper:]' '[:lower:]' | tr -d '"' | sed 's/.cfg//')
@@ -173,6 +172,15 @@ while [ $exitCode -lt 1 ]; do
                                                 source ${!swarmAppModule}/${swarmAppPrefix}Parser
                                                 swarmAppRestart=restart${swarmAppPrefix^}
                                                 if [ "${!swarmAppRestart}" = "true" ]; then
+                                                    if [ "$swarmApp" = "iota-hornet" ]; then
+                                                        for iotaInxPlugin in ${iotaInxPlugins[@]}
+                                                        do
+                                                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                                                sudo systemctl stop iota-inx-$iotaInxPlugin > /dev/null 2>&1
+                                                            fi
+                                                        done
+                                                        unset iotaInxPlugin
+                                                    fi
                                                     if [ "$swarmApp" = "shimmer-hornet" ]; then
                                                         for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                                                         do
@@ -183,6 +191,15 @@ while [ $exitCode -lt 1 ]; do
                                                         unset shimmerInxPlugin
                                                     fi
                                                     sudo systemctl restart $swarmApp > /dev/null 2>&1
+                                                    if [ "$swarmApp" = "iota-hornet" ]; then
+                                                        for iotaInxPlugin in ${iotaInxPlugins[@]}
+                                                        do
+                                                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                                                sudo systemctl start iota-inx-$iotaInxPlugin > /dev/null 2>&1
+                                                            fi
+                                                        done
+                                                        unset iotaInxPlugin
+                                                    fi
                                                     if [ "$swarmApp" = "shimmer-hornet" ]; then
                                                         for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                                                         do
@@ -209,7 +226,7 @@ while [ $exitCode -lt 1 ]; do
                         fi
                     ;;
                     "5)")
-                        swarmConfigFiles=$(whiptail --title "SWARM [BACKUP] Config" --checklist "\nSelect (spacebar) the configs you want to backup." 24 65 12 \
+                        swarmConfigFiles=$(whiptail --title "SWARM [BACKUP] Config" --checklist "\nSelect (spacebar) the configs you want to backup." 24 65 16 \
                             "SWARM.cfg" "" OFF \
                             "Watchdog.cfg" "" OFF \
                             "Proxy.cfg" "" OFF \
@@ -225,8 +242,7 @@ while [ $exitCode -lt 1 ]; do
                             "Shimmer-INX-Participation.cfg" "" OFF \
                             "Shimmer-INX-MQTT.cfg" "" OFF \
                             "Shimmer-INX-POI.cfg" "" OFF \
-                            "GoShimmer.cfg" "" OFF \
-                            "Shimmer-WASP.cfg" "" OFF 3>&1 1>&2 2>&3)
+                            "GoShimmer.cfg" "" OFF 3>&1 1>&2 2>&3)
                         exitStatus=$?
                         if [ "$exitStatus" != "1" ] && [ ! -z "$swarmConfigFiles" ]; then
                             swarmConfigFiles=$(echo $swarmConfigFiles | tr '[:upper:]' '[:lower:]' | tr -d '"')

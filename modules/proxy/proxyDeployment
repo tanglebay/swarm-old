@@ -69,7 +69,8 @@ if [ -f "/usr/bin/iota-hornet" ] && [ ! -z "$proxyIotaHornetUrl" ]; then
     fi
 fi
 
-if [ -f "/usr/bin/iota-inx-dashboard" ] && [ ! -z "$proxyIotaInxDashboardUrl" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
+# if [ -f "/usr/bin/iota-inx-dashboard" ] && [ ! -z "$proxyIotaInxDashboardUrl" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
+if [ ! -z "$proxyIotaInxDashboardUrl" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
     if [ ! -d "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain" ]; then
         if [ -z "$emailAddress" ]; then
             emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
@@ -193,68 +194,6 @@ if [ -f "/usr/bin/goshimmer" ] && [ ! -z "$proxyGoshimmerUrl" ]; then
     fi
 fi
 
-if [ -f "/usr/bin/shimmer-wasp" ] && [ ! -z "$proxyShimmerWaspDashboardUrl" ]; then
-    if [ ! -d "/etc/letsencrypt/live/$proxyShimmerWaspDashboardDomain" ]; then
-        if [ -z "$emailAddress" ]; then
-            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-            exitStatus=$?
-        fi
-        if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
-            {
-                echo 0
-                echo 10
-                if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
-                fi
-                echo 25
-                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-                if [ "$proxyStatus" != "active" ]; then
-                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-                    sudo systemctl restart nginx
-                fi
-                echo 50
-                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyShimmerWaspDashboardDomain -m $emailAddress > /dev/null 2>&1
-                unset emailaddress
-                echo 100
-            } | whiptail --gauge "Requesting SSL certificate for WASP dashboard..." 6 65 0  
-            if [ ! -f "/etc/letsencrypt/live/$proxyShimmerWaspDashboardDomain/fullchain.pem" ]; then
-                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for the WASP dashboard not found!" 8 65
-            fi
-        fi
-    fi
-fi
-
-if [ -f "/usr/bin/shimmer-wasp" ] && [ ! -z "$proxyShimmerWaspApiUrl" ]; then
-    if [ ! -d "/etc/letsencrypt/live/$proxyShimmerWaspApiDomain" ]; then
-        if [ -z "$emailAddress" ]; then
-            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-            exitStatus=$?
-        fi
-        if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
-            {
-                echo 0
-                echo 10
-                if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
-                fi
-                echo 25
-                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-                if [ "$proxyStatus" != "active" ]; then
-                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-                    sudo systemctl restart nginx
-                fi
-                echo 50
-                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyShimmerWaspApiDomain -m $emailAddress > /dev/null 2>&1
-                unset emailaddress
-                echo 100
-            } | whiptail --gauge "Requesting SSL certificate for WASP API..." 6 65 0  
-            if [ ! -f "/etc/letsencrypt/live/$proxyShimmerWaspApiDomain/fullchain.pem" ]; then
-                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for the WASP API not found!" 8 65
-            fi
-        fi
-    fi
-fi
-
 #################################################################################################
 #################################################################################################
 #################################################################################################
@@ -284,7 +223,7 @@ if [ ! -f "/etc/nginx/swarm/extended-proxy.conf" ]; then
 fi
 
 # Check if the certificate for the domain already exist
-if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerWaspApiDomain/fullchain.pem" ]; then
+if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
     {
     echo 0
     echo 10
@@ -356,7 +295,8 @@ if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "
         fi
     fi
     echo 45
-    if [ -f "/usr/bin/iota-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyIotaInxDashboardDomain" ] && [ ! -z "$proxyIotaInxDashboardPort" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
+    # if [ -f "/usr/bin/iota-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyIotaInxDashboardDomain" ] && [ ! -z "$proxyIotaInxDashboardPort" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
+    if [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyIotaInxDashboardDomain" ] && [ ! -z "$proxyIotaInxDashboardPort" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
         if [ -z "$defaultDomain" ]; then
             defaultDomain="$proxyIotaInxDashboardDomain"
         fi
@@ -379,38 +319,6 @@ if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "
         fi
     fi
     echo 50
-    if [ -f "/usr/bin/shimmer-wasp" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerWaspDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerWaspDashboardDomain" ] && [ ! -z "$proxyShimmerWaspDashboardPort" ]; then
-        source $swarmConfigs/shimmer-wasp.cfg
-        if [ -z "$defaultDomain" ]; then
-            defaultDomain="$proxyWaspDashboardDomain"
-        fi
-        sudo cp -rf $swarmTemplates/proxy/nginx_shimmer-wasp-dashboard.template /etc/nginx/sites-enabled/shimmer-wasp-dashboard
-        sudo sed -i 's/domain.tld/'$proxyShimmerWaspDashboardDomain'/g' /etc/nginx/sites-enabled/shimmer-wasp-dashboard
-        sudo sed -i 's/443/'$proxyShimmerWaspDashboardPort'/g' /etc/nginx/sites-enabled/shimmer-wasp-dashboard
-        if [ "$ufw" = "true" ]; then
-            sudo ufw allow $proxyShimmerWaspDashboardPort/tcp > /dev/null 2>&1
-        fi
-    fi
-    echo 55
-    if [ -f "/usr/bin/shimmer-wasp" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerWaspApiDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerWaspApiDomain" ] && [ ! -z "$proxyShimmerWaspApiPort" ]; then
-        source $swarmConfigs/shimmer-wasp.cfg
-        if [ -z "$defaultDomain" ]; then
-            defaultDomain="$proxyWaspApiDomain"
-        fi
-        if [ ! -d "/etc/nginx/swarm/shimmer-wasp" ]; then
-            sudo mkdir -p /etc/nginx/swarm/shimmer-wasp
-        fi
-        if [ ! -f "/etc/nginx/swarm/shimmer-wasp/webapiauth.conf" ]; then
-            sudo echo "" > /etc/nginx/swarm/shimmer-wasp/webapiauth.conf > /dev/null 2>&1
-        fi
-        sudo cp -rf $swarmTemplates/proxy/nginx_shimmer-wasp-api.template /etc/nginx/sites-enabled/shimmer-wasp-api
-        sudo sed -i 's/domain.tld/'$proxyShimmerWaspApiDomain'/g' /etc/nginx/sites-enabled/shimmer-wasp-api
-        sudo sed -i 's/443/'$proxyShimmerWaspApiPort'/g' /etc/nginx/sites-enabled/shimmer-wasp-api
-        if [ "$ufw" = "true" ]; then
-            sudo ufw allow $proxyShimmerWaspApiPort/tcp > /dev/null 2>&1
-        fi
-    fi
-    echo 60
     sudo sed -i 's/# server_tokens off;/server_tokens off;/g' /etc/nginx/nginx.conf
     sudo sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
     sudo sed -i 's/domain.tld/'$defaultDomain'/g' /etc/nginx/sites-enabled/default

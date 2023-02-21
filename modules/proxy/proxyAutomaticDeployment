@@ -27,7 +27,7 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
         sudo chmod 644 /etc/nginx/swarm/extended-proxy.conf
     fi
 
-    if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerWaspDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerWaspApiDomain/fullchain.pem" ]; then
+    if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyGoshimmerDomain/fullchain.pem" ]; then
         if [ -d "/var/www/html/swarm-dashboard" ]; then
             sudo rm -rf /var/www/html/swarm-dashboard
         fi
@@ -57,7 +57,8 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
                 sudo ufw allow $proxyIotaHornetPort/tcp > /dev/null 2>&1
             fi
         fi
-        if [ -f "/usr/bin/iota-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyIotaInxDashboardDomain" ] && [ ! -z "$proxyIotaInxDashboardPort" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
+        # if [ -f "/usr/bin/iota-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyIotaInxDashboardDomain" ] && [ ! -z "$proxyIotaInxDashboardPort" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
+        if [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyIotaInxDashboardDomain" ] && [ ! -z "$proxyIotaInxDashboardPort" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
             if [ -z "$defaultDomain" ]; then
                 defaultDomain="$proxyIotaInxDashboardDomain"
             fi
@@ -112,40 +113,6 @@ if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
             sudo sed -i 's/443/'$proxyGoshimmerPort'/g' /etc/nginx/sites-enabled/goshimmer
             if [ "$ufw" = "true" ]; then
                 sudo ufw allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
-            fi
-        fi
-        if [ -f "/usr/bin/shimmer-wasp" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerWaspDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerWaspDashboardDomain" ] && [ ! -z "$proxyShimmerWaspDashboardPort" ]; then
-            source $swarmConfigs/shimmer-wasp.cfg
-            if [ -z "$defaultDomain" ]; then
-                defaultDomain="$proxyShimmerWaspDashboardDomain"
-            fi
-            sudo cp -rf $swarmTemplates/proxy/nginx_shimmer-wasp-dashboard.template /etc/nginx/sites-enabled/shimmer-wasp-dashboard
-            sudo sed -i 's/domain.tld/'$proxyShimmerWaspDashboardDomain'/g' /etc/nginx/sites-enabled/shimmer-wasp-dashboard
-            sudo sed -i 's/443/'$proxyShimmerWaspDashboardPort'/g' /etc/nginx/sites-enabled/shimmer-wasp-dashboard
-            if [ "$ufw" = "true" ]; then
-                sudo ufw allow $proxyShimmerWaspDashboardPort/tcp > /dev/null 2>&1
-            fi
-        fi
-        if [ -f "/usr/bin/shimmer-wasp" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerWaspApiDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerWaspApiDomain" ] && [ ! -z "$proxyShimmerWaspApiPort" ]; then
-            source $swarmConfigs/shimmer-wasp.cfg
-            if [ -z "$defaultDomain" ]; then
-                defaultDomain="$proxyShimmerWaspApiDomain"
-            fi
-            if [ -d "/etc/nginx/wasp" ]; then
-                sudo mkdir -p /etc/nginx/swarm/
-                sudo mv /etc/nginx/wasp /etc/nginx/swarm/shimmer-wasp
-            fi
-            if [ ! -d "/etc/nginx/swarm/shimmer-wasp" ]; then
-                sudo mkdir -p /etc/nginx/swarm/shimmer-wasp
-            fi
-            if [ ! -f "/etc/nginx/swarm/shimmer-wasp/webapiauth.conf" ]; then
-                sudo echo "" > /etc/nginx/swarm/shimmer-wasp/webapiauth.conf > /dev/null 2>&1
-            fi
-            sudo cp -rf $swarmTemplates/proxy/nginx_shimmer-wasp-api.template /etc/nginx/sites-enabled/shimmer-wasp-api
-            sudo sed -i 's/domain.tld/'$proxyShimmerWaspApiDomain'/g' /etc/nginx/sites-enabled/shimmer-wasp-api
-            sudo sed -i 's/443/'$proxyShimmerWaspApiPort'/g' /etc/nginx/sites-enabled/shimmer-wasp-api
-            if [ "$ufw" = "true" ]; then
-                sudo ufw allow $proxyShimmerWaspApiPort/tcp > /dev/null 2>&1
             fi
         fi
         #########################################################################################################################################################################################################
