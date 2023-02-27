@@ -1,4 +1,12 @@
 #!/bin/bash
+if [ -f "$swarmConfigs/latest-versions.cfg" ]; then
+    checkConfigFile=$(cat $swarmConfigs/latest-versions.cfg)
+fi
+if [ -z "$checkConfigFile" ] || [ ! -f "$swarmConfigs/latest-versions.cfg" ]; then
+    sudo cp -rf $swarmTemplates/swarm/latest-versions.cfg $swarmConfigs/latest-versions.cfg > /dev/null 2>&1
+fi
+unset checkConfigFile
+
 source $swarmConfigs/latest-versions.cfg
 
 # SET TIME
@@ -18,11 +26,11 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
         source $swarmModule/swarmAppVars
         if [ -f "/usr/bin/$swarmApp" ]; then
             swarmAppCurrentLatestVersion=latest${swarmAppPrefix^}Version
-            swarmAppRelease=${swarmAppPrefix}Release
+            swarmAppReleaseChannel=${swarmAppPrefix}ReleaseChannel
             swarmAppReleaseVersion=${swarmAppPrefix}ReleaseVersion
             swarmAppModule=${swarmAppPrefix}Module
 
-            swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases.json | jq '."'$swarmAppGithubName'".'${!swarmAppRelease}'')
+            swarmAppLatestVersion=$(curl --max-time 5 -Ls https://$swarmAuthUser:$swarmAuthPwd@cdn.tanglebay.com/github/releases.json | jq '."'$swarmAppGithubName'".'${!swarmAppReleaseChannel}'')
             swarmAppLatestVersion=$(echo $swarmAppLatestVersion | tr -d 'v"')
 
             if [ "$swarmAppLatestVersion" = "\"\"" ] || [ -z "$swarmAppLatestVersion" ] || [ "$swarmAppLatestVersion" = "null" ] || ! [[ $swarmAppLatestVersion =~ [0-9] ]]; then
