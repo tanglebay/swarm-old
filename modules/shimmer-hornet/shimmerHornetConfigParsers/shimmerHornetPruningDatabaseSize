@@ -16,18 +16,27 @@ if [ -f "/usr/bin/shimmer-hornet" ]; then
     else
         diskSize=${getDiskSize//[!0-9]/}
     fi
+    if [ $diskSize -ge 550 ]; then
+        bufferSize=50
+    fi
+    if [ $diskSize -lt 550 ] && [ $diskSize -gt 250 ]; then
+        bufferSize=30
+    fi
+    if [ -z "$bufferSize" ]; then
+        bufferSize 15
+    fi
     if [ -z "$shimmerHornetPruningDatabaseSize" ]; then
         shimmerHornetPruningDatabaseSize=$diskSize
         sudo sed -i 's/^shimmerHornetPruningDatabaseSize=.*/shimmerHornetPruningDatabaseSize='$shimmerHornetPruningDatabaseSize'/' $swarmConfigs/shimmer-hornet.cfg
     else
         shimmerHornetPruningDatabaseSize=${shimmerHornetPruningDatabaseSize//[!0-9]/}
     fi
-    let bufferSize=$diskSize-$shimmerHornetPruningDatabaseSize
-    if [ $bufferSize -lt 15 ]; then
-        let shimmerHornetPruningDatabaseSize=$diskSize-15
+    let bufferLimit=$diskSize-$shimmerHornetPruningDatabaseSize
+    if [ $bufferLimit -lt $bufferSize ]; then
+        let shimmerHornetPruningDatabaseSize=$diskSize-$bufferSize
         sudo sed -i 's/^shimmerHornetPruningDatabaseSize=.*/shimmerHornetPruningDatabaseSize='$shimmerHornetPruningDatabaseSize'/' $swarmConfigs/shimmer-hornet.cfg
     fi
-
+    unset getDiskSize diskSize bufferSize bufferLimit
     parser="$(jq '.pruning.size.targetSize' $shimmerHornetHome/$shimmerHornetConfig.json)"
     parser=$(echo $parser | tr -d '"')
     if [ "$parser" != "${shimmerHornetPruningDatabaseSize}GB" ] && [ $shimmerHornetPruningDatabaseSize -eq $shimmerHornetPruningDatabaseSize ] 2>/dev/null; then
@@ -37,4 +46,5 @@ if [ -f "/usr/bin/shimmer-hornet" ]; then
             echo "shimmerHornetPruningDatabaseSize" >> /tmp/shimmerHornetParsing
         fi
     fi
+    unset parser
 fi
