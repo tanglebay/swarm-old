@@ -11,19 +11,33 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
         fi
         getDiskSize=$(df -h $iotaHornetHome/$iotaHornetNetwork/database | awk '{print $2}')
         getDiskSize=$(echo $getDiskSize | awk '{print $2}')
-        diskSize=${getDiskSize//[!0-9]/}
+        if [[ $getDiskSize =~ *T$ ]]; then
+            let diskSize=$diskSize*1
+            let diskSize=$diskSize*1000
+        else
+            diskSize=${getDiskSize//[!0-9]/}
+        fi
+        if [ $diskSize -ge 550 ]; then
+            bufferSize=50
+        fi
+        if [ $diskSize -lt 550 ] && [ $diskSize -gt 250 ]; then
+            bufferSize=30
+        fi
+        if [ -z $diskSize ]; then
+            bufferSize=15
+        fi
         if [ -z "$iotaHornetPruningDatabaseSize" ]; then
             iotaHornetPruningDatabaseSize=$diskSize
             sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
         else
             iotaHornetPruningDatabaseSize=${iotaHornetPruningDatabaseSize//[!0-9]/}
         fi
-        let bufferSize=$diskSize-$iotaHornetPruningDatabaseSize
-        if [ $bufferSize -lt 15 ]; then
-            let iotaHornetPruningDatabaseSize=$diskSize-15
+        let bufferLimit=$diskSize-$iotaHornetPruningDatabaseSize
+        if [ $bufferLimit -lt $bufferSize ]; then
+            let iotaHornetPruningDatabaseSize=$diskSize-$bufferSize
             sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
         fi
-
+        unset getDiskSize diskSize bufferSize bufferLimit
         parser="$(jq '.pruning.size.targetSize' $iotaHornetHome/$iotaHornetConfig.json)"
         parser=$(echo $parser | tr -d '"')
         if [ "$parser" != "${iotaHornetPruningDatabaseSize}GB" ] && [ $iotaHornetPruningDatabaseSize -eq $iotaHornetPruningDatabaseSize ] 2>/dev/null; then
@@ -33,6 +47,7 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
                 echo "iotaHornetPruningDatabaseSize" >> /tmp/iotaHornetParsing
             fi
         fi
+        unset parser
     fi
 else
     if [ -f "/usr/bin/iota-hornet" ]; then
@@ -43,21 +58,35 @@ else
             sudo -u hornet mkdir -p $iotaHornetHome/${iotaHornetConfig}db
             sudo chmod 700 $iotaHornetHome/${iotaHornetConfig}db
         fi
-        getDiskSize=$(df -h $iotaHornetHome/${iotaHornetConfig}db | awk '{print $2}')
+        getDiskSize=$(df $iotaHornetHome/${iotaHornetConfig}db | awk '{print $2}')
         getDiskSize=$(echo $getDiskSize | awk '{print $2}')
-        diskSize=${getDiskSize//[!0-9]/}
+        if [[ $getDiskSize =~ *T$ ]]; then
+            let diskSize=$diskSize*1
+            let diskSize=$diskSize*1000
+        else
+            diskSize=${getDiskSize//[!0-9]/}
+        fi
+        if [ $diskSize -ge 550 ]; then
+            bufferSize=50
+        fi
+        if [ $diskSize -lt 550 ] && [ $diskSize -gt 250 ]; then
+            bufferSize=30
+        fi
+        if [ -z "$bufferSize" ]; then
+            bufferSize 15
+        fi
         if [ -z "$iotaHornetPruningDatabaseSize" ]; then
             iotaHornetPruningDatabaseSize=$diskSize
             sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
         else
             iotaHornetPruningDatabaseSize=${iotaHornetPruningDatabaseSize//[!0-9]/}
         fi
-        let bufferSize=$diskSize-$iotaHornetPruningDatabaseSize
-        if [ $bufferSize -lt 15 ]; then
-            let iotaHornetPruningDatabaseSize=$diskSize-15
+        let bufferLimit=$diskSize-$iotaHornetPruningDatabaseSize
+        if [ $bufferLimit -lt $bufferSize ]; then
+            let iotaHornetPruningDatabaseSize=$diskSize-$bufferSize
             sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
         fi
-
+        unset getDiskSize diskSize bufferSize bufferLimit
         parser="$(jq '.pruning.size.targetSize' $iotaHornetHome/$iotaHornetConfig.json)"
         parser=$(echo $parser | tr -d '"')
         if [ "$parser" != "${iotaHornetPruningDatabaseSize}GB" ] && [ $iotaHornetPruningDatabaseSize -eq $iotaHornetPruningDatabaseSize ] 2>/dev/null; then
@@ -67,5 +96,6 @@ else
                 echo "iotaHornetPruningDatabaseSize" >> /tmp/iotaHornetParsing
             fi
         fi
+        unset parser
     fi
 fi
