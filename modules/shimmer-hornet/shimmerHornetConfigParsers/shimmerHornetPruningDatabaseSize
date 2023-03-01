@@ -10,8 +10,12 @@ if [ -f "/usr/bin/shimmer-hornet" ]; then
     fi
     getDiskSize=$(df $shimmerHornetHome/$shimmerHornetNetwork/database | awk '{print $2}')
     getDiskSize=$(echo $getDiskSize | awk '{print $2}')
-    diskSize=${getDiskSize//[!0-9]/}
-    let diskSize=$diskSize/1000000
+    if [[ $getDiskSize =~ *T$ ]]; then
+        let diskSize=$diskSize*1
+        let diskSize=$diskSize*1000
+    else
+        diskSize=${getDiskSize//[!0-9]/}
+    fi
     if [ -z "$shimmerHornetPruningDatabaseSize" ]; then
         shimmerHornetPruningDatabaseSize=$diskSize
         sudo sed -i 's/^shimmerHornetPruningDatabaseSize=.*/shimmerHornetPruningDatabaseSize='$shimmerHornetPruningDatabaseSize'/' $swarmConfigs/shimmer-hornet.cfg

@@ -9,10 +9,14 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
             sudo -u hornet mkdir -p $iotaHornetHome/$iotaHornetNetwork/database
             sudo chmod 700 $iotaHornetHome/$iotaHornetNetwork/database
         fi
-        getDiskSize=$(df $iotaHornetHome/$iotaHornetNetwork/database | awk '{print $2}')
+        getDiskSize=$(df -h $iotaHornetHome/$iotaHornetNetwork/database | awk '{print $2}')
         getDiskSize=$(echo $getDiskSize | awk '{print $2}')
-        diskSize=${getDiskSize//[!0-9]/}
-        let diskSize=$diskSize/1000000
+        if [[ $getDiskSize =~ *T$ ]]; then
+            let diskSize=$diskSize*1
+            let diskSize=$diskSize*1000
+        else
+            diskSize=${getDiskSize//[!0-9]/}
+        fi
         if [ -z "$iotaHornetPruningDatabaseSize" ]; then
             iotaHornetPruningDatabaseSize=$diskSize
             sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
@@ -46,8 +50,12 @@ else
         fi
         getDiskSize=$(df $iotaHornetHome/${iotaHornetConfig}db | awk '{print $2}')
         getDiskSize=$(echo $getDiskSize | awk '{print $2}')
-        diskSize=${getDiskSize//[!0-9]/}
-        let diskSize=$diskSize/1000000
+        if [[ $getDiskSize =~ *T$ ]]; then
+            let diskSize=$diskSize*1
+            let diskSize=$diskSize*1000
+        else
+            diskSize=${getDiskSize//[!0-9]/}
+        fi
         if [ -z "$iotaHornetPruningDatabaseSize" ]; then
             iotaHornetPruningDatabaseSize=$diskSize
             sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
