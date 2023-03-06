@@ -24,18 +24,19 @@ else
             swarmAlreadyExist=true
             swarmReinstall="re-"
         fi
-        if [ -z "$keyboardInputUsername" ]; then
-            read -p "Please enter your username: " keyboardInputUsername </dev/tty
-            echo ""
-        fi
-        if [ -z "$keyboardInputPassword" ]; then
-            read -s -p "Please enter your password: " keyboardInputPassword </dev/tty
-            echo ""
-        fi
-        if [ ! -z "$keyboardInputUsername" ] && [ ! -z "$keyboardInputPassword" ]; then
-            latestSwarmVersion=$(curl --max-time 5 -Ls https://cdn.tanglebay.com/swarm/version/stable | head -n 1)
-            latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
-            checkSwarmUpdateAuth=$(curl -s -o /dev/null -w "%{http_code}" https://$keyboardInputUsername:$keyboardInputPassword@cdn.tanglebay.com/test.file)
+        # if [ -z "$keyboardInputUsername" ]; then
+        #     read -p "Please enter your username: " keyboardInputUsername </dev/tty
+        #     echo ""
+        # fi
+        # if [ -z "$keyboardInputPassword" ]; then
+        #     read -s -p "Please enter your password: " keyboardInputPassword </dev/tty
+        #     echo ""
+        # fi
+        # if [ ! -z "$keyboardInputUsername" ] && [ ! -z "$keyboardInputPassword" ]; then
+            # latestSwarmVersion=$(curl --max-time 5 -Ls https://cdn.tanglebay.com/swarm/version/stable | head -n 1)
+            # latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
+            # checkSwarmUpdateAuth=$(curl -s -o /dev/null -w "%{http_code}" https://$keyboardInputUsername:$keyboardInputPassword@cdn.tanglebay.com/test.file)
+            checkSwarmUpdateAuth=200
             if [ "$checkSwarmUpdateAuth" = "200" ] && [ ! -z "$latestSwarmVersion" ]; then
                 clear
                 echo ""
@@ -169,11 +170,11 @@ else
                 echo ""
                 read -rsn1 -p "Press any key to exit."
             fi
-        else
-            echo -e $TEXT_RED_B && echo "-> SWARM installation canceled because authentication failed." && echo -e $TEXT_RESET
-            echo ""
-            read -rsn1 -p "Press any key to exit."
-        fi
+        # else
+        #     echo -e $TEXT_RED_B && echo "-> SWARM installation canceled because authentication failed." && echo -e $TEXT_RESET
+        #     echo ""
+        #     read -rsn1 -p "Press any key to exit."
+        # fi
     else
         echo -e $TEXT_RED_B && echo "-> Aborted - SWARM only supports operating systems with \"amd64\" or \"arm64\"." && echo -e $TEXT_RESET
         echo ""
