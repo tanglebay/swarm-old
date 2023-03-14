@@ -33,8 +33,8 @@ else
         #     echo ""
         # fi
         # if [ ! -z "$keyboardInputUsername" ] && [ ! -z "$keyboardInputPassword" ]; then
-            # latestSwarmVersion=$(curl --max-time 5 -Ls https://cdn.tanglebay.com/swarm/version/stable | head -n 1)
-            # latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
+            latestSwarmVersion=$(curl --max-time 5 -Ls https://cdn.tanglebay.com/swarm/version/stable | head -n 1)
+            latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
             # checkSwarmUpdateAuth=$(curl -s -o /dev/null -w "%{http_code}" https://$keyboardInputUsername:$keyboardInputPassword@cdn.tanglebay.com/test.file)
             checkSwarmUpdateAuth=200
             if [ "$checkSwarmUpdateAuth" = "200" ] && [ ! -z "$latestSwarmVersion" ]; then
