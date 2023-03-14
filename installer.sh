@@ -35,7 +35,7 @@ else
         # if [ ! -z "$keyboardInputUsername" ] && [ ! -z "$keyboardInputPassword" ]; then
             latestSwarmVersion=$(curl --max-time 5 -Ls https://cdn.tanglebay.com/swarm/version/stable | head -n 1)
             latestSwarmVersion=$(echo $latestSwarmVersion | tr -d 'v')
-            # checkSwarmUpdateAuth=$(curl -s -o /dev/null -w "%{http_code}" https://$keyboardInputUsername:$keyboardInputPassword@cdn.tanglebay.com/test.file)
+            # checkSwarmUpdateAuth=$(curl -s -o /dev/null -w "%{http_code}" https://cdn.tanglebay.com/test.file)
             checkSwarmUpdateAuth=200
             if [ "$checkSwarmUpdateAuth" = "200" ] && [ ! -z "$latestSwarmVersion" ]; then
                 clear
@@ -66,11 +66,11 @@ else
                     if [ ! -d "$swarmTmp" ]; then
                         sudo mkdir -p $swarmTmp/installer > /dev/null 2>&1
                     fi
-                    sudo wget -q -O $swarmTmp/installer/swarm-v$latestSwarmVersion.tar.gz https://$keyboardInputUsername:$keyboardInputPassword@cdn.tanglebay.com/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
+                    sudo wget -q -O $swarmTmp/installer/swarm-v$latestSwarmVersion.tar.gz https://cdn.tanglebay.com/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
                     echo ""
                     echo -e $TEXT_RED_B && echo "-> Verify checksum of SWARM..." && echo -e $TEXT_RESET
                     echo ""
-                    swarmChkSum=$(curl -s https://$keyboardInputUsername:$keyboardInputPassword@cdn.tanglebay.com/swarm/v$latestSwarmVersion/checksum.txt)
+                    swarmChkSum=$(curl -s https://cdn.tanglebay.com/swarm/v$latestSwarmVersion/checksum.txt)
                     swarmUpdateChkSum=$(shasum -a 512 $swarmTmp/installer/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
                     if [ "$swarmChkSum" = "$swarmUpdateChkSum" ]; then
                         ( cd $swarmTmp/installer ; sudo tar -xzf $swarmTmp/installer/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
