@@ -1,173 +1,18 @@
 #!/bin/bash
 
 if [ "$swarmManualUpdate" = "true" ]; then
-    if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
-        source $swarmModule/swarmAuth
-        if [ "$swarmAuth" = "200" ] && [ ! -f "/tmp/watchdog.lock" ]; then
-            sudo touch /tmp/watchdog.lock
-            {
-                echo 0
-                echo 10
-                if [ ! -d "$swarmTmpPath/v$latestSwarmVersion" ]; then
-                    sudo mkdir -p $swarmTmpPath/v$latestSwarmVersion > /dev/null 2>&1
-                fi
-                echo 20
-                sudo cp -rf $swarmConfigs/*.cfg $swarmTmpPath/ > /dev/null 2>&1
-                echo 25
-                swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$cdnUrl/swarm/v$latestSwarmVersion/checksum.txt)
-                sudo wget -q -O $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
-                swarmChecksum=$(shasum -a 512 $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
-                if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
-                    ( cd $swarmTmpPath/v$latestSwarmVersion ; sudo tar -xzf $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
-                    if [ -f "$swarmTmpPath/v$latestSwarmVersion/swarm/update.lock" ]; then
-                        sudo rm -rf $swarmHome > /dev/null 2>&1
-                        sudo mv -f $swarmTmpPath/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
-                        # Load new env
-                        source /var/lib/swarm/environment
-                        sudo chmod +x $swarmHome/swarm $swarmHome/watchdog > /dev/null 2>&1
-                        echo 25
-
-                        source $swarmModule/swarmParser
-
-                        echo 30
-                        ( crontab -l | grep -v -F "/var/lib/swarm/plugins/watchdog" ) | crontab - > /dev/null 2>&1
-                        ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
-                        ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
-
-                        echo 35
-
-                        source $swarmModule/swarmUpdaterAppService
-
-                        echo 40
-                        # Remove Hornet apt
-                        if [ -f "/etc/apt/sources.list.d/hornet.list" ] || [ -f "/etc/apt/sources.list.d/hornet.list.distUpgrade" ]; then
-                            sudo rm -rf /etc/apt/sources.list.d/hornet* > /dev/null 2>&1
-                            sudo apt-get -qq update > /dev/null 2>&1
-                        fi
-                        echo 45
-                        progressNumber=45
-                        for swarmApp in ${swarmApps[@]}
-                        do
-                            source $swarmModule/swarmAppVars
-                            if [ -f "/usr/bin/$swarmApp" ]; then
-                                if [ ! -f "/tmp/$swarmApp.lock" ]; then
-                                    sudo touch /tmp/$swarmApp.lock > /dev/null 2>&1
-                                fi
-                                swarmAppModule=${swarmAppPrefix}Module
-                                source ${!swarmAppModule}/${swarmAppPrefix}Parser
-                                swarmAppRestart=restart${swarmAppPrefix^}
-                                if [ "${!swarmAppRestart}" = "true" ]; then
-                                    if [ "$swarmApp" = "iota-hornet" ]; then
-                                        for iotaInxPlugin in ${iotaInxPlugins[@]}
-                                        do
-                                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                                                if [ ! -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
-                                                    sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
-                                                fi
-                                                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
-                                            fi
-                                        done
-                                        unset iotaInxPlugin
-                                        sudo systemctl restart $swarmApp > /dev/null 2>&1
-                                        for iotaInxPlugin in ${iotaInxPlugins[@]}
-                                        do
-                                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                                                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
-                                                if [ -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
-                                                    sudo rm -rf /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
-                                                fi
-                                            fi
-                                        done
-                                        if [ -z "$(ls -A $iotaHornetHome/${iotaHornetNetwork}db)" ]; then
-                                            sudo rm -rf $iotaHornetHome/${iotaHornetNetwork}db > /dev/null 2>&1
-                                        fi
-                                        unset iotaInxPlugin restartIotaHornet
-                                    fi
-                                    if [ "$swarmApp" = "shimmer-hornet" ]; then
-                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                        do
-                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                                if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                                    sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
-                                                fi
-                                                sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                                            fi
-                                        done
-                                        unset shimmerInxPlugin
-                                        sudo systemctl restart $swarmApp > /dev/null 2>&1
-                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                        do
-                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                                sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                                                if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                                    sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
-                                                fi
-                                            fi
-                                        done
-                                        unset shimmerInxPlugin restartShimmerHornet
-                                    fi
-                                    if [[ $swarmApp != *hornet* ]]; then
-                                        sudo systemctl restart $swarmApp > /dev/null 2>&1
-                                    fi
-                                fi
-                                if [ -f "/tmp/$swarmApp.lock" ]; then
-                                    sudo rm -rf /tmp/$swarmApp.lock > /dev/null 2>&1
-                                fi
-                                unset swarmAppRestart swarmAppModule
-                            fi
-                            unset swarmAppPrefix
-                            let progressNumber=$progressNumber+5
-                            echo $progressNumber
-                        done
-                        unset swarmApp progressNumber
-                        echo 85
-                        source $proxyModule/proxyAutomaticDeployment
-                    fi
-                fi
-                echo 100
-            } | whiptail --gauge "Updating SWARM..." 6 65 0
-        fi
-        if [ -f "$swarmHome/update.lock" ]; then
-            swarmUpdated=true
-            sudo cat $swarmTemplates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
-            source $proxyModule/proxySwarmEndpoint
-            sudo rm -rf $swarmHome/update.lock > /dev/null 2>&1
-        fi
-        if [ "$swarmUpdated" = "true" ]; then
-            swarmChecksum=$(shasum -a 512 $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
-            source $swarmHome/version
-            whiptail --title "SWARM - Update" --msgbox "\nSWARM successfully updated to v$version (build $build).\n\nChecksum: $swarmChecksum" 14 65
-            unset swarmUpdated swarmChecksum
-            if [ -f "/tmp/watchdog.lock" ]; then
-                sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
-            fi
-            if [ -f "/tmp/watchdog.state" ]; then
-                sudo rm -rf /tmp/watchdog.state > /dev/null 2>&1
-            fi
-            clear
-            exit 0
-        else
-            if [ -f "/tmp/watchdog.lock" ]; then
-                sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
-            fi
-            unset swarmUpdated
-            whiptail --title "SWARM Menu" --msgbox "SWARM update failed." 8 65
-        fi
-        if [ -d "$swarmTmpPath" ]; then
-            sudo rm -rf $swarmTmpPath > /dev/null 2>&1
-        fi
-        unset checkSwarmUpdateAuth swarmChkSum swarmUpdateChkSum
-    fi
-else
-    if [ ! -z "$swarmAuthUser" ] && [ ! -z "$swarmAuthPwd" ]; then
-        if [ "$swarmAuth" = "200" ]; then
+    source $swarmModule/swarmAuth
+    if [ "$swarmAuth" = "200" ] && [ ! -f "/tmp/watchdog.lock" ]; then
+        sudo touch /tmp/watchdog.lock
+        {
+            echo 0
+            echo 10
             if [ ! -d "$swarmTmpPath/v$latestSwarmVersion" ]; then
                 sudo mkdir -p $swarmTmpPath/v$latestSwarmVersion > /dev/null 2>&1
             fi
-
-            # Backup current configs
+            echo 20
             sudo cp -rf $swarmConfigs/*.cfg $swarmTmpPath/ > /dev/null 2>&1
-
+            echo 25
             swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$cdnUrl/swarm/v$latestSwarmVersion/checksum.txt)
             sudo wget -q -O $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
             swarmChecksum=$(shasum -a 512 $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
@@ -176,17 +21,168 @@ else
                 if [ -f "$swarmTmpPath/v$latestSwarmVersion/swarm/update.lock" ]; then
                     sudo rm -rf $swarmHome > /dev/null 2>&1
                     sudo mv -f $swarmTmpPath/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
-                    if [ -f "$swarmHome/swarm" ]; then
-                        source /var/lib/swarm/environment
-                        sudo cat $swarmTemplates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
-                        source $swarmModule/swarmUpdaterAfter
+                    # Load new env
+                    source /var/lib/swarm/environment
+                    sudo chmod +x $swarmHome/swarm $swarmHome/watchdog > /dev/null 2>&1
+                    echo 25
+
+                    source $swarmModule/swarmParser
+
+                    echo 30
+                    ( crontab -l | grep -v -F "/var/lib/swarm/plugins/watchdog" ) | crontab - > /dev/null 2>&1
+                    ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
+                    ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
+
+                    echo 35
+
+                    source $swarmModule/swarmUpdaterAppService
+
+                    echo 40
+                    # Remove Hornet apt
+                    if [ -f "/etc/apt/sources.list.d/hornet.list" ] || [ -f "/etc/apt/sources.list.d/hornet.list.distUpgrade" ]; then
+                        sudo rm -rf /etc/apt/sources.list.d/hornet* > /dev/null 2>&1
+                        sudo apt-get -qq update > /dev/null 2>&1
                     fi
+                    echo 45
+                    progressNumber=45
+                    for swarmApp in ${swarmApps[@]}
+                    do
+                        source $swarmModule/swarmAppVars
+                        if [ -f "/usr/bin/$swarmApp" ]; then
+                            if [ ! -f "/tmp/$swarmApp.lock" ]; then
+                                sudo touch /tmp/$swarmApp.lock > /dev/null 2>&1
+                            fi
+                            swarmAppModule=${swarmAppPrefix}Module
+                            source ${!swarmAppModule}/${swarmAppPrefix}Parser
+                            swarmAppRestart=restart${swarmAppPrefix^}
+                            if [ "${!swarmAppRestart}" = "true" ]; then
+                                if [ "$swarmApp" = "iota-hornet" ]; then
+                                    for iotaInxPlugin in ${iotaInxPlugins[@]}
+                                    do
+                                        if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                            if [ ! -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                                                sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                            fi
+                                            sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
+                                        fi
+                                    done
+                                    unset iotaInxPlugin
+                                    sudo systemctl restart $swarmApp > /dev/null 2>&1
+                                    for iotaInxPlugin in ${iotaInxPlugins[@]}
+                                    do
+                                        if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                            sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                                            if [ -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                                                sudo rm -rf /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                            fi
+                                        fi
+                                    done
+                                    if [ -z "$(ls -A $iotaHornetHome/${iotaHornetNetwork}db)" ]; then
+                                        sudo rm -rf $iotaHornetHome/${iotaHornetNetwork}db > /dev/null 2>&1
+                                    fi
+                                    unset iotaInxPlugin restartIotaHornet
+                                fi
+                                if [ "$swarmApp" = "shimmer-hornet" ]; then
+                                    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                    do
+                                        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                            if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                                sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                            fi
+                                            sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                        fi
+                                    done
+                                    unset shimmerInxPlugin
+                                    sudo systemctl restart $swarmApp > /dev/null 2>&1
+                                    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                    do
+                                        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                            sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                            if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                                sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                            fi
+                                        fi
+                                    done
+                                    unset shimmerInxPlugin restartShimmerHornet
+                                fi
+                                if [[ $swarmApp != *hornet* ]]; then
+                                    sudo systemctl restart $swarmApp > /dev/null 2>&1
+                                fi
+                            fi
+                            if [ -f "/tmp/$swarmApp.lock" ]; then
+                                sudo rm -rf /tmp/$swarmApp.lock > /dev/null 2>&1
+                            fi
+                            unset swarmAppRestart swarmAppModule
+                        fi
+                        unset swarmAppPrefix
+                        let progressNumber=$progressNumber+5
+                        echo $progressNumber
+                    done
+                    unset swarmApp progressNumber
+                    echo 85
+                    source $proxyModule/proxyAutomaticDeployment
                 fi
             fi
-            if [ -d "$swarmTmpPath" ]; then
-                sudo rm -rf $swarmTmpPath > /dev/null 2>&1
+            echo 100
+        } | whiptail --gauge "Updating SWARM..." 6 65 0
+    fi
+    if [ -f "$swarmHome/update.lock" ]; then
+        swarmUpdated=true
+        sudo cat $swarmTemplates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
+        source $proxyModule/proxySwarmEndpoint
+        sudo rm -rf $swarmHome/update.lock > /dev/null 2>&1
+    fi
+    if [ "$swarmUpdated" = "true" ]; then
+        swarmChecksum=$(shasum -a 512 $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
+        source $swarmHome/version
+        whiptail --title "SWARM - Update" --msgbox "\nSWARM successfully updated to v$version (build $build).\n\nChecksum: $swarmChecksum" 14 65
+        unset swarmUpdated swarmChecksum
+        if [ -f "/tmp/watchdog.lock" ]; then
+            sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
+        fi
+        if [ -f "/tmp/watchdog.state" ]; then
+            sudo rm -rf /tmp/watchdog.state > /dev/null 2>&1
+        fi
+        clear
+        exit 0
+    else
+        if [ -f "/tmp/watchdog.lock" ]; then
+            sudo rm -rf /tmp/watchdog.lock > /dev/null 2>&1
+        fi
+        unset swarmUpdated
+        whiptail --title "SWARM Menu" --msgbox "SWARM update failed." 8 65
+    fi
+    if [ -d "$swarmTmpPath" ]; then
+        sudo rm -rf $swarmTmpPath > /dev/null 2>&1
+    fi
+    unset checkSwarmUpdateAuth swarmChkSum swarmUpdateChkSum
+else
+    if [ "$swarmAuth" = "200" ]; then
+        if [ ! -d "$swarmTmpPath/v$latestSwarmVersion" ]; then
+            sudo mkdir -p $swarmTmpPath/v$latestSwarmVersion > /dev/null 2>&1
+        fi
+
+        # Backup current configs
+        sudo cp -rf $swarmConfigs/*.cfg $swarmTmpPath/ > /dev/null 2>&1
+
+        swarmRemoteChecksum=$(curl --max-time 5 -Ls https://$cdnUrl/swarm/v$latestSwarmVersion/checksum.txt)
+        sudo wget -q -O $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz https://$cdnUrl/swarm/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz
+        swarmChecksum=$(shasum -a 512 $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz | awk '{ print $1 }')
+        if [ "$swarmChecksum" = "$swarmRemoteChecksum" ]; then
+            ( cd $swarmTmpPath/v$latestSwarmVersion ; sudo tar -xzf $swarmTmpPath/v$latestSwarmVersion/swarm-v$latestSwarmVersion.tar.gz ) > /dev/null 2>&1
+            if [ -f "$swarmTmpPath/v$latestSwarmVersion/swarm/update.lock" ]; then
+                sudo rm -rf $swarmHome > /dev/null 2>&1
+                sudo mv -f $swarmTmpPath/v$latestSwarmVersion/swarm /var/lib > /dev/null 2>&1
+                if [ -f "$swarmHome/swarm" ]; then
+                    source /var/lib/swarm/environment
+                    sudo cat $swarmTemplates/swarm/00-swarm.sh > /etc/profile.d/00-swarm.sh
+                    source $swarmModule/swarmUpdaterAfter
+                fi
             fi
         fi
-        unset swarmAuth swarmRemoteChecksum
+        if [ -d "$swarmTmpPath" ]; then
+            sudo rm -rf $swarmTmpPath > /dev/null 2>&1
+        fi
     fi
+    unset swarmAuth swarmRemoteChecksum
 fi
