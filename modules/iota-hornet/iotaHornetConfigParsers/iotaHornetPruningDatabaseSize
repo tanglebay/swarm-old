@@ -2,7 +2,7 @@
 
 if [[ $iotaHornetVersion =~ ^2.* ]]; then
     if [ -f "/usr/bin/iota-hornet" ]; then
-        if [[ $iotaHornetPruningDatabaseSize = *-* ]]; then
+        if [[ $iotaHornetPruningDatabaseSize =~ ^[0-9]+$ ]]; then
             unset iotaHornetPruningDatabaseSize
         fi
         if [ ! -d "$iotaHornetHome/$iotaHornetNetwork/database" ]; then
@@ -11,10 +11,13 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
         fi
         getDiskSize=$(df -h $iotaHornetHome/$iotaHornetNetwork/database | awk '{print $2}')
         getDiskSize=$(echo $getDiskSize | awk '{print $2}')
-        if [[ $getDiskSize =~ *T$ ]]; then
+        if [[ $getDiskSize =~ ^[0-9]*T$ ]]; then
             diskSize=${getDiskSize//[!0-9]/}
-            let diskSize=$diskSize*1
-            let diskSize=$diskSize*1000
+            if [ $diskSize -ge 10 ]; then
+                let diskSize=$diskSize*100
+            else
+                let diskSize=$diskSize*1000
+            fi
         else
             diskSize=${getDiskSize//[!0-9]/}
         fi
@@ -61,9 +64,13 @@ else
         fi
         getDiskSize=$(df $iotaHornetHome/${iotaHornetConfig}db | awk '{print $2}')
         getDiskSize=$(echo $getDiskSize | awk '{print $2}')
-        if [[ $getDiskSize =~ *T$ ]]; then
-            let diskSize=$diskSize*1
-            let diskSize=$diskSize*1000
+        if [[ $getDiskSize =~ ^[0-9]*T$ ]]; then
+            diskSize=${getDiskSize//[!0-9]/}
+            if [ $diskSize -ge 10 ]; then
+                let diskSize=$diskSize*100
+            else
+                let diskSize=$diskSize*1000
+            fi
         else
             diskSize=${getDiskSize//[!0-9]/}
         fi
@@ -74,7 +81,7 @@ else
             bufferSize=30
         fi
         if [ -z "$bufferSize" ]; then
-            bufferSize 15
+            bufferSize=15
         fi
         if [ -z "$iotaHornetPruningDatabaseSize" ]; then
             iotaHornetPruningDatabaseSize=$diskSize
