@@ -1,9 +1,6 @@
 #!/bin/bash
 
 if [ -f "/usr/bin/shimmer-hornet" ]; then
-    if [[ $shimmerHornetPruningDatabaseSize =~ ^[0-9]+$ ]] 2>/dev/null; then
-        unset shimmerHornetPruningDatabaseSize
-    fi
     if [ ! -d "$shimmerHornetHome/$shimmerHornetNetwork/database" ]; then
         sudo -u hornet mkdir -p $shimmerHornetHome/$shimmerHornetNetwork/database
         sudo chmod 700 $shimmerHornetHome/$shimmerHornetNetwork/database
@@ -29,8 +26,11 @@ if [ -f "/usr/bin/shimmer-hornet" ]; then
     if [ -z "$bufferSize" ]; then
         bufferSize=15
     fi
+    if ! [[ $shimmerHornetPruningDatabaseSize =~ ^[0-9]+$ ]] || [ $shimmerHornetPruningDatabaseSize -gt $diskSize ] 2>/dev/null; then
+        unset shimmerHornetPruningDatabaseSize
+    fi
     if [ -z "$shimmerHornetPruningDatabaseSize" ]; then
-        shimmerHornetPruningDatabaseSize=$diskSize
+        let shimmerHornetPruningDatabaseSize=$diskSize-$bufferSize
         sudo sed -i 's/^shimmerHornetPruningDatabaseSize=.*/shimmerHornetPruningDatabaseSize='$shimmerHornetPruningDatabaseSize'/' $swarmConfigs/shimmer-hornet.cfg
     else
         shimmerHornetPruningDatabaseSize=${shimmerHornetPruningDatabaseSize//[!0-9]/}
