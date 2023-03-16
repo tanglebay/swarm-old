@@ -5,28 +5,19 @@ if [ -f "/usr/bin/shimmer-hornet" ]; then
         sudo -u hornet mkdir -p $shimmerHornetHome/$shimmerHornetNetwork/database
         sudo chmod 700 $shimmerHornetHome/$shimmerHornetNetwork/database
     fi
-    getDiskSize=$(df -h $shimmerHornetHome/$shimmerHornetNetwork/database | awk '{print $2}')
+    getDiskSize=$(df -m $shimmerHornetHome/$shimmerHornetNetwork/database | awk '{print $2}')
     getDiskSize=$(echo $getDiskSize | awk '{print $2}')
-    if [[ $getDiskSize =~ ^[0-9]*T$ ]]; then
-        diskSize=${getDiskSize//[!0-9]/}
-        if [ $diskSize -ge 10 ]; then
-            let diskSize=$diskSize*100
-        else
-            let diskSize=$diskSize*1000
-        fi
-    else
-        diskSize=${getDiskSize//[!0-9]/}
-    fi
+    let diskSize=$getDiskSize/1000
     if [ $diskSize -ge 550 ]; then
-        bufferSize=50
+        bufferSize=60
     fi
     if [ $diskSize -lt 550 ] && [ $diskSize -gt 250 ]; then
-        bufferSize=30
+        bufferSize=40
     fi
     if [ -z "$bufferSize" ]; then
-        bufferSize=15
+        bufferSize=20
     fi
-    if [[ $shimmerHornetPruningDatabaseSize =~ *-* ]] || [ $shimmerHornetPruningDatabaseSize -gt $diskSize ] 2>/dev/null; then
+    if [[ $shimmerHornetPruningDatabaseSize = *-* ]] || [ $shimmerHornetPruningDatabaseSize -gt $diskSize ] 2>/dev/null; then
         unset shimmerHornetPruningDatabaseSize
     fi
     if [ -z "$shimmerHornetPruningDatabaseSize" ]; then
