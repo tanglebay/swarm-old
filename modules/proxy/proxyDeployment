@@ -203,16 +203,6 @@ if [ ! -d "/etc/nginx/swarm" ]; then
 fi
 
 # TANGLEBAY stuff
-if [ -f "/etc/nginx/tb-lbs.conf" ]; then
-    sudo mv /etc/nginx/tb-lbs.conf /etc/nginx/tb-srv.conf
-    sudo chmod 644 /etc/nginx/tb-srv.conf
-fi
-if [ -f "/etc/nginx/tb-srv.conf" ]; then
-    sudo mv /etc/nginx/tb-srv.conf /etc/nginx/swarm/tb-srv.conf
-fi
-if [ -f "/etc/nginx/extended-proxy.conf" ]; then
-    sudo mv /etc/nginx/extended-proxy.conf /etc/nginx/swarm/extended-proxy.conf
-fi
 if [ ! -f "/etc/nginx/swarm/tb-srv.conf" ]; then
     sudo touch /etc/nginx/swarm/tb-srv.conf
     sudo chmod 644 /etc/nginx/swarm/tb-srv.conf
@@ -220,6 +210,16 @@ fi
 if [ ! -f "/etc/nginx/swarm/extended-proxy.conf" ]; then
     sudo touch /etc/nginx/swarm/extended-proxy.conf
     sudo chmod 644 /etc/nginx/swarm/extended-proxy.conf
+fi
+
+# SET TLS1.3
+if [ -f "/etc/nginx/nginx.conf" ]; then
+    proxySslProtocol=$(cat /etc/nginx/nginx.conf | grep -E ssl_protocols)
+    proxySslProtocol=$(echo $proxySslProtocol)
+    if [ "$proxySslProtocol" != "ssl_protocols TLSv1.3;" ]; then
+        sudo sed -i 's~ssl_protocols*~ssl_protocols TLSv1.3;~g' /etc/nginx/nginx.conf
+    fi
+    unset proxySslProtocol
 fi
 
 # Check if the certificate for the domain already exist
