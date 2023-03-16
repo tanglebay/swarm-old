@@ -2,32 +2,27 @@
 
 if [[ $iotaHornetVersion =~ ^2.* ]]; then
     if [ -f "/usr/bin/iota-hornet" ]; then
-        if [[ $iotaHornetPruningDatabaseSize = *-* ]]; then
-            unset iotaHornetPruningDatabaseSize
-        fi
         if [ ! -d "$iotaHornetHome/$iotaHornetNetwork/database" ]; then
             sudo -u hornet mkdir -p $iotaHornetHome/$iotaHornetNetwork/database
             sudo chmod 700 $iotaHornetHome/$iotaHornetNetwork/database
         fi
         getDiskSize=$(df -h $iotaHornetHome/$iotaHornetNetwork/database | awk '{print $2}')
         getDiskSize=$(echo $getDiskSize | awk '{print $2}')
-        if [[ $getDiskSize =~ *T$ ]]; then
-            let diskSize=$diskSize*1
-            let diskSize=$diskSize*1000
-        else
-            diskSize=${getDiskSize//[!0-9]/}
-        fi
+        let diskSize=$getDiskSize/1000
         if [ $diskSize -ge 550 ]; then
-            bufferSize=50
+            bufferSize=60
         fi
         if [ $diskSize -lt 550 ] && [ $diskSize -gt 250 ]; then
-            bufferSize=30
+            bufferSize=40
         fi
-        if [ -z $diskSize ]; then
-            bufferSize=15
+        if [ -z "$bufferSize" ]; then
+            bufferSize=20
+        fi
+        if [[ $iotaHornetPruningDatabaseSize = *-* ]] || [ $iotaHornetPruningDatabaseSize -gt $diskSize ] 2>/dev/null; then
+            unset iotaHornetPruningDatabaseSize
         fi
         if [ -z "$iotaHornetPruningDatabaseSize" ]; then
-            iotaHornetPruningDatabaseSize=$diskSize
+            let iotaHornetPruningDatabaseSize=$diskSize-$bufferSize
             sudo sed -i 's/^iotaHornetPruningDatabaseSize=.*/iotaHornetPruningDatabaseSize='$iotaHornetPruningDatabaseSize'/' $swarmConfigs/iota-hornet.cfg
         else
             iotaHornetPruningDatabaseSize=${iotaHornetPruningDatabaseSize//[!0-9]/}
@@ -51,29 +46,24 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
     fi
 else
     if [ -f "/usr/bin/iota-hornet" ]; then
-        if [[ $iotaHornetPruningDatabaseSize = *-* ]]; then
-            unset iotaHornetPruningDatabaseSize
-        fi
         if [ ! -d "$iotaHornetHome/${iotaHornetConfig}db" ]; then
             sudo -u hornet mkdir -p $iotaHornetHome/${iotaHornetConfig}db
             sudo chmod 700 $iotaHornetHome/${iotaHornetConfig}db
         fi
         getDiskSize=$(df $iotaHornetHome/${iotaHornetConfig}db | awk '{print $2}')
         getDiskSize=$(echo $getDiskSize | awk '{print $2}')
-        if [[ $getDiskSize =~ *T$ ]]; then
-            let diskSize=$diskSize*1
-            let diskSize=$diskSize*1000
-        else
-            diskSize=${getDiskSize//[!0-9]/}
-        fi
+        let diskSize=$getDiskSize/1000
         if [ $diskSize -ge 550 ]; then
-            bufferSize=50
+            bufferSize=60
         fi
         if [ $diskSize -lt 550 ] && [ $diskSize -gt 250 ]; then
-            bufferSize=30
+            bufferSize=40
         fi
         if [ -z "$bufferSize" ]; then
-            bufferSize 15
+            bufferSize=20
+        fi
+        if [[ $iotaHornetPruningDatabaseSize = *-* ]] || [ $iotaHornetPruningDatabaseSize -gt $diskSize ] 2>/dev/null; then
+            unset iotaHornetPruningDatabaseSize
         fi
         if [ -z "$iotaHornetPruningDatabaseSize" ]; then
             iotaHornetPruningDatabaseSize=$diskSize
