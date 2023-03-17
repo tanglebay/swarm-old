@@ -326,8 +326,9 @@ while [ $exitCode -lt 1 ]; do
                                     CHOICE=$(
                                         whiptail --title "Hornet [SHIMMER] Management" --menu "\nChoose your option" 24 65 0 \
                                         "" "" \
-                                        "1)" "Download Snapshot for genesis" \
-                                        "2)" "Download Snapshot via URL" 3>&2 2>&1 1>&3
+                                        "1)" "Download Snapshot For Governance [SGP 1,2,3,5]" \
+                                        "2)" "Download Snapshot for genesis" \
+                                        "3)" "Download Snapshot via URL" 3>&2 2>&1 1>&3
                                     )
                                     exitstatus=$?
                                     if [ "$exitstatus" != "1" ]; then
@@ -335,9 +336,23 @@ while [ $exitCode -lt 1 ]; do
                                             "1)")
                                                 source $swarmModule/swarmAuth
                                                 if [ "$swarmAuth" = "200" ]; then
+                                                    shimmerHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$cdnUrl/snapshots/shimmer-mainnet/event/shimmer_governance_SGP_1-2-3-5.bin)
+                                                    if [ "$shimmerHornetSnapshotSourceValid" = "200" ]; then
+                                                        shimmerHornetSnapshotSource="https://$cdnUrl/snapshots/shimmer-mainnet/event/shimmer_governance_SGP_1-2-3-5.bin"
+                                                    else
+                                                        unset shimmerHornetSnapshotSourceValid
+                                                        exitstatus=1
+                                                    fi
+                                                else
+                                                    exitstatus=1
+                                                fi
+                                            ;;
+                                            "2)")
+                                                source $swarmModule/swarmAuth
+                                                if [ "$swarmAuth" = "200" ]; then
                                                     shimmerHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$cdnUrl/snapshots/shimmer-mainnet/event/genesis_snapshot.bin)
                                                     if [ "$shimmerHornetSnapshotSourceValid" = "200" ]; then
-                                                        shimmerHornetSnapshotSource="https://$swarmAuthUser:$swarmAuthPwd@$cdnUrl/snapshots/shimmer-mainnet/event/genesis_snapshot.bin"
+                                                        shimmerHornetSnapshotSource="https://$cdnUrl/snapshots/shimmer-mainnet/event/genesis_snapshot.bin"
                                                     else
                                                         unset shimmerHornetSnapshotSourceValid
                                                         exitstatus=1
