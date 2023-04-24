@@ -13,10 +13,10 @@
 
 <p align="center">
   <a href="#about">About</a> ◈
-  <a href="#installation">Requirements</a> ◈
+  <a href="#requirements">Requirements</a> ◈
   <a href="#installation">Installation</a> ◈
-  <a href="#getting-started">Contributing</a> ◈
-  <a href="#getting-started">Disclaimer</a>
+  <a href="#contributing">Contributing</a> ◈
+  <a href="#disclaimer">Disclaimer</a>
 </p>
 
 ---
