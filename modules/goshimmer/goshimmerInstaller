@@ -36,37 +36,34 @@ fi
 
 ##############################################################################################################################################
 
-source $swarmModule/swarmAuth
-if [ "$swarmAuth" = "200" ]; then
-    # Create dir if not exist
-    sudo mkdir -p /tmp/goshimmer > /dev/null 2>&1
+# Create dir if not exist
+sudo mkdir -p /tmp/goshimmer > /dev/null 2>&1
 
-    # Download latest goshimmer
-    ( cd /tmp/goshimmer/ ; sudo wget -q https://$cdnUrl/goshimmer/v${latestGoshimmerVersion}/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz )
-    if [ -f "/tmp/goshimmer/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz" ]; then
-        goshimmerDownloadChecksum=$(sudo shasum -a 512 /tmp/goshimmer/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-    fi
+# Download latest goshimmer
+( cd /tmp/goshimmer/ ; sudo wget -q https://$cdnUrl/goshimmer/v${latestGoshimmerVersion}/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz )
+if [ -f "/tmp/goshimmer/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz" ]; then
+    goshimmerDownloadChecksum=$(sudo shasum -a 512 /tmp/goshimmer/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+fi
 
-    # Download checksum
-    ( cd /tmp/goshimmer/ ; sudo wget -q https://$cdnUrl/goshimmer/v${latestGoshimmerVersion}/goshimmer_checksums_linux_$osArchitecture.txt )
-    goshimmerChecksum=$(sudo cat /tmp/goshimmer/goshimmer_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
-    echo $goshimmerChecksum > /tmp/goshimmer.checksum
+# Download checksum
+( cd /tmp/goshimmer/ ; sudo wget -q https://$cdnUrl/goshimmer/v${latestGoshimmerVersion}/goshimmer_checksums_linux_$osArchitecture.txt )
+goshimmerChecksum=$(sudo cat /tmp/goshimmer/goshimmer_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+echo $goshimmerChecksum > /tmp/goshimmer.checksum
 
-    # Unzip archive
-    if [ "$goshimmerDownloadChecksum" = "$goshimmerChecksum" ] && [ ! -z "$goshimmerDownloadChecksum" ] && [ ! -z "$goshimmerChecksum" ]; then
-        ( cd /tmp/goshimmer ; sudo tar -xzf /tmp/goshimmer/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+# Unzip archive
+if [ "$goshimmerDownloadChecksum" = "$goshimmerChecksum" ] && [ ! -z "$goshimmerDownloadChecksum" ] && [ ! -z "$goshimmerChecksum" ]; then
+    ( cd /tmp/goshimmer ; sudo tar -xzf /tmp/goshimmer/goshimmer-v${latestGoshimmerVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
-        # Copy binary
-        if [ -f "/tmp/goshimmer/goshimmer" ]; then
-            goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
-            if [ "$goshimmerStatus" = "active" ]; then
-                sudo systemctl stop goshimmer > /dev/null 2>&1
-            fi
-
-            sudo cp -rf /tmp/goshimmer/goshimmer /usr/bin/goshimmer > /dev/null 2>&1
-            sudo chmod +x /usr/bin/goshimmer > /dev/null 2>&1
-            newGoshimmerBinary=true
+    # Copy binary
+    if [ -f "/tmp/goshimmer/goshimmer" ]; then
+        goshimmerStatus="$(systemctl show -p ActiveState --value goshimmer)"
+        if [ "$goshimmerStatus" = "active" ]; then
+            sudo systemctl stop goshimmer > /dev/null 2>&1
         fi
+
+        sudo cp -rf /tmp/goshimmer/goshimmer /usr/bin/goshimmer > /dev/null 2>&1
+        sudo chmod +x /usr/bin/goshimmer > /dev/null 2>&1
+        newGoshimmerBinary=true
     fi
 fi
 
