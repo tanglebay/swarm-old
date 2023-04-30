@@ -35,53 +35,48 @@ fi
 
 ##############################################################################################################################################
 
-source $swarmModule/swarmAuth
-if [ "$swarmAuth" = "200" ]; then
-    # Create dir if not exist
-    sudo mkdir -p /tmp/shimmer-inx-poi > /dev/null 2>&1
-    echo "-> Created tmp folder for INX-POI" >> /tmp/shimmerInxPoiInstaller.log
+# Create dir if not exist
+sudo mkdir -p /tmp/shimmer-inx-poi > /dev/null 2>&1
+echo "-> Created tmp folder for INX-POI" >> /tmp/shimmerInxPoiInstaller.log
 
-    # Download latest inx-poi
-    ( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$cdnUrl/inx/inx-poi/v${latestShimmerInxPoiVersion}/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz )
-    echo "-> Downloading \"inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz\"" >> /tmp/shimmerInxPoiInstaller.log
-    if [ -f "/tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" ]; then
-        shimmerInxPoiDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-        echo "-> Calculated SHA512 hash of the downloaded tar.gz file: $shimmerInxPoiDownloadChecksum" >> /tmp/shimmerInxPoiInstaller.log
+# Download latest inx-poi
+( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$cdnUrl/inx/inx-poi/v${latestShimmerInxPoiVersion}/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz )
+echo "-> Downloading \"inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz\"" >> /tmp/shimmerInxPoiInstaller.log
+if [ -f "/tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" ]; then
+    shimmerInxPoiDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+    echo "-> Calculated SHA512 hash of the downloaded tar.gz file: $shimmerInxPoiDownloadChecksum" >> /tmp/shimmerInxPoiInstaller.log
 
-        # Download checksum
-        ( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$cdnUrl/inx/inx-poi/v${latestShimmerInxPoiVersion}/inx-poi_checksums_linux_$osArchitecture.txt )
-        echo "-> Downloading remote checksum of the tar.gz file" >> /tmp/shimmerInxPoiInstaller.log
-        if [ -f "/tmp/shimmer-inx-poi/inx-poi_checksums_linux_$osArchitecture.txt" ]; then
-            shimmerInxPoiChecksum=$(sudo grep "inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-poi/inx-poi_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
-            echo $shimmerInxPoiChecksum > /tmp/shimmer-inx-poi.checksum
-            echo "-> Remote SHA512 hash of the downloaded tar.gz file: $shimmerInxPoiChecksum" >> /tmp/shimmerInxPoiInstaller.log
+    # Download checksum
+    ( cd /tmp/shimmer-inx-poi/ ; sudo wget -q https://$cdnUrl/inx/inx-poi/v${latestShimmerInxPoiVersion}/inx-poi_checksums_linux_$osArchitecture.txt )
+    echo "-> Downloading remote checksum of the tar.gz file" >> /tmp/shimmerInxPoiInstaller.log
+    if [ -f "/tmp/shimmer-inx-poi/inx-poi_checksums_linux_$osArchitecture.txt" ]; then
+        shimmerInxPoiChecksum=$(sudo grep "inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-poi/inx-poi_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+        echo $shimmerInxPoiChecksum > /tmp/shimmer-inx-poi.checksum
+        echo "-> Remote SHA512 hash of the downloaded tar.gz file: $shimmerInxPoiChecksum" >> /tmp/shimmerInxPoiInstaller.log
 
-            # Unzip archive
-            if [ "$shimmerInxPoiDownloadChecksum" = "$shimmerInxPoiChecksum" ] && [ ! -z "$shimmerInxPoiDownloadChecksum" ] && [ ! -z "$shimmerInxPoiChecksum" ]; then
-                ( cd /tmp/shimmer-inx-poi ; sudo tar -xzf /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
-                echo "-> Unzip downloaded tar.gz file" >> /tmp/shimmerInxPoiInstaller.log
-                # Copy binary
-                if [ -f "/tmp/shimmer-inx-poi/inx-poi" ]; then
-                    shimmerInxPoiStatus="$(systemctl show -p ActiveState --value shimmer-inx-poi)"
-                    if [ "$shimmerInxPoiStatus" = "active" ]; then
-                        sudo systemctl stop shimmer-inx-poi > /dev/null 2>&1
-                        echo "-> Stopped running service of INX-POI" >> /tmp/shimmerInxPoiInstaller.log
-                    fi
-
-                    sudo cp -rf /tmp/shimmer-inx-poi/inx-poi /usr/bin/shimmer-inx-poi > /dev/null 2>&1
-                    sudo chmod +x /usr/bin/shimmer-inx-poi > /dev/null 2>&1
-                    newShimmerInxPoiBinary=true
-                    echo "-> Copied new files to target folder and set permissions" >> /tmp/shimmerInxPoiInstaller.log
+        # Unzip archive
+        if [ "$shimmerInxPoiDownloadChecksum" = "$shimmerInxPoiChecksum" ] && [ ! -z "$shimmerInxPoiDownloadChecksum" ] && [ ! -z "$shimmerInxPoiChecksum" ]; then
+            ( cd /tmp/shimmer-inx-poi ; sudo tar -xzf /tmp/shimmer-inx-poi/inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+            echo "-> Unzip downloaded tar.gz file" >> /tmp/shimmerInxPoiInstaller.log
+            # Copy binary
+            if [ -f "/tmp/shimmer-inx-poi/inx-poi" ]; then
+                shimmerInxPoiStatus="$(systemctl show -p ActiveState --value shimmer-inx-poi)"
+                if [ "$shimmerInxPoiStatus" = "active" ]; then
+                    sudo systemctl stop shimmer-inx-poi > /dev/null 2>&1
+                    echo "-> Stopped running service of INX-POI" >> /tmp/shimmerInxPoiInstaller.log
                 fi
+
+                sudo cp -rf /tmp/shimmer-inx-poi/inx-poi /usr/bin/shimmer-inx-poi > /dev/null 2>&1
+                sudo chmod +x /usr/bin/shimmer-inx-poi > /dev/null 2>&1
+                newShimmerInxPoiBinary=true
+                echo "-> Copied new files to target folder and set permissions" >> /tmp/shimmerInxPoiInstaller.log
             fi
-        else
-            echo "-> ERROR - Failed downloading \"inx-poi_checksums_linux_$osArchitecture.txt\"" >> /tmp/shimmerInxPoiInstaller.log
         fi
     else
-        echo "-> ERROR - Failed downloading \"inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz\"" >> /tmp/shimmerInxPoiInstaller.log
+        echo "-> ERROR - Failed downloading \"inx-poi_checksums_linux_$osArchitecture.txt\"" >> /tmp/shimmerInxPoiInstaller.log
     fi
 else
-    echo "-> ERROR - SWARM auth not valid" >> /tmp/shimmerInxPoiInstaller.log
+    echo "-> ERROR - Failed downloading \"inx-poi-v${latestShimmerInxPoiVersion}_linux_$osArchitecture.tar.gz\"" >> /tmp/shimmerInxPoiInstaller.log
 fi
 
 ##############################################################################################################################################
