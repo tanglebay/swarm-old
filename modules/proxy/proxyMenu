@@ -35,8 +35,7 @@ while [ $exitCode -lt 1 ]; do
                     "1)" "[${menuProxySwarmEndpoint^}] SWARM Endpoint" \
                     "2)" "Hornet [IOTA] Proxy Settings" \
                     "3)" "Hornet [SHIMMER] Proxy Settings" \
-                    "4)" "GoShimmer Proxy Settings" \
-                    "5)" "Advanced Settings" 3>&2 2>&1 1>&3
+                    "4)" "Advanced Settings" 3>&2 2>&1 1>&3
                 )
 
                 exitStatus=$?
@@ -132,39 +131,6 @@ while [ $exitCode -lt 1 ]; do
                         fi
                     ;;
                     "4)")
-                        if [ -f "/usr/bin/goshimmer" ]; then
-                            source $swarmConfigs/proxy.cfg
-                            currentProxyUrl="$proxyGoshimmerUrl"
-                            currentProxyPort=$(echo $currentProxyUrl | sed 's/.*://')
-                            if [ -z "$proxyGoshimmerUrl" ]; then
-                                proxyUrl="my.example.com:443"
-                            fi
-                            proxyUrl=$(whiptail --inputbox "\nSet your domain and port for Goshimmer" 10 65 $proxyGoshimmerUrl --title "Proxy [-] Configuration" 3>&1 1>&2 2>&3)
-                            exitStatus=$?
-                            if [ "$exitStatus" != "1" ] && [ "$proxyUrl" != "my.example.com:443" ]; then
-                                source $proxyModule/proxyUrlValidation
-                                if [ "$proxyUrlValid" = "true" ] || [ -z $proxyUrl ]; then
-                                    if [ "$currentProxyUrl" != "$proxyUrl" ]; then
-                                        proxyDeployNeeded=true
-                                        sudo sed -i 's/^proxyGoshimmerUrl=.*/proxyGoshimmerUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
-                                        source $proxyModule/proxySharedPortCheck
-                                        whiptail --title "Proxy [-] Configuration" --msgbox "URL for Goshimmer proxy set to \"$proxyUrl\"." 8 65
-                                    else
-                                        whiptail --title "Proxy [-] Configuration" --msgbox "No Goshimmer url change detected." 8 65
-                                    fi
-                                    unset proxyUrl proxyUrlValid
-                                else
-                                    whiptail --title "Proxy [-] Configuration" --msgbox "No valid Goshimmer url." 8 65
-                                fi
-                            else
-                                unset proxyUrl
-                            fi
-                            unset currentProxyUrl currentProxyPort
-                        else
-                            whiptail --title "Proxy [-] Configuration" --msgbox "Please install GoShimmer first." 8 65
-                        fi
-                    ;;
-                    "5)")
                         while [ $exitCode -lt 1 ]; do
                             source $swarmConfigs/proxy.cfg
                             clear
@@ -517,7 +483,6 @@ while [ $exitCode -lt 1 ]; do
                                     sudo ufw delete allow $proxyShimmerInxDashboardPort/tcp > /dev/null 2>&1
                                     sudo ufw delete allow $proxyIotaBeePort/tcp > /dev/null 2>&1
                                     sudo ufw delete allow $proxyShimmerBeePort/tcp > /dev/null 2>&1
-                                    sudo ufw delete allow $proxyGoshimmerPort/tcp > /dev/null 2>&1
                                 fi
                                 echo 20
                             } | whiptail --gauge "Please wait while removing the proxy..." 6 65 0
@@ -535,7 +500,6 @@ while [ $exitCode -lt 1 ]; do
                                 sudo sed -i 's/^proxyIotaInxDashboardUrl=.*/proxyIotaInxDashboardUrl=""/' $swarmConfigs/proxy.cfg
                                 sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl=""/' $swarmConfigs/proxy.cfg
                                 sudo sed -i 's/^proxyShimmerInxDashboardUrl=.*/proxyShimmerInxDashboardUrl=""/' $swarmConfigs/proxy.cfg
-                                sudo sed -i 's/^proxyGoshimmerUrl=.*/proxyGoshimmerUrl=""/' $swarmConfigs/proxy.cfg
                                 echo 100
                                 sleep 0.25
                             } | whiptail --gauge "Please wait while removing the proxy..." 6 65 0
