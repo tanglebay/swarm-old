@@ -1,7 +1,6 @@
 alias swarm='sudo /var/lib/swarm/swarm'
 alias iota-hornet='/usr/bin/iota-hornet'
 alias shimmer-hornet='/usr/bin/shimmer-hornet'
-alias goshimmer='/usr/bin/goshimmer'
 alias iota-inx-dashboard='/usr/bin/iota-inx-dashboard'
 alias iota-inx-indexer='/usr/bin/iota-inx-indexer'
 alias iota-inx-mqtt='/usr/bin/iota-inx-mqtt'
