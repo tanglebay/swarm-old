@@ -36,44 +36,42 @@ fi
 
 ##############################################################################################################################################
 echo "" >> /tmp/shimmerInxDashboardInstaller.log
-source $swarmModule/swarmAuth
-if [ "$swarmAuth" = "200" ]; then
-    # Create dir if not exist
-    echo "-> Create TMP folder" >> /tmp/shimmerInxDashboardInstaller.log
-    sudo mkdir -p /tmp/shimmer-inx-dashboard > /dev/null 2>&1
 
-    # Download latest inx-dashboard
-    echo "-> Download binary/config archive for v${latestShimmerInxDashboardVersion}" >> /tmp/shimmerInxDashboardInstaller.log
-    ( cd /tmp/shimmer-inx-dashboard/ ; sudo wget -q https://$cdnUrl/inx/inx-dashboard/v${latestShimmerInxDashboardVersion}/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz )
-    if [ -f "/tmp/shimmer-inx-dashboard/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz" ]; then
-        shimmerInxDashboardDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-dashboard/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-        echo "-> Generate local chksum of downloaded archive \"$shimmerInxDashboardDownloadChecksum\"" >> /tmp/shimmerInxDashboardInstaller.log
-    fi
+# Create dir if not exist
+echo "-> Create TMP folder" >> /tmp/shimmerInxDashboardInstaller.log
+sudo mkdir -p /tmp/shimmer-inx-dashboard > /dev/null 2>&1
 
-    # Download checksum
-    echo "-> Download remote checksum" >> /tmp/shimmerInxDashboardInstaller.log
-    ( cd /tmp/shimmer-inx-dashboard/ ; sudo wget -q https://$cdnUrl/inx/inx-dashboard/v${latestShimmerInxDashboardVersion}/inx-dashboard_checksums_linux_$osArchitecture.txt )
-    shimmerInxDashboardChecksum=$(sudo grep "inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-dashboard/inx-dashboard_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
-    echo $shimmerInxDashboardChecksum > /tmp/shimmer-inx-dashboard.checksum
-    echo "-> Get remote checksum \"$shimmerInxDashboardChecksum\"" >> /tmp/shimmerInxDashboardInstaller.log
+# Download latest inx-dashboard
+echo "-> Download binary/config archive for v${latestShimmerInxDashboardVersion}" >> /tmp/shimmerInxDashboardInstaller.log
+( cd /tmp/shimmer-inx-dashboard/ ; sudo wget -q https://$cdnUrl/inx/inx-dashboard/v${latestShimmerInxDashboardVersion}/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz )
+if [ -f "/tmp/shimmer-inx-dashboard/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz" ]; then
+    shimmerInxDashboardDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-dashboard/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+    echo "-> Generate local chksum of downloaded archive \"$shimmerInxDashboardDownloadChecksum\"" >> /tmp/shimmerInxDashboardInstaller.log
+fi
 
-    # Unzip archive
-    if [ "$shimmerInxDashboardDownloadChecksum" = "$shimmerInxDashboardChecksum" ] && [ ! -z "$shimmerInxDashboardDownloadChecksum" ] && [ ! -z "$shimmerInxDashboardChecksum" ]; then
-        echo "-> Unzip downloaded archive" >> /tmp/shimmerInxDashboardInstaller.log
-        ( cd /tmp/shimmer-inx-dashboard ; sudo tar -xzf /tmp/shimmer-inx-dashboard/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+# Download checksum
+echo "-> Download remote checksum" >> /tmp/shimmerInxDashboardInstaller.log
+( cd /tmp/shimmer-inx-dashboard/ ; sudo wget -q https://$cdnUrl/inx/inx-dashboard/v${latestShimmerInxDashboardVersion}/inx-dashboard_checksums_linux_$osArchitecture.txt )
+shimmerInxDashboardChecksum=$(sudo grep "inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-dashboard/inx-dashboard_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+echo $shimmerInxDashboardChecksum > /tmp/shimmer-inx-dashboard.checksum
+echo "-> Get remote checksum \"$shimmerInxDashboardChecksum\"" >> /tmp/shimmerInxDashboardInstaller.log
 
-        # Copy binary
-        if [ -f "/tmp/shimmer-inx-dashboard/inx-dashboard" ]; then
-            shimmerInxDashboardStatus="$(systemctl show -p ActiveState --value shimmer-inx-dashboard)"
-            if [ "$shimmerInxDashboardStatus" = "active" ]; then
-                echo "-> Stop Shimmer-Inx-Dashboard service" >> /tmp/shimmerInxDashboardInstaller.log
-                sudo systemctl stop shimmer-inx-dashboard > /dev/null 2>&1
-            fi
-            echo "-> Copy new binary to \"/usr/bin/shimmer-inx-dashboard\"" >> /tmp/shimmerInxDashboardInstaller.log
-            sudo cp -rf /tmp/shimmer-inx-dashboard/inx-dashboard /usr/bin/shimmer-inx-dashboard > /dev/null 2>&1
-            sudo chmod +x /usr/bin/shimmer-inx-dashboard > /dev/null 2>&1
-            newShimmerInxDashboardBinary=true
+# Unzip archive
+if [ "$shimmerInxDashboardDownloadChecksum" = "$shimmerInxDashboardChecksum" ] && [ ! -z "$shimmerInxDashboardDownloadChecksum" ] && [ ! -z "$shimmerInxDashboardChecksum" ]; then
+    echo "-> Unzip downloaded archive" >> /tmp/shimmerInxDashboardInstaller.log
+    ( cd /tmp/shimmer-inx-dashboard ; sudo tar -xzf /tmp/shimmer-inx-dashboard/inx-dashboard-v${latestShimmerInxDashboardVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+
+    # Copy binary
+    if [ -f "/tmp/shimmer-inx-dashboard/inx-dashboard" ]; then
+        shimmerInxDashboardStatus="$(systemctl show -p ActiveState --value shimmer-inx-dashboard)"
+        if [ "$shimmerInxDashboardStatus" = "active" ]; then
+            echo "-> Stop Shimmer-Inx-Dashboard service" >> /tmp/shimmerInxDashboardInstaller.log
+            sudo systemctl stop shimmer-inx-dashboard > /dev/null 2>&1
         fi
+        echo "-> Copy new binary to \"/usr/bin/shimmer-inx-dashboard\"" >> /tmp/shimmerInxDashboardInstaller.log
+        sudo cp -rf /tmp/shimmer-inx-dashboard/inx-dashboard /usr/bin/shimmer-inx-dashboard > /dev/null 2>&1
+        sudo chmod +x /usr/bin/shimmer-inx-dashboard > /dev/null 2>&1
+        newShimmerInxDashboardBinary=true
     fi
 fi
 

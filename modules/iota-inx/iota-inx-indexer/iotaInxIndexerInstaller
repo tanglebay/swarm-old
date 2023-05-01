@@ -36,45 +36,42 @@ fi
 
 ##############################################################################################################################################
 
-source $swarmModule/swarmAuth
-if [ "$swarmAuth" = "200" ]; then
-    # Create dir if not exist
-    echo "-> Create tmp folder" >> /tmp/iotaInxIndexerInstaller.log
-    sudo mkdir -p /tmp/iota-inx-indexer > /dev/null 2>&1
+# Create dir if not exist
+echo "-> Create tmp folder" >> /tmp/iotaInxIndexerInstaller.log
+sudo mkdir -p /tmp/iota-inx-indexer > /dev/null 2>&1
 
-    # Download latest inx-indexer
-    echo "-> Download archive for v${latestIotaInxIndexerVersion}" >> /tmp/iotaInxIndexerInstaller.log
-    ( cd /tmp/iota-inx-indexer/ ; sudo wget -q https://$cdnUrl/inx/inx-indexer/v${latestIotaInxIndexerVersion}/inx-indexer-v${latestIotaInxIndexerVersion}_linux_$osArchitecture.tar.gz )
-    if [ -f "/tmp/iota-inx-indexer/inx-indexer-v${latestIotaInxIndexerVersion}_linux_$osArchitecture.tar.gz" ]; then
-        iotaInxIndexerDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-indexer/inx-indexer-v${latestIotaInxIndexerVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-        echo "-> Gen local checksum: $iotaInxIndexerDownloadChecksum" >> /tmp/iotaInxIndexerInstaller.log
-    fi
+# Download latest inx-indexer
+echo "-> Download archive for v${latestIotaInxIndexerVersion}" >> /tmp/iotaInxIndexerInstaller.log
+( cd /tmp/iota-inx-indexer/ ; sudo wget -q https://$cdnUrl/inx/inx-indexer/v${latestIotaInxIndexerVersion}/inx-indexer-v${latestIotaInxIndexerVersion}_linux_$osArchitecture.tar.gz )
+if [ -f "/tmp/iota-inx-indexer/inx-indexer-v${latestIotaInxIndexerVersion}_linux_$osArchitecture.tar.gz" ]; then
+    iotaInxIndexerDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-indexer/inx-indexer-v${latestIotaInxIndexerVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+    echo "-> Gen local checksum: $iotaInxIndexerDownloadChecksum" >> /tmp/iotaInxIndexerInstaller.log
+fi
 
-    # Download checksum
-    echo "-> Downlaod remote checksum file" >> /tmp/iotaInxIndexerInstaller.log
-    ( cd /tmp/iota-inx-indexer/ ; sudo wget -q https://$cdnUrl/inx/inx-indexer/v${latestIotaInxIndexerVersion}/inx-indexer_checksums_linux_$osArchitecture.txt )
-    iotaInxIndexerChecksum=$(sudo grep "inx-indexer-v${latestIotaInxIndexerVersion}_linux_$osArchitecture.tar.gz" /tmp/iota-inx-indexer/inx-indexer_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
-    echo $iotaInxIndexerChecksum > /tmp/iota-inx-indexer.checksum
-    echo "-> Remote checksum: $iotaInxIndexerChecksum" >> /tmp/iotaInxIndexerInstaller.log
+# Download checksum
+echo "-> Downlaod remote checksum file" >> /tmp/iotaInxIndexerInstaller.log
+( cd /tmp/iota-inx-indexer/ ; sudo wget -q https://$cdnUrl/inx/inx-indexer/v${latestIotaInxIndexerVersion}/inx-indexer_checksums_linux_$osArchitecture.txt )
+iotaInxIndexerChecksum=$(sudo grep "inx-indexer-v${latestIotaInxIndexerVersion}_linux_$osArchitecture.tar.gz" /tmp/iota-inx-indexer/inx-indexer_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+echo $iotaInxIndexerChecksum > /tmp/iota-inx-indexer.checksum
+echo "-> Remote checksum: $iotaInxIndexerChecksum" >> /tmp/iotaInxIndexerInstaller.log
 
-    # Unzip archive
-    if [ "$iotaInxIndexerDownloadChecksum" = "$iotaInxIndexerChecksum" ] && [ ! -z "$iotaInxIndexerDownloadChecksum" ] && [ ! -z "$iotaInxIndexerChecksum" ]; then
-        echo "-> Unzip archive" >> /tmp/iotaInxIndexerInstaller.log
-        ( cd /tmp/iota-inx-indexer ; sudo tar -xzf /tmp/iota-inx-indexer/inx-indexer-v${latestIotaInxIndexerVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+# Unzip archive
+if [ "$iotaInxIndexerDownloadChecksum" = "$iotaInxIndexerChecksum" ] && [ ! -z "$iotaInxIndexerDownloadChecksum" ] && [ ! -z "$iotaInxIndexerChecksum" ]; then
+    echo "-> Unzip archive" >> /tmp/iotaInxIndexerInstaller.log
+    ( cd /tmp/iota-inx-indexer ; sudo tar -xzf /tmp/iota-inx-indexer/inx-indexer-v${latestIotaInxIndexerVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
-        # Copy binary
-        if [ -f "/tmp/iota-inx-indexer/inx-indexer" ]; then
-            iotaInxIndexerStatus="$(systemctl show -p ActiveState --value iota-inx-indexer)"
-            if [ "$iotaInxIndexerStatus" = "active" ]; then
-                echo "-> Stop service" >> /tmp/iotaInxIndexerInstaller.log
-                sudo systemctl stop iota-inx-indexer > /dev/null 2>&1
-            fi
-
-            echo "-> Copy new binary file" >> /tmp/iotaInxIndexerInstaller.log
-            sudo cp -rf /tmp/iota-inx-indexer/inx-indexer /usr/bin/iota-inx-indexer > /dev/null 2>&1
-            sudo chmod +x /usr/bin/iota-inx-indexer > /dev/null 2>&1
-            newIotaInxIndexerBinary=true
+    # Copy binary
+    if [ -f "/tmp/iota-inx-indexer/inx-indexer" ]; then
+        iotaInxIndexerStatus="$(systemctl show -p ActiveState --value iota-inx-indexer)"
+        if [ "$iotaInxIndexerStatus" = "active" ]; then
+            echo "-> Stop service" >> /tmp/iotaInxIndexerInstaller.log
+            sudo systemctl stop iota-inx-indexer > /dev/null 2>&1
         fi
+
+        echo "-> Copy new binary file" >> /tmp/iotaInxIndexerInstaller.log
+        sudo cp -rf /tmp/iota-inx-indexer/inx-indexer /usr/bin/iota-inx-indexer > /dev/null 2>&1
+        sudo chmod +x /usr/bin/iota-inx-indexer > /dev/null 2>&1
+        newIotaInxIndexerBinary=true
     fi
 fi
 

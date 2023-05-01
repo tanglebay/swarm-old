@@ -13,12 +13,6 @@ fi
 ( crontab -l | grep -v -F "$watchdogCronCmd" ) | crontab - > /dev/null 2>&1
 ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
 
-# Remove hornet apt source
-if [ -f "/etc/apt/sources.list.d/hornet.list" ] || [ -f "/etc/apt/sources.list.d/hornet.list.distUpgrade" ]; then
-    sudo rm -rf /etc/apt/sources.list.d/hornet* > /dev/null 2>&1
-    sudo apt-get -qq update > /dev/null 2>&1
-fi
-
 source $swarmModule/swarmUpdaterAppService
 
 for swarmApp in ${swarmApps[@]}
@@ -92,6 +86,10 @@ do
     unset swarmAppPrefix
 done
 unset swarmApp
+
+if [ -f "/usr/bin/goshimmer" ]; then
+    source $swarmModule/swarmGoshimmerRemoval
+fi
 
 source $proxyModule/proxyAutomaticDeployment
 
