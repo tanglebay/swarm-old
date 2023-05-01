@@ -46,48 +46,44 @@ fi
 
 ##############################################################################################################################################
 
-source $swarmModule/swarmAuth
-if [ "$swarmAuth" = "200" ]; then
-    # Create dir if not exist
-    echo "-> Create tmp folder" >> /tmp/shimmerHornetInstaller.log
-    sudo mkdir -p /tmp/shimmer-hornet > /dev/null 2>&1
+# Create dir if not exist
+echo "-> Create tmp folder" >> /tmp/shimmerHornetInstaller.log
+sudo mkdir -p /tmp/shimmer-hornet > /dev/null 2>&1
 
-    # Download latest shimmer-hornet
-    echo "-> Download archive for v${latestShimmerHornetVersion}" >> /tmp/shimmerHornetInstaller.log
-    ( cd /tmp/shimmer-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestShimmerHornetVersion}/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz )
-    if [ -f "/tmp/shimmer-hornet/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz" ]; then
-        shimmerHornetDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-hornet/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-        echo "-> Generate local checksum: $shimmerHornetDownloadChecksum" >> /tmp/shimmerHornetInstaller.log
-    fi
-
-    # Download checksum
-    echo "-> Download remote checksum file" >> /tmp/shimmerHornetInstaller.log
-    ( cd /tmp/shimmer-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestShimmerHornetVersion}/hornet_checksums_linux_$osArchitecture.txt )
-    shimmerHornetChecksum=$(sudo cat /tmp/shimmer-hornet/hornet_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
-    echo $shimmerHornetChecksum > /tmp/shimmer-hornet.checksum
-    echo "-> Remote checksum: $shimmerHornetChecksum" >> /tmp/shimmerHornetInstaller.log
-
-    # Unzip archive
-    if [ "$shimmerHornetDownloadChecksum" = "$shimmerHornetChecksum" ] && [ ! -z "$shimmerHornetDownloadChecksum" ] && [ ! -z "$shimmerHornetChecksum" ]; then
-        echo "-> Unzip archive" >> /tmp/shimmerHornetInstaller.log
-        ( cd /tmp/shimmer-hornet ; sudo tar -xzf /tmp/shimmer-hornet/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
-
-        # Copy binary
-        if [ -f "/tmp/shimmer-hornet/hornet" ]; then
-            shimmerHornetStatus="$(systemctl show -p ActiveState --value shimmer-hornet)"
-            if [ "$shimmerHornetStatus" = "active" ]; then
-                echo "-> Stop service" >> /tmp/shimmerHornetInstaller.log
-                sudo systemctl stop shimmer-hornet > /dev/null 2>&1
-            fi
-
-            echo "-> Copy new binary file" >> /tmp/shimmerHornetInstaller.log
-            sudo cp -rf /tmp/shimmer-hornet/hornet /usr/bin/shimmer-hornet > /dev/null 2>&1
-            sudo chmod +x /usr/bin/shimmer-hornet > /dev/null 2>&1
-            newShimmerHornetBinary=true
-        fi
-    fi
+# Download latest shimmer-hornet
+echo "-> Download archive for v${latestShimmerHornetVersion}" >> /tmp/shimmerHornetInstaller.log
+( cd /tmp/shimmer-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestShimmerHornetVersion}/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz )
+if [ -f "/tmp/shimmer-hornet/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz" ]; then
+    shimmerHornetDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-hornet/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+    echo "-> Generate local checksum: $shimmerHornetDownloadChecksum" >> /tmp/shimmerHornetInstaller.log
 fi
 
+# Download checksum
+echo "-> Download remote checksum file" >> /tmp/shimmerHornetInstaller.log
+( cd /tmp/shimmer-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestShimmerHornetVersion}/hornet_checksums_linux_$osArchitecture.txt )
+shimmerHornetChecksum=$(sudo cat /tmp/shimmer-hornet/hornet_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+echo $shimmerHornetChecksum > /tmp/shimmer-hornet.checksum
+echo "-> Remote checksum: $shimmerHornetChecksum" >> /tmp/shimmerHornetInstaller.log
+
+# Unzip archive
+if [ "$shimmerHornetDownloadChecksum" = "$shimmerHornetChecksum" ] && [ ! -z "$shimmerHornetDownloadChecksum" ] && [ ! -z "$shimmerHornetChecksum" ]; then
+    echo "-> Unzip archive" >> /tmp/shimmerHornetInstaller.log
+    ( cd /tmp/shimmer-hornet ; sudo tar -xzf /tmp/shimmer-hornet/hornet-v${latestShimmerHornetVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+
+    # Copy binary
+    if [ -f "/tmp/shimmer-hornet/hornet" ]; then
+        shimmerHornetStatus="$(systemctl show -p ActiveState --value shimmer-hornet)"
+        if [ "$shimmerHornetStatus" = "active" ]; then
+            echo "-> Stop service" >> /tmp/shimmerHornetInstaller.log
+            sudo systemctl stop shimmer-hornet > /dev/null 2>&1
+        fi
+
+        echo "-> Copy new binary file" >> /tmp/shimmerHornetInstaller.log
+        sudo cp -rf /tmp/shimmer-hornet/hornet /usr/bin/shimmer-hornet > /dev/null 2>&1
+        sudo chmod +x /usr/bin/shimmer-hornet > /dev/null 2>&1
+        newShimmerHornetBinary=true
+    fi
+fi
 
 ##############################################################################################################################################
 

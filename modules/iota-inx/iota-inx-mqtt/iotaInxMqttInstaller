@@ -36,45 +36,42 @@ fi
 
 ##############################################################################################################################################
 
-source $swarmModule/swarmAuth
-if [ "$swarmAuth" = "200" ]; then
-    # Create dir if not exist
-    echo "-> Create tmp folder" >> /tmp/iotaInxMqttInstaller.log
-    sudo mkdir -p /tmp/iota-inx-mqtt > /dev/null 2>&1
+# Create dir if not exist
+echo "-> Create tmp folder" >> /tmp/iotaInxMqttInstaller.log
+sudo mkdir -p /tmp/iota-inx-mqtt > /dev/null 2>&1
 
-    # Download latest inx-mqtt
-    echo "-> Download archive for v${latestIotaInxMqttVersion}" >> /tmp/iotaInxMqttInstaller.log
-    ( cd /tmp/iota-inx-mqtt/ ; sudo wget -q https://$cdnUrl/inx/inx-mqtt/v${latestIotaInxMqttVersion}/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz )
-    if [ -f "/tmp/iota-inx-mqtt/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz" ]; then
-        iotaInxMqttDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-mqtt/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-        echo "-> Gen checksum of archive: $iotaInxMqttDownloadChecksum" >> /tmp/iotaInxMqttInstaller.log
-    fi
+# Download latest inx-mqtt
+echo "-> Download archive for v${latestIotaInxMqttVersion}" >> /tmp/iotaInxMqttInstaller.log
+( cd /tmp/iota-inx-mqtt/ ; sudo wget -q https://$cdnUrl/inx/inx-mqtt/v${latestIotaInxMqttVersion}/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz )
+if [ -f "/tmp/iota-inx-mqtt/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz" ]; then
+    iotaInxMqttDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-mqtt/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+    echo "-> Gen checksum of archive: $iotaInxMqttDownloadChecksum" >> /tmp/iotaInxMqttInstaller.log
+fi
 
-    # Download checksum
-    echo "-> Download remote checksum file" >> /tmp/iotaInxMqttInstaller.log
-    ( cd /tmp/iota-inx-mqtt/ ; sudo wget -q https://$cdnUrl/inx/inx-mqtt/v${latestIotaInxMqttVersion}/inx-mqtt_checksums_linux_$osArchitecture.txt )
-    iotaInxMqttChecksum=$(sudo grep "inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz" /tmp/iota-inx-mqtt/inx-mqtt_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
-    echo $iotaInxMqttChecksum > /tmp/iota-inx-mqtt.checksum
-    echo "-> Remote checksum: $iotaInxMqttChecksum" >> /tmp/iotaInxMqttInstaller.log
+# Download checksum
+echo "-> Download remote checksum file" >> /tmp/iotaInxMqttInstaller.log
+( cd /tmp/iota-inx-mqtt/ ; sudo wget -q https://$cdnUrl/inx/inx-mqtt/v${latestIotaInxMqttVersion}/inx-mqtt_checksums_linux_$osArchitecture.txt )
+iotaInxMqttChecksum=$(sudo grep "inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz" /tmp/iota-inx-mqtt/inx-mqtt_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+echo $iotaInxMqttChecksum > /tmp/iota-inx-mqtt.checksum
+echo "-> Remote checksum: $iotaInxMqttChecksum" >> /tmp/iotaInxMqttInstaller.log
 
-    # Unzip archive
-    if [ "$iotaInxMqttDownloadChecksum" = "$iotaInxMqttChecksum" ] && [ ! -z "$iotaInxMqttDownloadChecksum" ] && [ ! -z "$iotaInxMqttChecksum" ]; then
-        echo "-> Unzip archive" >> /tmp/iotaInxMqttInstaller.log
-        ( cd /tmp/iota-inx-mqtt ; sudo tar -xzf /tmp/iota-inx-mqtt/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+# Unzip archive
+if [ "$iotaInxMqttDownloadChecksum" = "$iotaInxMqttChecksum" ] && [ ! -z "$iotaInxMqttDownloadChecksum" ] && [ ! -z "$iotaInxMqttChecksum" ]; then
+    echo "-> Unzip archive" >> /tmp/iotaInxMqttInstaller.log
+    ( cd /tmp/iota-inx-mqtt ; sudo tar -xzf /tmp/iota-inx-mqtt/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
-        # Copy binary
-        if [ -f "/tmp/iota-inx-mqtt/inx-mqtt" ]; then
-            iotaInxMqttStatus="$(systemctl show -p ActiveState --value iota-inx-mqtt)"
-            if [ "$iotaInxMqttStatus" = "active" ]; then
-                echo "-> Stop service" >> /tmp/iotaInxMqttInstaller.log
-                sudo systemctl stop iota-inx-mqtt > /dev/null 2>&1
-            fi
-
-            echo "-> Copy new binary file" >> /tmp/iotaInxMqttInstaller.log
-            sudo cp -rf /tmp/iota-inx-mqtt/inx-mqtt /usr/bin/iota-inx-mqtt > /dev/null 2>&1
-            sudo chmod +x /usr/bin/iota-inx-mqtt > /dev/null 2>&1
-            newIotaInxMqttBinary=true
+    # Copy binary
+    if [ -f "/tmp/iota-inx-mqtt/inx-mqtt" ]; then
+        iotaInxMqttStatus="$(systemctl show -p ActiveState --value iota-inx-mqtt)"
+        if [ "$iotaInxMqttStatus" = "active" ]; then
+            echo "-> Stop service" >> /tmp/iotaInxMqttInstaller.log
+            sudo systemctl stop iota-inx-mqtt > /dev/null 2>&1
         fi
+
+        echo "-> Copy new binary file" >> /tmp/iotaInxMqttInstaller.log
+        sudo cp -rf /tmp/iota-inx-mqtt/inx-mqtt /usr/bin/iota-inx-mqtt > /dev/null 2>&1
+        sudo chmod +x /usr/bin/iota-inx-mqtt > /dev/null 2>&1
+        newIotaInxMqttBinary=true
     fi
 fi
 

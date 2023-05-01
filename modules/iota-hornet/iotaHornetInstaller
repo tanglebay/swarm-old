@@ -61,37 +61,34 @@ if [[ $latestIotaHornetVersion =~ ^2.* ]]; then
 
     ##############################################################################################################################################
 
-    source $swarmModule/swarmAuth
-    if [ "$swarmAuth" = "200" ]; then
-        # Create dir if not exist
-        sudo mkdir -p /tmp/iota-hornet > /dev/null 2>&1
+    # Create dir if not exist
+    sudo mkdir -p /tmp/iota-hornet > /dev/null 2>&1
 
-        # Download latest iota-hornet
-        ( cd /tmp/iota-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestIotaHornetVersion}/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz )
-        if [ -f "/tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz" ]; then
-            iotaHornetDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-        fi
+    # Download latest iota-hornet
+    ( cd /tmp/iota-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestIotaHornetVersion}/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz )
+    if [ -f "/tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz" ]; then
+        iotaHornetDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+    fi
 
-        # Download checksum
-        ( cd /tmp/iota-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestIotaHornetVersion}/hornet_checksums_linux_$osArchitecture.txt )
-        iotaHornetChecksum=$(sudo cat /tmp/iota-hornet/hornet_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
-        echo $iotaHornetChecksum > /tmp/iota-hornet.checksum
+    # Download checksum
+    ( cd /tmp/iota-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestIotaHornetVersion}/hornet_checksums_linux_$osArchitecture.txt )
+    iotaHornetChecksum=$(sudo cat /tmp/iota-hornet/hornet_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+    echo $iotaHornetChecksum > /tmp/iota-hornet.checksum
 
-        # Unzip archive
-        if [ "$iotaHornetDownloadChecksum" = "$iotaHornetChecksum" ] && [ ! -z "$iotaHornetDownloadChecksum" ] && [ ! -z "$iotaHornetChecksum" ]; then
-            ( cd /tmp/iota-hornet ; sudo tar -xzf /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+    # Unzip archive
+    if [ "$iotaHornetDownloadChecksum" = "$iotaHornetChecksum" ] && [ ! -z "$iotaHornetDownloadChecksum" ] && [ ! -z "$iotaHornetChecksum" ]; then
+        ( cd /tmp/iota-hornet ; sudo tar -xzf /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
-            # Copy binary
-            if [ -f "/tmp/iota-hornet/hornet" ]; then
-                iotaHornetStatus="$(systemctl show -p ActiveState --value iota-hornet)"
-                if [ "$iotaHornetStatus" = "active" ]; then
-                    sudo systemctl stop iota-hornet > /dev/null 2>&1
-                fi
-
-                sudo cp -rf /tmp/iota-hornet/hornet /usr/bin/iota-hornet > /dev/null 2>&1
-                sudo chmod +x /usr/bin/iota-hornet > /dev/null 2>&1
-                newIotaHornetBinary=true
+        # Copy binary
+        if [ -f "/tmp/iota-hornet/hornet" ]; then
+            iotaHornetStatus="$(systemctl show -p ActiveState --value iota-hornet)"
+            if [ "$iotaHornetStatus" = "active" ]; then
+                sudo systemctl stop iota-hornet > /dev/null 2>&1
             fi
+
+            sudo cp -rf /tmp/iota-hornet/hornet /usr/bin/iota-hornet > /dev/null 2>&1
+            sudo chmod +x /usr/bin/iota-hornet > /dev/null 2>&1
+            newIotaHornetBinary=true
         fi
     fi
 

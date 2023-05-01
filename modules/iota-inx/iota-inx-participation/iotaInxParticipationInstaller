@@ -36,45 +36,42 @@ fi
 
 ##############################################################################################################################################
 
-source $swarmModule/swarmAuth
-if [ "$swarmAuth" = "200" ]; then
-    # Create dir if not exist
-    echo "-> Create tmp folder" >> /tmp/iotaInxParticipationInstaller.log
-    sudo mkdir -p /tmp/iota-inx-participation > /dev/null 2>&1
+# Create dir if not exist
+echo "-> Create tmp folder" >> /tmp/iotaInxParticipationInstaller.log
+sudo mkdir -p /tmp/iota-inx-participation > /dev/null 2>&1
 
-    # Download latest inx-participation
-    echo "-> Download archive v${LatestIotaInxParticipationVersion}" >> /tmp/iotaInxParticipationInstaller.log
-    ( cd /tmp/iota-inx-participation/ ; sudo wget -q https://$cdnUrl/inx/inx-participation/v${latestIotaInxParticipationVersion}/inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz )
-    if [ -f "/tmp/iota-inx-participation/inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz" ]; then
-        iotaInxParticipationDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-participation/inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-        echo "-> Generate local checksum from archive: $iotaInxParticipationDownloadChecksum" >> /tmp/iotaInxParticipationInstaller.log
-    fi
+# Download latest inx-participation
+echo "-> Download archive v${LatestIotaInxParticipationVersion}" >> /tmp/iotaInxParticipationInstaller.log
+( cd /tmp/iota-inx-participation/ ; sudo wget -q https://$cdnUrl/inx/inx-participation/v${latestIotaInxParticipationVersion}/inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz )
+if [ -f "/tmp/iota-inx-participation/inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz" ]; then
+    iotaInxParticipationDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-participation/inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+    echo "-> Generate local checksum from archive: $iotaInxParticipationDownloadChecksum" >> /tmp/iotaInxParticipationInstaller.log
+fi
 
-    # Download checksum
-    echo "-> Download remote checksum file" >> /tmp/iotaInxParticipationInstaller.log
-    ( cd /tmp/iota-inx-participation/ ; sudo wget -q https://$cdnUrl/inx/inx-participation/v${latestIotaInxParticipationVersion}/inx-participation_checksums_linux_$osArchitecture.txt )
-    iotaInxParticipationChecksum=$(sudo grep "inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz" /tmp/iota-inx-participation/inx-participation_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
-    echo $iotaInxParticipationChecksum > /tmp/iota-inx-participation.checksum
-    echo "-> Remote checksum: $iotaInxParticipationChecksum" >> /tmp/iotaInxParticipationInstaller.log
+# Download checksum
+echo "-> Download remote checksum file" >> /tmp/iotaInxParticipationInstaller.log
+( cd /tmp/iota-inx-participation/ ; sudo wget -q https://$cdnUrl/inx/inx-participation/v${latestIotaInxParticipationVersion}/inx-participation_checksums_linux_$osArchitecture.txt )
+iotaInxParticipationChecksum=$(sudo grep "inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz" /tmp/iota-inx-participation/inx-participation_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+echo $iotaInxParticipationChecksum > /tmp/iota-inx-participation.checksum
+echo "-> Remote checksum: $iotaInxParticipationChecksum" >> /tmp/iotaInxParticipationInstaller.log
 
-    # Unzip archive
-    if [ "$iotaInxParticipationDownloadChecksum" = "$iotaInxParticipationChecksum" ] && [ ! -z "$iotaInxParticipationDownloadChecksum" ] && [ ! -z "$iotaInxParticipationChecksum" ]; then
-        echo "-> Unzip archive" >> /tmp/iotaInxParticipationInstaller.log
-        ( cd /tmp/iota-inx-participation ; sudo tar -xzf /tmp/iota-inx-participation/inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+# Unzip archive
+if [ "$iotaInxParticipationDownloadChecksum" = "$iotaInxParticipationChecksum" ] && [ ! -z "$iotaInxParticipationDownloadChecksum" ] && [ ! -z "$iotaInxParticipationChecksum" ]; then
+    echo "-> Unzip archive" >> /tmp/iotaInxParticipationInstaller.log
+    ( cd /tmp/iota-inx-participation ; sudo tar -xzf /tmp/iota-inx-participation/inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
-        # Copy binary
-        if [ -f "/tmp/iota-inx-participation/inx-participation" ]; then
-            iotaInxParticipationStatus="$(systemctl show -p ActiveState --value iota-inx-participation)"
-            if [ "$iotaInxParticipationStatus" = "active" ]; then
-                echo "-> Stop service" >> /tmp/iotaInxParticipationInstaller.log
-                sudo systemctl stop iota-inx-participation > /dev/null 2>&1
-            fi
-
-            echo "-> Copy new binary file" >> /tmp/iotaInxParticipationInstaller.log
-            sudo cp -rf /tmp/iota-inx-participation/inx-participation /usr/bin/iota-inx-participation > /dev/null 2>&1
-            sudo chmod +x /usr/bin/iota-inx-participation > /dev/null 2>&1
-            newIotaInxParticipationBinary=true
+    # Copy binary
+    if [ -f "/tmp/iota-inx-participation/inx-participation" ]; then
+        iotaInxParticipationStatus="$(systemctl show -p ActiveState --value iota-inx-participation)"
+        if [ "$iotaInxParticipationStatus" = "active" ]; then
+            echo "-> Stop service" >> /tmp/iotaInxParticipationInstaller.log
+            sudo systemctl stop iota-inx-participation > /dev/null 2>&1
         fi
+
+        echo "-> Copy new binary file" >> /tmp/iotaInxParticipationInstaller.log
+        sudo cp -rf /tmp/iota-inx-participation/inx-participation /usr/bin/iota-inx-participation > /dev/null 2>&1
+        sudo chmod +x /usr/bin/iota-inx-participation > /dev/null 2>&1
+        newIotaInxParticipationBinary=true
     fi
 fi
 
