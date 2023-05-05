@@ -1,0 +1,115 @@
+#!/bin/bash
+
+echo "SHIMMER INX INSTALLER" > /tmp/shimmerInxIrcMetadataInstaller.log
+
+# General
+if ! id inx >/dev/null 2>&1; then
+    useradd --no-create-home --system inx >/dev/null
+    echo "-> Added INX user" >> /tmp/shimmerInxIrcMetadataInstaller.log
+fi
+
+if [ ! -d "$shimmerInxIrcMetadataHome" ]; then
+    sudo mkdir -p $shimmerInxIrcMetadataHome > /dev/null 2>&1
+    sudo chown -R inx:inx $shimmerInxIrcMetadataHome > /dev/null 2>&1
+    echo "-> Created INX-IRC-Metadata folder" >> /tmp/shimmerInxIrcMetadataInstaller.log
+fi
+
+# Install GO
+if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
+    sudo snap install go --classic > /dev/null 2>&1
+    echo "-> Installed go via snap" >> /tmp/shimmerInxIrcMetadataInstaller.log
+fi
+
+# Create Service
+if [ ! -f "/lib/systemd/system/shimmer-inx-irc-metadata.service" ]; then
+    sudo cp -rf $swarmTemplates/app-service/shimmer-inx-irc-metadata.service /lib/systemd/system/shimmer-inx-irc-metadata.service > /dev/null 2>&1
+    if [ ! -f "/etc/default/shimmer-inx-irc-metadata" ]; then
+        echo "OPTIONS=\"--config config.json\"" > /etc/default/shimmer-inx-irc-metadata
+    fi
+    if [ ! -f "/etc/systemd/system/multi-user.target.wants/shimmer-inx-irc-metadata.service" ]; then
+        sudo systemctl enable shimmer-inx-irc-metadata > /dev/null 2>&1
+    fi
+    sudo systemctl daemon-reload > /dev/null 2>&1
+    echo "-> Register service for INX-IRC-Metadata" >> /tmp/shimmerInxIrcMetadataInstaller.log
+fi
+
+##############################################################################################################################################
+
+# Create dir if not exist
+sudo mkdir -p /tmp/shimmer-inx-irc-metadata > /dev/null 2>&1
+echo "-> Created tmp folder for INX-IRC-Metadata" >> /tmp/shimmerInxIrcMetadataInstaller.log
+
+# Download latest inx-irc-metadata
+( cd /tmp/shimmer-inx-irc-metadata/ ; sudo wget -q https://$cdnUrl/inx/inx-irc-metadata/v${latestShimmerInxIrcMetadataVersion}/inx-irc-metadata-v${latestShimmerInxIrcMetadataVersion}_linux_$osArchitecture.tar.gz )
+echo "-> Downloading \"inx-irc-metadata-v${latestShimmerInxIrcMetadataVersion}_linux_$osArchitecture.tar.gz\"" >> /tmp/shimmerInxIrcMetadataInstaller.log
+if [ -f "/tmp/shimmer-inx-irc-metadata/inx-irc-metadata-v${latestShimmerInxIrcMetadataVersion}_linux_$osArchitecture.tar.gz" ]; then
+    shimmerInxIrcMetadataDownloadChecksum=$(sudo shasum -a 512 /tmp/shimmer-inx-irc-metadata/inx-irc-metadata-v${latestShimmerInxIrcMetadataVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+    echo "-> Calculated SHA512 hash of the downloaded tar.gz file: $shimmerInxIrcMetadataDownloadChecksum" >> /tmp/shimmerInxIrcMetadataInstaller.log
+
+    # Download checksum
+    ( cd /tmp/shimmer-inx-irc-metadata/ ; sudo wget -q https://$cdnUrl/inx/inx-irc-metadata/v${latestShimmerInxIrcMetadataVersion}/inx-irc-metadata_checksums_linux_$osArchitecture.txt )
+    echo "-> Downloading remote checksum of the tar.gz file" >> /tmp/shimmerInxIrcMetadataInstaller.log
+    if [ -f "/tmp/shimmer-inx-irc-metadata/inx-irc-metadata_checksums_linux_$osArchitecture.txt" ]; then
+        shimmerInxIrcMetadataChecksum=$(sudo grep "inx-irc-metadata-v${latestShimmerInxIrcMetadataVersion}_linux_$osArchitecture.tar.gz" /tmp/shimmer-inx-irc-metadata/inx-irc-metadata_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+        echo $shimmerInxIrcMetadataChecksum > /tmp/shimmer-inx-irc-metadata.checksum
+        echo "-> Remote SHA512 hash of the downloaded tar.gz file: $shimmerInxIrcMetadataChecksum" >> /tmp/shimmerInxIrcMetadataInstaller.log
+
+        # Unzip archive
+        if [ "$shimmerInxIrcMetadataDownloadChecksum" = "$shimmerInxIrcMetadataChecksum" ] && [ ! -z "$shimmerInxIrcMetadataDownloadChecksum" ] && [ ! -z "$shimmerInxIrcMetadataChecksum" ]; then
+            ( cd /tmp/shimmer-inx-irc-metadata ; sudo tar -xzf /tmp/shimmer-inx-irc-metadata/inx-irc-metadata-v${latestShimmerInxIrcMetadataVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+            echo "-> Unzip downloaded tar.gz file" >> /tmp/shimmerInxIrcMetadataInstaller.log
+            # Copy binary
+            if [ -f "/tmp/shimmer-inx-irc-metadata/inx-irc-metadata" ]; then
+                shimmerInxIrcMetadataStatus="$(systemctl show -p ActiveState --value shimmer-inx-irc-metadata)"
+                if [ "$shimmerInxIrcMetadataStatus" = "active" ]; then
+                    sudo systemctl stop shimmer-inx-irc-metadata > /dev/null 2>&1
+                    echo "-> Stopped running service of INX-IRC-Metadata" >> /tmp/shimmerInxIrcMetadataInstaller.log
+                fi
+
+                sudo cp -rf /tmp/shimmer-inx-irc-metadata/inx-irc-metadata /usr/bin/shimmer-inx-irc-metadata > /dev/null 2>&1
+                sudo chmod +x /usr/bin/shimmer-inx-irc-metadata > /dev/null 2>&1
+                newShimmerInxIrcMetadataBinary=true
+                echo "-> Copied new files to target folder and set permissions" >> /tmp/shimmerInxIrcMetadataInstaller.log
+            fi
+        fi
+    else
+        echo "-> ERROR - Failed downloading \"inx-irc-metadata_checksums_linux_$osArchitecture.txt\"" >> /tmp/shimmerInxIrcMetadataInstaller.log
+    fi
+else
+    echo "-> ERROR - Failed downloading \"inx-irc-metadata-v${latestShimmerInxIrcMetadataVersion}_linux_$osArchitecture.tar.gz\"" >> /tmp/shimmerInxIrcMetadataInstaller.log
+fi
+
+##############################################################################################################################################
+
+if [ "$newShimmerInxIrcMetadataBinary" = "true" ]; then
+    if [ -f "/tmp/shimmer-inx-irc-metadata/config_defaults.json" ]; then
+        sudo cp -rf /tmp/shimmer-inx-irc-metadata/config_defaults.json /var/lib/shimmer-inx-irc-metadata/config.json > /dev/null 2>&1
+        sudo chmod 644 /var/lib/shimmer-inx-irc-metadata/*.json > /dev/null 2>&1
+        newShimmerInxIrcMetadataConfig=true
+    else
+        if [ -f "/tmp/inx-irc-metadata/config.json" ]; then
+            sudo cp -rf /tmp/shimmer-inx-irc-metadata/config.json /var/lib/shimmer-inx-irc-metadata/config.json > /dev/null 2>&1
+            sudo chmod 644 /var/lib/shimmer-inx-irc-metadata/*.json > /dev/null 2>&1
+            newShimmerInxIrcMetadataConfig=true
+        fi
+    fi
+    echo "-> Copied new config file" >> /tmp/shimmerInxIrcMetadataInstaller.log
+fi
+
+##############################################################################################################################################
+
+if [ "$newShimmerInxIrcMetadataConfig" = "true" ]; then
+    # Run installer modules
+    sudo chown -R inx:inx $shimmerInxIrcMetadataHome > /dev/null 2>&1
+    sudo chmod 644 $shimmerInxIrcMetadataHome/*.json > /dev/null 2>&1
+
+    restartShimmerInxIrcMetadata=true
+    shimmerInxIrcMetadataUpdated=true
+    echo "-> Installation of INX-IRC-Metadata finished" >> /tmp/shimmerInxIrcMetadataInstaller.log
+fi
+
+# Remove temporary files
+sudo rm -rf /tmp/shimmer-inx-irc-metadata > /dev/null 2>&1
+echo "-> Remove tmp folder of INX-IRC-Metadata" >> /tmp/shimmerInxIrcMetadataInstaller.log
+
+unset newShimmerInxIrcMetadataBinary newShimmerInxIrcMetadataConfig shimmerInxIrcMetadataDownloadChecksum

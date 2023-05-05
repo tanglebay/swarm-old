@@ -1,0 +1,30 @@
+#!/bin/bash
+if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
+
+    source $swarmConfigs/iota-inx-irc-metadata.cfg
+    source $swarmConfigs/latest-versions.cfg
+
+    iotaInxIrcMetadataStatus=$(systemctl show -p ActiveState --value iota-inx-irc-metadata)
+
+    iotaInxIrcMetadataVersion=$(/usr/bin/iota-inx-irc-metadata -v | awk '{ print $2 }')
+    if [ -z "$iotaInxIrcMetadataVersion" ]; then
+        iotaInxIrcMetadataVersion="N/A"
+    else
+        if [ "$iotaInxIrcMetadataVersion" != "$latestIotaInxIrcMetadataVersion" ] && [ ! -z "$latestIotaInxIrcMetadataVersion" ]; then
+            iotaInxIrcMetadataVersion="$iotaInxIrcMetadataVersion (new version \"v$latestIotaInxIrcMetadataVersion\" available!)"
+        fi
+    fi
+
+    if [ "$iotaInxIrcMetadataUpdateCheck" = "true" ]; then
+        iotaInxIrcMetadataUpdateCheckStatus="✓"
+    else
+        iotaInxIrcMetadataUpdateCheckStatus="X"
+    fi
+
+
+    # OUTPUT
+    whiptail --title "INX-IRC-Metadata [IOTA] Info" --msgbox "INX-IRC-Metadata: $iotaInxIrcMetadataStatus\nVersion: v$iotaInxIrcMetadataVersion\nUpdate Check: $iotaInxIrcMetadataUpdateCheckStatus" 24 65
+else
+    # OUTPUT
+    whiptail --title "INX-IRC-Metadata [IOTA] Info" --msgbox "INX-IRC-Metadata not installed!" 8 65
+fi

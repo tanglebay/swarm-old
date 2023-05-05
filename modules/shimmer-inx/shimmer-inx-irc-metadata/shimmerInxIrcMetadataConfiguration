@@ -1,0 +1,64 @@
+#!/bin/bash
+while [ $exitCode -lt 1 ]; do
+    clear
+    source $swarmConfigs/shimmer-inx-irc-metadata.cfg
+    if [ "$shimmerInxIrcMetadataUpdateCheck" = "true" ]; then
+        menuShimmerInxIrcMetadataUpdateCheck="disable"
+    else
+        menuShimmerInxIrcMetadataUpdateCheck="enable"
+    fi
+    source $shimmerInxIrcMetadataModule/shimmerInxIrcMetadataConfigs
+    CHOICE=$(
+        whiptail --title "INX-IRC-METADATA [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
+        "" "" \
+        "1)" "[${menuShimmerInxIrcMetadataUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+        if [ "$restartShimmerInxIrcMetadata" = "true" ] && [ -f "/usr/bin/shimmer-inx-irc-metadata" ]; then
+            if (whiptail --title "INX-IRC-METADATA [SHIMMER] Menu" --yesno "Would you like to apply the changes and restart [Shimmer] INX-IRC-METADATA?" 8 65); then
+                if [ ! -f "/tmp/shimmer-inx-irc-metadata.lock" ]; then
+                    sudo touch /tmp/shimmer-inx-irc-metadata.lock > /dev/null 2>&1
+                fi
+                {
+                    echo 0
+                    echo 33
+                    source $shimmerInxIrcMetadataModule/shimmerInxIrcMetadataParser
+                    echo 50
+                    sudo systemctl restart shimmer-inx-irc-metadata > /dev/null 2>&1
+                    sleep 0.25
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while the changes are applied and [Shimmer] INX-IRC-Metadata is restarted..." 8 65 0
+                unset restartShimmerInxIrcMetadata
+                if [ -f "/tmp/shimmer-inx-irc-metadata.lock" ]; then
+                    sudo rm -rf /tmp/shimmer-inx-irc-metadata.lock > /dev/null 2>&1
+                fi
+            fi
+        fi
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $swarmConfigs/shimmer-inx-irc-metadata.cfg
+            if [ "$shimmerInxIrcMetadataUpdateCheck" = "true" ]; then
+                shimmerInxIrcMetadataUpdateCheckStatus="enabled"
+            else
+                shimmerInxIrcMetadataUpdateCheckStatus="disabled"
+            fi
+            if (whiptail --title "INX-IRC-Metadata [SHIMMER] Update Check" --yesno "Would you like to \"$shimmerInxIrcMetadataUpdateCheckStatus\" [Shimmer] INX-IRC-Metadata update check?" 8 65); then
+                if [ "$shimmerInxIrcMetadataUpdateCheck" = "true" ]; then
+                    shimmerInxIrcMetadataUpdateCheck=false
+                else
+                    shimmerInxIrcMetadataUpdateCheck=true
+                fi
+                source $shimmerInxIrcMetadataConfigParsers/shimmerInxIrcMetadataUpdateCheck
+                sudo sed -i 's~^shimmerInxIrcMetadataUpdateCheck=.*~shimmerInxIrcMetadataUpdateCheck='$shimmerInxIrcMetadataUpdateCheck'~g' $swarmConfigs/shimmer-inx-irc-metadata.cfg
+            fi
+        ;;
+    esac
+done
+sudo chown -R inx:inx $shimmerInxIrcMetadataHome/*.json
+exitCode=0

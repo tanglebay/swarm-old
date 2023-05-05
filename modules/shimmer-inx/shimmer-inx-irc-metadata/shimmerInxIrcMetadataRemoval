@@ -1,0 +1,28 @@
+#!/bin/bash
+
+source $swarmConfigs/shimmer-inx-irc-metadata.cfg
+
+if [ "$killall" = "true" ]; then
+    sudo killall -s SIGKILL shimmer-inx-irc-metadata > /dev/null 2>&1
+else
+    sudo systemctl stop shimmer-inx-irc-metadata > /dev/null 2>&1
+fi
+
+sudo systemctl disable shimmer-inx-irc-metadata > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/shimmer-inx-irc-metadata /var/lib/shimmer-inx-irc-metadata /lib/systemd/system/shimmer-inx-irc-metadata.service /etc/default/shimmer-inx-irc-metadata > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+getInxInstallations=$(ls /usr/bin/ | grep -E 'inx-dashboard|inx-indexer|inx-mqtt|inx-participation|inx-poi|inx-irc-metadata')
+if [ -z "$getInxInstallations" ]; then
+    if id inx >/dev/null 2>&1; then
+        sudo deluser inx >/dev/null
+    fi
+fi
+
+if [ -z "$getInxInstallations" ] && [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/shimmer-hornet" ] && [ ! -f "/usr/bin/goshimmer" ]; then
+    sudo snap remove go > /dev/null 2>&1
+fi
+
+unset getInxInstallations

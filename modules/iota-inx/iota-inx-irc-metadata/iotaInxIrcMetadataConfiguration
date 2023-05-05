@@ -1,0 +1,64 @@
+#!/bin/bash
+while [ $exitCode -lt 1 ]; do
+    clear
+    source $swarmConfigs/iota-inx-irc-metadata.cfg
+    if [ "$iotaInxIrcMetadataUpdateCheck" = "true" ]; then
+        menuIotaInxIrcMetadataUpdateCheck="disable"
+    else
+        menuIotaInxIrcMetadataUpdateCheck="enable"
+    fi
+    source $iotaInxIrcMetadataModule/iotaInxIrcMetadataConfigs
+    CHOICE=$(
+        whiptail --title "INX-IRC-Metadata [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
+        "" "" \
+        "1)" "[${menuIotaInxIrcMetadataUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
+    )
+
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+        if [ "$restartIotaInxIrcMetadata" = "true" ] && [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
+            if (whiptail --title "INX-IRC-Metadata [IOTA] Menu" --yesno "Would you like to apply the changes and restart [Iota] INX-IRC-Metadata?" 8 65); then
+                if [ ! -f "/tmp/iota-inx-irc-metadata.lock" ]; then
+                    sudo touch /tmp/iota-inx-irc-metadata.lock > /dev/null 2>&1
+                fi
+                {
+                    echo 0
+                    echo 33
+                    source $iotaInxIrcMetadataModule/iotaInxIrcMetadataParser
+                    echo 50
+                    sudo systemctl restart iota-inx-irc-metadata > /dev/null 2>&1
+                    sleep 0.25
+                    echo 100
+                    sleep 0.25
+                } | whiptail --gauge "Please wait while the changes are applied and [Iota] INX-IRC-Metadata is restarted..." 8 65 0
+                unset restartIotaInxIrcMetadata
+                if [ -f "/tmp/iota-inx-irc-metadata.lock" ]; then
+                    sudo rm -rf /tmp/iota-inx-irc-metadata.lock > /dev/null 2>&1
+                fi
+            fi
+        fi
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $swarmConfigs/iota-inx-irc-metadata.cfg
+            if [ "$iotaInxIrcMetadataUpdateCheck" = "true" ]; then
+                iotaInxIrcMetadataUpdateCheckStatus="enabled"
+            else
+                iotaInxIrcMetadataUpdateCheckStatus="disabled"
+            fi
+            if (whiptail --title "INX-IRC-Metadata [IOTA] Update Check" --yesno "Would you like to \"$iotaInxIrcMetadataUpdateCheckStatus\" [Iota] INX-IRC-Metadata update check?" 8 65); then
+                if [ "$iotaInxIrcMetadataUpdateCheck" = "true" ]; then
+                    iotaInxIrcMetadataUpdateCheck=false
+                else
+                    iotaInxIrcMetadataUpdateCheck=true
+                fi
+                source $iotaInxIrcMetadataConfigParsers/iotaInxIrcMetadataUpdateCheck
+                sudo sed -i 's~^iotaInxIrcMetadataUpdateCheck=.*~iotaInxIrcMetadataUpdateCheck='$iotaInxIrcMetadataUpdateCheck'~g' $swarmConfigs/iota-inx-irc-metadata.cfg
+            fi
+        ;;
+    esac
+done
+sudo chown -R inx:inx $iotaInxIrcMetadataHome/*.json
+exitCode=0

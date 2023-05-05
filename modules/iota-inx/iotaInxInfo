@@ -26,6 +26,9 @@ if [ "$iotaInxPluginsInstalled" = "true" ]; then
     if [ -f "/usr/bin/iota-inx-poi" ]; then
         iotaInxPoiStatus="$(systemctl show -p ActiveState --value iota-inx-poi)"
     fi
+    if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
+        iotaInxIrcMetadataStatus="$(systemctl show -p ActiveState --value iota-inx-irc-metadata)"
+    fi
 
     # INX-Dashboard version
     if [ -f "/usr/bin/iota-inx-dashboard" ]; then
@@ -87,6 +90,18 @@ if [ "$iotaInxPluginsInstalled" = "true" ]; then
         fi
     fi
 
+    # INX-IRC-Metadata version
+    if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
+        iotaInxIrcMetadataVersion=$(cd $iotaInxIrcMetadataHome ; /usr/bin/iota-inx-irc-metadata -v | awk '{print $2}' | tr -d 'v')
+        if [ -z "$iotaInxIrcMetadataVersion" ]; then
+            iotaInxIrcMetadataVersion="N/A"
+        else
+            if [ "$iotaInxIrcMetadataVersion" != "$latestIotaInxIrcMetadataVersion" ] && [ ! -z "$latestIotaInxIrcMetadataVersion" ]; then
+                iotaInxIrcMetadataVersion="$iotaInxIrcMetadataVersion (new version \"v$latestIotaInxIrcMetadataVersion\" available!"
+            fi
+        fi
+    fi
+
     # INX-Indexer DB size
     if [ -d "$iotaInxIndexerHome/database" ]; then
         getCurrentDbSize="$(du -sb $iotaInxIndexerHome/database | cut -f1)"
@@ -131,10 +146,14 @@ if [ "$iotaInxPluginsInstalled" = "true" ]; then
         iotaInxPoiAppInfo="INX-POI\nStatus: $iotaInxPoiStatus\nVersion: $iotaInxPoiVersion\n\n"
     fi
 
-    # OUTPUT
-    whiptail --scrolltext --title "INX [SHIMMER] App Info" --msgbox "\n${iotaInxDashboardAppInfo}${iotaInxIndexerAppInfo}${iotaInxMqttAppInfo}${iotaInxParticipationAppInfo}${iotaInxPoiAppInfo}" 24 65
+    if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
+        iotaInxIrcMetadataAppInfo="INX-IRC-Metadata\nStatus: $iotaInxIrcMetadataStatus\nVersion: $iotaInxIrcMetadataVersion\n\n"
+    fi
 
-    unset iotaInxDashboardAppInfo iotaInxIndexerAppInfo iotaInxMqttAppInfo iotaInxParticipationAppInfo iotaInxPoiAppInfo
+    # OUTPUT
+    whiptail --scrolltext --title "INX [SHIMMER] App Info" --msgbox "\n${iotaInxDashboardAppInfo}${iotaInxIndexerAppInfo}${iotaInxMqttAppInfo}${iotaInxParticipationAppInfo}${iotaInxPoiAppInfo}${iotaInxIrcMetadataAppInfo}" 24 65
+
+    unset iotaInxDashboardAppInfo iotaInxIndexerAppInfo iotaInxMqttAppInfo iotaInxParticipationAppInfo iotaInxPoiAppInfo iotaInxIrcMetdataAppInfo
 else
     # OUTPUT
     whiptail --title "INX [SHIMMER] App Info" --msgbox "No installed INX plugins were found, please install an INX plugin first." 8 65
