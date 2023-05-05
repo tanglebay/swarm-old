@@ -7,10 +7,9 @@ while [ $exitCode -lt 1 ]; do
         whiptail --title "INX [IOTA] IRC-Metadata" --menu "\nChoose an option" 24 65 0 \
         "" "" \
         "1)" "INX-IRC-Metadata Info" \
-        "2)" "INX-IRC-Metadata Tools" \
-        "3)" "INX-IRC-Metadata Configuration" \
-        "4)" "INX-IRC-Metadata Management" \
-        "5)" "INX-IRC-Metadata Installer" 3>&2 2>&1 1>&3
+        "2)" "INX-IRC-Metadata Configuration" \
+        "3)" "INX-IRC-Metadata Management" \
+        "4)" "INX-IRC-Metadata Installer" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -23,106 +22,6 @@ while [ $exitCode -lt 1 ]; do
             source $iotaInxIrcMetadataModule/iotaInxIrcMetadataInfo
         ;;
         "2)")
-            while [ $exitCode -lt 1 ]; do
-                CHOICE=$(
-                    whiptail --title "INX-IRC-Metadata [IOTA] Tools" --menu "\nChoose your option" 24 65 0 \
-                    "" "" \
-                    "1)" "Validate Poi" \
-                    "2)" "Create PoI" \
-                    "3)" "View Last Created PoI" 3>&2 2>&1 1>&3
-                )
-                exitStatus=$?
-                if [ "$exitStatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
-                            if (whiptail --title "INX-IRC-Metadata [IOTA] Tools" --yesno --defaultno "In the following file, please insert the proof of inclusion to be validated. Do you want to continue?" 8 65); then
-                                if [ ! -f "/tmp/iota-inx-irc-metadata-validate.json" ]; then
-                                    sudo touch /tmp/iota-inx-irc-metadata-validate.json > /dev/null 2>&1
-                                fi
-                                sudo $swarmCLEditor /tmp/iota-inx-irc-metadata-validate.json
-                                iotaInxIrcMetadataValidateData=$(cat /tmp/iota-inx-irc-metadata-validate.json)
-                                if jq -e . >/dev/null 2>&1 <<<"$iotaInxIrcMetadataValidateData"; then
-                                    source $swarmConfigs/iota-hornet.cfg
-                                    iotaInxIrcMetadataValidateResult=$(curl -s -X POST "localhost:14266/api/plugins/poi/validate" -H "accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" -d "$iotaInxIrcMetadataValidateData")
-                                    if [[ $iotaInxIrcMetadataValidateResult = *\"valid\":*true* ]]; then
-                                        iotaInxIrcMetadataValidateResult="valid"
-                                    else
-                                        iotaInxIrcMetadataValidateResult="invalid"
-                                    fi
-                                    whiptail --title "INX-IRC-Metadata [IOTA] Tools" --msgbox "The validated poi is $iotaInxIrcMetadataValidateResult." 8 65
-                                    unset iotaInxIrcMetadataValidateResult
-                                else
-                                    whiptail --title "INX-IRC-Metadata [IOTA] Tools" --msgbox "PoI validation aborted because content is not valid json data." 8 65
-                                fi
-                                echo "" > /tmp/iota-inx-irc-metadata-validate.json
-                                unset iotaInxIrcMetadataValidateData
-                            fi
-                        else
-                            whiptail --title "INX-IRC-Metadata [IOTA] Tools" --msgbox "Please install [IOTA] INX-IRC-Metadata plugin first." 8 65
-                        fi
-                    ;;
-                    "2)")
-                        if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
-                            iotaInxIrcMetadataCreateId=$(whiptail --inputbox "\nPlease enter the message id of which you want to create a poi" 10 65 --title "INX-IRC-Metadata [IOTA] Tools" 3>&1 1>&2 2>&3)
-                            exitStatus=$?
-                            if [ $exitStatus != 1 ] && [ ! -z "$iotaInxIrcMetadataCreateId" ]; then
-                                source $swarmConfigs/iota-hornet.cfg
-                                iotaInxIrcMetadataCreateResult=$(sudo curl -s "localhost:14266/api/poi/v1/create/$iotaInxIrcMetadataCreateId" -H "accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}")
-                                if [[ $iotaInxIrcMetadataCreateResult = *code* ]]; then
-                                    if [[ $iotaInxIrcMetadataCreateResult = *400* ]]; then
-                                        whiptail --title "INX-IRC-Metadata [IOTA] Tools" --msgbox "PoI creation aborted because invalid data provided (400)." 8 65
-                                    fi
-                                    if [[ $iotaInxIrcMetadataCreateResult = *403* ]]; then
-                                        whiptail --title "INX-IRC-Metadata [IOTA] Tools" --msgbox "PoI creation aborted because not available for public use (403)." 8 65
-                                    fi
-                                    if [[ $iotaInxIrcMetadataCreateResult = *404* ]]; then
-                                        whiptail --title "INX-IRC-Metadata [IOTA] Tools" --msgbox "PoI creation aborted because could not find data (404)." 8 65
-                                    fi
-                                    if [[ $iotaInxIrcMetadataCreateResult = *500* ]]; then
-                                        whiptail --title "INX-IRC-Metadata [IOTA] Tools" --msgbox "PoI creation aborted because internal server error (500)." 8 65
-                                    fi
-                                else
-                                    echo $iotaInxIrcMetadataCreateResult | jq -r '.data' > /tmp/iota-inx-irc-metadata-create.json
-                                    if [ -s "/tmp/iota-inx-irc-metadata-create.json" ]; then
-                                        clear
-                                        sudo cat /tmp/iota-inx-irc-metadata-create.json |jq
-                                        echo ""
-                                        echo ""
-                                        read -n 1 -s -r -p "Press any key to continue"
-                                        clear
-                                    else
-                                        whiptail --title "INX-IRC-Metadata [IOTA] Tools" --msgbox "Aborted - PoI creation file is empty." 8 65
-                                    fi
-                                fi
-                            fi
-                        else
-                            whiptail --title "INX-IRC-Metadata [IOTA] Tools" --msgbox "Please install [IOTA] INX-IRC-Metadata plugin first." 8 65
-                        fi
-                    ;;
-                    "3)")
-                        if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
-                            if [ -s "/tmp/iota-inx-irc-metadata-create.json" ]; then
-                                clear
-                                sudo cat /tmp/iota-inx-irc-metadata-create.json |jq
-                                echo ""
-                                echo ""
-                                read -n 1 -s -r -p "Press any key to continue"
-                                clear
-                            else
-                                whiptail --title "INX-IRC-Metadata [IOTA] Tools" --msgbox "Aborted - PoI creation file is empty." 8 65
-                            fi
-                        else
-                            whiptail --title "INX-IRC-Metadata [IOTA] Tools" --msgbox "Please install [IOTA] INX-IRC-Metadata plugin first." 8 65
-                        fi
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-        "3)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
@@ -208,7 +107,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "4)")
+        "3)")
             if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
                 while [ $exitCode -lt 1 ]; do
                     clear
@@ -325,7 +224,7 @@ while [ $exitCode -lt 1 ]; do
                 whiptail --title "INX [IOTA] POI" --msgbox "Sorry, but [Iota] INX-IRC-Metadata is not installed." 8 65
             fi
         ;;
-        "5)")
+        "4)")
             while [ $exitCode -lt 1 ]; do
                 CHOICE=$(
                     whiptail --title "INX-IRC-Metadata [IOTA] Installer" --menu "\nChoose your option" 24 65 0 \
