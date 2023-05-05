@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Check if release is changed
+if [ "$shimmerInxIrcMetadataRelease" != "$currentShimmerInxIrcMetadataRelease" ]; then
+    {
+        echo 0
+        echo 20
+        source $shimmerInxIrcMetadataModule/shimmerInxIrcMetadataRemoval
+        echo 40
+        source $shimmerInxIrcMetadataModule/shimmerInxIrcMetadataInstaller
+        echo 60
+        source $shimmerInxIrcMetadataModule/shimmerInxIrcMetadataParser
+        echo 80
+        if [ "$shimmerInxIrcMetadataUpdated" = "true" ] || [ "$restartShimmerInxIrcMetadata" = "true" ]; then
+            sudo systemctl restart shimmer-inx-irc-metadata
+            unset restartShimmerInxIrcMetadata
+        fi
+        echo 100
+    } | whiptail --gauge "Please wait while INX-IRC-Metadata is prepared..." 8 65 0
+    whiptail --title "INX-IRC-Metadata [SHIMMER] Configuration" --msgbox "New release channel ($shimmerInxIrcMetadataRelease) applied and INX-IRC-Metadata was reinstalled!" 8 65
+fi

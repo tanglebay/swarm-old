@@ -1,0 +1,28 @@
+#!/bin/bash
+
+source $swarmConfigs/iota-inx-irc-metadata.cfg
+
+if [ "$killall" = "true" ]; then
+    sudo killall -s SIGKILL iota-inx-irc-metadata > /dev/null 2>&1
+else
+    sudo systemctl stop iota-inx-irc-metadata > /dev/null 2>&1
+fi
+
+getInxInstallations=$(ls /usr/bin/ | grep -E 'inx-dashboard|inx-indexer|inx-mqtt|inx-participation|inx-poi')
+if [ -z "$getInxInstallations" ]; then
+    if id inx >/dev/null 2>&1; then
+        sudo deluser inx >/dev/null
+    fi
+fi
+
+sudo systemctl disable iota-inx-irc-metadata > /dev/null 2>&1
+
+sudo rm -rf /usr/bin/iota-inx-irc-metadata /var/lib/iota-inx-irc-metadata /lib/systemd/system/iota-inx-irc-metadata.service /etc/default/iota-inx-irc-metadata > /dev/null 2>&1
+
+sudo systemctl daemon-reload > /dev/null 2>&1
+
+if [ -z "$getInxInstallations" ] && [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/iota-hornet" ] && [ ! -f "/usr/bin/goiota" ]; then
+    sudo snap remove go > /dev/null 2>&1
+fi
+
+unset getInxInstallations

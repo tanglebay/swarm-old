@@ -26,6 +26,9 @@ if [ "$shimmerInxPluginsInstalled" = "true" ]; then
     if [ -f "/usr/bin/shimmer-inx-poi" ]; then
         shimmerInxPoiStatus="$(systemctl show -p ActiveState --value shimmer-inx-poi)"
     fi
+    if [ -f "/usr/bin/shimmer-inx-irc-metadata" ]; then
+        shimmerInxIrcMetadataStatus="$(systemctl show -p ActiveState --value shimmer-inx-irc-metadata)"
+    fi
 
     # INX-Dashboard version
     if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
@@ -87,6 +90,18 @@ if [ "$shimmerInxPluginsInstalled" = "true" ]; then
         fi
     fi
 
+    # INX-IRC-Metadata version
+    if [ -f "/usr/bin/shimmer-inx-irc-metadata" ]; then
+        shimmerInxIrcMetadataVersion=$(cd $shimmerInxIrcMetadataHome ; /usr/bin/shimmer-inx-irc-metadata -v | awk '{print $2}' | tr -d 'v')
+        if [ -z "$shimmerInxIrcMetadataVersion" ]; then
+            shimmerInxIrcMetadataVersion="N/A"
+        else
+            if [ "$shimmerInxIrcMetadataVersion" != "$latestShimmerInxIrcMetadataVersion" ] && [ ! -z "$latestShimmerInxIrcMetadataVersion" ]; then
+                shimmerInxIrcMetadataVersion="$shimmerInxIrcMetadataVersion (new version \"v$latestShimmerInxIrcMetadataVersion\" available!"
+            fi
+        fi
+    fi
+
     # INX-Indexer DB size
     if [ -d "$shimmerInxIndexerHome/database" ]; then
         getCurrentDbSize="$(du -sb $shimmerInxIndexerHome/database | cut -f1)"
@@ -131,10 +146,14 @@ if [ "$shimmerInxPluginsInstalled" = "true" ]; then
         shimmerInxPoiAppInfo="INX-POI\nStatus: $shimmerInxPoiStatus\nVersion: $shimmerInxPoiVersion\n\n"
     fi
 
-    # OUTPUT
-    whiptail --scrolltext --title "INX [SHIMMER] App Info" --msgbox "\n${shimmerInxDashboardAppInfo}${shimmerInxIndexerAppInfo}${shimmerInxMqttAppInfo}${shimmerInxParticipationAppInfo}${shimmerInxPoiAppInfo}" 24 65
+    if [ -f "/usr/bin/shimmer-inx-irc-metadata" ]; then
+        shimmerInxIrcMetadataAppInfo="INX-IRC-Metadata\nStatus: $shimmerInxIrcMetadataStatus\nVersion: $shimmerInxIrcMetadataVersion\n\n"
+    fi
 
-    unset shimmerInxDashboardAppInfo shimmerInxIndexerAppInfo shimmerInxMqttAppInfo shimmerInxParticipationAppInfo shimmerInxPoiAppInfo
+    # OUTPUT
+    whiptail --scrolltext --title "INX [SHIMMER] App Info" --msgbox "\n${shimmerInxDashboardAppInfo}${shimmerInxIndexerAppInfo}${shimmerInxMqttAppInfo}${shimmerInxParticipationAppInfo}${shimmerInxPoiAppInfo}${shimmerInxIrcMetadataAppInfo}" 24 65
+
+    unset shimmerInxDashboardAppInfo shimmerInxIndexerAppInfo shimmerInxMqttAppInfo shimmerInxParticipationAppInfo shimmerInxPoiAppInfo shimmerInxIrcMetadataAppInfo
 else
     # OUTPUT
     whiptail --title "INX [SHIMMER] App Info" --msgbox "No installed INX plugins were found, please install an INX plugin first." 8 65
