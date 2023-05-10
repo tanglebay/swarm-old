@@ -287,6 +287,27 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/shimmer-hornet" ]; then
                             # INSTALL INX-Dashboard
                             if [ ! -f "/usr/bin/shimmer-inx-dashboard" ]; then
+                                if (whiptail --title "INX [SHIMMER] Dashboard" --yesno "Do you want to set the login data for the dashboard?" 8 65); then
+                                    if [ ! -z "$shimmerInxDashboardAuthUsername" ] || [ "$shimmerInxDashboardAuthUsername" = "admin" ]; then
+                                        shimmerInxDashboardAuthUsername=$(whiptail --inputbox "\nSet a username for the [SHIMMER] INX-Dashboard login" 10 65 $shimmerInxDashboardAuthUsername --title "INX [SHIMMER] Dashboard" 3>&1 1>&2 2>&3)
+                                        exitStatus=$?
+                                        if [ $exitStatus != 1 ]; then
+                                            if [ ! -z "$shimmerInxDashboardAuthUsername" ]; then
+                                                sudo sed -i 's/^shimmerInxDashboardAuthUsername=.*/shimmerInxDashboardAuthUsername="'$shimmerInxDashboardAuthUsername'"/' $swarmConfigs/shimmer-inx-dashboard.cfg
+                                                whiptail --title "INX [SHIMMER] Dashboard" --msgbox "New [SHIMMER] INX-Dashboard username \"$shimmerInxDashboardAuthUsername\" applied." 8 65
+                                            else
+                                                whiptail --title "INX [SHIMMER] Dashboard" --msgbox "No valid [SHIMMER] INX-Dashboard username, please try again." 8 65
+                                            fi
+                                        fi
+                                    fi
+                                    shimmerInxDashboardHornetPwdGen=true
+                                    if [ -f "/usr/bin/shimmer-hornet" ]; then
+                                        source $shimmerInxDashboardModule/shimmerInxDashboardPwdGen
+                                    else
+                                        whiptail --title "INX-Dashboard [SHIMMER] Auth" --msgbox "No installation of [SHIMMER] Hornet was found." 8 65
+                                    fi
+                                    unset shimmerInxDashboardHornetPwdGen
+                                fi
                                 if [ ! -f "/tmp/shimmer-inx-dashboard.lock" ]; then
                                     sudo touch /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
                                 fi

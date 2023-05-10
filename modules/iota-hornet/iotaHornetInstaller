@@ -62,25 +62,32 @@ if [[ $latestIotaHornetVersion =~ ^2.* ]]; then
     ##############################################################################################################################################
 
     # Create dir if not exist
+    echo "-> Create tmp folder" >> /tmp/iotaHornetInstaller.log
     sudo mkdir -p /tmp/iota-hornet > /dev/null 2>&1
 
     # Download latest iota-hornet
+    echo "-> Download Hornet v${latestIotaHornetVersion} " >> /tmp/iotaHornetInstaller.log
     ( cd /tmp/iota-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestIotaHornetVersion}/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz )
     if [ -f "/tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz" ]; then
         iotaHornetDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        echo "-> Archive checksum: $iotaHornetDownloadChecksum" >> /tmp/iotaHornetInstaller.log
     fi
 
     # Download checksum
+    echo "-> Download remote checksum" >> /tmp/iotaHornetInstaller.log
     ( cd /tmp/iota-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestIotaHornetVersion}/hornet_checksums_linux_$osArchitecture.txt )
     iotaHornetChecksum=$(sudo cat /tmp/iota-hornet/hornet_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
     echo $iotaHornetChecksum > /tmp/iota-hornet.checksum
+    echo "-> Remote checksum: $iotaHornetChecksum" >> /tmp/iotaHornetInstaller.log
 
     # Unzip archive
+    echo "-> Unzip archive" >> /tmp/iotaHornetInstaller.log
     if [ "$iotaHornetDownloadChecksum" = "$iotaHornetChecksum" ] && [ ! -z "$iotaHornetDownloadChecksum" ] && [ ! -z "$iotaHornetChecksum" ]; then
         ( cd /tmp/iota-hornet ; sudo tar -xzf /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
 
         # Copy binary
         if [ -f "/tmp/iota-hornet/hornet" ]; then
+            echo "-> Copy Hornet binary" >> /tmp/iotaHornetInstaller.log
             iotaHornetStatus="$(systemctl show -p ActiveState --value iota-hornet)"
             if [ "$iotaHornetStatus" = "active" ]; then
                 sudo systemctl stop iota-hornet > /dev/null 2>&1
@@ -97,6 +104,7 @@ if [[ $latestIotaHornetVersion =~ ^2.* ]]; then
     if [ "$newIotaHornetBinary" = "true" ]; then
         ### Mainnet Config
         if [ "$iotaHornetNetwork" = "mainnet" ]; then
+            echo "-> Copy new Hornet config file" >> /tmp/iotaHornetInstaller.log
             if [ -f "/tmp/iota-hornet/hornet-${latestIotaHornetVersion}_Linux_$osArchitecture/config_defaults.json" ]; then
                 echo "-> Copy new config file: $iotaHornetHome/config_mainnet.json" >> /tmp/iotaHornetInstaller.log
                 sudo cp -rf /tmp/iota-hornet/hornet-${latestIotaHornetVersion}_Linux_$osArchitecture/config_defaults.json $iotaHornetHome/config_mainnet.json > /dev/null 2>&1
@@ -179,48 +187,44 @@ else
 
     ##############################################################################################################################################
 
-    source $swarmModule/swarmAuth
-    if [ "$swarmAuth" = "200" ]; then
-        # Create dir if not exist
-        echo "-> Create tmp folder" >> /tmp/iotaHornetInstaller.log
-        sudo mkdir -p /tmp/iota-hornet > /dev/null 2>&1
+    # Create dir if not exist
+    echo "-> Create tmp folder" >> /tmp/iotaHornetInstaller.log
+    sudo mkdir -p /tmp/iota-hornet > /dev/null 2>&1
 
-        # Download latest iota-hornet
-        echo "-> Download archive for v${latestIotaHornetVersion}" >> /tmp/iotaHornetInstaller.log
-        ( cd /tmp/iota-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestIotaHornetVersion}/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz )
-        if [ -f "/tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz" ]; then
-            iotaHornetDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-            echo "-> Gen checksum for archive: $iotaHornetDownloadChecksum" >> /tmp/iotaHornetInstaller.log
-        fi
-
-        # Download checksum
-        echo "-> Download remote checksum file" >> /tmp/iotaHornetInstaller.log
-        ( cd /tmp/iota-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestIotaHornetVersion}/hornet_checksums_linux_$osArchitecture.txt )
-        iotaHornetChecksum=$(sudo cat /tmp/iota-hornet/hornet_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
-        echo $iotaHornetChecksum > /tmp/iota-hornet.checksum
-        echo "-> Remote checksum: $iotaHornetChecksum" >> /tmp/iotaHornetInstaller.log
-
-        # Unzip archive
-        if [ "$iotaHornetDownloadChecksum" = "$iotaHornetChecksum" ] && [ ! -z "$iotaHornetDownloadChecksum" ] && [ ! -z "$iotaHornetChecksum" ]; then
-            echo "-> Unzip archive" >> /tmp/iotaHornetInstaller.log
-            ( cd /tmp/iota-hornet ; sudo tar -xzf /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
-
-            # Copy binary
-            if [ -f "/tmp/iota-hornet/hornet" ]; then
-                iotaHornetStatus="$(systemctl show -p ActiveState --value iota-hornet)"
-                if [ "$iotaHornetStatus" = "active" ]; then
-                    echo "-> Stop service" >> /tmp/iotaHornetInstaller.log
-                    sudo systemctl stop iota-hornet > /dev/null 2>&1
-                fi
-
-                echo "-> Copy new binary file" >> /tmp/iotaHornetInstaller.log
-                sudo cp -rf /tmp/iota-hornet/hornet /usr/bin/iota-hornet > /dev/null 2>&1
-                sudo chmod +x /usr/bin/iota-hornet > /dev/null 2>&1
-                newIotaHornetBinary=true
-            fi
-        fi
+    # Download latest iota-hornet
+    echo "-> Download archive for v${latestIotaHornetVersion}" >> /tmp/iotaHornetInstaller.log
+    ( cd /tmp/iota-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestIotaHornetVersion}/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz )
+    if [ -f "/tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz" ]; then
+        iotaHornetDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
+        echo "-> Gen checksum for archive: $iotaHornetDownloadChecksum" >> /tmp/iotaHornetInstaller.log
     fi
 
+    # Download checksum
+    echo "-> Download remote checksum file" >> /tmp/iotaHornetInstaller.log
+    ( cd /tmp/iota-hornet/ ; sudo wget -q https://$cdnUrl/hornet/v${latestIotaHornetVersion}/hornet_checksums_linux_$osArchitecture.txt )
+    iotaHornetChecksum=$(sudo cat /tmp/iota-hornet/hornet_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
+    echo $iotaHornetChecksum > /tmp/iota-hornet.checksum
+    echo "-> Remote checksum: $iotaHornetChecksum" >> /tmp/iotaHornetInstaller.log
+
+    # Unzip archive
+    if [ "$iotaHornetDownloadChecksum" = "$iotaHornetChecksum" ] && [ ! -z "$iotaHornetDownloadChecksum" ] && [ ! -z "$iotaHornetChecksum" ]; then
+        echo "-> Unzip archive" >> /tmp/iotaHornetInstaller.log
+        ( cd /tmp/iota-hornet ; sudo tar -xzf /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
+
+        # Copy binary
+        if [ -f "/tmp/iota-hornet/hornet" ]; then
+            iotaHornetStatus="$(systemctl show -p ActiveState --value iota-hornet)"
+            if [ "$iotaHornetStatus" = "active" ]; then
+                echo "-> Stop service" >> /tmp/iotaHornetInstaller.log
+                sudo systemctl stop iota-hornet > /dev/null 2>&1
+            fi
+
+            echo "-> Copy new binary file" >> /tmp/iotaHornetInstaller.log
+            sudo cp -rf /tmp/iota-hornet/hornet /usr/bin/iota-hornet > /dev/null 2>&1
+            sudo chmod +x /usr/bin/iota-hornet > /dev/null 2>&1
+            newIotaHornetBinary=true
+        fi
+    fi
 
     ##############################################################################################################################################
 
