@@ -50,6 +50,17 @@ There are a few options to install SWAM:
 sudo ${SHELL:-sh} -c "$(curl -Ls https://cdn.tanglebay.com/swarm/installer/installer.sh)"
 ```
 
+### Ports
+-   (IOTA) Hornet
+    -   Gossip: `15600/tcp`
+    -   Autopeering: `14626/udp`
+-   (Shimmer) Hornet
+    -   Gossip: `15601/tcp`
+    -   Autopeering: `14636/udp`
+-   Proxy
+    -   HTTP (LetsEncrypt): `80/tcp`
+    -   HTTPS: `Your defined ports`
+
 ## Contributing
 
 Help out the SWARM project by filing a [bug report](https://github.com/tanglebay/swarm/issues/new?assignees=&labels=bug), making a [feature request](https://github.com/tanglebay/swarm/issues/new?assignees=&labels=feat) or opening a [pull request](https://github.com/tanglebay/swarm/pulls/).
