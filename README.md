@@ -53,10 +53,10 @@ sudo ${SHELL:-sh} -c "$(curl -Ls https://cdn.tanglebay.com/swarm/installer/insta
 ### Ports
 -   (IOTA) Hornet
     -   Gossip: `15600/tcp`
-    -   Autopeering: `14626/udp`
+    -   Autopeering (optional): `14626/udp`
 -   (Shimmer) Hornet
     -   Gossip: `15601/tcp`
-    -   Autopeering: `14636/udp`
+    -   Autopeering (optional): `14636/udp`
 -   Proxy
     -   HTTP (LetsEncrypt): `80/tcp`
     -   HTTPS: `Your defined ports`
