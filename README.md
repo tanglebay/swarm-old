@@ -44,7 +44,7 @@ SWARM is a script that allows you to easily install and manage an IOTA node. The
 There are a few options to install SWAM:
 
 -   Clone from source code (not recommended)
--   Download from the latest SWARM release via command
+-   Download latest SWARM release via command
 
 ```bash
 sudo ${SHELL:-sh} -c "$(curl -Ls https://cdn.tanglebay.com/swarm/installer/installer.sh)"
