@@ -44,11 +44,22 @@ SWARM is a script that allows you to easily install and manage an IOTA node. The
 There are a few options to install SWAM:
 
 -   Clone from source code (not recommended)
--   Download from the latest SWARM release via command
+-   Download latest SWARM release via command
 
 ```bash
 sudo ${SHELL:-sh} -c "$(curl -Ls https://cdn.tanglebay.com/swarm/installer/installer.sh)"
 ```
+
+### Ports
+-   (IOTA) Hornet
+    -   Gossip: `15600/tcp`
+    -   Autopeering (optional): `14626/udp`
+-   (Shimmer) Hornet
+    -   Gossip: `15601/tcp`
+    -   Autopeering (optional): `14636/udp`
+-   Proxy
+    -   HTTP (LetsEncrypt): `80/tcp`
+    -   HTTPS: `Your defined ports`
 
 ## Contributing
 
