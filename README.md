@@ -28,14 +28,13 @@ SWARM is a script that allows you to easily install and manage an IOTA node. The
 ## Requirements
 
 ### VPS (Virtual Private Server)
--   2Core/4GB Memory/40GB disk space)
--   2Core/4GB Memory/40GB disk space)
+-   2Core/4GB Memory/60GB disk space)
 -   (Sub-) domain
 -   Ubuntu 22.04 LTS (64Bit)
 
 ### Raspberry Pi
 -   Version 4 B 8GB
--   SSD (min. 40GB)
+-   SSD (min. 60GB)
 -   DDNS or (Sub-) Domain
 -   Ubuntu 22.04 LTS (64Bit)
 
