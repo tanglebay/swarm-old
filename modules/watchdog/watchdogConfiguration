@@ -6,9 +6,10 @@ while [ $exitCode -lt 1 ]; do
         "" "" \
         "1)" "Hornet" \
         "2)" "INX" \
-        "3)" "Telegram Notifications" \
-        "4)" "SWARM" \
-        "5)" "System" 3>&2 2>&1 1>&3
+        "3)" "Proxy" \
+        "4)" "Telegram Notifications" \
+        "5)" "SWARM" \
+        "6)" "System" 3>&2 2>&1 1>&3
     )
     exitStatus=$?
     if [ "$exitStatus" = "1" ]; then
@@ -936,6 +937,37 @@ while [ $exitCode -lt 1 ]; do
         "3)")
             while [ $exitCode -lt 1 ]; do
                 source $swarmConfigs/watchdog.cfg
+                if [ "$watchdogProxyUfwCheck" = "true" ]; then
+                    wwatchdogProxyUfwCheckStatus="disable"
+                else
+                    watchdogProxyUfwCheckStatus="enable"
+                fi
+                CHOICE=$(
+                    whiptail --title "Watchdog [-] UFW" --menu "\nChoose an option" 24 65 0 \
+                    "" "" \
+                    "1)" "[${watchdogProxyUfwCheckStatus^}] UFW Check" 3>&2 2>&1 1>&3
+                )
+                exitStatus=$?
+                if [ "$exitStatus" = "1" ]; then
+                    exitCode=1
+                fi
+                case $CHOICE in
+                    "1)")
+                        if [ "$watchdogTelegramNotifications" = "true" ]; then
+                            watchdogTelegramNotifications=false
+                        else
+                            watchdogTelegramNotifications=true
+                        fi
+                        sudo sed -i 's/^watchdogProxyUfwCheck=.*/watchdogProxyUfwCheck='$watchdogProxyUfwCheck'/' $swarmConfigs/watchdog.cfg
+                        whiptail --title "Watchdog [-] UFW" --msgbox "Watchdog UFW check ${watchdogTelegramNotificationsStatus}d." 8 65
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "4)")
+            while [ $exitCode -lt 1 ]; do
+                source $swarmConfigs/watchdog.cfg
                 if [ "$watchdogTelegramNotifications" = "true" ]; then
                     watchdogTelegramNotificationsStatus="disable"
                 else
@@ -986,7 +1018,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "4)")
+        "5)")
             while [ $exitCode -lt 1 ]; do
                 source $swarmConfigs/watchdog.cfg
                 if [ "$watchdogSwarmAutoUpdate" = "true" ]; then
@@ -1017,7 +1049,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "5)")
+        "6)")
             while [ $exitCode -lt 1 ]; do
                 if [ "$watchdogMemoryCheck" = "true" ]; then
                     watchdogMemoryCheckStatus="disable"
