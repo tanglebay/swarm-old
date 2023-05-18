@@ -417,9 +417,22 @@ while [ $exitCode -lt 1 ]; do
                         source $proxyModule/proxyParser
                         if [ -f "/etc/letsencrypt/live/$proxyIotaHornetUrl/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardUrl/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetUrl/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardUrl/fullchain.pem" ]; then
                             if [ "$ufw" = "true" ]; then
-                                sudo ufw allow 80/tcp > /dev/null 2>&1
+                                proxyHttpStatus=$(sudo ufw status)
+                                if [[ $proxyHttpStatus != *inactive* ]]; then
+                                    proxyHttpPortCheck=$(echo $proxyHttpStatus | grep -E 80/tcp)
+                                    if [ -z "$proxyHttpPortCheck" ]; then
+                                        sudo ufw allow 80/tcp > /dev/null 2>&1
+                                        proxyHttpTmpAllowed=true
+                                    fi
+                                    unset proxyHttpPortCheck
+                                fi
+                                unset proxyHttpStatus
                             fi
                             sudo certbot renew --force-renewal
+                            if [ "$proxyHttpTmpAllowed" = "true" ]; then
+                                sudo ufw delete allow 80/tcp > /dev/null 2>&1
+                                unset proxyHttpTmpAllowed
+                            fi
                             echo ""
                             echo ""
                             echo "#############################################################"
