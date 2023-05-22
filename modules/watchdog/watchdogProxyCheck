@@ -1,0 +1,20 @@
+#!/bin/bash
+
+if [ "$watchdogProxyHttpCheck" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
+    if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
+        if [ "$ufw" = "true" ]; then
+            watchdogProxyHttpStatus=$(sudo ufw status)
+            if [[ $watchdogProxyHttpStatus != *inactive* ]]; then
+                watchdogProxyHttpPortCheck=$(echo $watchdogProxyHttpStatus | grep -E 80/tcp)
+                if [ -z "$watchdogProxyHttpPortCheck" ]; then
+                    timestamp=`date '+%d-%m-%Y %H-%M-%S'`
+                    sudo ufw allow 80/tcp > /dev/null 2>&1
+                    echo "$timestamp [WATCHDOG] UFW port 80/tcp for the proxy not found and re-added." >> $swarmLogs/swarm.log
+                    unset timestamp
+                fi
+                unset watchdogProxyHttpPortCheck
+            fi
+            unset watchdogProxyHttpStatus
+        fi
+    fi
+fi
