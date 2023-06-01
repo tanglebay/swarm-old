@@ -13,6 +13,10 @@ if [ ! -d "$shimmerHornetHome" ]; then
     sudo chown -R hornet:hornet $shimmerHornetHome > /dev/null 2>&1
 fi
 
+if [ ! -f "/usr/bin/shimmer-hornet" ]; then
+    shimmerHornetFirstInstall=true
+fi
+
 # Install GO
 if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
     echo "-> Install go via snap" >> /tmp/shimmerHornetInstaller.log
@@ -115,6 +119,11 @@ fi
 # Remove temporary files
 echo "-> Remove tmp folder" >> /tmp/shimmerHornetInstaller.log
 sudo rm -rf /tmp/shimmer-hornet > /dev/null 2>&1
+
+if [ "$shimmerHornetFirstInstall" = "true" ]; then
+    sudo systemctl start shimmer-hornet > /dev/null 2>&1
+    unset shimmerHornetFirstInstall
+fi
 
 echo "====== INSTALLATION FINISHED ======" >> /tmp/shimmerHornetInstaller.log
 unset newShimmerHornetBinary newShimmerHornetConfig shimmerHornetDownloadChecksum
