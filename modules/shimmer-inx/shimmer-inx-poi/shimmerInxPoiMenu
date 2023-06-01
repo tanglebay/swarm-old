@@ -246,11 +246,22 @@ while [ $exitCode -lt 1 ]; do
                                     "2)")
                                         appLogDepth=10000
                                         appLogDepth=$(whiptail --inputbox "\nPlease enter a higher depth if no PANIC was found (this may take longer)" 10 65 $appLogDepth --title "INX-POI [SHIMMER] Management" 3>&1 1>&2 2>&3)
-                                        sudo journalctl -u shimmer-inx-poi -n $appLogDepth | grep -A 2 -B 2 -e PANIC | tail -n 5
-                                        echo ""
-                                        echo ""
-                                        read -rsn1 -p "Press any key to exit."
-                                        unset appLogDepth
+                                        sudo journalctl -u shimmer-inx-poi -n $appLogDepth | grep -A 2 -B 2 -e PANIC | tail -n 5 > /tmp/swarm-app-panic.log
+                                        appPanicLog=$(cat /tmp/swarm-app-panic.log)
+                                        if [ ! -z "$appPanicLog" ]; then
+                                            echo ""
+                                            echo ""
+                                            read -rsn1 -p "Press any key to exit."
+                                            if [ -f "/tmp/swarm-app-panic.log" ]; then
+                                                sudo rm -rf /tmp/swarm-app-panic.log > /dev/null 2>&
+                                            fi
+                                        else
+                                            whiptail --title "INX-POI [SHIMMER] Management" --msgbox "No PANIC entry found or try again with a higher depth." 8 65
+                                        fi
+                                        if [ -f "/tmp/swarm-app-panic.log" ]; then
+                                            sudo rm -rf /tmp/swarm-app-panic.log > /dev/null 2>&
+                                        fi
+                                        unset appLogDepth appPanicLog
                                     ;;
                                 esac
                             done
