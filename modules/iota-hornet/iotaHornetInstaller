@@ -14,6 +14,10 @@ if [[ $latestIotaHornetVersion =~ ^2.* ]]; then
         echo "-> Create hornet home: $iotaHornetHome" >> /tmp/iotaHornetInstaller.log
     fi
 
+    if [ ! -f "/usr/bin/iota-hornet" ]; then
+        iotaHornetFirstInstall=true
+    fi
+
     # Install GO
     if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
         sudo snap install go --classic > /dev/null 2>&1
@@ -142,6 +146,11 @@ if [[ $latestIotaHornetVersion =~ ^2.* ]]; then
         sudo rm -rf /tmp/iota-hornet > /dev/null 2>&1
     fi
 
+    if [ "$iotaHornetFirstInstall" = "true" ]; then
+        sudo systemctl start iota-hornet > /dev/null 2>&1
+        unset iotaHornetFirstInstall
+    fi
+
     echo "====== INSTALLER FINISHED ======" >> /tmp/iotaHornetInstaller.log
     unset newIotaHornetBinary newIotaHornetConfig iotaHornetDownloadChecksum
 else
@@ -157,6 +166,10 @@ else
         echo "-> Create home folder" >> /tmp/iotaHornetInstaller.log
         sudo mkdir -p $iotaHornetHome > /dev/null 2>&1
         sudo chown -R hornet:hornet $iotaHornetHome > /dev/null 2>&1
+    fi
+
+    if [ ! -f "/usr/bin/iota-hornet" ]; then
+        iotaHornetFirstInstall=true
     fi
 
     # Install GO
@@ -266,6 +279,11 @@ else
     # Remove temporary files
     echo "-> Remove tmp folder" >> /tmp/iotaHornetInstaller.log
     sudo rm -rf /tmp/iota-hornet > /dev/null 2>&1
+
+    if [ "$iotaHornetFirstInstall" = "true" ]; then
+        sudo systemctl start iota-hornet > /dev/null 2>&1
+        unset iotaHornetFirstInstall
+    fi
 
     echo "====== INSTALLATION FINISHED ======" >> /tmp/iotaHornetInstaller.log
     unset newIotaHornetBinary newIotaHornetConfig iotaHornetDownloadChecksum

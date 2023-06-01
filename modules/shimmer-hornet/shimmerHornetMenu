@@ -197,7 +197,7 @@ while [ $exitCode -lt 1 ]; do
                     CHOICE=$(
                         whiptail --title "Hornet [SHIMMER] Management" --menu "\nChoose your option" 24 65 0 \
                         "" "" \
-                        "1)" "Show Hornet Log" \
+                        "1)" "Hornet Log" \
                         "2)" "Start/Stop Hornet" \
                         "3)" "Reset Hornet All Databases" \
                         "4)" "Reset Hornet Config" 3>&2 2>&1 1>&3
@@ -208,9 +208,41 @@ while [ $exitCode -lt 1 ]; do
                     fi
                     case $CHOICE in
                         "1)")
-                            # Display last 65 lines of log
-                            sudo journalctl -fu shimmer-hornet | less -FRSXM
-                            clear
+                            while [ $exitCode -lt 1 ]; do
+                                clear
+                                CHOICE=$(
+                                    whiptail --title "Hornet [SHIMMER] Management" --menu "\nChoose your option" 24 65 0 \
+                                    "" "" \
+                                    "1)" "Show Live Log" \
+                                    "2)" "Show Latest PANIC" 3>&2 2>&1 1>&3
+                                )
+                                exitstatus=$?
+                                if [ "$exitstatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        sudo journalctl -fu shimmer-hornet
+                                    ;;
+                                    "2)")
+                                        appLogDepth=10000
+                                        appLogDepth=$(whiptail --inputbox "\nPlease enter a higher depth if no PANIC was found (this may take longer)" 10 65 $appLogDepth --title "Hornet [SHIMMER] Management" 3>&1 1>&2 2>&3)
+                                        exitstatus=$?
+                                        if [ "$exitstatus" != "1" ] && [ $appLogDepth -eq $appLogDepth ] 2>/dev/null; then
+                                            echo ""
+                                            echo "Please wait while the log is searched for a PANIC..."
+                                            echo ""
+                                            echo ""
+                                            sudo journalctl -u shimmer-hornet -n $appLogDepth | grep --color=always -A 9 -e PANIC | tail -n 10
+                                            echo ""
+                                            echo ""
+                                            read -rsn1 -p "Press any key to exit."
+                                        fi
+                                        unset appLogDepth
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
                         ;;
                         "2)")
                             while [ $exitCode -lt 1 ]; do
@@ -675,6 +707,25 @@ while [ $exitCode -lt 1 ]; do
                                 sleep 0.5
                             } | whiptail --gauge "Please wait while [Shimmer] Hornet will be removed..." 8 65 0
                             whiptail --title "Hornet [SHIMMER] Installer" --msgbox "[Shimmer] Hornet successfully removed." 8 65
+
+                            if [ ! -f "/usr/bin/shimmer-hornet" ]; then
+                                if (whiptail --title "Hornet [SHIMMER] Installer" --yesno --defaultno "Do you also want to remove all installed [Shimmer] INX plugins?" 8 65); then
+                                    nmbCounter=0
+                                    {
+                                        echo $nmbCounter
+                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                        do
+                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                source $shimmerInxModule/shimmer-inx-$shimmerInxPlugin/shimmerInx${shimmerInxPlugin}Removal
+                                            fi
+                                            let nmbCounter=$nmbCounter+10
+                                            echo $nmbCounter
+                                        done
+                                    } | whiptail --gauge "Please wait while [Shimmer] INX plugins will be removed..." 8 65 0
+                                    unset nmbCounter
+                                    whiptail --title "Hornet [SHIMMER] Installer" --msgbox "[Shimmer] INX plugins successfully removed." 8 65
+                                fi
+                            fi
                         fi
                     ;;
                 esac
