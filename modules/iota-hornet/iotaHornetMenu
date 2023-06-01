@@ -997,9 +997,14 @@ else
                                                 sudo -u hornet wget -q -O $iotaHornetHome/snapshots/${iotaHornetNetwork}/full_snapshot.bin $iotaHornetSnapshotSource
                                             fi
                                             if [[ $iotaHornetEnablePlugins = *participation* ]]; then
-                                                iotaHornetDisableParticipation=true
-                                                source $iotaHornetConfigParsers/iotaHornetEnablePlugins
-                                                unset iotaHornetDisableParticipation restartIotaHornet
+                                                    if [[ $iotaHornetEnablePlugins = *participation,* ]]; then
+                                                            iotaHornetEnablePlugins=${iotaHornetEnablePlugins//participation,/}
+                                                    else
+                                                            iotaHornetEnablePlugins=${iotaHornetEnablePlugins//participation/}
+                                                    fi
+                                                    sudo sed -i 's~^iotaHornetEnablePlugins=.*~iotaHornetEnablePlugins="'$iotaHornetEnablePlugins'"~' $swarmConfigs/iota-hornet.cfg
+                                                    source $iotaHornetConfigParsers/iotaHornetEnablePlugins
+                                                    unset restartIotaHornet
                                             fi
                                             sudo sed -i 's/^iotaHornetStatusCounter=.*/iotaHornetStatusCounter=0/' $swarmConfigs/watchdog.cfg
                                             echo 60
@@ -1027,7 +1032,7 @@ else
                                         if [ -f "/tmp/iota-hornet.lock" ]; then
                                             sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1
                                         fi
-                                        whiptail --title "Hornet [IOTA] Management" --msgbox "[IOTA] Hornet ${iotaHornetNetwork}DB successfully reset." 8 65
+                                        whiptail --title "Hornet [IOTA] Management" --msgbox "[IOTA] Hornet database successfully reset and participation plugin disabled." 10 65
                                     fi
                                 fi
                             ;;
