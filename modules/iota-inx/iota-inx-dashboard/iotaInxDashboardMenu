@@ -114,7 +114,7 @@ while [ $exitCode -lt 1 ]; do
                     CHOICE=$(
                         whiptail --title "INX-Dashboard [IOTA] Management" --menu "\nChoose an option" 24 65 0 \
                         "" "" \
-                        "1)" "Show INX-Dashboard Log" \
+                        "1)" "INX-Dashboard Log" \
                         "2)" "Stop/Start INX-Dashboard" \
                         "3)" "Reset INX-Dashboard Config" 3>&2 2>&1 1>&3
                     )
@@ -126,9 +126,33 @@ while [ $exitCode -lt 1 ]; do
 
                     case $CHOICE in
                         "1)")
-                            # Display last 65 lines of log
-                            sudo journalctl -fu iota-inx-dashboard | less -FRSXM
-                            clear
+                            while [ $exitCode -lt 1 ]; do
+                                clear
+                                CHOICE=$(
+                                    whiptail --title "INX-Dashboard [IOTA] Management" --menu "\nChoose your option" 24 65 0 \
+                                    "" "" \
+                                    "1)" "Show Live Log" \
+                                    "2)" "Show Latest PANIC" 3>&2 2>&1 1>&3
+                                )
+                                exitstatus=$?
+                                if [ "$exitstatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        sudo journalctl -fu iota-inx-dashboard
+                                        clear
+                                    ;;
+                                    "2)")
+                                        appLogDepth=10000
+                                        appLogDepth=$(whiptail --inputbox "\nPlease enter a higher depth if no PANIC was found (this may take longer)" 10 65 $appLogDepth --title "INX-Dashboard [IOTA] Management" 3>&1 1>&2 2>&3)
+                                        sudo journalctl -u iota-inx-dashboard -n $appLogDepth | grep -A 2 -B 2 -e PANIC | tail -n 5
+                                        clear
+                                        unset appLogDepth
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
                         ;;
                         "2)")
                             while [ $exitCode -lt 1 ]; do
