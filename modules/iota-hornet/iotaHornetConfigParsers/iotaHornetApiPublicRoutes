@@ -22,12 +22,13 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
     unset iotaInxPlugin
 
     IFS=', ' read -r -a ARRAYiotaHornetApiPublicRoutes <<< "$iotaHornetApiPublicRoutes"
-    validateIotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes: -1}")
-    # if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
-    #     iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
-    #     sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
-    #     iotaHornetForceApiPublicRoutes=true
-    # fi
+    iotaHornetApiPublicRoutesValidation="${iotaHornetApiPublicRoutes:0:1}"
+    if [ "$iotaHornetApiPublicRoutesValidation" = "," ]; then
+        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes:1}"
+        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+        iotaHornetForceApiPublicRoutes=true
+    fi
+    unset iotaHornetApiPublicRoutesValidation
 
     parser="$(jq '.restAPI.publicRoutes' $iotaHornetHome/$iotaHornetConfig.json)"
     parser="$(echo $parser | tr -d '[]" ')"
@@ -44,12 +45,13 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
     unset ARRAYiotaHornetApiPublicRoutes iotaHornetApiPublicRoute iotaHornetForceApiPublicRoutes
 else
     IFS=', ' read -r -a ARRAYiotaHornetApiPublicRoutes <<< "$iotaHornetApiPublicRoutes"
-    validateIotaHornetApiPublicRoutes=$(echo "${hornetApiPublicRoutes: -1}")
-    if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
-        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
+    iotaHornetApiPublicRoutesValidation="${iotaHornetApiPublicRoutes:0:1}"
+    if [ "$iotaHornetApiPublicRoutesValidation" = "," ]; then
+        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes:1}"
         sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
         iotaHornetForceApiPublicRoutes=true
     fi
+    unset iotaHornetApiPublicRoutesValidation
 
     parser="$(jq '.restAPI.publicRoutes' $iotaHornetHome/$iotaHornetConfig.json)"
     parser="$(echo $parser | tr -d '[]" ')"
