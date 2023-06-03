@@ -86,8 +86,30 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
             iotaHornetApiPublicRoutesInfo="\n\nPublic API Routes: $iotaHornetApiPublicRoutes"
         fi
 
+        for iotaInxPlugin in ${iotaInxPlugins[@]}
+        do
+            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                swarmApp="iota-inx-$iotaInxPlugin"
+                source $swarmModule/swarmAppVars
+                source $swarmConfigs/iota-inx-$iotaInxPlugin.cfg
+                iotaHornetInxApiPublicRoutes=${swarmAppPrefix}ApiPublicRoutes
+                if [ ! -z "${!iotaHornetInxApiPublicRoutes}" ]; then
+                    iotaHornetInxApiPublicRoutesAll=$(echo "$iotaHornetInxApiPublicRoutesAll,${!iotaHornetInxApiPublicRoutes}")
+                fi
+                if [ "${iotaHornetInxApiPublicRoutesAll:0:1}" = "," ]; then
+                    iotaHornetInxApiPublicRoutesAll="${iotaHornetInxApiPublicRoutesAll:1}"
+                fi
+                unset swarmApp swarmAppPrefix iotaHornetInxApiPublicRoutes
+            fi
+        done
+        unset iotaInxPlugin
+        if [ ! -z "$iotaHornetInxApiPublicRoutesAll" ]; then
+            iotaHornetInxApiPublicRoutesInfo="\n\nPublic INX API Routes: $iotaHornetInxApiPublicRoutesAll"
+            unset iotaHornetInxApiPublicRoutesAll
+        fi
+
         # OUTPUT
-        whiptail --scrolltext --title "Hornet [IOTA] Info" --msgbox "Hornet: $iotaHornetStatus\nVersion: v$iotaHornetVersion\nNetwork: $iotaHornetNetwork\nDB size: $currentIotaHornetDbSize\nHealthy: $iotaHornetHealthy\nProxy: $iotaHornetProxyStatus\n\nAlias: $iotaHornetAlias\nINX: $iotaHornetInxEnabledStatus\nAutopeering: $iotaHornetAutopeeringEnabledStatus\nPoW: $iotaHornetPowEnabledStatus\nLocal Snapshots: $iotaHornetSnapshotsEnabledStatus milestones\nGossip Port: ${iotaHornetGossipPort}/tcp\nAutopeering Port: ${iotaHornetAutopeeringPort}/udp\n\nPruning: $iotaHornetPruningEnabledStatus\nMax DB size: ${iotaHornetPruningDatabaseSize} GB\nPruning percentage: ${iotaHornetPruningPercentage}%\nPruning Cooldown: $iotaHornetPruningCooldownTime minutes${iotaHornetApiPublicRoutesInfo}" 24 65
+        whiptail --scrolltext --title "Hornet [IOTA] Info" --msgbox "Hornet: $iotaHornetStatus\nVersion: v$iotaHornetVersion\nNetwork: $iotaHornetNetwork\nDB size: $currentIotaHornetDbSize\nHealthy: $iotaHornetHealthy\nProxy: $iotaHornetProxyStatus\n\nAlias: $iotaHornetAlias\nINX: $iotaHornetInxEnabledStatus\nAutopeering: $iotaHornetAutopeeringEnabledStatus\nPoW: $iotaHornetPowEnabledStatus\nLocal Snapshots: $iotaHornetSnapshotsEnabledStatus milestones\nGossip Port: ${iotaHornetGossipPort}/tcp\nAutopeering Port: ${iotaHornetAutopeeringPort}/udp\n\nPruning: $iotaHornetPruningEnabledStatus\nMax DB size: ${iotaHornetPruningDatabaseSize} GB\nPruning percentage: ${iotaHornetPruningPercentage}%\nPruning Cooldown: $iotaHornetPruningCooldownTime minutes${iotaHornetApiPublicRoutesInfo}${iotaHornetInxApiPublicRoutesInfo}" 24 65
     else
         # OUTPUT
         whiptail --title "Hornet [IOTA] Info" --msgbox "Hornet not installed!" 8 65
