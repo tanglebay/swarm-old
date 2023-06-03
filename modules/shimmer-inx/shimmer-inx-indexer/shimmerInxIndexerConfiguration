@@ -11,7 +11,8 @@ while [ $exitCode -lt 1 ]; do
     CHOICE=$(
         whiptail --title "INX-Indexer [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
         "" "" \
-        "1)" "[${menuShimmerInxIndexerUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
+        "1)" "API Routes" \
+        "2)" "[${menuShimmerInxIndexerUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -42,6 +43,24 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
+            source $swarmConfigs/shimmer-inx-indexer.cfg
+            shimmerInxIndexerApiRoutes=$shimmerInxIndexerApiPublicRoutes
+            source $shimmerInxIndexerModule/shimmerInxIndexerApiRoutes
+            shimmerInxIndexerApiRoutes=$(whiptail --title "INX-Indexer [SHIMMER] API routes" --checklist "\nSelect which API routes should not be public(*):" 24 65 1 \
+                "/api/indexer/v1/*" "" $shimmerInxIndexerApiRoutesIndexer 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            shimmerInxIndexerApiRoutes=$(echo $shimmerInxIndexerApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$exitStatus" != "1" ]; then
+                shimmerInxIndexerUpdateApiRoutes=true
+                source $shimmerInxIndexerModule/shimmerInxIndexerApiRoutes
+                if [ "$shimmerInxIndexerApiPublicRoutesUpdated" = "true" ]; then
+                    whiptail --title "INX-Indexer [SHIMMER] API Routes" --msgbox "New config for API routes saved (requires restart of Hornet)." 8 65
+                fi
+                unset shimmerInxIndexerUpdateApiRoutes shimmerInxIndexerApiPublicRoutesUpdated
+            fi
+            unset shimmerInxIndexerApiRoutes
+        ;;
+        "2)")
             source $swarmConfigs/shimmer-inx-indexer.cfg
             if [ "$shimmerInxIndexerUpdateCheck" = "true" ]; then
                 shimmerInxIndexerUpdateCheckStatus="enabled"

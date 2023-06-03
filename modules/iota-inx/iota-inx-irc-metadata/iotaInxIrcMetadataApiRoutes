@@ -1,48 +1,36 @@
 #!/bin/bash
 
-source $swarmConfigs/iota-hornet.cfg
-iotaHornetApiRoutes=$(whiptail --title "INX-IRC-Metadata [IOTA] API routes" --checklist "\nSelect (spacebar) the routes you want to make public." 24 65 2 \
-    "/api/irc-metadata/v1/nfts/*" "" OFF \
-    "/api/irc-metadata/v1/tokens/*" "" OFF 3>&1 1>&2 2>&3)
-exitStatus=$?
-iotaHornetApiRoutes=$(echo $iotaHornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-if [ "$exitStatus" != "1" ] && [ ! -z "$iotaHornetApiRoutes" ]; then
-    #/api/irc-metadata/v1/nfts/*
-    if [[ $iotaHornetApiRoutes = */api/irc-metadata/v1/nfts/\** ]] && [[ $iotaHornetApiPublicRoutes != */api/irc-metadata/v1/nfts/\** ]]; then
-        if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
-            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/irc-metadata/v1/nfts/*")
-        fi
-    fi
+iotaInxIrcMetadataApiPublicRoutesCurrent=$iotaInxIrcMetadataApiPublicRoutes
 
-    #/api/irc-metadata/v1/tokens/*
-    if [[ $iotaHornetApiRoutes = */api/irc-metadata/v1/tokens/\** ]] && [[ $iotaHornetApiPublicRoutes != */api/irc-metadata/v1/tokens/\** ]]; then
-        if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
-            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/irc-metadata/v1/tokens/*")
-        fi
-    fi
+# Unset VARS
+unset iotaInxIrcMetadataApiPublicRoutes
 
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes" | tr -s ',,' ',')
-    validateIotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes: -1}")
-    if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
-        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
-    fi
-    sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
-    if (whiptail --title "INX-IRC-Metadata [IOTA] Installer" --yesno --defaultno "Do you want to restart Hornet to apply the new public API routes?" 8 65); then
-        for iotaInxPlugin in ${iotaInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
-            fi
-        done
-        unset iotaInxPlugin
-        sudo systemctl restart iota-hornet 2>/dev/null
-        for iotaInxPlugin in ${iotaInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
-            fi
-        done
-        unset iotaInxPlugin
-    fi
+#/api/irc-metadata/v1/nfts/*
+if [[ $iotaInxIrcMetadataApiRoutes = */api/irc-metadata/v1/nfts/\** ]]; then
+    iotaInxIrcMetadataApiRoutesNfts=OFF
+else
+    iotaInxIrcMetadataApiRoutesNfts=ON
+    iotaInxIrcMetadataApiPublicRoutes="/api/irc-metadata/v1/nfts/*"
 fi
-unset iotaHornetApiRoutes
+
+#/api/irc-metadata/v1/tokens/*
+if [[ $iotaInxIrcMetadataApiRoutes = */api/irc-metadata/v1/tokens/\** ]]; then
+    iotaInxIrcMetadataApiRoutesTokens=OFF
+else
+    iotaInxIrcMetadataApiRoutesTokens=ON
+    iotaInxIrcMetadataApiPublicRoutes=$(echo "$iotaInxIrcMetadataApiPublicRoutes,/api/irc-metadata/v1/tokens/*")
+fi
+
+######
+
+iotaInxIrcMetadataApiPublicRoutes=$(echo "$iotaInxIrcMetadataApiPublicRoutes" | tr -s ',,' ',')
+validateIotaInxIrcMetadataApiPublicRoutes="${iotaInxIrcMetadataApiPublicRoutes:0:1}"
+if [ "$validateIotaInxIrcMetadataApiPublicRoutes" = "," ]; then
+    iotaInxIrcMetadataApiPublicRoutes="${iotaInxIrcMetadataApiPublicRoutes:1}"
+fi
+
+if [ "$iotaInxIrcMetadataUpdateApiRoutes" = "true" ] && [ "$iotaInxIrcMetadataApiPublicRoutesCurrent" != "$iotaInxIrcMetadataApiPublicRoutes" ]; then
+    sudo sed -i 's~^iotaInxIrcMetadataApiPublicRoutes=.*~iotaInxIrcMetadataApiPublicRoutes="'$iotaInxIrcMetadataApiPublicRoutes'"~' $swarmConfigs/iota-inx-irc-metadata.cfg
+    iotaInxIrcMetadataApiPublicRoutesUpdated=true
+    restartIotaHornet=true
+fi

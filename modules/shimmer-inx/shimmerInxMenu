@@ -16,6 +16,47 @@ while [ $exitCode -lt 1 ]; do
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
+        if [ "$restartShimmerHornet" = "true" ] && [ -f "/usr/bin/shimmer-hornet" ]; then
+            if (whiptail --title "INX [SHIMMER] Menu" --yesno "Would you like to apply all INX API Route changes and restart [Shimmer] Hornet?" 8 65); then
+                if [ ! -f "/tmp/shimmer-hornet.lock" ]; then
+                    sudo touch /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                fi
+                {
+                    echo 0
+                    echo 20
+                    source $shimmerInxIndexerModule/shimmerHornetParser
+                    echo 40
+                    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                    do
+                        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                            if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                            fi
+                            sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                        fi
+                    done
+                    unset shimmerInxPlugin
+                    echo 60
+                    sudo systemctl restart shimmer-hornet > /dev/null 2>&1
+                    sleep 80
+                    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                    do
+                        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                            sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                            if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                            fi
+                        fi
+                    done
+                    unset shimmerInxPlugin
+                    echo 100
+                } | whiptail --gauge "Please wait while the changes are applied and [Shimmer] Hornet is restarted..." 8 65 0
+                unset restartShimmerHornet
+                if [ -f "/tmp/shimmer-hornet.lock" ]; then
+                    sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                fi
+            fi
+        fi
     fi
 
     case $CHOICE in
