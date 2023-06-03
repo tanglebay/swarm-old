@@ -11,7 +11,8 @@ while [ $exitCode -lt 1 ]; do
     CHOICE=$(
         whiptail --title "INX-IRC-METADATA [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
         "" "" \
-        "1)" "[${menuShimmerInxIrcMetadataUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
+        "1)" "API Routes" \
+        "2)" "[${menuShimmerInxIrcMetadataUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -42,6 +43,22 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
+            source $swarmConfigs/shimmer-inx-irc-metadata.cfg
+            shimmerInxIrcMetadataApiRoutes=$shimmerInxIrcMetadataApiPublicRoutes
+            source $shimmerInxIrcMetadataModule/shimmerInxIrcMetadataApiRoutes
+            shimmerInxIrcMetadataApiRoutes=$(whiptail --title "INX-IRC-Metadata [SHIMMER] API Routes" --checklist "" 24 65 2 \
+                "/api/irc-metadata/v1/nfts/*" "" $shimmerInxIrcMetadataApiRoutesNfts \
+                "/api/irc-metadata/v1/tokens/*" "" $shimmerInxIrcMetadataApiRoutesTokens 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            shimmerInxIrcMetadataApiRoutes=$(echo $shimmerInxIrcMetadataApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$exitStatus" != "1" ]; then
+                shimmerInxIrcMetadataUpdateApiRoutes=true
+                source $shimmerInxIrcMetadataModule/shimmerInxIrcMetadataApiRoutes
+                unset shimmerInxIrcMetadataUpdateApiRoutes
+            fi
+            unset shimmerInxIrcMetadataApiRoutes
+        ;;
+        "2)")
             source $swarmConfigs/shimmer-inx-irc-metadata.cfg
             if [ "$shimmerInxIrcMetadataUpdateCheck" = "true" ]; then
                 shimmerInxIrcMetadataUpdateCheckStatus="enabled"

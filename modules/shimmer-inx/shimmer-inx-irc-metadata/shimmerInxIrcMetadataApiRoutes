@@ -1,48 +1,33 @@
 #!/bin/bash
 
-source $swarmConfigs/shimmer-hornet.cfg
-shimmerHornetApiRoutes=$(whiptail --title "INX-IRC-Metadata [SHIMMER] API routes" --checklist "\nSelect (spacebar) the routes you want to make public." 24 65 2 \
-    "/api/irc-metadata/v1/nfts/*" "" OFF \
-    "/api/irc-metadata/v1/tokens/*" "" OFF 3>&1 1>&2 2>&3)
-exitStatus=$?
-shimmerHornetApiRoutes=$(echo $shimmerHornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerHornetApiRoutes" ]; then
-    #/api/irc-metadata/v1/nfts/*
-    if [[ $shimmerHornetApiRoutes = */api/irc-metadata/v1/nfts/\** ]] && [[ $shimmerHornetApiPublicRoutes != */api/irc-metadata/v1/nfts/\** ]]; then
-        if [ -f "/usr/bin/shimmer-inx-irc-metadata" ]; then
-            shimmerHornetApiPublicRoutes=$(echo "$shimmerHornetApiPublicRoutes,/api/irc-metadata/v1/nfts/*")
-        fi
-    fi
+# Unset VARS
+unset shimmerInxIrcMetadataApiPublicRoutes
 
-    #/api/irc-metadata/v1/tokens/*
-    if [[ $shimmerHornetApiRoutes = */api/irc-metadata/v1/tokens/\** ]] && [[ $shimmerHornetApiPublicRoutes != */api/irc-metadata/v1/tokens/\** ]]; then
-        if [ -f "/usr/bin/shimmer-inx-irc-metadata" ]; then
-            shimmerHornetApiPublicRoutes=$(echo "$shimmerHornetApiPublicRoutes,/api/irc-metadata/v1/tokens/*")
-        fi
-    fi
-
-    shimmerHornetApiPublicRoutes=$(echo "$shimmerHornetApiPublicRoutes" | tr -s ',,' ',')
-    validateShimmerHornetApiPublicRoutes=$(echo "${shimmerHornetApiPublicRoutes: -1}")
-    if [ "$validateShimmerHornetApiPublicRoutes" = "," ]; then
-        shimmerHornetApiPublicRoutes="${shimmerHornetApiPublicRoutes%?}"
-    fi
-    sudo sed -i 's~^shimmerHornetApiPublicRoutes=.*~shimmerHornetApiPublicRoutes="'$shimmerHornetApiPublicRoutes'"~' $swarmConfigs/shimmer-hornet.cfg
-    if (whiptail --title "INX-IRC-Metadata [SHIMMER] Installer" --yesno --defaultno "Do you want to restart Hornet to apply the new public API routes?" 8 65); then
-        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
-            fi
-        done
-        unset shimmerInxPlugin
-        sudo systemctl restart shimmer-hornet 2>/dev/null
-        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
-            fi
-        done
-        unset shimmerInxPlugin
-    fi
+#/api/irc-metadata/v1/nfts/*
+if [[ $shimmerInxIrcMetadataApiRoutes = */api/irc-metadata/v1/nfts/\** ]]; then
+    shimmerInxIrcMetadataApiRoutesIrcMetadataNfts=OFF
+else
+    shimmerInxIrcMetadataApiRoutesIrcMetadataNfts=ON
+    shimmerInxIrcMetadataApiPublicRoutes="/api/irc-metadata/v1/nfts/*"
 fi
-unset shimmerHornetApiRoutes
+
+#/api/irc-metadata/v1/tokens/*
+if [[ $shimmerInxIrcMetadataApiRoutes = */api/irc-metadata/v1/tokens/\** ]]; then
+    shimmerInxIrcMetadataApiRoutesIrcMetadataTokens=OFF
+else
+    shimmerInxIrcMetadataApiRoutesIrcMetadataTokens=ON
+    shimmerInxIrcMetadataApiPublicRoutes=$(echo "$shimmerInxIrcMetadataApiPublicRoutes,/api/irc-metadata/v1/tokens/*")
+fi
+
+######
+
+shimmerInxIrcMetadataApiPublicRoutes=$(echo "$shimmerInxIrcMetadataApiPublicRoutes" | tr -s ',,' ',')
+validateShimmerHornetApiPublicRoutes=$(echo "${shimmerInxIrcMetadataApiPublicRoutes: -1}")
+if [ "$validateShimmerHornetApiPublicRoutes" = "," ]; then
+    shimmerInxIrcMetadataApiPublicRoutes="${shimmerInxIrcMetadataApiPublicRoutes%?}"
+fi
+
+if [ "$shimmerInxIrcMetadataUpdateApiRoutes" = "true" ] && [ "$shimmerInxIrcMetadataApiRoutes" != "$shimmerInxIrcMetadataApiPublicRoutes" ]; then
+    sudo sed -i 's~^shimmerInxIrcMetadataApiPublicRoutes=.*~shimmerInxIrcMetadataApiPublicRoutes="'$shimmerInxIrcMetadataApiPublicRoutes'"~' $swarmConfigs/shimmer-inx-irc-metadata.cfg
+    restartShimmerHornet=true
+fi

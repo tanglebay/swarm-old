@@ -10,8 +10,8 @@ while [ $exitCode -lt 1 ]; do
     source $iotaInxMqttModule/iotaInxMqttConfigs
     CHOICE=$(
         whiptail --title "INX-MQTT [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
-        "1)" "MQTT Settings" \
-        "2)" "[${menuIotaInxMqttUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
+        "2)" "MQTT Settings" \
+        "3)" "[${menuIotaInxMqttUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -42,6 +42,21 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
+            source $swarmConfigs/iota-inx-mqtt.cfg
+            iotaInxMqttApiRoutes=$iotaInxMqttApiPublicRoutes
+            source $iotaInxMqttModule/iotaInxMqttApiRoutes
+            iotaInxMqttApiRoutes=$(whiptail --title "INX-MQTT [IOTA] API Routes" --checklist "" 24 65 2 \
+                "/api/mqtt/v1" "" $iotaInxMqttApiRoutesMqtt 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            iotaInxMqttApiRoutes=$(echo $iotaInxMqttApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$exitStatus" != "1" ]; then
+                iotaInxMqttUpdateApiRoutes=true
+                source $iotaInxMqttModule/iotaInxMqttApiRoutes
+                unset iotaInxMqttUpdateApiRoutes
+            fi
+            unset iotaInxMqttApiRoutes
+        ;;
+        "2)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
@@ -174,7 +189,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "2)")
+        "3)")
             source $swarmConfigs/iota-inx-mqtt.cfg
             if [ "$iotaInxMqttUpdateCheck" = "true" ]; then
                 iotaInxMqttUpdateCheckStatus="enabled"

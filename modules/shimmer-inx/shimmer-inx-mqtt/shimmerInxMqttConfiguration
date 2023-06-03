@@ -10,8 +10,8 @@ while [ $exitCode -lt 1 ]; do
     source $shimmerInxMqttModule/shimmerInxMqttConfigs
     CHOICE=$(
         whiptail --title "INX-MQTT [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
-        "1)" "MQTT Settings" \
-        "2)" "[${menuShimmerInxMqttUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
+        "2)" "MQTT Settings" \
+        "3)" "[${menuShimmerInxMqttUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -42,6 +42,21 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
+            source $swarmConfigs/shimmer-inx-mqtt.cfg
+            shimmerInxMqttApiRoutes=$shimmerInxMqttApiPublicRoutes
+            source $shimmerInxMqttModule/shimmerInxMqttApiRoutes
+            shimmerInxMqttApiRoutes=$(whiptail --title "INX-MQTT [SHIMMER] API Routes" --checklist "" 24 65 2 \
+                "/api/mqtt/v1" "" $shimmerInxMqttApiRoutesMqtt 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            shimmerInxMqttApiRoutes=$(echo $shimmerInxMqttApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$exitStatus" != "1" ]; then
+                shimmerInxMqttUpdateApiRoutes=true
+                source $shimmerInxMqttModule/shimmerInxMqttApiRoutes
+                unset shimmerInxMqttUpdateApiRoutes
+            fi
+            unset shimmerInxMqttApiRoutes
+        ;;
+        "2)")
             while [ $exitCode -lt 1 ]; do
                 clear
                 CHOICE=$(
@@ -174,7 +189,7 @@ while [ $exitCode -lt 1 ]; do
             done
             exitCode=0
         ;;
-        "2)")
+        "3)")
             source $swarmConfigs/shimmer-inx-mqtt.cfg
             if [ "$shimmerInxMqttUpdateCheck" = "true" ]; then
                 shimmerInxMqttUpdateCheckStatus="enabled"

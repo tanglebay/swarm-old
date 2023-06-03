@@ -1,56 +1,41 @@
 #!/bin/bash
 
-source $swarmConfigs/iota-hornet.cfg
-iotaHornetApiRoutes=$(whiptail --title "INX-Participation [IOTA] API routes" --checklist "\nSelect (spacebar) the routes you want to make public." 24 65 3 \
-    "/api/participation/v1/events*" "" OFF \
-    "/api/participation/v1/outputs*" "" OFF \
-    "/api/participation/v1/addresses*" "" OFF 3>&1 1>&2 2>&3)
-exitStatus=$?
-iotaHornetApiRoutes=$(echo $iotaHornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-if [ "$exitStatus" != "1" ] && [ ! -z "$iotaHornetApiRoutes" ]; then
-    #/api/participation/v1/events*
-    if [[ $iotaHornetApiRoutes = */api/participation/v1/events\** ]] && [[ $iotaHornetApiPublicRoutes != */api/participation/v1/events\** ]]; then
-        if [ -f "/usr/bin/iota-inx-participation" ]; then
-            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/participation/v1/events*")
-        fi
-    fi
+# Unset VARS
+unset iotaInxParticipationApiPublicRoutes
 
-    #/api/participation/v1/outputs*
-    if [[ $iotaHornetApiRoutes = */api/participation/v1/outputs\** ]] && [[ $iotaHornetApiPublicRoutes != */api/participation/v1/outputs\** ]]; then
-        if [ -f "/usr/bin/iota-inx-participation" ]; then
-            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/participation/v1/outputs*")
-        fi
-    fi
-
-    #/api/participation/v1/addresses*
-    if [[ $iotaHornetApiRoutes = */api/participation/v1/addresses\** ]] && [[ $iotaHornetApiPublicRoutes != */api/participation/v1/addresses\** ]]; then
-        if [ -f "/usr/bin/iota-inx-participation" ]; then
-            iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/participation/v1/addresses*")
-        fi
-    fi
-
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes" | tr -s ',,' ',')
-    validateIotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes: -1}")
-    if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
-        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
-    fi
-    sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
-    if (whiptail --title "INX-Participation [IOTA] Installer" --yesno --defaultno "Do you want to restart Hornet to apply the new public API routes?" 8 65); then
-        for iotaInxPlugin in ${iotaInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
-            fi
-        done
-        unset iotaInxPlugin
-        sudo systemctl restart iota-hornet 2>/dev/null
-        for iotaInxPlugin in ${iotaInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
-            fi
-        done
-        unset iotaInxPlugin
-    fi
+#/api/participation/v1/events*
+if [[ $iotaInxParticipationApiRoutes = */api/participation/v1/events\** ]]; then
+    iotaInxParticipationApiRoutesEvents=OFF
+else
+    iotaInxParticipationApiRoutesEvents=ON
+    iotaInxParticipationApiPublicRoutes="/api/participation/v1/events*"
 fi
-unset iotaHornetApiRoutes
+
+#/api/participation/v1/outputs*
+if [[ $iotaInxParticipationApiRoutes = */api/participation/v1/outputs\** ]]; then
+    iotaInxParticipationApiRoutesOutputs=OFF
+else
+    iotaInxParticipationApiRoutesOutputs=ON
+    iotaInxParticipationApiPublicRoutes=$(echo "$iotaInxParticipationApiPublicRoutes,/api/participation/v1/outputs*")
+fi
+
+#/api/participation/v1/addresses*
+if [[ $iotaInxParticipationApiRoutes = */api/participation/v1/addresses\** ]]; then
+    iotaInxParticipationApiRoutesAddresses=OFF
+else
+    iotaInxParticipationApiRoutesAddresses=ON
+    iotaInxParticipationApiPublicRoutes=$(echo "$iotaInxParticipationApiPublicRoutes,/api/participation/v1/addresses*")
+fi
+
+######
+
+iotaInxParticipationApiPublicRoutes=$(echo "$iotaInxParticipationApiPublicRoutes" | tr -s ',,' ',')
+validateIotaHornetApiPublicRoutes=$(echo "${iotaInxParticipationApiPublicRoutes: -1}")
+if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
+    iotaInxParticipationApiPublicRoutes="${iotaInxParticipationApiPublicRoutes%?}"
+fi
+
+if [ "$iotaInxParticipationUpdateApiRoutes" = "true" ] && [ "$iotaInxParticipationApiRoutes" != "$iotaInxParticipationApiPublicRoutes" ]; then
+    sudo sed -i 's~^iotaInxParticipationApiPublicRoutes=.*~iotaInxParticipationApiPublicRoutes="'$iotaInxParticipationApiPublicRoutes'"~' $swarmConfigs/iota-inx-participation.cfg
+    restartIotaHornet=true
+fi

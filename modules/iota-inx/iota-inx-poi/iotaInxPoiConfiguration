@@ -11,7 +11,8 @@ while [ $exitCode -lt 1 ]; do
     CHOICE=$(
         whiptail --title "INX-POI [IOTA] Configurations" --menu "\nChoose an option" 24 65 0 \
         "" "" \
-        "1)" "[${menuIotaInxPoiUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
+        "1)" "API Routes" \
+        "2)" "[${menuIotaInxPoiUpdateCheck^}] Update Check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
@@ -42,6 +43,22 @@ while [ $exitCode -lt 1 ]; do
 
     case $CHOICE in
         "1)")
+            source $swarmConfigs/iota-inx-poi.cfg
+            iotaInxPoiApiRoutes=$iotaInxPoiApiPublicRoutes
+            source $iotaInxPoiModule/iotaInxPoiApiRoutes
+            iotaInxPoiApiRoutes=$(whiptail --title "INX-POI [IOTA] API Routes" --checklist "" 24 65 2 \
+                "/api/poi/v1/create/*" "" $iotaInxPoiApiRoutesCreate \
+                "/api/poi/v1/validate" "" $iotaInxPoiApiRoutesValidate 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            iotaInxPoiApiRoutes=$(echo $iotaInxPoiApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
+            if [ "$exitStatus" != "1" ]; then
+                iotaInxPoiUpdateApiRoutes=true
+                source $iotaInxPoiModule/iotaInxPoiApiRoutes
+                unset iotaInxPoiUpdateApiRoutes
+            fi
+            unset iotaInxPoiApiRoutes
+        ;;
+        "2)")
             source $swarmConfigs/iota-inx-poi.cfg
             iotaInxPoiInxAddress=$(whiptail --inputbox "\nSet the address of the [IOTA] INX interface" 10 65 $iotaInxPoiInxAddress --title "INX-POI [IOTA] INX Address" 3>&1 1>&2 2>&3)
             exitStatus=$?
