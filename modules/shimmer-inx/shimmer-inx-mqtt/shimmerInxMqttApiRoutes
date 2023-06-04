@@ -1,31 +1,30 @@
 #!/bin/bash
 
-source $swarmConfigs/shimmer-hornet.cfg
+shimmerInxMqttApiPublicRoutesCurrent=$shimmerInxMqttApiPublicRoutes
 
-#/api/mqtt/v1
-if [[ $shimmerHornetApiRoutes != */api/mqtt/v1* ]]; then
-    shimmerHornetApiPublicRoutes=$(echo "$shimmerHornetApiPublicRoutes,/api/mqtt/v1")
-    shimmerHornetApiPublicRoutes=$(echo "$shimmerHornetApiPublicRoutes" | tr -s ',,' ',')
-    validateShimmerHornetApiPublicRoutes=$(echo "${shimmerHornetApiPublicRoutes: -1}")
-    if [ "$validateShimmerHornetApiPublicRoutes" = "," ]; then
-        shimmerHornetApiPublicRoutes="${shimmerHornetApiPublicRoutes%?}"
-    fi
-    sudo sed -i 's~^shimmerHornetApiPublicRoutes=.*~shimmerHornetApiPublicRoutes="'$shimmerHornetApiPublicRoutes'"~' $swarmConfigs/shimmer-hornet.cfg
-    if (whiptail --title "INX-MQTT [SHIMMER] Installer" --yesno --defaultno "Do you want to restart Hornet to apply the new public API routes?" 8 65); then
-        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
-            fi
-        done
-        unset shimmerInxPlugin
-        sudo systemctl restart shimmer-hornet 2>/dev/null
-        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
-            fi
-        done
-        unset shimmerInxPlugin
-    fi
+# Unset VARS
+unset shimmerInxMqttApiPublicRoutes
+
+# /api/mqtt/v1
+if [[ $shimmerInxMqttApiRoutes = */api/mqtt/v1* ]]; then
+    shimmerInxMqttApiRoutesMqtt=OFF
+else
+    shimmerInxMqttApiRoutesMqtt=ON
+    shimmerInxMqttApiPublicRoutes="/api/mqtt/v1"
 fi
+
+######
+
+shimmerInxMqttApiPublicRoutes=$(echo "$shimmerInxMqttApiPublicRoutes" | tr -s ',,' ',')
+validateShimmerInxMqttApiPublicRoutes="${shimmerInxMqttApiPublicRoutes:0:1}"
+if [ "$validateShimmerInxMqttApiPublicRoutes" = "," ]; then
+    shimmerInxMqttApiPublicRoutes="${shimmerInxMqttApiPublicRoutes:1}"
+fi
+
+if [ "$shimmerInxMqttUpdateApiRoutes" = "true" ] && [ "$shimmerInxMqttApiPublicRoutesCurrent" != "$shimmerInxMqttApiPublicRoutes" ]; then
+    sudo sed -i 's~^shimmerInxMqttApiPublicRoutes=.*~shimmerInxMqttApiPublicRoutes="'$shimmerInxMqttApiPublicRoutes'"~' $swarmConfigs/shimmer-inx-mqtt.cfg
+    shimmerInxMqttApiPublicRoutesUpdated=true
+    restartShimmerHornet=true
+fi
+
+unset shimmerInxMqttApiPublicRoutesCurrent

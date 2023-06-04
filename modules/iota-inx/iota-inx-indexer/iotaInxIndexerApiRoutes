@@ -1,31 +1,30 @@
 #!/bin/bash
 
-source $swarmConfigs/iota-hornet.cfg
+iotaInxIndexerApiPublicRoutesCurrent=$iotaInxIndexerApiPublicRoutes
+
+# Unset VARS
+unset iotaInxIndexerApiPublicRoutes
 
 #/api/indexer/v1/*
-if [[ $iotaHornetApiRoutes != */api/indexer/v1/\** ]]; then
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes,/api/indexer/v1/*")
-    iotaHornetApiPublicRoutes=$(echo "$iotaHornetApiPublicRoutes" | tr -s ',,' ',')
-    validateIotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes: -1}")
-    if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
-        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
-    fi
-    sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
-    if (whiptail --title "INX-Indexer [IOTA] Installer" --yesno --defaultno "Do you want to restart Hornet to apply the new public API routes?" 8 65); then
-        for iotaInxPlugin in ${iotaInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
-            fi
-        done
-        unset iotaInxPlugin
-        sudo systemctl restart iota-hornet 2>/dev/null
-        for iotaInxPlugin in ${iotaInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
-            fi
-        done
-        unset iotaInxPlugin
-    fi
+if [[ $iotaInxIndexerApiRoutes = */api/indexer/v1/\** ]]; then
+    iotaInxIndexerApiRoutesIndexer=OFF
+else
+    iotaInxIndexerApiRoutesIndexer=ON
+    iotaInxIndexerApiPublicRoutes="/api/indexer/v1/*"
 fi
+
+######
+
+iotaInxIndexerApiPublicRoutes=$(echo "$iotaInxIndexerApiPublicRoutes" | tr -s ',,' ',')
+validateIotaInxIndexerApiPublicRoutes="${iotaInxIndexerApiPublicRoutes:0:1}"
+if [ "$validateIotaInxIndexerApiPublicRoutes" = "," ]; then
+    iotaInxIndexerApiPublicRoutes="${iotaInxIndexerApiPublicRoutes:1}"
+fi
+
+if [ "$iotaInxIndexerUpdateApiRoutes" = "true" ] && [ "$iotaInxIndexerApiPublicRoutes" != "$iotaInxIndexerApiPublicRoutesCurrent" ]; then
+    sudo sed -i 's~^iotaInxIndexerApiPublicRoutes=.*~iotaInxIndexerApiPublicRoutes="'$iotaInxIndexerApiPublicRoutes'"~' $swarmConfigs/iota-inx-indexer.cfg
+    iotaInxIndexerApiPublicRoutesUpdated=true
+    restartIotaHornet=true
+fi
+
+unset iotaInxIndexerApiPublicRoutesCurrent

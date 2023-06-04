@@ -376,37 +376,41 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         if [ -f "/usr/bin/iota-inx-poi" ]; then
                             if (whiptail --title "INX-POI [IOTA] Installer" --yesno --defaultno "Do you really want to update INX-POI?" 8 65); then
-                                if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
-                                    sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
-                                fi
-                                # Update INX-POI
-                                source $iotaInxPoiModule/iotaInxPoiVersion
-                                if [ ! -z "$latestIotaInxPoiVersion" ]; then
-                                    {
-                                        echo 0
-                                        echo 33
-                                        source $iotaInxPoiModule/iotaInxPoiVersion
-                                        echo 66
-                                        source $iotaInxPoiModule/iotaInxPoiInstaller                      
-                                        echo 100
-                                        sleep 0.5
-                                    } | whiptail --gauge "Please wait while INX-POI is updated..." 8 65 0
-                                    {
-                                        # CALL MODULE CONFIGPARSER
-                                        source $iotaInxPoiModule/iotaInxPoiParser
-                                        sudo systemctl restart iota-inx-poi 2>/dev/null
-                                    } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
-                                    iotaInxPoiChecksum=$(cat /tmp/iota-inx-poi.checksum 2>/dev/null)
-                                    whiptail --title "INX-Poi [IOTA] Installer" --msgbox "INX-Poi successfully updated.\n\nChecksum: $iotaInxPoiChecksum" 10 65
-                                    if [ -f "/tmp/iota-inx-poi.checksum" ]; then
-                                        sudo rm -rf /tmp/iota-inx-poi.checksum 2>/dev/null
-                                        unset iotaInxPoiChecksum
+                                if [ ! -f "/tmp/watchdog_iota-inx-poi.lock" ]; then
+                                    if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
+                                        sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                    fi
+                                    # Update INX-POI
+                                    source $iotaInxPoiModule/iotaInxPoiVersion
+                                    if [ ! -z "$latestIotaInxPoiVersion" ]; then
+                                        {
+                                            echo 0
+                                            echo 33
+                                            source $iotaInxPoiModule/iotaInxPoiVersion
+                                            echo 66
+                                            source $iotaInxPoiModule/iotaInxPoiInstaller                      
+                                            echo 100
+                                            sleep 0.5
+                                        } | whiptail --gauge "Please wait while INX-POI is updated..." 8 65 0
+                                        {
+                                            # CALL MODULE CONFIGPARSER
+                                            source $iotaInxPoiModule/iotaInxPoiParser
+                                            sudo systemctl restart iota-inx-poi 2>/dev/null
+                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                        iotaInxPoiChecksum=$(cat /tmp/iota-inx-poi.checksum 2>/dev/null)
+                                        whiptail --title "INX-Poi [IOTA] Installer" --msgbox "INX-Poi successfully updated.\n\nChecksum: $iotaInxPoiChecksum" 10 65
+                                        if [ -f "/tmp/iota-inx-poi.checksum" ]; then
+                                            sudo rm -rf /tmp/iota-inx-poi.checksum 2>/dev/null
+                                            unset iotaInxPoiChecksum
+                                        fi
+                                    else
+                                        whiptail --title "INX-POI [IOTA] Installer" --msgbox "Sorry, but INX-POI update aborted." 8 65
+                                    fi
+                                    if [ -f "/tmp/iota-inx-poi.lock" ]; then
+                                        sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
                                     fi
                                 else
-                                    whiptail --title "INX-POI [IOTA] Installer" --msgbox "Sorry, but INX-POI update aborted." 8 65
-                                fi
-                                if [ -f "/tmp/iota-inx-poi.lock" ]; then
-                                    sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                    whiptail --title "INX- [IOTA] Installer" --msgbox "Aborted - [IOTA] INX- is currently locked by Watchdog, please try again." 8 65
                                 fi
                             fi
                         else
@@ -417,58 +421,59 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/iota-hornet" ]; then
                             # INSTALL INX-POI
                             if [ ! -f "/usr/bin/iota-inx-poi" ]; then
-                                if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
-                                    sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
-                                fi
-                                source $swarmConfigs/iota-inx-poi.cfg
-                                source $iotaInxPoiModule/iotaInxPoiVersion
-                                {
-                                    echo 0
-                                    echo 10
-                                    echo 30
-                                    source $iotaInxPoiModule/iotaInxPoiInstaller
-                                    echo 50
-                                    if [ -f "/usr/bin/iota-inx-poi" ]; then
-                                        source $swarmConfigs/iota-inx-poi.cfg
-                                        echo 60
-                                        # CALL MODULE CONFIGPARSER
-                                        source $iotaInxPoiModule/iotaInxPoiParser
-                                        echo 70
-                                        sudo systemctl start iota-inx-poi > /dev/null 2>&1
-                                        echo 80
-                                        sleep 2
-                                        iotaInxPoiStatus="$(systemctl show -p ActiveState --value iota-inx-poi)"
-                                        if [ "$iotaInxPoiStatus" != "active" ]; then
-                                            sudo systemctl restart iota-inx-poi > /dev/null 2>&1
-                                        fi
-                                        echo 100
+                                if [ ! -f "/tmp/watchdog_iota-inx-poi.lock" ]; then
+                                    if [ ! -f "/tmp/iota-inx-poi.lock" ]; then
+                                        sudo touch /tmp/iota-inx-poi.lock > /dev/null 2>&1
                                     fi
-                                } | whiptail --gauge "Please wait while installing INX-POI..." 8 65 0
-                                if [ -f "/usr/bin/iota-inx-poi" ]; then
-                                    if [ -f "/tmp/iota-inx-poi.checksum" ]; then
-                                        iotaInxPoiChecksum=$(cat /tmp/iota-inx-poi.checksum)
-                                    fi
-                                    whiptail --title "INX-POI [IOTA] Installer" --msgbox "INX-POI installation finished!\n\nChecksum: $iotaInxPoiChecksum" 17 65
-                                    if [ -f "/tmp/iota-inx-poi.checksum" ]; then
-                                        sudo rm -rf /tmp/iota-inx-poi.checksum > /dev/null 2>&1
-                                    fi
-                                    if (whiptail --title "INX-POI [IOTA] Installer" --yesno --defaultno "Do you want to make the API routes public for INX-POI?" 8 65); then
-                                        source $iotaInxPoiModule/iotaInxPoiApiRoutes
-                                    fi
-                                else
+                                    source $swarmConfigs/iota-inx-poi.cfg
+                                    source $iotaInxPoiModule/iotaInxPoiVersion
                                     {
                                         echo 0
-                                        echo 25
-                                        source $swarmConfigs/iota-inx-poi.cfg
+                                        echo 10
+                                        echo 30
+                                        source $iotaInxPoiModule/iotaInxPoiInstaller
                                         echo 50
-                                        source $iotaInxPoiModule/iotaInxPoiRemoval
-                                        echo 75
-                                        echo 100
-                                    } | whiptail --gauge "Please wait while the INX-POI files are removed...." 8 65 0
-                                    whiptail --title "INX-POI [IOTA] Installer" --msgbox "Error while installing INX-POI! Please try again later." 8 65
-                                fi
-                                if [ -f "/tmp/iota-inx-poi.lock" ]; then
-                                    sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                        if [ -f "/usr/bin/iota-inx-poi" ]; then
+                                            source $swarmConfigs/iota-inx-poi.cfg
+                                            echo 60
+                                            # CALL MODULE CONFIGPARSER
+                                            source $iotaInxPoiModule/iotaInxPoiParser
+                                            echo 70
+                                            sudo systemctl start iota-inx-poi > /dev/null 2>&1
+                                            echo 80
+                                            sleep 2
+                                            iotaInxPoiStatus="$(systemctl show -p ActiveState --value iota-inx-poi)"
+                                            if [ "$iotaInxPoiStatus" != "active" ]; then
+                                                sudo systemctl restart iota-inx-poi > /dev/null 2>&1
+                                            fi
+                                            echo 100
+                                        fi
+                                    } | whiptail --gauge "Please wait while installing INX-POI..." 8 65 0
+                                    if [ -f "/usr/bin/iota-inx-poi" ]; then
+                                        if [ -f "/tmp/iota-inx-poi.checksum" ]; then
+                                            iotaInxPoiChecksum=$(cat /tmp/iota-inx-poi.checksum)
+                                        fi
+                                        whiptail --title "INX-POI [IOTA] Installer" --msgbox "INX-POI installation finished!\n\nChecksum: $iotaInxPoiChecksum" 17 65
+                                        if [ -f "/tmp/iota-inx-poi.checksum" ]; then
+                                            sudo rm -rf /tmp/iota-inx-poi.checksum > /dev/null 2>&1
+                                        fi
+                                    else
+                                        {
+                                            echo 0
+                                            echo 25
+                                            source $swarmConfigs/iota-inx-poi.cfg
+                                            echo 50
+                                            source $iotaInxPoiModule/iotaInxPoiRemoval
+                                            echo 75
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while the INX-POI files are removed...." 8 65 0
+                                        whiptail --title "INX-POI [IOTA] Installer" --msgbox "Error while installing INX-POI! Please try again later." 8 65
+                                    fi
+                                    if [ -f "/tmp/iota-inx-poi.lock" ]; then
+                                        sudo rm -rf /tmp/iota-inx-poi.lock > /dev/null 2>&1
+                                    fi
+                                else
+                                    whiptail --title "INX-POI [IOTA] Installer" --msgbox "Aborted - [IOTA] INX-POI is currently locked by Watchdog, please try again." 8 65
                                 fi
                             else
                                 if [ -f "/usr/bin/iota-inx-poi" ]; then

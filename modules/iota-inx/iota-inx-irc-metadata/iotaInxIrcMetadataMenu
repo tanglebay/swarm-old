@@ -275,37 +275,41 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
                             if (whiptail --title "INX-IRC-Metadata [IOTA] Installer" --yesno --defaultno "Do you really want to update [Iota] INX-IRC-Metadata?" 8 65); then
-                                if [ ! -f "/tmp/iota-inx-irc-metadata.lock" ]; then
-                                    sudo touch /tmp/iota-inx-irc-metadata.lock > /dev/null 2>&1
-                                fi
-                                # Update INX-IRC-Metadata
-                                source $iotaInxIrcMetadataModule/iotaInxIrcMetadataVersion
-                                if [ ! -z "$latestIotaInxIrcMetadataVersion" ]; then
-                                    {
-                                        echo 0
-                                        echo 33
-                                        source $iotaInxIrcMetadataModule/iotaInxIrcMetadataVersion
-                                        echo 66
-                                        source $iotaInxIrcMetadataModule/iotaInxIrcMetadataInstaller                      
-                                        echo 100
-                                        sleep 0.5
-                                    } | whiptail --gauge "Please wait while [Iota] INX-IRC-Metadata is updated..." 8 65 0
-                                    {
-                                        # CALL MODULE CONFIGPARSER
-                                        source $iotaInxIrcMetadataModule/iotaInxIrcMetadataParser
-                                        sudo systemctl restart iota-inx-irc-metadata 2>/dev/null
-                                    } | whiptail --gauge "Please wait while parsing the [Iota] INX-IRC-Metadata configuration..." 8 65 0
-                                    iotaInxIrcMetadataChecksum=$(cat /tmp/iota-inx-irc-metadata.checksum 2>/dev/null)
-                                    whiptail --title "INX-Poi [IOTA] Installer" --msgbox "[Iota] INX-IRC-Metadata successfully updated.\n\nChecksum: $iotaInxIrcMetadataChecksum" 10 65
-                                    if [ -f "/tmp/iota-inx-irc-metadata.checksum" ]; then
-                                        sudo rm -rf /tmp/iota-inx-irc-metadata.checksum 2>/dev/null
-                                        unset iotaInxIrcMetadataChecksum
+                                if [ ! -f "/tmp/watchdog_iota-inx-irc-metadata.lock" ]; then
+                                    if [ ! -f "/tmp/iota-inx-irc-metadata.lock" ]; then
+                                        sudo touch /tmp/iota-inx-irc-metadata.lock > /dev/null 2>&1
+                                    fi
+                                    # Update INX-IRC-Metadata
+                                    source $iotaInxIrcMetadataModule/iotaInxIrcMetadataVersion
+                                    if [ ! -z "$latestIotaInxIrcMetadataVersion" ]; then
+                                        {
+                                            echo 0
+                                            echo 33
+                                            source $iotaInxIrcMetadataModule/iotaInxIrcMetadataVersion
+                                            echo 66
+                                            source $iotaInxIrcMetadataModule/iotaInxIrcMetadataInstaller                      
+                                            echo 100
+                                            sleep 0.5
+                                        } | whiptail --gauge "Please wait while [Iota] INX-IRC-Metadata is updated..." 8 65 0
+                                        {
+                                            # CALL MODULE CONFIGPARSER
+                                            source $iotaInxIrcMetadataModule/iotaInxIrcMetadataParser
+                                            sudo systemctl restart iota-inx-irc-metadata 2>/dev/null
+                                        } | whiptail --gauge "Please wait while parsing the [Iota] INX-IRC-Metadata configuration..." 8 65 0
+                                        iotaInxIrcMetadataChecksum=$(cat /tmp/iota-inx-irc-metadata.checksum 2>/dev/null)
+                                        whiptail --title "INX-Poi [IOTA] Installer" --msgbox "[Iota] INX-IRC-Metadata successfully updated.\n\nChecksum: $iotaInxIrcMetadataChecksum" 10 65
+                                        if [ -f "/tmp/iota-inx-irc-metadata.checksum" ]; then
+                                            sudo rm -rf /tmp/iota-inx-irc-metadata.checksum 2>/dev/null
+                                            unset iotaInxIrcMetadataChecksum
+                                        fi
+                                    else
+                                        whiptail --title "INX-IRC-Metadata [IOTA] Installer" --msgbox "Sorry, but [Iota] INX-IRC-Metadata update aborted." 8 65
+                                    fi
+                                    if [ -f "/tmp/iota-inx-irc-metadata.lock" ]; then
+                                        sudo rm -rf /tmp/iota-inx-irc-metadata.lock > /dev/null 2>&1
                                     fi
                                 else
-                                    whiptail --title "INX-IRC-Metadata [IOTA] Installer" --msgbox "Sorry, but [Iota] INX-IRC-Metadata update aborted." 8 65
-                                fi
-                                if [ -f "/tmp/iota-inx-irc-metadata.lock" ]; then
-                                    sudo rm -rf /tmp/iota-inx-irc-metadata.lock > /dev/null 2>&1
+                                    whiptail --title "INX-IRC-Metadata [IOTA] Installer" --msgbox "Aborted - [IOTA] INX-IRC-Metadata is currently locked by Watchdog, please try again." 8 65
                                 fi
                             fi
                         else
@@ -316,58 +320,59 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/iota-hornet" ]; then
                             # INSTALL INX-IRC-Metadata
                             if [ ! -f "/usr/bin/iota-inx-irc-metadata" ]; then
-                                if [ ! -f "/tmp/iota-inx-irc-metadata.lock" ]; then
-                                    sudo touch /tmp/iota-inx-irc-metadata.lock > /dev/null 2>&1
-                                fi
-                                source $swarmConfigs/iota-inx-irc-metadata.cfg
-                                source $iotaInxIrcMetadataModule/iotaInxIrcMetadataVersion
-                                {
-                                    echo 0
-                                    echo 10
-                                    echo 30
-                                    source $iotaInxIrcMetadataModule/iotaInxIrcMetadataInstaller
-                                    echo 50
-                                    if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
-                                        source $swarmConfigs/iota-inx-irc-metadata.cfg
-                                        echo 60
-                                        # CALL MODULE CONFIGPARSER
-                                        source $iotaInxIrcMetadataModule/iotaInxIrcMetadataParser
-                                        echo 70
-                                        sudo systemctl start iota-inx-irc-metadata > /dev/null 2>&1
-                                        echo 80
-                                        sleep 2
-                                        iotaInxIrcMetadataStatus="$(systemctl show -p ActiveState --value iota-inx-irc-metadata)"
-                                        if [ "$iotaInxIrcMetadataStatus" != "active" ]; then
-                                            sudo systemctl restart iota-inx-irc-metadata > /dev/null 2>&1
-                                        fi
-                                        echo 100
+                                if [ ! -f "/tmp/watchdog_iota-inx-irc-metadata.lock" ]; then
+                                    if [ ! -f "/tmp/iota-inx-irc-metadata.lock" ]; then
+                                        sudo touch /tmp/iota-inx-irc-metadata.lock > /dev/null 2>&1
                                     fi
-                                } | whiptail --gauge "Please wait while installing INX-IRC-Metadata..." 8 65 0
-                                if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
-                                    if [ -f "/tmp/iota-inx-irc-metadata.checksum" ]; then
-                                        iotaInxIrcMetadataChecksum=$(cat /tmp/iota-inx-irc-metadata.checksum)
-                                    fi
-                                    whiptail --title "INX-IRC-Metadata [IOTA] Installer" --msgbox "[Iota] INX-IRC-Metadata installation finished!\n\nChecksum: $iotaInxIrcMetadataChecksum" 17 65
-                                    if [ -f "/tmp/iota-inx-irc-metadata.checksum" ]; then
-                                        sudo rm -rf /tmp/iota-inx-irc-metadata.checksum > /dev/null 2>&1
-                                    fi
-                                    if (whiptail --title "INX-IRC-Metadata [IOTA] Installer" --yesno --defaultno "Do you want to make the API routes public for [Iota] INX-IRC-Metadata?" 8 65); then
-                                        source $iotaInxIrcMetadataModule/iotaInxIrcMetadataApiRoutes
-                                    fi
-                                else
+                                    source $swarmConfigs/iota-inx-irc-metadata.cfg
+                                    source $iotaInxIrcMetadataModule/iotaInxIrcMetadataVersion
                                     {
                                         echo 0
-                                        echo 25
-                                        source $swarmConfigs/iota-inx-irc-metadata.cfg
+                                        echo 10
+                                        echo 30
+                                        source $iotaInxIrcMetadataModule/iotaInxIrcMetadataInstaller
                                         echo 50
-                                        source $iotaInxIrcMetadataModule/iotaInxIrcMetadataRemoval
-                                        echo 75
-                                        echo 100
-                                    } | whiptail --gauge "Please wait while the [Iota] INX-IRC-Metadata files are removed...." 8 65 0
-                                    whiptail --title "INX-IRC-Metadata [IOTA] Installer" --msgbox "Error while installing [Iota] INX-IRC-Metadata! Please try again later." 8 65
-                                fi
-                                if [ -f "/tmp/iota-inx-irc-metadata.lock" ]; then
-                                    sudo rm -rf /tmp/iota-inx-irc-metadata.lock > /dev/null 2>&1
+                                        if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
+                                            source $swarmConfigs/iota-inx-irc-metadata.cfg
+                                            echo 60
+                                            # CALL MODULE CONFIGPARSER
+                                            source $iotaInxIrcMetadataModule/iotaInxIrcMetadataParser
+                                            echo 70
+                                            sudo systemctl start iota-inx-irc-metadata > /dev/null 2>&1
+                                            echo 80
+                                            sleep 2
+                                            iotaInxIrcMetadataStatus="$(systemctl show -p ActiveState --value iota-inx-irc-metadata)"
+                                            if [ "$iotaInxIrcMetadataStatus" != "active" ]; then
+                                                sudo systemctl restart iota-inx-irc-metadata > /dev/null 2>&1
+                                            fi
+                                            echo 100
+                                        fi
+                                    } | whiptail --gauge "Please wait while installing INX-IRC-Metadata..." 8 65 0
+                                    if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then
+                                        if [ -f "/tmp/iota-inx-irc-metadata.checksum" ]; then
+                                            iotaInxIrcMetadataChecksum=$(cat /tmp/iota-inx-irc-metadata.checksum)
+                                        fi
+                                        whiptail --title "INX-IRC-Metadata [IOTA] Installer" --msgbox "[Iota] INX-IRC-Metadata installation finished!\n\nChecksum: $iotaInxIrcMetadataChecksum" 17 65
+                                        if [ -f "/tmp/iota-inx-irc-metadata.checksum" ]; then
+                                            sudo rm -rf /tmp/iota-inx-irc-metadata.checksum > /dev/null 2>&1
+                                        fi
+                                    else
+                                        {
+                                            echo 0
+                                            echo 25
+                                            source $swarmConfigs/iota-inx-irc-metadata.cfg
+                                            echo 50
+                                            source $iotaInxIrcMetadataModule/iotaInxIrcMetadataRemoval
+                                            echo 75
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while the [Iota] INX-IRC-Metadata files are removed...." 8 65 0
+                                        whiptail --title "INX-IRC-Metadata [IOTA] Installer" --msgbox "Error while installing [Iota] INX-IRC-Metadata! Please try again later." 8 65
+                                    fi
+                                    if [ -f "/tmp/iota-inx-irc-metadata.lock" ]; then
+                                        sudo rm -rf /tmp/iota-inx-irc-metadata.lock > /dev/null 2>&1
+                                    fi
+                                else
+                                    whiptail --title "INX-IRC-Metadata [IOTA] Installer" --msgbox "Aborted - [IOTA] INX-IRC-Metadata is currently locked by Watchdog, please try again." 8 65
                                 fi
                             else
                                 if [ -f "/usr/bin/iota-inx-irc-metadata" ]; then

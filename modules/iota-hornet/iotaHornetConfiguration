@@ -120,7 +120,7 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
                             source $swarmConfigs/iota-hornet.cfg
                             iotaHornetApiRoutes=$iotaHornetApiPublicRoutes
                             source $iotaHornetModule/iotaHornetApiRoutes
-                            iotaHornetApiRoutes=$(whiptail --title "Hornet [IOTA] API routes" --checklist "" 24 65 18 \
+                            iotaHornetApiRoutes=$(whiptail --title "Hornet [IOTA] API routes" --checklist "\nSelect which API routes should not be public(*):" 24 65 11 \
                                 "/health" "" $iotaHornetApiRoutesHealth \
                                 "/api/routes" "" $iotaHornetApiRoutesRoutes \
                                 "/api/core/v2/info" "" $iotaHornetApiRoutesInfo \
@@ -131,16 +131,7 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
                                 "/api/core/v2/outputs*" "" $iotaHornetApiRoutesOutputs \
                                 "/api/core/v2/treasury" "" $iotaHornetApiRoutesTreasury \
                                 "/api/core/v2/receipts*" "" $iotaHornetApiRoutesReceipts \
-                                "/api/debug/v1/*" "" $iotaHornetApiRoutesDebug \
-                                "/api/indexer/v1/*" "" $iotaHornetApiRoutesIndexer \
-                                "/api/mqtt/v1" "" $iotaHornetApiRoutesMqtt \
-                                "/api/participation/v1/events*" "" $iotaHornetApiRoutesParticipationEvents \
-                                "/api/participation/v1/outputs*" "" $iotaHornetApiRoutesParticipationOutputs \
-                                "/api/participation/v1/addresses*" "" $iotaHornetApiRoutesParticipationAddresses \
-                                "/api/poi/v1/create/*" "" $iotaHornetApiRoutesPoiCreate \
-                                "/api/poi/v1/validate" "" $iotaHornetApiRoutesPoiValidate \
-                                "/api/irc-metadata/v1/nfts/*" "" $iotaHornetApiRoutesIrcMetadataNfts \
-                                "/api/irc-metadata/v1/tokens/*" "" $iotaHornetApiRoutesIrcMetadataTokens 3>&1 1>&2 2>&3)
+                                "/api/debug/v1/*" "" $iotaHornetApiRoutesDebug 3>&1 1>&2 2>&3)
                             exitStatus=$?
                             iotaHornetApiRoutes=$(echo $iotaHornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
                             if [ "$exitStatus" != "1" ]; then
@@ -445,14 +436,14 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
                             if (whiptail --title "Hornet [IOTA] Pruning" --yesno --defaultno "Are you sure you want to $iotaHornetPruningEnabledStatus [IOTA] Hornet pruning?" 8 65); then
                                 if [ "$iotaHornetPruningEnabled" = "true" ]; then
                                     iotaHornetPruningEnabled=false
-                                    iotaHornetPruningEnabledStatus="disabled"
                                 else
                                     iotaHornetPruningEnabled=true
-                                    iotaHornetPruningEnabledStatus="enabled"
                                 fi
-                                restartIotaHornet=true
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetConfigParsers/iotaHornetPruningEnabled
+                                fi
                                 sudo sed -i 's/^iotaHornetPruningEnabled=.*/iotaHornetPruningEnabled='$iotaHornetPruningEnabled'/' $swarmConfigs/iota-hornet.cfg
-                                whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning of the [IOTA] Hornet database $iotaHornetPruningEnabledStatus." 8 65
+                                whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning of the [IOTA] Hornet database ${iotaHornetPruningEnabledStatus}d." 8 65
                             fi
                         ;;
                         "2)")
@@ -1049,14 +1040,14 @@ else
                     source $swarmConfigs/iota-hornet.cfg
                     # Hornet Pruning
                     if [ "$iotaHornetPruningEnabled" = "true" ]; then
-                        iotaHornetPruningEnabledStatus=enabled
+                        iotaHornetPruningEnabledStatus=enable
                     else
-                        iotaHornetPruningEnabledStatus=disabled
+                        iotaHornetPruningEnabledStatus=disable
                     fi
                     CHOICE=$(
-                        whiptail --title "Hornet [IOTA] Pruning" --menu "\nStatus: $iotaHornetPruningEnabledStatus\n\nChoose an option" 24 65 0 \
+                        whiptail --title "Hornet [IOTA] Pruning" --menu "\nChoose an option" 24 65 0 \
                         "" "" \
-                        "1)" "Enable/Disable Pruning" \
+                        "1)" "[${iotaHornetPruningEnabledStatus^}] Pruning" \
                         "2)" "Set Database Size" \
                         "3)" "Set Pruning Cooldown" \
                         "4)" "Set Pruning Percentage" 3>&2 2>&1 1>&3
@@ -1067,42 +1058,18 @@ else
                     fi
                     case $CHOICE in
                         "1)")
-                            while [ $exitCode -lt 1 ]; do
-                                if [ "$iotaHornetPruning" = "true" ]; then
-                                    iotaHornetPruningStatus=enabled
+                            if (whiptail --title "Hornet [IOTA] Pruning" --yesno --defaultno "Are you sure you want to $iotaHornetPruningEnabledStatus [IOTA] Hornet pruning?" 8 65); then
+                                if [ "$iotaHornetPruningEnabled" = "true" ]; then
+                                    iotaHornetPruningEnabled=false
                                 else
-                                    iotaHornetPruningStatus=disabled
+                                    iotaHornetPruningEnabled=true
                                 fi
-                                CHOICE=$(
-                                    whiptail --title "Hornet [IOTA] Pruning" --menu "\nStatus: $iotaHornetPruningEnabledStatus\n\nChoose an option" 24 65 0 \
-                                    "" "" \
-                                    "1)" "Enable pruning" \
-                                    "2)" "Disable pruning" 3>&2 2>&1 1>&3
-                                )
-                                exitStatus=$?
-                                if [ "$exitStatus" = "1" ]; then
-                                    exitCode=1
+                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                    source $iotaHornetConfigParsers/iotaHornetPruningEnabled
                                 fi
-                                case $CHOICE in
-                                    "1)")
-                                        iotaHornetPruningEnabled=true
-                                        if [ -f "/usr/bin/iota-hornet" ]; then
-                                            source $iotaHornetConfigParsers/iotaHornetPruningEnabled
-                                        fi
-                                        sudo sed -i 's/^iotaHornetPruningEnabeld=.*/iotaHornetPruningEnabled='$iotaHornetPruningEnabled'/' $swarmConfigs/iota-hornet.cfg
-                                        whiptail --title "Hornet [IOTA] Pruning" --msgbox "[IOTA] Hornet pruning was successfully activated!" 8 65
-                                    ;;
-                                    "2)")
-                                        iotaHornetPruningEnabled=false
-                                        if [ -f "/usr/bin/iota-hornet" ]; then
-                                            source $iotaHornetConfigParsers/iotaHornetPruningEnabled
-                                        fi
-                                        sudo sed -i 's/^iotaHornetPruningEnabled=.*/iotaHornetPruningEnabled='$iotaHornetPruningEnabled'/' $swarmConfigs/iota-hornet.cfg
-                                        whiptail --title "Hornet [IOTA] Pruning" --msgbox "[IOTA] Hornet pruning was successfully deactivated!" 8 65
-                                    ;;
-                                esac
-                            done
-                            exitCode=0
+                                sudo sed -i 's/^iotaHornetPruningEnabled=.*/iotaHornetPruningEnabled='$iotaHornetPruningEnabled'/' $swarmConfigs/iota-hornet.cfg
+                                whiptail --title "Hornet [IOTA] Pruning" --msgbox "Pruning of the [IOTA] Hornet database ${iotaHornetPruningEnabledStatus}d." 8 65
+                            fi
                         ;;
                         "2)")
                             iotaHornetPruningDatabaseSize=$(whiptail --inputbox "\nSet the maximum size of the [IOTA] Hornet database in gigabyte." 10 65 $iotaHornetPruningDatabaseSize --title "Hornet [IOTA] Pruning" 3>&1 1>&2 2>&3)

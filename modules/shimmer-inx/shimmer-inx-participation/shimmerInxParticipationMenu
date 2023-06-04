@@ -380,37 +380,41 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         if [ -f "/usr/bin/shimmer-inx-participation" ]; then
                             if (whiptail --title "INX-Participation [SHIMMER] Installer" --yesno --defaultno "Do you really want to update INX-Participation?" 8 65); then
-                                if [ ! -f "/tmp/shimmer-inx-participation.lock" ]; then
-                                    sudo touch /tmp/shimmer-inx-participation.lock > /dev/null 2>&1
-                                fi
-                                # Update INX-Participation
-                                source $shimmerInxParticipationModule/shimmerInxParticipationVersion
-                                if [ ! -z "$latestShimmerInxParticipationVersion" ]; then
-                                    {
-                                        echo 0
-                                        echo 33
-                                        source $shimmerInxParticipationModule/shimmerInxParticipationVersion
-                                        echo 66
-                                        source $shimmerInxParticipationModule/shimmerInxParticipationInstaller                      
-                                        echo 100
-                                        sleep 0.5
-                                    } | whiptail --gauge "Please wait while INX-Participation is updated..." 8 65 0
-                                    {
-                                        # CALL MODULE CONFIGPARSER
-                                        source $shimmerInxParticipationModule/shimmerInxParticipationParser
-                                        sudo systemctl restart shimmer-inx-participation 2>/dev/null
-                                    } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
-                                    shimmerInxParticipationChecksum=$(cat /tmp/shimmer-inx-participation.checksum 2>/dev/null)
-                                    whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "INX-Participation successfully updated.\n\nChecksum: $shimmerInxParticipationChecksum" 10 65
-                                    if [ -f "/tmp/shimmer-inx-participation.checksum" ]; then
-                                        sudo rm -rf /tmp/shimmer-inx-participation.checksum 2>/dev/null
-                                        unset shimmerInxParticipationChecksum
+                                if [ ! -f "/tmp/watchdog_shimmer-inx-participation.lock" ]; then
+                                    if [ ! -f "/tmp/shimmer-inx-participation.lock" ]; then
+                                        sudo touch /tmp/shimmer-inx-participation.lock > /dev/null 2>&1
                                     fi
-                                    if [ -f "/tmp/shimmer-inx-participation.lock" ]; then
-                                        sudo rm -rf /tmp/shimmer-inx-participation.lock > /dev/null 2>&1
+                                    # Update INX-Participation
+                                    source $shimmerInxParticipationModule/shimmerInxParticipationVersion
+                                    if [ ! -z "$latestShimmerInxParticipationVersion" ]; then
+                                        {
+                                            echo 0
+                                            echo 33
+                                            source $shimmerInxParticipationModule/shimmerInxParticipationVersion
+                                            echo 66
+                                            source $shimmerInxParticipationModule/shimmerInxParticipationInstaller                      
+                                            echo 100
+                                            sleep 0.5
+                                        } | whiptail --gauge "Please wait while INX-Participation is updated..." 8 65 0
+                                        {
+                                            # CALL MODULE CONFIGPARSER
+                                            source $shimmerInxParticipationModule/shimmerInxParticipationParser
+                                            sudo systemctl restart shimmer-inx-participation 2>/dev/null
+                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                        shimmerInxParticipationChecksum=$(cat /tmp/shimmer-inx-participation.checksum 2>/dev/null)
+                                        whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "INX-Participation successfully updated.\n\nChecksum: $shimmerInxParticipationChecksum" 10 65
+                                        if [ -f "/tmp/shimmer-inx-participation.checksum" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-participation.checksum 2>/dev/null
+                                            unset shimmerInxParticipationChecksum
+                                        fi
+                                        if [ -f "/tmp/shimmer-inx-participation.lock" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-participation.lock > /dev/null 2>&1
+                                        fi
+                                    else
+                                        whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "Sorry, but INX-Participation update aborted." 10 65
                                     fi
                                 else
-                                    whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "Sorry, but INX-Participation update aborted." 10 65
+                                    whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "Aborted - [Shimmer] INX-Participation is currently locked by Watchdog, please try again." 8 65
                                 fi
                             fi
                         else
@@ -421,58 +425,59 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/shimmer-hornet" ]; then
                             # INSTALL INX-Participation
                             if [ ! -f "/usr/bin/shimmer-inx-participation" ]; then
-                                if [ ! -f "/tmp/shimmer-inx-participation.lock" ]; then
-                                    sudo touch /tmp/shimmer-inx-participation.lock > /dev/null 2>&1
-                                fi
-                                source $swarmConfigs/shimmer-inx-participation.cfg
-                                source $shimmerInxParticipationModule/shimmerInxParticipationVersion
-                                {
-                                    echo 0
-                                    echo 10
-                                    echo 30
-                                    source $shimmerInxParticipationModule/shimmerInxParticipationInstaller
-                                    echo 50
-                                    if [ -f "/usr/bin/shimmer-inx-participation" ]; then
-                                        source $swarmConfigs/shimmer-inx-participation.cfg
-                                        echo 60
-                                        # CALL MODULE CONFIGPARSER
-                                        source $shimmerInxParticipationModule/shimmerInxParticipationParser
-                                        echo 70
-                                        sudo systemctl start shimmer-inx-participation > /dev/null 2>&1
-                                        echo 80
-                                        sleep 2
-                                        shimmerInxParticipationStatus="$(systemctl show -p ActiveState --value shimmer-inx-participation)"
-                                        if [ "$shimmerInxParticipationStatus" != "active" ]; then
-                                            sudo systemctl restart shimmer-inx-participation > /dev/null 2>&1
-                                        fi
-                                        echo 100
+                                if [ ! -f "/tmp/watchdog_shimmer-inx-participation" ]; then
+                                    if [ ! -f "/tmp/shimmer-inx-participation.lock" ]; then
+                                        sudo touch /tmp/shimmer-inx-participation.lock > /dev/null 2>&1
                                     fi
-                                } | whiptail --gauge "Please wait while installing INX-Participation..." 8 65 0
-                                if [ -f "/usr/bin/shimmer-inx-participation" ]; then
-                                    if [ -f "/tmp/shimmer-inx-participation.checksum" ]; then
-                                        shimmerInxParticipationChecksum=$(cat /tmp/shimmer-inx-participation.checksum)
-                                    fi
-                                    whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "INX-Participation installation finished.\n\nChecksum: $shimmerInxParticipationChecksum" 17 65
-                                    if [ -f "/tmp/shimmer-inx-participation.checksum" ]; then
-                                        sudo rm -rf /tmp/shimmer-inx-participation.checksum > /dev/null 2>&1
-                                    fi
-                                    if (whiptail --title "INX-Participation [SHIMMER] Installer" --yesno --defaultno "Do you want to make the API routes public for INX-Participation?" 8 65); then
-                                        source $shimmerInxParticipationModule/shimmerInxParticipationApiRoutes
-                                    fi
-                                else
+                                    source $swarmConfigs/shimmer-inx-participation.cfg
+                                    source $shimmerInxParticipationModule/shimmerInxParticipationVersion
                                     {
                                         echo 0
-                                        echo 25
-                                        source $swarmConfigs/shimmer-inx-participation.cfg
+                                        echo 10
+                                        echo 30
+                                        source $shimmerInxParticipationModule/shimmerInxParticipationInstaller
                                         echo 50
-                                        source $shimmerInxParticipationModule/shimmerInxParticipationRemoval
-                                        echo 75
-                                        echo 100
-                                    } | whiptail --gauge "Please wait while the INX-Participation files are removed...." 8 65 0
-                                    whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "Error while installing INX-Participation! Please try again later." 8 65
-                                fi
-                                if [ -f "/tmp/shimmer-inx-participation.lock" ]; then
-                                    sudo rm -rf /tmp/shimmer-inx-participation.lock > /dev/null 2>&1
+                                        if [ -f "/usr/bin/shimmer-inx-participation" ]; then
+                                            source $swarmConfigs/shimmer-inx-participation.cfg
+                                            echo 60
+                                            # CALL MODULE CONFIGPARSER
+                                            source $shimmerInxParticipationModule/shimmerInxParticipationParser
+                                            echo 70
+                                            sudo systemctl start shimmer-inx-participation > /dev/null 2>&1
+                                            echo 80
+                                            sleep 2
+                                            shimmerInxParticipationStatus="$(systemctl show -p ActiveState --value shimmer-inx-participation)"
+                                            if [ "$shimmerInxParticipationStatus" != "active" ]; then
+                                                sudo systemctl restart shimmer-inx-participation > /dev/null 2>&1
+                                            fi
+                                            echo 100
+                                        fi
+                                    } | whiptail --gauge "Please wait while installing INX-Participation..." 8 65 0
+                                    if [ -f "/usr/bin/shimmer-inx-participation" ]; then
+                                        if [ -f "/tmp/shimmer-inx-participation.checksum" ]; then
+                                            shimmerInxParticipationChecksum=$(cat /tmp/shimmer-inx-participation.checksum)
+                                        fi
+                                        whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "INX-Participation installation finished.\n\nChecksum: $shimmerInxParticipationChecksum" 17 65
+                                        if [ -f "/tmp/shimmer-inx-participation.checksum" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-participation.checksum > /dev/null 2>&1
+                                        fi
+                                    else
+                                        {
+                                            echo 0
+                                            echo 25
+                                            source $swarmConfigs/shimmer-inx-participation.cfg
+                                            echo 50
+                                            source $shimmerInxParticipationModule/shimmerInxParticipationRemoval
+                                            echo 75
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while the INX-Participation files are removed...." 8 65 0
+                                        whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "Error while installing INX-Participation! Please try again later." 8 65
+                                    fi
+                                    if [ -f "/tmp/shimmer-inx-participation.lock" ]; then
+                                        sudo rm -rf /tmp/shimmer-inx-participation.lock > /dev/null 2>&1
+                                    fi
+                                else
+                                    whiptail --title "INX-Participation [SHIMMER] Installer" --msgbox "Aborted - [Shimmer] INX-Participation is currently locked by Watchdog, please try again." 8 65
                                 fi
                             else
                                 if [ -f "/usr/bin/shimmer-inx-participation" ]; then

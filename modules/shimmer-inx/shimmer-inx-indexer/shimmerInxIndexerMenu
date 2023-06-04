@@ -302,40 +302,44 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
                             if (whiptail --title "INX-Indexer [SHIMMER] Installer" --yesno --defaultno "Do you really want to update [Shimmer] INX-Indexer?" 8 65); then
-                                # Update INX-Indexer
-                                source $shimmerInxIndexerModule/shimmerInxIndexerVersion
-                                if [ ! -z "$latestShimmerInxIndexerVersion" ]; then
-                                    if [ ! -f "/tmp/shimmer-inx-indexer.lock" ]; then
-                                        sudo touch /tmp/shimmer-inx-indexer.lock > /dev/null 2>&1
-                                    fi
-                                    {
-                                        echo 0
-                                        echo 33
-                                        source $shimmerInxIndexerModule/shimmerInxIndexerVersion
-                                        echo 66
-                                        source $shimmerInxIndexerModule/shimmerInxIndexerInstaller                      
-                                        echo 100
-                                        sleep 0.5
-                                    } | whiptail --gauge "Please wait while INX-Indexer is updated..." 8 65 0
-                                    {
-                                        # CALL MODULE CONFIGPARSER
-                                        source $shimmerInxIndexerModule/shimmerInxIndexerParser
-                                        sudo systemctl restart shimmer-inx-indexer 2>/dev/null
-                                    } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
-                                    shimmerInxIndexerChecksum=$(cat /tmp/shimmer-inx-indexer.checksum 2>/dev/null)
-                                    whiptail --title "INX-Indexer [SHIMMER] Installer" --msgbox "[Shimmer] INX-Indexer successfully updated.\n\nChecksum: $shimmerInxIndexerChecksum" 10 65
-                                    if [ -f "/tmp/shimmer-inx-indexer.checksum" ]; then
-                                        sudo rm -rf /tmp/shimmer-inx-indexer.checksum 2>/dev/null
-                                        unset shimmerInxIndexerChecksum
-                                    fi
-                                    if [ -f "/tmp/shimmer-inx-indexer.lock" ]; then
-                                        sudo rm -rf /tmp/shimmer-inx-indexer.lock > /dev/null 2>&1
-                                    fi
-                                    if (whiptail --title "INX-Indexer [SHIMMER] Installer" --yesno --defaultno "Do you want to make the API routes public for [Shimmer] INX-Indexer?" 8 65); then
-                                        source $shimmerInxIndexerModule/shimmerInxIndexerApiRoutes
+                                if [ ! -f "/tmp/watchdog_shimmer-inx-indexer.lock" ]; then
+                                    # Update INX-Indexer
+                                    source $shimmerInxIndexerModule/shimmerInxIndexerVersion
+                                    if [ ! -z "$latestShimmerInxIndexerVersion" ]; then
+                                        if [ ! -f "/tmp/shimmer-inx-indexer.lock" ]; then
+                                            sudo touch /tmp/shimmer-inx-indexer.lock > /dev/null 2>&1
+                                        fi
+                                        {
+                                            echo 0
+                                            echo 33
+                                            source $shimmerInxIndexerModule/shimmerInxIndexerVersion
+                                            echo 66
+                                            source $shimmerInxIndexerModule/shimmerInxIndexerInstaller                      
+                                            echo 100
+                                            sleep 0.5
+                                        } | whiptail --gauge "Please wait while INX-Indexer is updated..." 8 65 0
+                                        {
+                                            # CALL MODULE CONFIGPARSER
+                                            source $shimmerInxIndexerModule/shimmerInxIndexerParser
+                                            sudo systemctl restart shimmer-inx-indexer 2>/dev/null
+                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                        shimmerInxIndexerChecksum=$(cat /tmp/shimmer-inx-indexer.checksum 2>/dev/null)
+                                        whiptail --title "INX-Indexer [SHIMMER] Installer" --msgbox "[Shimmer] INX-Indexer successfully updated.\n\nChecksum: $shimmerInxIndexerChecksum" 10 65
+                                        if [ -f "/tmp/shimmer-inx-indexer.checksum" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-indexer.checksum 2>/dev/null
+                                            unset shimmerInxIndexerChecksum
+                                        fi
+                                        if [ -f "/tmp/shimmer-inx-indexer.lock" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-indexer.lock > /dev/null 2>&1
+                                        fi
+                                        if (whiptail --title "INX-Indexer [SHIMMER] Installer" --yesno --defaultno "Do you want to make the API routes public for [Shimmer] INX-Indexer?" 8 65); then
+                                            source $shimmerInxIndexerModule/shimmerInxIndexerApiRoutes
+                                        fi
+                                    else
+                                        whiptail --title "INX [SHIMMER] Indexer" --msgbox "Sorry, but [Shimmer] INX-Indexer update aborted." 8 65
                                     fi
                                 else
-                                    whiptail --title "INX [SHIMMER] Indexer" --msgbox "Sorry, but [Shimmer] INX-Indexer update aborted." 8 65
+                                    whiptail --title "INX-Indexer [SHIMMER] Installer" --msgbox "Aborted - [Shimmer] INX-Indexer is currently locked by Watchdog, please try again." 8 65
                                 fi
                             fi
                         else
@@ -346,55 +350,59 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/shimmer-hornet" ]; then
                             # INSTALL INX-Indexer
                             if [ ! -f "/usr/bin/shimmer-inx-indexer" ]; then
-                                if [ ! -f "/tmp/shimmer-inx-indexer.lock" ]; then
-                                    sudo touch /tmp/shimmer-inx-indexer.lock > /dev/null 2>&1
-                                fi
-                                source $swarmConfigs/shimmer-inx-indexer.cfg
-                                source $shimmerInxIndexerModule/shimmerInxIndexerVersion
-                                {
-                                    echo 0
-                                    echo 10
-                                    echo 30
-                                    source $shimmerInxIndexerModule/shimmerInxIndexerInstaller
-                                    echo 50
-                                    if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-                                        source $swarmConfigs/shimmer-inx-indexer.cfg
-                                        echo 60
-                                        # CALL MODULE CONFIGPARSER
-                                        source $shimmerInxIndexerModule/shimmerInxIndexerParser
-                                        echo 70
-                                        sudo systemctl start shimmer-inx-indexer > /dev/null 2>&1
-                                        echo 80
-                                        sleep 2
-                                        shimmerInxIndexerStatus="$(systemctl show -p ActiveState --value shimmer-inx-indexer)"
-                                        if [ "$shimmerInxIndexerStatus" != "active" ]; then
-                                            sudo systemctl restart shimmer-inx-indexer > /dev/null 2>&1
-                                        fi
-                                        echo 100
+                                if [ ! -f "/tmp/watchdog_shimmer-inx-indexer.lock" ]; then
+                                    if [ ! -f "/tmp/shimmer-inx-indexer.lock" ]; then
+                                        sudo touch /tmp/shimmer-inx-indexer.lock > /dev/null 2>&1
                                     fi
-                                } | whiptail --gauge "Please wait while installing [Shimmer] INX-Indexer..." 8 65 0
-                                if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
-                                    if [ -f "/tmp/shimmer-inx-indexer.checksum" ]; then
-                                        shimmerInxIndexerChecksum=$(cat /tmp/shimmer-inx-indexer.checksum)
-                                    fi
-                                    whiptail --title "INX-Indexer [SHIMMER] Installer" --msgbox "[Shimmer] INX-Indexer installation finished!\n\nChecksum: $shimmerInxIndexerChecksum" 17 65
-                                    if [ -f "/tmp/shimmer-inx-indexer.checksum" ]; then
-                                        sudo rm -rf /tmp/shimmer-inx-indexer.checksum > /dev/null 2>&1
-                                    fi
-                                else
+                                    source $swarmConfigs/shimmer-inx-indexer.cfg
+                                    source $shimmerInxIndexerModule/shimmerInxIndexerVersion
                                     {
                                         echo 0
-                                        echo 25
-                                        source $swarmConfigs/shimmer-inx-indexer.cfg
+                                        echo 10
+                                        echo 30
+                                        source $shimmerInxIndexerModule/shimmerInxIndexerInstaller
                                         echo 50
-                                        source $shimmerInxIndexerModule/shimmerInxIndexerRemoval
-                                        echo 75
-                                        echo 100
-                                    } | whiptail --gauge "Please wait while the INX-Indexer files are removed...." 8 65 0
-                                    whiptail --title "INX-Indexer [SHIMMER] Installer" --msgbox "Error while installing [Shimmer] INX-Indexer! Please try again later." 8 65
-                                fi
-                                if [ -f "/tmp/shimmer-inx-indexer.lock" ]; then
-                                    sudo rm -rf /tmp/shimmer-inx-indexer.lock > /dev/null 2>&1
+                                        if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
+                                            source $swarmConfigs/shimmer-inx-indexer.cfg
+                                            echo 60
+                                            # CALL MODULE CONFIGPARSER
+                                            source $shimmerInxIndexerModule/shimmerInxIndexerParser
+                                            echo 70
+                                            sudo systemctl start shimmer-inx-indexer > /dev/null 2>&1
+                                            echo 80
+                                            sleep 2
+                                            shimmerInxIndexerStatus="$(systemctl show -p ActiveState --value shimmer-inx-indexer)"
+                                            if [ "$shimmerInxIndexerStatus" != "active" ]; then
+                                                sudo systemctl restart shimmer-inx-indexer > /dev/null 2>&1
+                                            fi
+                                            echo 100
+                                        fi
+                                    } | whiptail --gauge "Please wait while installing [Shimmer] INX-Indexer..." 8 65 0
+                                    if [ -f "/usr/bin/shimmer-inx-indexer" ]; then
+                                        if [ -f "/tmp/shimmer-inx-indexer.checksum" ]; then
+                                            shimmerInxIndexerChecksum=$(cat /tmp/shimmer-inx-indexer.checksum)
+                                        fi
+                                        whiptail --title "INX-Indexer [SHIMMER] Installer" --msgbox "[Shimmer] INX-Indexer installation finished!\n\nChecksum: $shimmerInxIndexerChecksum" 17 65
+                                        if [ -f "/tmp/shimmer-inx-indexer.checksum" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-indexer.checksum > /dev/null 2>&1
+                                        fi
+                                    else
+                                        {
+                                            echo 0
+                                            echo 25
+                                            source $swarmConfigs/shimmer-inx-indexer.cfg
+                                            echo 50
+                                            source $shimmerInxIndexerModule/shimmerInxIndexerRemoval
+                                            echo 75
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while the INX-Indexer files are removed...." 8 65 0
+                                        whiptail --title "INX-Indexer [SHIMMER] Installer" --msgbox "Error while installing [Shimmer] INX-Indexer! Please try again later." 8 65
+                                    fi
+                                    if [ -f "/tmp/shimmer-inx-indexer.lock" ]; then
+                                        sudo rm -rf /tmp/shimmer-inx-indexer.lock > /dev/null 2>&1
+                                    fi
+                                else
+                                    whiptail --title "INX-Indexer [SHIMMER] Installer" --msgbox "Aborted - [Shimmer] INX-Indexer is currently locked by Watchdog, please try again." 8 65
                                 fi
                             else
                                 if [ -f "/usr/bin/shimmer-inx-indexer" ]; then

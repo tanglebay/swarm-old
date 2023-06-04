@@ -18,7 +18,10 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
 
     unset checkConfigFile
 else
-    if [ ! -s "$iotaHornetHome/$iotaHornetConfig.json" ]; then
+    if [ -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
+        checkConfigFile=$(cat $iotaHornetHome/$iotaHornetConfig.json)
+    fi
+    if [ ! -s "$iotaHornetHome/$iotaHornetConfig.json" ] || [ -z "$checkConfigFile" ]; then
         if [ "$iotaHornetRelease" = "stable" ]; then
             if [ -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
                 sudo chown hornet:hornet $iotaHornetHome/$iotaHornetConfig.json > /dev/null 2>&1
@@ -26,6 +29,7 @@ else
             sudo -u hornet wget -q -O $iotaHornetHome/$iotaHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/production/config.json
         fi
     fi
+    unset checkConfigFile
     if [ -f "$iotaHornetHome/event.json" ]; then
         sudo -u hornet touch $iotaHornetHome/event.json
     fi

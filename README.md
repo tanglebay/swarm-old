@@ -6,8 +6,8 @@
 <h2 align="center">SWARM</h2>
 
 <p align="center">
-  <a href="https://discord.gg/SXsPjPkJCU" style="text-decoration:none;"><img src="https://img.shields.io/badge/Discord-9cf.svg?logo=discord" alt="Discord"></a>
-  <a href="https://t.me/tanglebay" style="text-decoration:none;"><img src="https://img.shields.io/badge/Telegram-9cf.svg?logo=Telegram" alt="Telegram"></a>
+  <a href="https://discord.tanglebay.com" style="text-decoration:none;"><img src="https://img.shields.io/badge/Discord-9cf.svg?logo=discord" alt="Discord"></a>
+  <a href="https://telegram.tanglebay.com" style="text-decoration:none;"><img src="https://img.shields.io/badge/Telegram-9cf.svg?logo=Telegram" alt="Telegram"></a>
   <a href="https://github.com/tanglebay/swarm/blob/main/LICENSE" style="text-decoration:none;"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="MIT license"></a>
 </p>
 

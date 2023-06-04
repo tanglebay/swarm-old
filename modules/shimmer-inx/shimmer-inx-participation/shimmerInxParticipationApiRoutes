@@ -1,56 +1,46 @@
 #!/bin/bash
 
-source $swarmConfigs/shimmer-hornet.cfg
-shimmerHornetApiRoutes=$(whiptail --title "INX-Participation [SHIMMER] API routes" --checklist "\nSelect (spacebar) the routes you want to make public." 24 65 3 \
-    "/api/participation/v1/events*" "" OFF \
-    "/api/participation/v1/outputs*" "" OFF \
-    "/api/participation/v1/addresses*" "" OFF 3>&1 1>&2 2>&3)
-exitStatus=$?
-shimmerHornetApiRoutes=$(echo $shimmerHornetApiRoutes | tr '[:upper:]' '[:lower:]' | tr -s '[:blank:]' ',' | tr -d '"')
-if [ "$exitStatus" != "1" ] && [ ! -z "$shimmerHornetApiRoutes" ]; then
-    #/api/participation/v1/events*
-    if [[ $shimmerHornetApiRoutes = */api/participation/v1/events\** ]] && [[ $shimmerHornetApiPublicRoutes != */api/participation/v1/events\** ]]; then
-        if [ -f "/usr/bin/shimmer-inx-participation" ]; then
-            shimmerHornetApiPublicRoutes=$(echo "$shimmerHornetApiPublicRoutes,/api/participation/v1/events*")
-        fi
-    fi
+shimmerInxParticipationApiPublicRoutesCurrent=$shimmerInxParticipationApiPublicRoutes
 
-    #/api/participation/v1/outputs*
-    if [[ $shimmerHornetApiRoutes = */api/participation/v1/outputs\** ]] && [[ $shimmerHornetApiPublicRoutes != */api/participation/v1/outputs\** ]]; then
-        if [ -f "/usr/bin/shimmer-inx-participation" ]; then
-            shimmerHornetApiPublicRoutes=$(echo "$shimmerHornetApiPublicRoutes,/api/participation/v1/outputs*")
-        fi
-    fi
+# Unset VARS
+unset shimmerInxParticipationApiPublicRoutes
 
-    #/api/participation/v1/addresses*
-    if [[ $shimmerHornetApiRoutes = */api/participation/v1/addresses\** ]] && [[ $shimmerHornetApiPublicRoutes != */api/participation/v1/addresses\** ]]; then
-        if [ -f "/usr/bin/shimmer-inx-participation" ]; then
-            shimmerHornetApiPublicRoutes=$(echo "$shimmerHornetApiPublicRoutes,/api/participation/v1/addresses*")
-        fi
-    fi
-
-    shimmerHornetApiPublicRoutes=$(echo "$shimmerHornetApiPublicRoutes" | tr -s ',,' ',')
-    validateShimmerHornetApiPublicRoutes=$(echo "${shimmerHornetApiPublicRoutes: -1}")
-    if [ "$validateShimmerHornetApiPublicRoutes" = "," ]; then
-        shimmerHornetApiPublicRoutes="${shimmerHornetApiPublicRoutes%?}"
-    fi
-    sudo sed -i 's~^shimmerHornetApiPublicRoutes=.*~shimmerHornetApiPublicRoutes="'$shimmerHornetApiPublicRoutes'"~' $swarmConfigs/shimmer-hornet.cfg
-    if (whiptail --title "INX-Participation [SHIMMER] Installer" --yesno --defaultno "Do you want to restart Hornet to apply the new public API routes?" 8 65); then
-        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
-            fi
-        done
-        unset shimmerInxPlugin
-        sudo systemctl restart shimmer-hornet 2>/dev/null
-        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-        do
-            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
-            fi
-        done
-        unset shimmerInxPlugin
-    fi
+#/api/participation/v1/events*
+if [[ $shimmerInxParticipationApiRoutes = */api/participation/v1/events\** ]]; then
+    shimmerInxParticipationApiRoutesEvents=OFF
+else
+    shimmerInxParticipationApiRoutesEvents=ON
+    shimmerInxParticipationApiPublicRoutes="/api/participation/v1/events*"
 fi
-unset shimmerHornetApiRoutes
+
+#/api/participation/v1/outputs*
+if [[ $shimmerInxParticipationApiRoutes = */api/participation/v1/outputs\** ]]; then
+    shimmerInxParticipationApiRoutesOutputs=OFF
+else
+    shimmerInxParticipationApiRoutesOutputs=ON
+    shimmerInxParticipationApiPublicRoutes=$(echo "$shimmerInxParticipationApiPublicRoutes,/api/participation/v1/outputs*")
+fi
+
+#/api/participation/v1/addresses*
+if [[ $shimmerInxParticipationApiRoutes = */api/participation/v1/addresses\** ]]; then
+    shimmerInxParticipationApiRoutesAddresses=OFF
+else
+    shimmerInxParticipationApiRoutesAddresses=ON
+    shimmerInxParticipationApiPublicRoutes=$(echo "$shimmerInxParticipationApiPublicRoutes,/api/participation/v1/addresses*")
+fi
+
+######
+
+shimmerInxParticipationApiPublicRoutes=$(echo "$shimmerInxParticipationApiPublicRoutes" | tr -s ',,' ',')
+validateShimmerInxParticipationApiPublicRoutes="${shimmerInxParticipationApiPublicRoutes:0:1}"
+if [ "$validateShimmerInxParticipationApiPublicRoutes" = "," ]; then
+    shimmerInxParticipationApiPublicRoutes="${shimmerInxParticipationApiPublicRoutes:1}"
+fi
+
+if [ "$shimmerInxParticipationUpdateApiRoutes" = "true" ] && [ "$shimmerInxParticipationApiPublicRoutesCurrent" != "$shimmerInxParticipationApiPublicRoutes" ]; then
+    sudo sed -i 's~^shimmerInxParticipationApiPublicRoutes=.*~shimmerInxParticipationApiPublicRoutes="'$shimmerInxParticipationApiPublicRoutes'"~' $swarmConfigs/shimmer-inx-participation.cfg
+    shimmerInxParticipationApiPublicRoutesUpdated=true
+    restartShimmerHornet=true
+fi
+
+unset shimmerInxParticipationApiPublicRoutesCurrent

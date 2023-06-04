@@ -278,37 +278,41 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
                             if (whiptail --title "INX-MQTT [SHIMMER] Installer" --yesno --defaultno "Do you really want to update [Shimmer] INX-MQTT?" 8 65); then
-                                if [ ! -f "/tmp/shimmer-inx-mqtt.lock" ]; then
-                                    sudo touch /tmp/shimmer-inx-mqtt.lock > /dev/null 2>&1
-                                fi
-                                # Update INX-Mqtt
-                                source $shimmerInxMqttModule/shimmerInxMqttVersion
-                                if [ ! -z "$latestShimmerInxMqttVersion" ]; then
-                                    {
-                                        echo 0
-                                        echo 33
-                                        source $shimmerInxMqttModule/shimmerInxMqttVersion
-                                        echo 66
-                                        source $shimmerInxMqttModule/shimmerInxMqttInstaller                      
-                                        echo 100
-                                        sleep 0.5
-                                    } | whiptail --gauge "Please wait while [Shimmer] INX-MQTT is updated..." 8 65 0
-                                    {
-                                        # CALL MODULE CONFIGPARSER
-                                        source $shimmerInxMqttModule/shimmerInxMqttParser
-                                        sudo systemctl restart shimmer-inx-mqtt 2>/dev/null
-                                    } | whiptail --gauge "Please wait while parsing the [Shimmer] INX-MQTT configuration..." 8 65 0
-                                    shimmerInxMqttChecksum=$(cat /tmp/shimmer-inx-mqtt.checksum 2>/dev/null)
-                                    whiptail --title "INX-Mqtt [SHIMMER] Installer" --msgbox "[Shimmer] INX-MQTT successfully updated.\n\nChecksum: $shimmerInxMqttChecksum" 10 65
-                                    if [ -f "/tmp/shimmer-inx-mqtt.checksum" ]; then
-                                        sudo rm -rf /tmp/shimmer-inx-mqtt.checksum 2>/dev/null
-                                        unset shimmerInxMqttChecksum
+                                if [ ! -f "/tmp/watchdog_shimmer-inx-mqtt.lock" ]; then
+                                    if [ ! -f "/tmp/shimmer-inx-mqtt.lock" ]; then
+                                        sudo touch /tmp/shimmer-inx-mqtt.lock > /dev/null 2>&1
+                                    fi
+                                    # Update INX-Mqtt
+                                    source $shimmerInxMqttModule/shimmerInxMqttVersion
+                                    if [ ! -z "$latestShimmerInxMqttVersion" ]; then
+                                        {
+                                            echo 0
+                                            echo 33
+                                            source $shimmerInxMqttModule/shimmerInxMqttVersion
+                                            echo 66
+                                            source $shimmerInxMqttModule/shimmerInxMqttInstaller                      
+                                            echo 100
+                                            sleep 0.5
+                                        } | whiptail --gauge "Please wait while [Shimmer] INX-MQTT is updated..." 8 65 0
+                                        {
+                                            # CALL MODULE CONFIGPARSER
+                                            source $shimmerInxMqttModule/shimmerInxMqttParser
+                                            sudo systemctl restart shimmer-inx-mqtt 2>/dev/null
+                                        } | whiptail --gauge "Please wait while parsing the [Shimmer] INX-MQTT configuration..." 8 65 0
+                                        shimmerInxMqttChecksum=$(cat /tmp/shimmer-inx-mqtt.checksum 2>/dev/null)
+                                        whiptail --title "INX-Mqtt [SHIMMER] Installer" --msgbox "[Shimmer] INX-MQTT successfully updated.\n\nChecksum: $shimmerInxMqttChecksum" 10 65
+                                        if [ -f "/tmp/shimmer-inx-mqtt.checksum" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-mqtt.checksum 2>/dev/null
+                                            unset shimmerInxMqttChecksum
+                                        fi
+                                    else
+                                        whiptail --title "INX [SHIMMER] MQTT" --msgbox "Sorry, but [Shimmer] INX-MQTT update aborted." 8 65
+                                    fi
+                                    if [ -f "/tmp/shimmer-inx-mqtt.lock" ]; then
+                                        sudo rm -rf /tmp/shimmer-inx-mqtt.lock > /dev/null 2>&1
                                     fi
                                 else
-                                    whiptail --title "INX [SHIMMER] MQTT" --msgbox "Sorry, but [Shimmer] INX-MQTT update aborted." 8 65
-                                fi
-                                if [ -f "/tmp/shimmer-inx-mqtt.lock" ]; then
-                                    sudo rm -rf /tmp/shimmer-inx-mqtt.lock > /dev/null 2>&1
+                                    whiptail --title "INX-MQTT [SHIMMER] Installer" --msgbox "Aborted - [Shimmer] INX-MQTT is currently locked by Watchdog, please try again." 8 65
                                 fi
                             fi
                         else
@@ -319,59 +323,60 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/shimmer-hornet" ]; then
                             # INSTALL INX-MQTT
                             if [ ! -f "/usr/bin/shimmer-inx-mqtt" ]; then
-                                if [ ! -f "/tmp/shimmer-inx-mqtt.lock" ]; then
-                                    sudo touch /tmp/shimmer-inx-mqtt.lock > /dev/null 2>&1
-                                fi
-                                source $swarmConfigs/shimmer-inx-mqtt.cfg
-                                source $shimmerInxMqttModule/shimmerInxMqttVersion
-                                {
-                                    echo 0
-                                    echo 20
-                                    source $shimmerInxMqttModule/shimmerInxMqttInstaller
-                                    echo 40
-                                    if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
-                                        source $swarmConfigs/shimmer-inx-mqtt.cfg
-                                        echo 50
-                                        # CALL MODULE CONFIGPARSER
-                                        source $shimmerInxMqttModule/shimmerInxMqttParser
-                                        echo 60
-                                        sudo systemctl start shimmer-inx-mqtt > /dev/null 2>&1
-                                        echo 70
-                                        sleep 2
-                                        shimmerInxMqttStatus="$(systemctl show -p ActiveState --value shimmer-inx-mqtt)"
-                                        if [ "$shimmerInxMqttStatus" != "active" ]; then
-                                            sudo systemctl restart shimmer-inx-mqtt > /dev/null 2>&1
-                                        fi
-                                        echo 80
-                                        source $proxyModule/proxyAutomaticDeployment
-                                        echo 100
+                                if [ ! -f "/tmp/watchdog_shimmer-inx-mqtt.lock" ]; then
+                                    if [ ! -f "/tmp/shimmer-inx-mqtt.lock" ]; then
+                                        sudo touch /tmp/shimmer-inx-mqtt.lock > /dev/null 2>&1
                                     fi
-                                } | whiptail --gauge "Please wait while installing [Shimmer] INX-MQTT..." 8 65 0
-                                if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
-                                    if [ -f "/tmp/shimmer-inx-mqtt.checksum" ]; then
-                                        shimmerInxMqttChecksum=$(cat /tmp/shimmer-inx-mqtt.checksum)
-                                    fi
-                                    whiptail --title "INX-MQTT [SHIMMER] Installer" --msgbox "[Shimmer] INX-MQTT installation finished!\n\nChecksum: $shimmerInxMqttChecksum" 17 65
-                                    if [ -f "/tmp/shimmer-inx-mqtt.checksum" ]; then
-                                        sudo rm -rf /tmp/shimmer-inx-mqtt.checksum > /dev/null 2>&1
-                                    fi
-                                    if (whiptail --title "INX-MQTT [SHIMMER] Installer" --yesno --defaultno "Do you want to make the API routes public for [Shimmer] INX-MQTT?" 8 65); then
-                                        source $shimmerInxMqttModule/shimmerInxMqttApiRoutes
-                                    fi
-                                else
+                                    source $swarmConfigs/shimmer-inx-mqtt.cfg
+                                    source $shimmerInxMqttModule/shimmerInxMqttVersion
                                     {
                                         echo 0
-                                        echo 25
-                                        source $swarmConfigs/shimmer-inx-mqtt.cfg
-                                        echo 50
-                                        source $shimmerInxMqttModule/shimmerInxMqttRemoval
-                                        echo 75
-                                        echo 100
-                                    } | whiptail --gauge "Please wait while the [Shimmer] INX-MQTT files are removed...." 8 65 0
-                                    whiptail --title "INX-MQTT [SHIMMER] Installer" --msgbox "Error while installing [Shimmer] INX-MQTT! Please try again later." 8 65
-                                fi
-                                if [ -f "/tmp/shimmer-inx-mqtt.lock" ]; then
-                                    sudo rm -rf /tmp/shimmer-inx-mqtt.lock > /dev/null 2>&1
+                                        echo 20
+                                        source $shimmerInxMqttModule/shimmerInxMqttInstaller
+                                        echo 40
+                                        if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
+                                            source $swarmConfigs/shimmer-inx-mqtt.cfg
+                                            echo 50
+                                            # CALL MODULE CONFIGPARSER
+                                            source $shimmerInxMqttModule/shimmerInxMqttParser
+                                            echo 60
+                                            sudo systemctl start shimmer-inx-mqtt > /dev/null 2>&1
+                                            echo 70
+                                            sleep 2
+                                            shimmerInxMqttStatus="$(systemctl show -p ActiveState --value shimmer-inx-mqtt)"
+                                            if [ "$shimmerInxMqttStatus" != "active" ]; then
+                                                sudo systemctl restart shimmer-inx-mqtt > /dev/null 2>&1
+                                            fi
+                                            echo 80
+                                            source $proxyModule/proxyAutomaticDeployment
+                                            echo 100
+                                        fi
+                                    } | whiptail --gauge "Please wait while installing [Shimmer] INX-MQTT..." 8 65 0
+                                    if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then
+                                        if [ -f "/tmp/shimmer-inx-mqtt.checksum" ]; then
+                                            shimmerInxMqttChecksum=$(cat /tmp/shimmer-inx-mqtt.checksum)
+                                        fi
+                                        whiptail --title "INX-MQTT [SHIMMER] Installer" --msgbox "[Shimmer] INX-MQTT installation finished!\n\nChecksum: $shimmerInxMqttChecksum" 17 65
+                                        if [ -f "/tmp/shimmer-inx-mqtt.checksum" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-mqtt.checksum > /dev/null 2>&1
+                                        fi
+                                    else
+                                        {
+                                            echo 0
+                                            echo 25
+                                            source $swarmConfigs/shimmer-inx-mqtt.cfg
+                                            echo 50
+                                            source $shimmerInxMqttModule/shimmerInxMqttRemoval
+                                            echo 75
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while the [Shimmer] INX-MQTT files are removed...." 8 65 0
+                                        whiptail --title "INX-MQTT [SHIMMER] Installer" --msgbox "Error while installing [Shimmer] INX-MQTT! Please try again later." 8 65
+                                    fi
+                                    if [ -f "/tmp/shimmer-inx-mqtt.lock" ]; then
+                                        sudo rm -rf /tmp/shimmer-inx-mqtt.lock > /dev/null 2>&1
+                                    fi
+                                else
+                                    whiptail --title "INX-MQTT [SHIMMER] Installer" --msgbox "Aborted - [Shimmer] INX-MQTT is currently locked by Watchdog, please try again." 8 65
                                 fi
                             else
                                 if [ -f "/usr/bin/shimmer-inx-mqtt" ]; then

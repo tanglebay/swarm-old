@@ -80,8 +80,34 @@ if [ -f "/usr/bin/shimmer-hornet" ]; then
         shimmerHornetProxyStatus="X"
     fi
 
+    if [ ! -z "$shimmerHornetApiPublicRoutes" ]; then
+        shimmerHornetApiPublicRoutesInfo="\n\nPublic API Routes: $shimmerHornetApiPublicRoutes"
+    fi
+
+    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+    do
+        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+            swarmApp="shimmer-inx-$shimmerInxPlugin"
+            source $swarmModule/swarmAppVars
+            source $swarmConfigs/shimmer-inx-$shimmerInxPlugin.cfg
+            shimmerHornetInxApiPublicRoutes=${swarmAppPrefix}ApiPublicRoutes
+            if [ ! -z "${!shimmerHornetInxApiPublicRoutes}" ]; then
+                shimmerHornetInxApiPublicRoutesAll=$(echo "$shimmerHornetInxApiPublicRoutesAll,${!shimmerHornetInxApiPublicRoutes}")
+            fi
+            if [ "${shimmerHornetInxApiPublicRoutesAll:0:1}" = "," ]; then
+                shimmerHornetInxApiPublicRoutesAll="${shimmerHornetInxApiPublicRoutesAll:1}"
+            fi
+            unset swarmApp swarmAppPrefix shimmerHornetInxApiPublicRoutes
+        fi
+    done
+    unset shimmerInxPlugin
+    if [ ! -z "$shimmerHornetInxApiPublicRoutesAll" ]; then
+        shimmerHornetInxApiPublicRoutesInfo="\n\nPublic INX API Routes: $shimmerHornetInxApiPublicRoutesAll"
+        unset shimmerHornetInxApiPublicRoutesAll
+    fi
+
     # OUTPUT
-    whiptail --scrolltext --title "Hornet [SHIMMER] Info" --msgbox "Hornet: $shimmerHornetStatus\nVersion: v$shimmerHornetVersion\nNetwork: $shimmerHornetNetwork\nDB size: $currentShimmerHornetDbSize\nHealthy: $shimmerHornetHealthy\nProxy: $shimmerHornetProxyStatus\n\nAlias: $shimmerHornetAlias\nINX: $shimmerHornetInxEnabledStatus\nAutopeering: $shimmerHornetAutopeeringEnabledStatus\nPoW: $shimmerHornetPowEnabledStatus\nLocal Snapshots: $shimmerHornetSnapshotsEnabledStatus\nGossip Port: ${shimmerHornetGossipPort}/tcp\nAutopeering Port: ${shimmerHornetAutopeeringPort}/udp\n\nPruning: $shimmerHornetPruningEnabledStatus\nMax DB size: ${shimmerHornetPruningDatabaseSize} GB\nPruning percentage: ${shimmerHornetPruningPercentage}%\nPruning Cooldown: $shimmerHornetPruningCooldownTime minutes" 24 65
+    whiptail --scrolltext --title "Hornet [SHIMMER] Info" --msgbox "Hornet: $shimmerHornetStatus\nVersion: v$shimmerHornetVersion\nNetwork: $shimmerHornetNetwork\nDB size: $currentShimmerHornetDbSize\nHealthy: $shimmerHornetHealthy\nProxy: $shimmerHornetProxyStatus\n\nAlias: $shimmerHornetAlias\nINX: $shimmerHornetInxEnabledStatus\nAutopeering: $shimmerHornetAutopeeringEnabledStatus\nPoW: $shimmerHornetPowEnabledStatus\nLocal Snapshots: $shimmerHornetSnapshotsEnabledStatus\nGossip Port: ${shimmerHornetGossipPort}/tcp\nAutopeering Port: ${shimmerHornetAutopeeringPort}/udp\n\nPruning: $shimmerHornetPruningEnabledStatus\nMax DB size: ${shimmerHornetPruningDatabaseSize} GB\nPruning percentage: ${shimmerHornetPruningPercentage}%\nPruning Cooldown: $shimmerHornetPruningCooldownTime minutes${shimmerHornetApiPublicRoutesInfo}${shimmerHornetInxApiPublicRoutesInfo}" 24 65
 else
     # OUTPUT
     whiptail --title "Hornet [SHIMMER] Info" --msgbox "Hornet not installed!" 8 65
