@@ -278,37 +278,41 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         if [ -f "/usr/bin/iota-inx-mqtt" ]; then
                             if (whiptail --title "INX-MQTT [IOTA] Installer" --yesno --defaultno "Do you really want to update [IOTA] INX-MQTT?" 8 65); then
-                                if [ ! -f "/tmp/iota-inx-mqtt.lock" ]; then
-                                    sudo touch /tmp/iota-inx-mqtt.lock > /dev/null 2>&1
-                                fi
-                                # Update INX-Mqtt
-                                source $iotaInxMqttModule/iotaInxMqttVersion
-                                if [ ! -z "$latestIotaInxMqttVersion" ]; then
-                                    {
-                                        echo 0
-                                        echo 33
-                                        source $iotaInxMqttModule/iotaInxMqttVersion
-                                        echo 66
-                                        source $iotaInxMqttModule/iotaInxMqttInstaller                      
-                                        echo 100
-                                        sleep 0.5
-                                    } | whiptail --gauge "Please wait while [IOTA] INX-MQTT is updated..." 8 65 0
-                                    {
-                                        # CALL MODULE CONFIGPARSER
-                                        source $iotaInxMqttModule/iotaInxMqttParser
-                                        sudo systemctl restart iota-inx-mqtt 2>/dev/null
-                                    } | whiptail --gauge "Please wait while parsing the [IOTA] INX-MQTT configuration..." 8 65 0
-                                    iotaInxMqttChecksum=$(cat /tmp/iota-inx-mqtt.checksum 2>/dev/null)
-                                    whiptail --title "INX-Mqtt [IOTA] Installer" --msgbox "[IOTA] INX-Mqtt successfully updated.\n\nChecksum: $iotaInxMqttChecksum" 10 65
-                                    if [ -f "/tmp/iota-inx-mqtt.checksum" ]; then
-                                        sudo rm -rf /tmp/iota-inx-mqtt.checksum 2>/dev/null
-                                        unset iotaInxMqttChecksum
+                                if [ ! -f "/tmp/watchdog_iota-inx-mqtt.lock" ]; then
+                                    if [ ! -f "/tmp/iota-inx-mqtt.lock" ]; then
+                                        sudo touch /tmp/iota-inx-mqtt.lock > /dev/null 2>&1
+                                    fi
+                                    # Update INX-Mqtt
+                                    source $iotaInxMqttModule/iotaInxMqttVersion
+                                    if [ ! -z "$latestIotaInxMqttVersion" ]; then
+                                        {
+                                            echo 0
+                                            echo 33
+                                            source $iotaInxMqttModule/iotaInxMqttVersion
+                                            echo 66
+                                            source $iotaInxMqttModule/iotaInxMqttInstaller                      
+                                            echo 100
+                                            sleep 0.5
+                                        } | whiptail --gauge "Please wait while [IOTA] INX-MQTT is updated..." 8 65 0
+                                        {
+                                            # CALL MODULE CONFIGPARSER
+                                            source $iotaInxMqttModule/iotaInxMqttParser
+                                            sudo systemctl restart iota-inx-mqtt 2>/dev/null
+                                        } | whiptail --gauge "Please wait while parsing the [IOTA] INX-MQTT configuration..." 8 65 0
+                                        iotaInxMqttChecksum=$(cat /tmp/iota-inx-mqtt.checksum 2>/dev/null)
+                                        whiptail --title "INX-Mqtt [IOTA] Installer" --msgbox "[IOTA] INX-Mqtt successfully updated.\n\nChecksum: $iotaInxMqttChecksum" 10 65
+                                        if [ -f "/tmp/iota-inx-mqtt.checksum" ]; then
+                                            sudo rm -rf /tmp/iota-inx-mqtt.checksum 2>/dev/null
+                                            unset iotaInxMqttChecksum
+                                        fi
+                                    else
+                                        whiptail --title "INX [IOTA] MQTT" --msgbox "Sorry, but [IOTA] INX-MQTT update aborted." 8 65
+                                    fi
+                                    if [ -f "/tmp/iota-inx-mqtt.lock" ]; then
+                                        sudo rm -rf /tmp/iota-inx-mqtt.lock > /dev/null 2>&1
                                     fi
                                 else
-                                    whiptail --title "INX [IOTA] MQTT" --msgbox "Sorry, but [IOTA] INX-MQTT update aborted." 8 65
-                                fi
-                                if [ -f "/tmp/iota-inx-mqtt.lock" ]; then
-                                    sudo rm -rf /tmp/iota-inx-mqtt.lock > /dev/null 2>&1
+                                    whiptail --title "INX-MQTT [IOTA] Installer" --msgbox "Aborted - [IOTA] INX-MQTT is currently locked by Watchdog, please try again." 8 65
                                 fi
                             fi
                         else
@@ -319,56 +323,59 @@ while [ $exitCode -lt 1 ]; do
                         if [ -f "/usr/bin/iota-hornet" ]; then
                             # INSTALL INX-MQTT
                             if [ ! -f "/usr/bin/iota-inx-mqtt" ]; then
-                                if [ ! -f "/tmp/iota-inx-mqtt.lock" ]; then
-                                    sudo touch /tmp/iota-inx-mqtt.lock > /dev/null 2>&1
-                                fi
-                                source $swarmConfigs/iota-inx-mqtt.cfg
-                                source $iotaInxMqttModule/iotaInxMqttVersion
-                                {
-                                    echo 0
-                                    echo 20
-                                    source $iotaInxMqttModule/iotaInxMqttInstaller
-                                    echo 40
-                                    if [ -f "/usr/bin/iota-inx-mqtt" ]; then
-                                        source $swarmConfigs/iota-inx-mqtt.cfg
-                                        echo 50
-                                        # CALL MODULE CONFIGPARSER
-                                        source $iotaInxMqttModule/iotaInxMqttParser
-                                        echo 60
-                                        sudo systemctl start iota-inx-mqtt > /dev/null 2>&1
-                                        echo 70
-                                        sleep 2
-                                        iotaInxMqttStatus="$(systemctl show -p ActiveState --value iota-inx-mqtt)"
-                                        if [ "$iotaInxMqttStatus" != "active" ]; then
-                                            sudo systemctl restart iota-inx-mqtt > /dev/null 2>&1
-                                        fi
-                                        echo 80
-                                        source $proxyModule/proxyAutomaticDeployment
-                                        echo 100
+                                    if [ ! -f "/tmp/iota-inx-mqtt.lock" ]; then
+                                        sudo touch /tmp/iota-inx-mqtt.lock > /dev/null 2>&1
                                     fi
-                                } | whiptail --gauge "Please wait while installing [IOTA] INX-MQTT..." 8 65 0
-                                if [ -f "/usr/bin/iota-inx-mqtt" ]; then
-                                    if [ -f "/tmp/iota-inx-mqtt.checksum" ]; then
-                                        iotaInxMqttChecksum=$(cat /tmp/iota-inx-mqtt.checksum)
-                                    fi
-                                    whiptail --title "INX-MQTT [IOTA] Installer" --msgbox "[IOTA] INX-MQTT installation finished!\n\nChecksum: $iotaInxMqttChecksum" 17 65
-                                    if [ -f "/tmp/iota-inx-mqtt.checksum" ]; then
-                                        sudo rm -rf /tmp/iota-inx-mqtt.checksum > /dev/null 2>&1
-                                    fi
-                                else
+                                    source $swarmConfigs/iota-inx-mqtt.cfg
+                                    source $iotaInxMqttModule/iotaInxMqttVersion
                                     {
                                         echo 0
-                                        echo 25
-                                        source $swarmConfigs/iota-inx-mqtt.cfg
-                                        echo 50
-                                        source $iotaInxMqttModule/iotaInxMqttRemoval
-                                        echo 75
-                                        echo 100
-                                    } | whiptail --gauge "Please wait while the [IOTA] INX-MQTT files are removed...." 8 65 0
-                                    whiptail --title "INX-MQTT [IOTA] Installer" --msgbox "Error while installing [IOTA] INX-MQTT! Please try again later." 8 65
-                                fi
-                                if [ -f "/tmp/iota-inx-mqtt.lock" ]; then
-                                    sudo rm -rf /tmp/iota-inx-mqtt.lock > /dev/null 2>&1
+                                        echo 20
+                                        source $iotaInxMqttModule/iotaInxMqttInstaller
+                                        echo 40
+                                        if [ -f "/usr/bin/iota-inx-mqtt" ]; then
+                                            source $swarmConfigs/iota-inx-mqtt.cfg
+                                            echo 50
+                                            # CALL MODULE CONFIGPARSER
+                                            source $iotaInxMqttModule/iotaInxMqttParser
+                                            echo 60
+                                            sudo systemctl start iota-inx-mqtt > /dev/null 2>&1
+                                            echo 70
+                                            sleep 2
+                                            iotaInxMqttStatus="$(systemctl show -p ActiveState --value iota-inx-mqtt)"
+                                            if [ "$iotaInxMqttStatus" != "active" ]; then
+                                                sudo systemctl restart iota-inx-mqtt > /dev/null 2>&1
+                                            fi
+                                            echo 80
+                                            source $proxyModule/proxyAutomaticDeployment
+                                            echo 100
+                                        fi
+                                    } | whiptail --gauge "Please wait while installing [IOTA] INX-MQTT..." 8 65 0
+                                    if [ -f "/usr/bin/iota-inx-mqtt" ]; then
+                                        if [ -f "/tmp/iota-inx-mqtt.checksum" ]; then
+                                            iotaInxMqttChecksum=$(cat /tmp/iota-inx-mqtt.checksum)
+                                        fi
+                                        whiptail --title "INX-MQTT [IOTA] Installer" --msgbox "[IOTA] INX-MQTT installation finished!\n\nChecksum: $iotaInxMqttChecksum" 17 65
+                                        if [ -f "/tmp/iota-inx-mqtt.checksum" ]; then
+                                            sudo rm -rf /tmp/iota-inx-mqtt.checksum > /dev/null 2>&1
+                                        fi
+                                    else
+                                        {
+                                            echo 0
+                                            echo 25
+                                            source $swarmConfigs/iota-inx-mqtt.cfg
+                                            echo 50
+                                            source $iotaInxMqttModule/iotaInxMqttRemoval
+                                            echo 75
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while the [IOTA] INX-MQTT files are removed...." 8 65 0
+                                        whiptail --title "INX-MQTT [IOTA] Installer" --msgbox "Error while installing [IOTA] INX-MQTT! Please try again later." 8 65
+                                    fi
+                                    if [ -f "/tmp/iota-inx-mqtt.lock" ]; then
+                                        sudo rm -rf /tmp/iota-inx-mqtt.lock > /dev/null 2>&1
+                                    fi
+                                else
+                                    whiptail --title "INX-MQTT [IOTA] Installer" --msgbox "Aborted - [IOTA] INX-MQTT is currently locked by Watchdog, please try again." 8 65
                                 fi
                             else
                                 if [ -f "/usr/bin/iota-inx-mqtt" ]; then

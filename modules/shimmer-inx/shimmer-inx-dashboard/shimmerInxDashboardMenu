@@ -278,37 +278,41 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         if [ -f "/usr/bin/shimmer-inx-dashboard" ]; then
                             if (whiptail --title "INX-Dashboard [SHIMMER] Installer" --yesno --defaultno "Do you really want to update [Shimmer] INX-Dashboard?" 8 65); then
-                                # Update INX-Dashboard
-                                source $shimmerInxDashboardModule/shimmerInxDashboardVersion
-                                if [ ! -z "$latestShimmerInxDashboardVersion" ]; then
-                                    if [ ! -f "/tmp/shimmer-inx-dashboard.lock" ]; then
-                                        sudo touch /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
-                                    fi
-                                    {
-                                        echo 0
-                                        echo 33
-                                        source $shimmerInxDashboardModule/shimmerInxDashboardVersion
-                                        echo 66
-                                        source $shimmerInxDashboardModule/shimmerInxDashboardInstaller                      
-                                        echo 100
-                                        sleep 0.5
-                                    } | whiptail --gauge "Please wait while [Shimmer] INX-Dashboard is updated..." 8 65 0
-                                    {
-                                        # CALL MODULE CONFIGPARSER
-                                        source $shimmerInxDashboardModule/shimmerInxDashboardParser
-                                        sudo systemctl restart shimmer-inx-dashboard 2>/dev/null
-                                    } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
-                                    shimmerInxDashboardChecksum=$(cat /tmp/shimmer-inx-dashboard.checksum 2>/dev/null)
-                                    whiptail --title "INX-Dashboard [SHIMMER] Installer" --msgbox "[Shimmer] INX-Dashboard successfully updated.\n\nChecksum: $shimmerInxDashboardChecksum" 10 65
-                                    if [ -f "/tmp/shimmer-inx-dashboard.checksum" ]; then
-                                        sudo rm -rf /tmp/shimmer-inx-dashboard.checksum 2>/dev/null
-                                        unset shimmerInxDashboardChecksum
-                                    fi
-                                    if [ -f "/tmp/shimmer-inx-dashboard.lock" ]; then
-                                        sudo rm -rf /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                if [ ! -f "/tmp/watchdog_shimmer-inx-dashboard.lock" ]; then
+                                    # Update INX-Dashboard
+                                    source $shimmerInxDashboardModule/shimmerInxDashboardVersion
+                                    if [ ! -z "$latestShimmerInxDashboardVersion" ]; then
+                                        if [ ! -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                            sudo touch /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                        fi
+                                        {
+                                            echo 0
+                                            echo 33
+                                            source $shimmerInxDashboardModule/shimmerInxDashboardVersion
+                                            echo 66
+                                            source $shimmerInxDashboardModule/shimmerInxDashboardInstaller                      
+                                            echo 100
+                                            sleep 0.5
+                                        } | whiptail --gauge "Please wait while [Shimmer] INX-Dashboard is updated..." 8 65 0
+                                        {
+                                            # CALL MODULE CONFIGPARSER
+                                            source $shimmerInxDashboardModule/shimmerInxDashboardParser
+                                            sudo systemctl restart shimmer-inx-dashboard 2>/dev/null
+                                        } | whiptail --gauge "Please wait while parsing the configuration..." 8 65 0
+                                        shimmerInxDashboardChecksum=$(cat /tmp/shimmer-inx-dashboard.checksum 2>/dev/null)
+                                        whiptail --title "INX-Dashboard [SHIMMER] Installer" --msgbox "[Shimmer] INX-Dashboard successfully updated.\n\nChecksum: $shimmerInxDashboardChecksum" 10 65
+                                        if [ -f "/tmp/shimmer-inx-dashboard.checksum" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-dashboard.checksum 2>/dev/null
+                                            unset shimmerInxDashboardChecksum
+                                        fi
+                                        if [ -f "/tmp/shimmer-inx-dashboard.lock" ]; then
+                                            sudo rm -rf /tmp/shimmer-inx-dashboard.lock > /dev/null 2>&1
+                                        fi
+                                    else
+                                        whiptail --title "INX-Dashboard [SHIMMER] Installer" --msgbox "Sorry, but [Shimmer] INX-Dashboard update aborted." 8 65
                                     fi
                                 else
-                                    whiptail --title "INX-Dashboard [SHIMMER] Installer" --msgbox "Sorry, but [Shimmer] INX-Dashboard update aborted." 8 65
+                                    whiptail --title "INX-Dashboard [SHIMMER] Installer" --msgbox "Aborted - [Shimmer] INX-Dashboard is currently locked by Watchdog, please try again." 8 65
                                 fi
                             fi
                         else

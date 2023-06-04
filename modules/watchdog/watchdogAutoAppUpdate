@@ -9,13 +9,13 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             swarmAppModule=${swarmAppPrefix}Module
             swarmAppAutoUpdate=watchdog${swarmAppPrefix^}AutoUpdate
 
-            if [ "${!swarmAppAutoUpdate}" = "true" ] && [ ! -f "/tmp/$swarmApp.lock" ]; then
+            if [ "${!swarmAppAutoUpdate}" = "true" ] && [ ! -f "/tmp/$swarmApp.lock" ] && [ ! -f "/tmp/watchdog_$swarmApp.lock" ]; then
                 source ${!swarmAppModule}/${swarmAppPrefix}Version
                 swarmAppVersion=${swarmAppPrefix}Version
                 swarmAppLatestVersion=latest${swarmAppPrefix^}Version
                 if [ "$(printf '%s\n' "${!swarmAppLatestVersion}" "${!swarmAppVersion}" | sort -V | head -n1)" != "${!swarmAppLatestVersion}" ] && [ ! -z "${!swarmAppLatestVersion}" ]; then
-                    if [ ! -f "/tmp/$swarmApp.lock" ]; then
-                        sudo touch /tmp/$swarmApp.lock > /dev/null 2>&1
+                    if [ ! -f "/tmp/watchdog_$swarmApp.lock" ]; then
+                        sudo touch /tmp/watchdog_$swarmApp.lock > /dev/null 2>&1
                     fi
                     swarmAppCurrentVersion=${!swarmAppVersion}
                     source ${!swarmAppModule}/${swarmAppPrefix}Installer
@@ -32,6 +32,9 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                                 for iotaInxPlugin in ${iotaInxPlugins[@]}
                                 do
                                     if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                        if [ ! -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
+                                            sudo touch /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                        fi
                                         sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
                                     fi
                                 done
@@ -41,6 +44,9 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                                 for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                                 do
                                     if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                        if [ ! -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                            sudo touch /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                        fi
                                         sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
                                     fi
                                 done
@@ -52,6 +58,9 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                                 do
                                     if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
                                         sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                                        if [ -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
+                                            sudo rm -rf /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                        fi
                                     fi
                                 done
                                 unset iotaInxPlugin
@@ -61,6 +70,9 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                                 do
                                     if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
                                         sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                        if [ -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                            sudo rm -rf /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                        fi
                                     fi
                                 done
                                 unset shimmerInxPlugin
@@ -70,12 +82,12 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                         echo "$restartDate [AUTOUPDATE] New Version (${!swarmAppLatestVersion}) of $swarmAppName installed. Checksum: ${!swarmAppChecksum}" >> $swarmLogs/swarm.log
                         telegramText="Host: $HOSTNAME%0A%0AApp: $swarmAppName%0AAction: New version <b>${!swarmAppLatestVersion}</b> installed.%0A%0AChecksum: ${!swarmAppChecksum}"
                         source $watchdogModule/watchdogTelegram
-                        if [ -f "/tmp/$swarmApp.checksum" ]; then
-                            sudo rm -rf /tmp/$swarmApp.checksum > /dev/null 2>&1
+                        if [ -f "/tmp/watchdog_$swarmApp.checksum" ]; then
+                            sudo rm -rf /tmp/watchdog_$swarmApp.checksum > /dev/null 2>&1
                         fi
                     fi
-                    if [ -f "/tmp/$swarmApp.lock" ]; then
-                        sudo rm -rf /tmp/$swarmApp.lock > /dev/null 2>&1
+                    if [ -f "/tmp/watchdog_$swarmApp.lock" ]; then
+                        sudo rm -rf /tmp/watchdog_$swarmApp.lock > /dev/null 2>&1
                     fi
                 fi
             fi

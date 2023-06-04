@@ -529,58 +529,62 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         if [ -f "/usr/bin/shimmer-hornet" ]; then
                             if (whiptail --title "Hornet [SHIMMER] Installer" --yesno --defaultno "Do you really want to update [Shimmer] Hornet?" 8 65); then
-                                # Update HORNET
-                                source $shimmerHornetModule/shimmerHornetVersion
-                                if [ ! -z "$latestShimmerHornetVersion" ]; then
-                                    if [ ! -f "/tmp/shimmer-hornet.lock" ]; then
-                                        sudo touch /tmp/shimmer-hornet.lock > /dev/null 2>&1
-                                    fi
-                                    {
-                                        echo 0
-                                        echo 33
-                                        source $shimmerHornetModule/shimmerHornetVersion
-                                        echo 66
-                                        source $shimmerHornetModule/shimmerHornetInstaller                      
-                                        echo 100
-                                        sleep 0.5
-                                    } | whiptail --gauge "Please wait while [Shimmer] Hornet is updated..." 8 65 0
-                                    {
-                                        # CALL MODULE CONFIGPARSER
-                                        source $shimmerHornetModule/shimmerHornetParser
-                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                        do
-                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                                if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                                    sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                if [ ! -f "/tmp/watchdog_shimmer-hornet.lock" ]; then
+                                    # Update HORNET
+                                    source $shimmerHornetModule/shimmerHornetVersion
+                                    if [ ! -z "$latestShimmerHornetVersion" ]; then
+                                        if [ ! -f "/tmp/shimmer-hornet.lock" ]; then
+                                            sudo touch /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                                        fi
+                                        {
+                                            echo 0
+                                            echo 33
+                                            source $shimmerHornetModule/shimmerHornetVersion
+                                            echo 66
+                                            source $shimmerHornetModule/shimmerHornetInstaller                      
+                                            echo 100
+                                            sleep 0.5
+                                        } | whiptail --gauge "Please wait while [Shimmer] Hornet is updated..." 8 65 0
+                                        {
+                                            # CALL MODULE CONFIGPARSER
+                                            source $shimmerHornetModule/shimmerHornetParser
+                                            for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                            do
+                                                if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                    if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                                        sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                                    fi
+                                                    sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
                                                 fi
-                                                sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                                            fi
-                                        done
-                                        unset shimmerInxPlugin
-                                        sudo systemctl restart shimmer-hornet 2>/dev/null
-                                        sleep 5
-                                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                        do
-                                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                                sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                                                if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                                    sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                            done
+                                            unset shimmerInxPlugin
+                                            sudo systemctl restart shimmer-hornet 2>/dev/null
+                                            sleep 5
+                                            for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                                            do
+                                                if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                                    sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                                    if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                                        sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                                    fi
                                                 fi
-                                            fi
-                                        done
-                                        unset shimmerInxPlugin
-                                    } | whiptail --gauge "Please wait while parsing the [Shimmer] Hornet configuration..." 8 65 0
-                                    shimmerHornetChecksum=$(cat /tmp/shimmer-hornet.checksum 2>/dev/null)
-                                    whiptail --title "Hornet [SHIMMER] Installer" --msgbox "[Shimmer] Hornet successfully updated.\n\nChecksum: $shimmerHornetChecksum" 10 65
-                                    if [ -f "/tmp/shimmer-hornet.checksum" ]; then
-                                        sudo rm -rf /tmp/shimmer-hornet.checksum > /dev/null 2>&1
-                                        unset shimmerHornetChecksum
-                                    fi
-                                    if [ -f "/tmp/shimmer-hornet.lock" ]; then
-                                        sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                                            done
+                                            unset shimmerInxPlugin
+                                        } | whiptail --gauge "Please wait while parsing the [Shimmer] Hornet configuration..." 8 65 0
+                                        shimmerHornetChecksum=$(cat /tmp/shimmer-hornet.checksum 2>/dev/null)
+                                        whiptail --title "Hornet [SHIMMER] Installer" --msgbox "[Shimmer] Hornet successfully updated.\n\nChecksum: $shimmerHornetChecksum" 10 65
+                                        if [ -f "/tmp/shimmer-hornet.checksum" ]; then
+                                            sudo rm -rf /tmp/shimmer-hornet.checksum > /dev/null 2>&1
+                                            unset shimmerHornetChecksum
+                                        fi
+                                        if [ -f "/tmp/shimmer-hornet.lock" ]; then
+                                            sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                                        fi
+                                    else
+                                        whiptail --title "Hornet [SHIMMER] Installer" --msgbox "Sorry, but [Shimmer] Hornet update aborted." 10 65
                                     fi
                                 else
-                                    whiptail --title "Hornet [SHIMMER] Installer" --msgbox "Sorry, but [Shimmer] Hornet update aborted." 10 65
+                                    whiptail --title "Hornet [SHIMMER] Installer" --msgbox "Aborted - [Shimmer] Hornet is currently locked by Watchdog, please try again." 8 65
                                 fi
                             fi
                         else
@@ -588,7 +592,7 @@ while [ $exitCode -lt 1 ]; do
                         fi
                     ;;
                     "2)")
-                        if [ -f "/usr/bin/iota-hornet" ] || [ -f "/usr/bin/goshimmer" ] || [ -f "/usr/bin/wasp" ]; then
+                        if [ -f "/usr/bin/iota-hornet" ]; then
                             if (whiptail --title "Hornet [SHIMMER] Installer" --yesno --defaultno "Already installed apps found on the system!\nIt is not recommended to run multiple apps on one host.\n\nDo you still want to continue?" 12 65); then
                                 shimmerHornetSkipInstallation=false
                             else
@@ -599,91 +603,95 @@ while [ $exitCode -lt 1 ]; do
                         fi
                         # INSTALL Hornet
                         if [ ! -f "/usr/bin/shimmer-hornet" ] && [ "$shimmerHornetSkipInstallation" = "false" ]; then
-                            if [ ! -f "/tmp/shimmer-hornet.lock" ]; then
-                                sudo touch /tmp/shimmer-hornet.lock > /dev/null 2>&1
-                            fi
-                            source $swarmConfigs/shimmer-hornet.cfg
-                            source $shimmerHornetModule/shimmerHornetConfigs
-                            source $shimmerHornetModule/shimmerHornetVersion
-                            {
-                                echo 0
-                                echo 10
-                                echo 30
-                                source $shimmerHornetModule/shimmerHornetInstaller
-                                echo 50
-                                if [ -f "/usr/bin/shimmer-hornet" ]; then
-                                    source $swarmConfigs/shimmer-hornet.cfg
-                                    echo 60
-                                    # CALL MODULE CONFIGPARSER
-                                    source $shimmerHornetModule/shimmerHornetParser
-                                    echo 70
-                                    if [ "$ufw" = "true" ]; then
-                                        if [ "$shimmerHornetRunAsEntryNode" != "true" ]; then
-                                            sudo ufw allow $shimmerHornetGossipPort/tcp > /dev/null 2>&1
-                                        fi
-                                        if [ "$shimmerHornetAutopeeringEnabled" = "true" ]; then
-                                            sudo ufw allow $shimmerHornetAutopeeringPort/udp > /dev/null 2>&1
-                                        fi
-                                    fi
-                                    sudo systemctl start shimmer-hornet > /dev/null 2>&1
-                                    echo 80
-                                    sleep 2
-                                    shimmerHornetStatus="$(systemctl show -p ActiveState --value shimmer-hornet)"
-                                    if [ "$shimmerHornetStatus" != "active" ]; then
-                                        sudo systemctl restart shimmer-hornet > /dev/null 2>&1
-                                    fi
-                                    echo 100
+                            if [ ! -f "/tmp/watchdog_shimmer-hornet.lock" ]; then
+                                if [ ! -f "/tmp/shimmer-hornet.lock" ]; then
+                                    sudo touch /tmp/shimmer-hornet.lock > /dev/null 2>&1
                                 fi
-                            } | whiptail --gauge "Please wait while installing [Shimmer] Hornet..." 8 65 0
-                            if [ -f "/usr/bin/shimmer-hornet" ]; then
-                                if [ -f "/tmp/shimmer-hornet.checksum" ]; then
-                                    shimmerHornetChecksum=$(cat /tmp/shimmer-hornet.checksum)
-                                fi
-                                whiptail --title "Hornet [SHIMMER] Installer" --msgbox "[Shimmer] Hornet installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $shimmerHornetGossipPort/tcp\nAutopeering: $shimmerHornetAutopeeringPort/udp\n\nChecksum: $shimmerHornetChecksum" 17 65
-                                if [ -f "/tmp/shimmer-hornet.checksum" ]; then
-                                    sudo rm -rf /tmp/shimmer-hornet.checksum > /dev/null 2>&1
-                                fi
-                                if (whiptail --title "Proxy [SHIMMER] Hornet" --yesno --defaultno "Do you want to set up the proxy with the installation?" 8 65); then
-                                    source $swarmConfigs/proxy.cfg
-                                    if [ -z "$proxyShimmerHornetUrl" ]; then
-                                        proxyUrl="example.com:443"
-                                        proxyUrl=$(whiptail --inputbox "\nSet your domain and port for [Shimmer] Hornet" 10 65 $proxyUrl --title "Proxy [SHIMMER] Hornet" 3>&1 1>&2 2>&3)
-                                        exitStatus=$?
-                                        if [ "$proxyUrl" = "my.example.com:443" ]; then
-                                            unset proxyUrl
-                                        fi
-                                        if [ "$exitStatus" != "1" ]; then
-                                            source $proxyModule/proxyUrlValidation
-                                            if [ "$proxyUrlValid" = "true" ]; then
-                                                proxyShimmerHornetUrl=$proxyUrl
-                                                sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
-                                                source $proxyModule/proxyDeployment
-                                            fi
-                                        fi
-                                        unset proxyUrl proxyUrlValid
-                                    else
-                                        proxyUrl=$proxyShimmerHornetUrl
-                                        source $proxyModule/proxyUrlValidation
-                                        if [ "$proxyUrlValid" = "true" ]; then
-                                            source $proxyModule/proxyDeployment
-                                        fi
-                                        unset proxyUrl proxyUrlValid
-                                    fi
-                                fi
-                            else
+                                source $swarmConfigs/shimmer-hornet.cfg
+                                source $shimmerHornetModule/shimmerHornetConfigs
+                                source $shimmerHornetModule/shimmerHornetVersion
                                 {
                                     echo 0
-                                    echo 25
-                                    source $swarmConfigs/shimmer-hornet.cfg
+                                    echo 10
+                                    echo 30
+                                    source $shimmerHornetModule/shimmerHornetInstaller
                                     echo 50
-                                    source $shimmerHornetModule/shimmerHornetRemoval
-                                    echo 75
-                                    echo 100
-                                } | whiptail --gauge "Please wait while the [Shimmer] Hornet files are removed..." 8 65 0
-                                whiptail --title "Hornet [SHIMMER] Installer" --msgbox "Error while installing [Shimmer] Hornet! Please try again later." 8 65
-                            fi
-                            if [ -f "/tmp/shimmer-hornet.lock" ]; then
-                                sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                                    if [ -f "/usr/bin/shimmer-hornet" ]; then
+                                        source $swarmConfigs/shimmer-hornet.cfg
+                                        echo 60
+                                        # CALL MODULE CONFIGPARSER
+                                        source $shimmerHornetModule/shimmerHornetParser
+                                        echo 70
+                                        if [ "$ufw" = "true" ]; then
+                                            if [ "$shimmerHornetRunAsEntryNode" != "true" ]; then
+                                                sudo ufw allow $shimmerHornetGossipPort/tcp > /dev/null 2>&1
+                                            fi
+                                            if [ "$shimmerHornetAutopeeringEnabled" = "true" ]; then
+                                                sudo ufw allow $shimmerHornetAutopeeringPort/udp > /dev/null 2>&1
+                                            fi
+                                        fi
+                                        sudo systemctl start shimmer-hornet > /dev/null 2>&1
+                                        echo 80
+                                        sleep 2
+                                        shimmerHornetStatus="$(systemctl show -p ActiveState --value shimmer-hornet)"
+                                        if [ "$shimmerHornetStatus" != "active" ]; then
+                                            sudo systemctl restart shimmer-hornet > /dev/null 2>&1
+                                        fi
+                                        echo 100
+                                    fi
+                                } | whiptail --gauge "Please wait while installing [Shimmer] Hornet..." 8 65 0
+                                if [ -f "/usr/bin/shimmer-hornet" ]; then
+                                    if [ -f "/tmp/shimmer-hornet.checksum" ]; then
+                                        shimmerHornetChecksum=$(cat /tmp/shimmer-hornet.checksum)
+                                    fi
+                                    whiptail --title "Hornet [SHIMMER] Installer" --msgbox "[Shimmer] Hornet installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $shimmerHornetGossipPort/tcp\nAutopeering: $shimmerHornetAutopeeringPort/udp\n\nChecksum: $shimmerHornetChecksum" 17 65
+                                    if [ -f "/tmp/shimmer-hornet.checksum" ]; then
+                                        sudo rm -rf /tmp/shimmer-hornet.checksum > /dev/null 2>&1
+                                    fi
+                                    if (whiptail --title "Proxy [SHIMMER] Hornet" --yesno --defaultno "Do you want to set up the proxy with the installation?" 8 65); then
+                                        source $swarmConfigs/proxy.cfg
+                                        if [ -z "$proxyShimmerHornetUrl" ]; then
+                                            proxyUrl="example.com:443"
+                                            proxyUrl=$(whiptail --inputbox "\nSet your domain and port for [Shimmer] Hornet" 10 65 $proxyUrl --title "Proxy [SHIMMER] Hornet" 3>&1 1>&2 2>&3)
+                                            exitStatus=$?
+                                            if [ "$proxyUrl" = "my.example.com:443" ]; then
+                                                unset proxyUrl
+                                            fi
+                                            if [ "$exitStatus" != "1" ]; then
+                                                source $proxyModule/proxyUrlValidation
+                                                if [ "$proxyUrlValid" = "true" ]; then
+                                                    proxyShimmerHornetUrl=$proxyUrl
+                                                    sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl="'$proxyUrl'"/' $swarmConfigs/proxy.cfg
+                                                    source $proxyModule/proxyDeployment
+                                                fi
+                                            fi
+                                            unset proxyUrl proxyUrlValid
+                                        else
+                                            proxyUrl=$proxyShimmerHornetUrl
+                                            source $proxyModule/proxyUrlValidation
+                                            if [ "$proxyUrlValid" = "true" ]; then
+                                                source $proxyModule/proxyDeployment
+                                            fi
+                                            unset proxyUrl proxyUrlValid
+                                        fi
+                                    fi
+                                else
+                                    {
+                                        echo 0
+                                        echo 25
+                                        source $swarmConfigs/shimmer-hornet.cfg
+                                        echo 50
+                                        source $shimmerHornetModule/shimmerHornetRemoval
+                                        echo 75
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while the [Shimmer] Hornet files are removed..." 8 65 0
+                                    whiptail --title "Hornet [SHIMMER] Installer" --msgbox "Error while installing [Shimmer] Hornet! Please try again later." 8 65
+                                fi
+                                if [ -f "/tmp/shimmer-hornet.lock" ]; then
+                                    sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
+                                fi
+                            else
+                                whiptail --title "Hornet [SHIMMER] Installer" --msgbox "Aborted - [Shimmer] Hornet is currently locked by Watchdog, please try again." 8 65
                             fi
                         else
                             if [ -f "/usr/bin/shimmer-hornet" ]; then

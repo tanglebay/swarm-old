@@ -2,7 +2,7 @@
 
 for swarmApp in ${swarmApps[@]}
 do
-    if [ -f "/usr/bin/$swarmApp" ] && [ ! -f "/tmp/$swarmApp.lock" ]; then
+    if [ -f "/usr/bin/$swarmApp" ] && [ ! -f "/tmp/watchdog_$swarmApp.lock" ] && [ ! -f "/tmp/$swarmApp.lock" ]; then
         source $watchdogStateFile
         source $swarmModule/swarmAppVars
 
@@ -35,6 +35,9 @@ do
                         for iotaInxPlugin in ${iotaInxPlugins[@]}
                         do
                             if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                if [ ! -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
+                                    sudo touch /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                fi
                                 sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
                             fi
                         done
@@ -44,6 +47,9 @@ do
                         for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                         do
                             if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                if [ ! -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                    sudo touch /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                fi
                                 sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
                             fi
                         done
@@ -116,6 +122,9 @@ do
                         do
                             if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
                                 sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                                if [ -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
+                                    sudo rm -rf /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                fi
                             fi
                         done
                         unset iotaInxPlugin
@@ -125,6 +134,9 @@ do
                         do
                             if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
                                 sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                if [ -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                    sudo touch /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                fi
                             fi
                         done
                         unset shimmerInxPlugin

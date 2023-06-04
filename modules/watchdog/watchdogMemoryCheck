@@ -9,15 +9,18 @@ if [ "$watchdogRamCheck" = "true" ]; then
         do
             if [ -f "/usr/bin/$swarmApp" ]; then
                 source $swarmModule/swarmAppVars
-                if [ ! -f "/tmp/$swarmApp.lock" ]; then
-                    if [ ! -f "/tmp/$swarmApp.lock" ]; then
-                        sudo touch /tmp/$swarmApp.lock > /dev/null 2>&1
+                if [ ! -f "/tmp/watchdog_$swarmApp.lock" ] && [ ! -f "/tmp/$swarmApp.lock" ]; then
+                    if [ ! -f "/tmp/watchdog_$swarmApp.lock" ]; then
+                        sudo touch /tmp/watchdog_$swarmApp.lock > /dev/null 2>&1
                     fi
                     restartDate=`date '+%d-%m-%Y %H-%M-%S'`
                     if [ "$swarmApp" = "iota-hornet" ]; then
                         for iotaInxPlugin in ${iotaInxPlugins[@]}
                         do
                             if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                if [ ! -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
+                                    sudo touch /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                fi
                                 sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
                             fi
                         done
@@ -27,6 +30,9 @@ if [ "$watchdogRamCheck" = "true" ]; then
                         for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                         do
                             if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                if [ ! -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                    sudo touch /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                fi
                                 sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
                             fi
                         done
@@ -38,6 +44,9 @@ if [ "$watchdogRamCheck" = "true" ]; then
                         do
                             if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
                                 sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                                if [ -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
+                                    sudo rm -rf /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                fi
                             fi
                         done
                         unset iotaInxPlugin
@@ -47,6 +56,9 @@ if [ "$watchdogRamCheck" = "true" ]; then
                         do
                             if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
                                 sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                if [ -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                    sudo rm -rf /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                fi
                             fi
                         done
                         unset shimmerInxPlugin
@@ -55,8 +67,8 @@ if [ "$watchdogRamCheck" = "true" ]; then
                     echo "$restartDate [WATCHDOG] RAM limit reached and all services restarted." >> $swarmLogs/swarm.log
                     telegramText="Host: $HOSTNAME%0A%0AApp: Watchdog%0AAction: RAM limit reached and all installed services restarted."
                     source $watchdogModule/watchdogTelegram
-                    if [ -f "/tmp/$swarmApp.lock" ]; then
-                        sudo rm -rf /tmp/$swarmApp.lock > /dev/null 2>&1
+                    if [ -f "/tmp/watchdog_$swarmApp.lock" ]; then
+                        sudo rm -rf /tmp/watchdog_$swarmApp.lock > /dev/null 2>&1
                     fi
                 fi
                 unset swarmAppName swarmAppPrefix restartDate swarmAppRestart telegramText
