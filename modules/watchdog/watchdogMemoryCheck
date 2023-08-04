@@ -1,10 +1,10 @@
 #!/bin/bash
 
-if [ "$watchdogRamCheck" = "true" ]; then
-    watchdogRamTotal=$(free -m | grep Mem: | awk '{ print $2 }')
-    watchdogRamUsed=$(free -m | grep Mem: | awk '{ print $3 }')
-    let watchdogRamFree=$watchdogRamTotal-$watchdogRamUsed
-    if [ $watchdogRamFree -le $watchdogRamLimit ]; then
+if [ "$watchdogMemoryCheck" = "true" ]; then
+    watchdogMemoryTotal=$(free -m | grep Mem: | awk '{ print $2 }')
+    watchdogMemoryUsed=$(free -m | grep Mem: | awk '{ print $3 }')
+    let watchdogMemoryFree=$watchdogMemoryTotal-$watchdogMemoryUsed
+    if [ $watchdogMemoryFree -le $watchdogMemoryLimit ]; then
         for swarmApp in ${swarmApps[@]}
         do
             if [ -f "/usr/bin/$swarmApp" ]; then
@@ -64,8 +64,8 @@ if [ "$watchdogRamCheck" = "true" ]; then
                         unset shimmerInxPlugin
                     fi
                     swarmAppChecksum=${swarmAppPrefix}Checksum
-                    echo "$restartDate [WATCHDOG] RAM limit reached and all services restarted." >> $swarmLogs/swarm.log
-                    telegramText="Host: $HOSTNAME%0A%0AApp: Watchdog%0AAction: RAM limit reached and all installed services restarted."
+                    echo "$restartDate [WATCHDOG] Memory limit reached and all services restarted." >> $swarmLogs/swarm.log
+                    telegramText="Host: $HOSTNAME%0A%0AApp: Watchdog%0AAction: Memory limit reached and all installed services restarted."
                     source $watchdogModule/watchdogTelegram
                     if [ -f "/tmp/watchdog_$swarmApp.lock" ]; then
                         sudo rm -rf /tmp/watchdog_$swarmApp.lock > /dev/null 2>&1
@@ -76,5 +76,5 @@ if [ "$watchdogRamCheck" = "true" ]; then
         done
         unset swarmApp
     fi
-    unset watchdogRamFree
+    unset watchdogMemoryTotal watchdogMemoryUsed watchdogMemoryFree
 fi
