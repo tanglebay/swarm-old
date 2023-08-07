@@ -852,7 +852,8 @@ else
                         "1)" "Set protected API Routes" \
                         "2)" "Generate New JWT Token" \
                         "3)" "Show All JWT Token" \
-                        "4)" "Revoke All JWT Token" 3>&2 2>&1 1>&3
+                        "4)" "Revoke All JWT Token" \
+                        "5)" "Advanced API Settings" \ 3>&2 2>&1 1>&3
                     )
                     exitstatus=$?
                     if [ "$exitstatus" = "1" ]; then
@@ -861,6 +862,11 @@ else
                     case $CHOICE in
                         "1)")
                             source $swarmConfigs/iota-hornet.cfg
+                            if [ "$iotaHornetApiPublicTxHistory" = "true" ]; then
+                                iotaHornetApiRoutesPublicTxHistory="^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$"
+                            else
+                                iotaHornetApiRoutesPublicTxHistory="/api/v1/addresses*"
+                            fi
                             iotaHornetApiRoutes=$iotaHornetApiPublicRoutes
                             source $iotaHornetModule/iotaHornetApiRoutes
                             iotaHornetApiRoutes=$(whiptail --title "Hornet [IOTA] API routes" --checklist "" 24 65 17 \
@@ -873,7 +879,7 @@ else
                                 "/api/v1/transactions*" "" $iotaHornetApiRoutesTransactions \
                                 "/api/v1/milestones*" "" $iotaHornetApiRoutesMilestones \
                                 "/api/v1/outputs*" "" $iotaHornetApiRoutesOutputs \
-                                "/api/v1/addresses*" "" $iotaHornetApiRoutesAddresses \
+                                "$iotaHornetApiRoutesPublicTxHistory" "" $iotaHornetApiRoutesAddresses \
                                 "/api/v1/treasury" "" $iotaHornetApiRoutesTreasury \
                                 "/api/v1/receipts*" "" $iotaHornetApiRoutesReceipts \
                                 "/api/plugins/participation/events*" "" $iotaHornetApiRoutesParticipationEvents \
@@ -953,6 +959,43 @@ else
                             else
                                 whiptail --title "Hornet [IOTA] API & JWT" --msgbox "Please install [IOTA] Hornet first." 8 65
                             fi
+                        ;;
+                        "5)")
+                            while [ $exitCode -lt 1 ]; do
+                                clear
+                                source $swarmConfigs/iota-hornet.cfg
+                                if [ "$iotaHornetApiPublicTxHistory" = "true" ]; then
+                                    menuIotaHornetApiPublicTxHistory="disable"
+                                else
+                                    menuIotaHornetApiPublicTxHistory="enable"
+                                fi
+                                # Hornet JWT
+                                CHOICE=$(
+                                    whiptail --title "Hornet [IOTA] API" --menu "\nChoose an option" 24 65 0 \
+                                    "" "" \
+                                    "1)" "[${menuIotaHornetApiPublicTxHistory^}] API Full TX History" 3>&2 2>&1 1>&3
+                                )
+                                exitstatus=$?
+                                if [ "$exitstatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        if [ "$iotaHornetApiPublicTxHistory" = "true" ]; then
+                                            iotaHornetApiPublicTxHistory=false
+                                            sudo sed -i 's/^iotaHornetApiPublicTxHistory=.*/iotaHornetApiPublicTxHistory='$iotaHornetApiPublicTxHistory'/' $swarmConfigs/iota-hornet.cfg
+                                            whiptail --title "Hornet [IOTA] API" --msgbox "Hornet public API full TX history route ${menuIotaHornetApiPublicTxHistory}d." 8 65
+                                        else
+                                            if (whiptail --title "Hornet [IOTA] API" --yesno --defaultno "Are you sure you want to allow all API TX history endpoints? (not recommended)" 8 65); then
+                                                iotaHornetApiPublicTxHistory=true
+                                                sudo sed -i 's/^iotaHornetApiPublicTxHistory=.*/iotaHornetApiPublicTxHistory='$iotaHornetApiPublicTxHistory'/' $swarmConfigs/iota-hornet.cfg
+                                                whiptail --title "Hornet [IOTA] API" --msgbox "Hornet public API full TX history route ${menuIotaHornetApiPublicTxHistory}d." 8 65
+                                            fi
+                                        fi
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
                         ;;
                     esac
                 done
