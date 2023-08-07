@@ -56,6 +56,20 @@ else
     parser="$(jq '.restAPI.publicRoutes' $iotaHornetHome/$iotaHornetConfig.json)"
     parser="$(echo $parser | tr -d '[]" ')"
 
+    if [ "$iotaHornetApiPublicTxHistory" = "true" ]; then
+        iotaHornetApiPublicRoutes="/api/plugins/participation/addresses*,^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$"
+        if [[ $iotaHornetApiPublicRoutes = *"^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$"* ]]; then
+            iotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes/'^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$'/'/api/v1/addresses*'}")
+            sudo sed -i -E 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+        fi
+    else
+        iotaHornetApiPublicRoutes="/api/plugins/participation/addresses*,/api/v1/addresses*"
+        if [[ $iotaHornetApiPublicRoutes = */api/v1/addresses\** ]]; then
+            iotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes/'api/v1/addresses*'/'^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$'}")
+            sudo sed -i -E 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+        fi
+    fi
+
     if [ "$parser" != "$iotaHornetApiPublicRoutes" ] || [ "$iotaHornetForceApiPublicRoutes" = "true" ]; then
         sudo jq '.restAPI.publicRoutes |= []' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
         for iotaHornetApiPublicRoute in "${ARRAYiotaHornetApiPublicRoutes[@]}"
