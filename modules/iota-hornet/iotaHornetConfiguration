@@ -983,22 +983,28 @@ else
                                     "1)")
                                         if [ "$iotaHornetApiPublicTxHistory" = "true" ]; then
                                             if (whiptail --title "Hornet [IOTA] API" --yesno --defaultno "Are you sure you only want to allow limited API TX history endpoints? (recommended)" 8 65); then
+                                                source $swarmConfigs/iota-hornet.cfg
                                                 iotaHornetApiPublicTxHistory=false
                                                 sudo sed -i 's/^iotaHornetApiPublicTxHistory=.*/iotaHornetApiPublicTxHistory='$iotaHornetApiPublicTxHistory'/' $swarmConfigs/iota-hornet.cfg
-                                                iotaHornetApiRoutes=$iotaHornetApiPublicRoutes
-                                                iotaHornetUpdateApiRoutes=true
-                                                source $iotaHornetModule/iotaHornetApiRoutes
-                                                unset iotaHornetUpdateApiRoutes
+                                                if [[ $iotaHornetApiPublicRoutes = *"^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$"* ]]; then
+                                                    iotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes/'^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$'/'api/v1/addresses*'}")
+                                                fi
+                                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                                    source $iotaHornetConfigParsers/iotaHornetApiPublicRoutes
+                                                fi
                                                 whiptail --title "Hornet [IOTA] API" --msgbox "Hornet public API full TX history route ${menuIotaHornetApiPublicTxHistory}d." 8 65
                                             fi
                                         else
                                             if (whiptail --title "Hornet [IOTA] API" --yesno --defaultno "Are you sure you want to allow all API TX history endpoints? (not recommended)" 8 65); then
+                                                source $swarmConfigs/iota-hornet.cfg
                                                 iotaHornetApiPublicTxHistory=true
                                                 sudo sed -i 's/^iotaHornetApiPublicTxHistory=.*/iotaHornetApiPublicTxHistory='$iotaHornetApiPublicTxHistory'/' $swarmConfigs/iota-hornet.cfg
-                                                iotaHornetApiRoutes=$iotaHornetApiPublicRoutes
-                                                iotaHornetUpdateApiRoutes=true
-                                                source $iotaHornetModule/iotaHornetApiRoutes
-                                                unset iotaHornetUpdateApiRoutes
+                                                if [[ $iotaHornetApiPublicRoutes = */api/v1/addresses\** ]]; then
+                                                    iotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes/'api/v1/addresses*'/'^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$'}")
+                                                fi
+                                                if [ -f "/usr/bin/iota-hornet" ]; then
+                                                    source $iotaHornetConfigParsers/iotaHornetApiPublicRoutes
+                                                fi
                                                 whiptail --title "Hornet [IOTA] API" --msgbox "Hornet public API full TX history route ${menuIotaHornetApiPublicTxHistory}d." 8 65
                                             fi
                                         fi
