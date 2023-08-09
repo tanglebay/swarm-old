@@ -44,6 +44,20 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
     fi
     unset ARRAYiotaHornetApiPublicRoutes iotaHornetApiPublicRoute iotaHornetForceApiPublicRoutes
 else
+    if [ "$iotaHornetApiPublicTxHistory" = "true" ]; then
+        if [[ $iotaHornetApiPublicRoutes = *"^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$"* ]]; then
+            iotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes/'^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$'/'/api/v1/addresses*'}")
+            sudo sed -i -E 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+            iotaHornetForceApiPublicRoutes=true
+        fi
+    else
+        if [[ $iotaHornetApiPublicRoutes = */api/v1/addresses\** ]]; then
+            iotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes/'/api/v1/addresses*'/'^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$'}")
+            sudo sed -i -E 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+            iotaHornetForceApiPublicRoutes=true
+        fi
+    fi
+
     IFS=', ' read -r -a ARRAYiotaHornetApiPublicRoutes <<< "$iotaHornetApiPublicRoutes"
     iotaHornetApiPublicRoutesValidation="${iotaHornetApiPublicRoutes:0:1}"
     if [ "$iotaHornetApiPublicRoutesValidation" = "," ]; then
