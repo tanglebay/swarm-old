@@ -44,18 +44,6 @@ if [[ $iotaHornetVersion =~ ^2.* ]]; then
     fi
     unset ARRAYiotaHornetApiPublicRoutes iotaHornetApiPublicRoute iotaHornetForceApiPublicRoutes
 else
-    IFS=', ' read -r -a ARRAYiotaHornetApiPublicRoutes <<< "$iotaHornetApiPublicRoutes"
-    iotaHornetApiPublicRoutesValidation="${iotaHornetApiPublicRoutes:0:1}"
-    if [ "$iotaHornetApiPublicRoutesValidation" = "," ]; then
-        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes:1}"
-        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
-        iotaHornetForceApiPublicRoutes=true
-    fi
-    unset iotaHornetApiPublicRoutesValidation
-
-    parser="$(jq '.restAPI.publicRoutes' $iotaHornetHome/$iotaHornetConfig.json)"
-    parser="$(echo $parser | tr -d '[]" ')"
-
     if [ "$iotaHornetApiPublicTxHistory" = "true" ]; then
         if [[ $iotaHornetApiPublicRoutes = *"^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$"* ]]; then
             iotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes/'^/api/v1/addresses/(ed25519/)?[^/]+(/outputs)?$'/'/api/v1/addresses*'}")
@@ -69,6 +57,18 @@ else
             iotaHornetForceApiPublicRoutes=true
         fi
     fi
+
+    IFS=', ' read -r -a ARRAYiotaHornetApiPublicRoutes <<< "$iotaHornetApiPublicRoutes"
+    iotaHornetApiPublicRoutesValidation="${iotaHornetApiPublicRoutes:0:1}"
+    if [ "$iotaHornetApiPublicRoutesValidation" = "," ]; then
+        iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes:1}"
+        sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+        iotaHornetForceApiPublicRoutes=true
+    fi
+    unset iotaHornetApiPublicRoutesValidation
+
+    parser="$(jq '.restAPI.publicRoutes' $iotaHornetHome/$iotaHornetConfig.json)"
+    parser="$(echo $parser | tr -d '[]" ')"
 
     if [ "$parser" != "$iotaHornetApiPublicRoutes" ] || [ "$iotaHornetForceApiPublicRoutes" = "true" ]; then
         sudo jq '.restAPI.publicRoutes |= []' $iotaHornetHome/$iotaHornetConfig.json|sponge $iotaHornetHome/$iotaHornetConfig.json
