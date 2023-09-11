@@ -35,9 +35,9 @@ else
             echo ""
             echo "============================================================="
             echo ""
-            read -p "Do you want to ${swarmReinstall}install SWARM now?(Y/n) " keyboardInput </dev/tty
+            read -p "Do you want to ${swarmReinstall}install SWARM now?(y/N) " keyboardInput </dev/tty
             keyboardInput=$(echo $keyboardInput | tr '[:upper:]' '[:lower:]')
-            if [ "$keyboardInput" = "y" ] || [ "$keyboardInput" = "yes" ] || [ -z "$keyboardInput" ]; then
+            if [[ $keyboardInput = ^y* ]]; then
                 swarmTmp="/tmp/swarm"
                 echo ""
                 echo -e $TEXT_RED_B && echo "-> Updating OS..." && echo -e $TEXT_RESET

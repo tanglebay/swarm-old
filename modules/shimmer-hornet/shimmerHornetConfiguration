@@ -9,7 +9,7 @@ while [ $exitCode -lt 1 ]; do
         menuShimmerHornetUpdateCheck="Enable"
     fi
     CHOICE=$(
-        whiptail --title "Hornet [SHIMMER] Configurations" --menu "\nChoose an option" 24 65 0 \
+        whiptail --title "Hornet [SHIMMER] Configurations" --menu "\nChoose an option" 24 70 0 \
         "" "" \
         "1)" "API & JWT" \
         "2)" "INX Interface" \
@@ -29,7 +29,7 @@ while [ $exitCode -lt 1 ]; do
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
         if [ "$restartShimmerHornet" = "true" ] && [ -f "/usr/bin/shimmer-hornet" ]; then
-            if (whiptail --title "Hornet [SHIMMER] Menu" --yesno "Would you like to apply the changes and restart [Shimmer] Hornet?" 8 65); then
+            if (whiptail --title "Hornet [SHIMMER] Menu" --yesno "Would you like to apply the changes and restart [Shimmer] Hornet?" 8 70); then
                 if [ ! -f "/tmp/shimmer-hornet.lock" ]; then
                     sudo touch /tmp/shimmer-hornet.lock > /dev/null 2>&1
                 fi
@@ -63,7 +63,7 @@ while [ $exitCode -lt 1 ]; do
                     unset shimmerInxPlugin
                     echo 100
                     sleep 0.25
-                } | whiptail --gauge "Please wait while the changes are applied and [Shimmer] Hornet is restarted..." 8 65 0
+                } | whiptail --gauge "Please wait while the changes are applied and [Shimmer] Hornet is restarted..." 8 70 0
                 unset restartShimmerHornet
                 if [ -f "/tmp/shimmer-hornet.lock" ]; then
                     sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
@@ -84,7 +84,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 # Hornet JWT
                 CHOICE=$(
-                    whiptail --title "Hornet [SHIMMER] API & JWT" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Hornet [SHIMMER] API & JWT" --menu "\nChoose an option" 24 70 0 \
                     "" "" \
                     "1)" "[$menuShimmerHornetApiEnabled] API" \
                     "2)" "Set protected API Routes" \
@@ -99,7 +99,7 @@ while [ $exitCode -lt 1 ]; do
                 case $CHOICE in
                     "1)")
                         menuShimmerHornetApiEnabled=$(echo $menuShimmerHornetApiEnabled | awk '{print tolower($0)}')
-                        if (whiptail --title "Hornet [SHIMMER] API" --yesno --defaultno "Are you sure you want to $menuShimmerHornetApiEnabled the [Shimmer] Hornet API?" 8 65); then
+                        if (whiptail --title "Hornet [SHIMMER] API" --yesno --defaultno "Are you sure you want to $menuShimmerHornetApiEnabled the [Shimmer] Hornet API?" 8 70); then
                             source $swarmConfigs/shimmer-hornet.cfg
                             if [ "$shimmerHornetApiEnabled" = "true" ]; then
                                 shimmerHornetApiEnabled=false
@@ -110,14 +110,14 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             restartShimmerHornet=true
                             sudo sed -i 's~^shimmerHornetApiEnabled=.*~shimmerHornetApiEnabled='$shimmerHornetApiEnabled'~' $swarmConfigs/shimmer-hornet.cfg
-                            whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "[Shimmer] Hornet API $menuShimmerHornetApiEnabled." 8 65
+                            whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "[Shimmer] Hornet API $menuShimmerHornetApiEnabled." 8 70
                         fi
                     ;;
                     "2)")
                         source $swarmConfigs/shimmer-hornet.cfg
                         shimmerHornetApiRoutes=$shimmerHornetApiPublicRoutes
                         source $shimmerHornetModule/shimmerHornetApiRoutes
-                        shimmerHornetApiRoutes=$(whiptail --title "Hornet [SHIMMER] API routes" --checklist "\nSelect which API routes should not be public(*):" 24 65 11 \
+                        shimmerHornetApiRoutes=$(whiptail --title "Hornet [SHIMMER] API routes" --checklist "\nSelect which API routes should not be public(*):" 24 70 11 \
                             "/health" "" $shimmerHornetApiRoutesHealth \
                             "/api/routes" "" $shimmerHornetApiRoutesRoutes \
                             "/api/core/v2/info" "" $shimmerHornetApiRoutesInfo \
@@ -143,7 +143,7 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "3)")
                         if [ -f "/usr/bin/shimmer-hornet" ]; then
-                            if (whiptail --title "Hornet [SHIMMER] API & JWT" --yesno --defaultno "Are you sure you want to generate a new [Shimmer] Hornet JWT token?" 8 65); then
+                            if (whiptail --title "Hornet [SHIMMER] API & JWT" --yesno --defaultno "Are you sure you want to generate a new [Shimmer] Hornet JWT token?" 8 70); then
                                 shimmerHornetApiJwtToken=$( cd $shimmerHornetHome/$shimmerHornetNetwork ; /usr/bin/shimmer-hornet tools jwt-api --salt $shimmerHornetApiJwtSalt | awk '{ print $5 }')
                                 if [ ! -z "$shimmerHornetApiJwtToken" ]; then
                                     sudo sed -i 's~^shimmerHornetApiJwtToken=.*~shimmerHornetApiJwtToken="'$shimmerHornetApiJwtToken'"~' $swarmConfigs/shimmer-hornet.cfg
@@ -154,23 +154,23 @@ while [ $exitCode -lt 1 ]; do
                                     echo ""
                                     read -n 1 -s -r -p "Press any key to continue"
                                 else
-                                    whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "Error generating [Shimmer] Hornet JWT token, please try again later." 8 65
+                                    whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "Error generating [Shimmer] Hornet JWT token, please try again later." 8 70
                                 fi
                             fi
                         else
-                            whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "Please install [Shimmer] Hornet first." 8 65
+                            whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "Please install [Shimmer] Hornet first." 8 70
                         fi
                     ;;
                     "4)")
                         if [ -f "$swarmLogs/shimmerHornetJwtToken.log" ]; then
                             sudo $swarmCLEditor $swarmLogs/shimmerHornetJwtToken.log
                         else
-                            whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "No [Shimmer] Hornet JWT token log found, please generate one first." 8 65
+                            whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "No [Shimmer] Hornet JWT token log found, please generate one first." 8 70
                         fi
                     ;;
                     "5)")
                         if [ -f "/usr/bin/shimmer-hornet" ]; then
-                            if (whiptail --title "Hornet [SHIMMER] API & JWT" --yesno --defaultno "Are you sure you want to revoke all [Shimmer] Hornet JWT tokens?" 8 65); then
+                            if (whiptail --title "Hornet [SHIMMER] API & JWT" --yesno --defaultno "Are you sure you want to revoke all [Shimmer] Hornet JWT tokens?" 8 70); then
                                 shimmerHornetApiJwtSalt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
                                 sudo sed -i 's~^shimmerHornetApiJwtSalt=.*~shimmerHornetApiJwtSalt="'$shimmerHornetApiJwtSalt'"~' $swarmConfigs/shimmer-hornet.cfg
                                 if [ -f "/tmp/shimmer-hornet.lock" ]; then
@@ -203,7 +203,7 @@ while [ $exitCode -lt 1 ]; do
                                         sudo sed -i 's~^shimmerHornetApiJwtToken=.*~shimmerHornetApiJwtToken="'$shimmerHornetApiJwtToken'"~' $swarmConfigs/shimmer-hornet.cfg
                                     fi
                                     echo 100
-                                } | whiptail --gauge "Please wait while all [Shimmer] Hornet JWT tokens will be revoked..." 8 65 0
+                                } | whiptail --gauge "Please wait while all [Shimmer] Hornet JWT tokens will be revoked..." 8 70 0
                                 for shimmerInxPlugin in ${shimmerInxPlugins[@]}
                                 do
                                     if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
@@ -219,7 +219,7 @@ while [ $exitCode -lt 1 ]; do
                                 fi
                             fi
                         else
-                            whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "Please install [Shimmer] Hornet first." 8 65
+                            whiptail --title "Hornet [SHIMMER] API & JWT" --msgbox "Please install [Shimmer] Hornet first." 8 70
                         fi
                     ;;
                 esac
@@ -237,7 +237,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 # Hornet JWT
                 CHOICE=$(
-                    whiptail --title "Hornet [SHIMMER] INX" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Hornet [SHIMMER] INX" --menu "\nChoose an option" 24 70 0 \
                     "" "" \
                     "1)" "[$menuShimmerHornetInxEnabled] INX Interface" \
                     "2)" "Set INX POW Worker Count" 3>&2 2>&1 1>&3
@@ -249,7 +249,7 @@ while [ $exitCode -lt 1 ]; do
                 case $CHOICE in
                     "1)")
                         menuShimmerHornetInxEnabled=$(echo $menuShimmerHornetInxEnabled | awk '{print tolower($0)}')
-                        if (whiptail --title "Hornet [SHIMMER] INX" --yesno --defaultno "Are you sure you want to $menuShimmerHornetInxEnabled [Shimmer] INX interface?" 8 65); then
+                        if (whiptail --title "Hornet [SHIMMER] INX" --yesno --defaultno "Are you sure you want to $menuShimmerHornetInxEnabled [Shimmer] INX interface?" 8 70); then
                             source $swarmConfigs/shimmer-hornet.cfg
                             if [ "$shimmerHornetInxEnabled" = "true" ]; then
                                 shimmerHornetInxEnabled=false
@@ -260,7 +260,7 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             restartShimmerHornet=true
                             sudo sed -i 's/^shimmerHornetInxEnabled=.*/shimmerHornetInxEnabled='$shimmerHornetInxEnabled'/' $swarmConfigs/shimmer-hornet.cfg
-                            whiptail --title "Hornet [SHIMMER] INX" --msgbox "[Shimmer] INX interface $menuShimmerHornetInxEnabled." 8 65
+                            whiptail --title "Hornet [SHIMMER] INX" --msgbox "[Shimmer] INX interface $menuShimmerHornetInxEnabled." 8 70
                         fi
                     ;;
                     "2)")
@@ -274,7 +274,7 @@ while [ $exitCode -lt 1 ]; do
                                 restartShimmerHornet=true
                             fi
                         fi
-                        whiptail --title "Hornet [SHIMMER] INX" --msgbox "[Shimmer] INX pow worker counter set to $shimmerHornetInxPowWorkerCount." 8 65
+                        whiptail --title "Hornet [SHIMMER] INX" --msgbox "[Shimmer] INX pow worker counter set to $shimmerHornetInxPowWorkerCount." 8 70
                     ;;
                 esac
             done
@@ -292,7 +292,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 # Hornet JWT
                 CHOICE=$(
-                    whiptail --title "Hornet [SHIMMER] Autopeering" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Hornet [SHIMMER] Autopeering" --menu "\nChoose an option" 24 70 0 \
                     "" "" \
                     "1)" "[${menuShimmerHornetAutopeeringEnabled^}] Autopeering" \
                     "2)" "Set Autopeering Port (UDP)" 3>&2 2>&1 1>&3
@@ -303,7 +303,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if (whiptail --title "Hornet [SHIMMER] Autopeering" --yesno --defaultno "Are you sure you want to ${menuShimmerHornetAutopeeringEnabled} [Shimmer] Hornet autopeering?" 8 65); then
+                        if (whiptail --title "Hornet [SHIMMER] Autopeering" --yesno --defaultno "Are you sure you want to ${menuShimmerHornetAutopeeringEnabled} [Shimmer] Hornet autopeering?" 8 70); then
                             source $swarmConfigs/shimmer-hornet.cfg
                             if [ "$shimmerHornetAutopeeringEnabled" = "true" ]; then
                                 shimmerHornetAutopeeringEnabled=false
@@ -321,7 +321,7 @@ while [ $exitCode -lt 1 ]; do
                                 sudo sed -i 's/^shimmerHornetAutopeeringEnabled=.*/shimmerHornetAutopeeringEnabled='$shimmerHornetAutopeeringEnabled'/' $swarmConfigs/shimmer-hornet.cfg
                             fi
                             restartShimmerHornet=true
-                            whiptail --title "Hornet [SHIMMER] Autopeering" --msgbox "[Shimmer] Hornet autopeering $menuShimmerHornetAutopeeringEnabled." 8 65
+                            whiptail --title "Hornet [SHIMMER] Autopeering" --msgbox "[Shimmer] Hornet autopeering $menuShimmerHornetAutopeeringEnabled." 8 70
                         fi
                     ;;
                     "2)")
@@ -339,7 +339,7 @@ while [ $exitCode -lt 1 ]; do
                                     source $shimmerHornetConfigParsers/shimmerHornetAutopeeringPort
                                 fi
                                 sudo sed -i 's/^shimmerHornetAutopeeringPort=.*/shimmerHornetAutopeeringPort='$shimmerHornetAutopeeringPort'/' $swarmConfigs/shimmer-hornet.cfg
-                                whiptail --title "Hornet [SHIMMER] Autopeering" --msgbox "[Shimmer] Hornet autopeering port set to \"$shimmerHornetAutopeeringPort/udp\"." 8 65
+                                whiptail --title "Hornet [SHIMMER] Autopeering" --msgbox "[Shimmer] Hornet autopeering port set to \"$shimmerHornetAutopeeringPort/udp\"." 8 70
                             fi
                         fi
                         unset currentShimmerHornetAutopeeringPort
@@ -360,7 +360,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 # Hornet JWT
                 CHOICE=$(
-                    whiptail --title "Hornet [SHIMMER] Snapshots" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Hornet [SHIMMER] Snapshots" --menu "\nChoose an option" 24 70 0 \
                     "" "" \
                     "1)" "[${menuShimmerHornetSnapshotsEnabled^}] Snapshots" \
                     "2)" "Set Snapshot Interval" 3>&2 2>&1 1>&3
@@ -371,7 +371,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if (whiptail --title "Hornet [SHIMMER] Snapshots" --yesno --defaultno "Are you sure you want to $menuShimmerHornetSnapshotsEnabled [Shimmer] Hornet snapshots?" 8 65); then
+                        if (whiptail --title "Hornet [SHIMMER] Snapshots" --yesno --defaultno "Are you sure you want to $menuShimmerHornetSnapshotsEnabled [Shimmer] Hornet snapshots?" 8 70); then
                             source $swarmConfigs/shimmer-hornet.cfg
                             if [ "$shimmerHornetSnapshotsEnabled" = "true" ]; then
                                 shimmerHornetSnapshotsEnabled=false
@@ -383,7 +383,7 @@ while [ $exitCode -lt 1 ]; do
                                 sudo sed -i 's/^shimmerHornetSnapshotsEnabled=.*/shimmerHornetSnapshotsEnabled='$shimmerHornetSnapshotsEnabled'/' $swarmConfigs/shimmer-hornet.cfg
                             fi
                             restartShimmerHornet=true
-                            whiptail --title "Hornet [SHIMMER] Snapshots" --msgbox "[Shimmer] Hornet snapshots $menuShimmerHornetSnapshotsEnabled." 8 65
+                            whiptail --title "Hornet [SHIMMER] Snapshots" --msgbox "[Shimmer] Hornet snapshots $menuShimmerHornetSnapshotsEnabled." 8 70
                         fi
                     ;;
                     "2)")
@@ -397,7 +397,7 @@ while [ $exitCode -lt 1 ]; do
                                     source $shimmerHornetConfigParsers/shimmerHornetSnapshotsInterval
                                 fi
                                 sudo sed -i 's/^shimmerHornetSnapshotsInterval=.*/shimmerHornetSnapshotsInterval='$shimmerHornetSnapshotsInterval'/' $swarmConfigs/shimmer-hornet.cfg
-                                whiptail --title "Hornet [SHIMMER] Snapshots" --msgbox "[Shimmer] Hornet snapshot interval set to \"$shimmerHornetSnapshotsInterval\"." 8 65
+                                whiptail --title "Hornet [SHIMMER] Snapshots" --msgbox "[Shimmer] Hornet snapshot interval set to \"$shimmerHornetSnapshotsInterval\"." 8 70
                             fi
                         fi
                         unset currentShimmerHornetSnapshotsInterval
@@ -417,7 +417,7 @@ while [ $exitCode -lt 1 ]; do
                     shimmerHornetPruningEnabledStatus="enable"
                 fi
                 CHOICE=$(
-                    whiptail --title "Hornet [SHIMMER] Pruning" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Hornet [SHIMMER] Pruning" --menu "\nChoose an option" 24 70 0 \
                     "" "" \
                     "1)" "[${shimmerHornetPruningEnabledStatus^}] Pruning" \
                     "2)" "Set Database Size" \
@@ -430,7 +430,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if (whiptail --title "Hornet [SHIMMER] Pruning" --yesno --defaultno "Are you sure you want to $shimmerHornetPruningEnabledStatus [Shimmer] Hornet pruning?" 8 65); then
+                        if (whiptail --title "Hornet [SHIMMER] Pruning" --yesno --defaultno "Are you sure you want to $shimmerHornetPruningEnabledStatus [Shimmer] Hornet pruning?" 8 70); then
                             if [ "$shimmerHornetPruningEnabled" = "true" ]; then
                                 shimmerHornetPruningEnabled=false
                                 shimmerHornetPruningEnabledStatus="disabled"
@@ -440,7 +440,7 @@ while [ $exitCode -lt 1 ]; do
                             fi
                             restartShimmerHornet=true
                             sudo sed -i 's/^shimmerHornetPruningEnabled=.*/shimmerHornetPruningEnabled='$shimmerHornetPruningEnabled'/' $swarmConfigs/shimmer-hornet.cfg
-                            whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "Pruning of the [Shimmer] Hornet database $shimmerHornetPruningEnabledStatus." 8 65
+                            whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "Pruning of the [Shimmer] Hornet database $shimmerHornetPruningEnabledStatus." 8 70
                         fi
                     ;;
                     "2)")
@@ -457,9 +457,9 @@ while [ $exitCode -lt 1 ]; do
                                     source $shimmerHornetConfigParsers/shimmerHornetPruningDatabaseSize
                                 fi
                                 sudo sed -i 's/^shimmerHornetPruningDatabaseSize=.*/shimmerHornetPruningDatabaseSize='$shimmerHornetPruningDatabaseSize'/' $swarmConfigs/shimmer-hornet.cfg
-                                whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "The [Shimmer] Hornet database size has been limited to ${shimmerHornetPruningDatabaseSize} GB." 8 65
+                                whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "The [Shimmer] Hornet database size has been limited to ${shimmerHornetPruningDatabaseSize} GB." 8 70
                             else
-                                whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "Aborted - No change was made to the [Shimmer] Hornet database size." 8 65
+                                whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "Aborted - No change was made to the [Shimmer] Hornet database size." 8 70
                             fi
                         fi
                     ;;
@@ -474,7 +474,7 @@ while [ $exitCode -lt 1 ]; do
                                     source $shimmerHornetConfigParsers/shimmerHornetPruningCooldownTime
                                 fi
                                 sudo sed -i 's/^shimmerHornetPruningCooldownTime=.*/shimmerHornetPruningCooldownTime='$shimmerHornetPruningCooldownTime'/' $swarmConfigs/shimmer-hornet.cfg
-                                whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "[Shimmer] Hornet pruning cooldown time set to ${shimmerHornetPruningCooldownTime} minutes." 8 65
+                                whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "[Shimmer] Hornet pruning cooldown time set to ${shimmerHornetPruningCooldownTime} minutes." 8 70
                             fi
                         fi
                     ;;
@@ -487,7 +487,7 @@ while [ $exitCode -lt 1 ]; do
                                     source $shimmerHornetConfigParsers/shimmerHornetPruningPercentage
                                 fi
                                 sudo sed -i 's/^shimmerHornetPruningPercentage=.*/shimmerHornetPruningPercentage='$shimmerHornetPruningPercentage'/' $swarmConfigs/shimmer-hornet.cfg
-                                whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "[Shimmer] Hornet pruning percentage set to ${shimmerHornetPruningPercentage}%." 8 65
+                                whiptail --title "Hornet [SHIMMER] Pruning" --msgbox "[Shimmer] Hornet pruning percentage set to ${shimmerHornetPruningPercentage}%." 8 70
                             fi
                         fi
                     ;;
@@ -502,7 +502,7 @@ while [ $exitCode -lt 1 ]; do
             else
                 shimmerHornetPowEnabledStatus="enable"
             fi
-            if (whiptail --title "Hornet [SHIMMER] Proof of Work" --yesno --defaultno "Do you really want to $shimmerHornetPowEnabledStatus [Shimmer] Hornet proof of work?" 8 65); then
+            if (whiptail --title "Hornet [SHIMMER] Proof of Work" --yesno --defaultno "Do you really want to $shimmerHornetPowEnabledStatus [Shimmer] Hornet proof of work?" 8 70); then
                 if [ "$shimmerHornetPowEnabled" = "true" ]; then
                     shimmerHornetPowEnabled=false
                     if [ -f "/usr/bin/shimmer-hornet" ]; then
@@ -511,7 +511,7 @@ while [ $exitCode -lt 1 ]; do
                         sudo sed -i 's/^shimmerHornetPowWorkerCount=.*/shimmerHornetPowWorkerCount='$shimmerHornetPowWorkerCount'/' $swarmConfigs/shimmer-hornet.cfg
                     fi
                     sudo sed -i 's/^shimmerHornetPowEnabled=.*/shimmerHornetPowEnabled='$shimmerHornetPowEnabled'/' $swarmConfigs/shimmer-hornet.cfg
-                    whiptail --title "Hornet [SHIMMER] PoW" --msgbox "[Shimmer] Hornet PoW has been disabled." 8 65
+                    whiptail --title "Hornet [SHIMMER] PoW" --msgbox "[Shimmer] Hornet PoW has been disabled." 8 70
                 else
                     shimmerHornetPowEnabled=true
                     if [ -f "/usr/bin/shimmer-hornet" ]; then
@@ -520,7 +520,7 @@ while [ $exitCode -lt 1 ]; do
                         sudo sed -i 's/^shimmerHornetPowWorkerCount=.*/shimmerHornetPowWorkerCount='$shimmerHornetPowWorkerCount'/' $swarmConfigs/shimmer-hornet.cfg
                     fi
                     sudo sed -i 's/^shimmerHornetPowEnabled=.*/shimmerHornetPowEnabled='$shimmerHornetPowEnabled'/' $swarmConfigs/shimmer-hornet.cfg
-                    whiptail --title "Hornet [SHIMMER] PoW" --msgbox "[Shimmer] Hornet PoW has been enabled." 8 65
+                    whiptail --title "Hornet [SHIMMER] PoW" --msgbox "[Shimmer] Hornet PoW has been enabled." 8 70
                 fi
             fi
         ;;
@@ -531,7 +531,7 @@ while [ $exitCode -lt 1 ]; do
                 shimmerHornetVersion=$(/usr/bin/shimmer-hornet -v | awk '{ print $2 }')
                 # Hornet Dashboard
                 CHOICE=$(
-                    whiptail --title "Hornet [SHIMMER] Identity" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Hornet [SHIMMER] Identity" --menu "\nChoose an option" 24 70 0 \
                     "" "" \
                     "1)" "Set Identity" \
                     "2)" "Generate New Identity" 3>&2 2>&1 1>&3
@@ -558,7 +558,7 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "2)")
                         if [ -f "/usr/bin/shimmer-hornet" ]; then
-                            if (whiptail --title "Hornet [SHIMMER] Identity" --yesno --defaultno "Are you sure you want to generate a new [Shimmer] Hornet Identity (the existing one will be deleted)?" 8 65); then
+                            if (whiptail --title "Hornet [SHIMMER] Identity" --yesno --defaultno "Are you sure you want to generate a new [Shimmer] Hornet Identity (the existing one will be deleted)?" 8 70); then
                                 unset shimmerHornetIdentity
                                 if [ -f "$shimmerHornetHome/$shimmerHornetNetwork/p2pstore/identity.key" ]; then
                                     sudo rm -rf $shimmerHornetHome/$shimmerHornetNetwork/p2pstore/identity.key 2>/dev/null
@@ -580,7 +580,7 @@ while [ $exitCode -lt 1 ]; do
                 clear
                 source $swarmConfigs/shimmer-hornet.cfg
                 CHOICE=$(
-                    whiptail --title "Hornet [SHIMMER] Gossip" --menu "\nChoose an option" 24 65 0 \
+                    whiptail --title "Hornet [SHIMMER] Gossip" --menu "\nChoose an option" 24 70 0 \
                     "" "" \
                     "1)" "Set Gossip Port" \
                     "2)" "Set Unknown Peers Limit" 3>&2 2>&1 1>&3
@@ -605,7 +605,7 @@ while [ $exitCode -lt 1 ]; do
                                     source $shimmerHornetConfigParsers/shimmerHornetGossipPort
                                 fi
                                 sudo sed -i 's/^shimmerHornetGossipPort=.*/shimmerHornetGossipPort='$shimmerHornetGossipPort'/' $swarmConfigs/shimmer-hornet.cfg
-                                whiptail --title "Hornet [SHIMMER] Gossip" --msgbox "[Shimmer] Hornet gossip port set to \"$shimmerHornetGossipPort/tcp\"." 8 65
+                                whiptail --title "Hornet [SHIMMER] Gossip" --msgbox "[Shimmer] Hornet gossip port set to \"$shimmerHornetGossipPort/tcp\"." 8 70
                                 restartShimmerHornet=true
                             fi
                         fi
@@ -621,7 +621,7 @@ while [ $exitCode -lt 1 ]; do
                                     source $shimmerHornetConfigParsers/shimmerHornetGossipUnknownPeersLimit
                                 fi
                                 sudo sed -i 's/^shimmerHornetUnknownPeersLimit=.*/shimmerHornetUnknownPeersLimit='$shimmerHornetUnknownPeersLimit'/' $swarmConfigs/shimmer-hornet.cfg
-                                whiptail --title "Hornet [SHIMMER] Gossip" --msgbox "Maximum of unknown [Shimmer] Hornet neighbors set to \"$shimmerHornetUnknownPeersLimit\"." 8 65
+                                whiptail --title "Hornet [SHIMMER] Gossip" --msgbox "Maximum of unknown [Shimmer] Hornet neighbors set to \"$shimmerHornetUnknownPeersLimit\"." 8 70
                             fi
                         fi
                     ;;
@@ -636,13 +636,13 @@ while [ $exitCode -lt 1 ]; do
                 if [ -f "/usr/bin/shimmer-hornet" ]; then
                     source $shimmerHornetConfigParsers/shimmerHornetAlias
                     if [ "$newShimmerHornetAlias" = "true" ]; then
-                        whiptail --title "Hornet [SHIMMER] Alias" --msgbox "New [Shimmer] Hornet alias \"$shimmerHornetAlias\" applied." 8 65
+                        whiptail --title "Hornet [SHIMMER] Alias" --msgbox "New [Shimmer] Hornet alias \"$shimmerHornetAlias\" applied." 8 70
                         unset newShimmerHornetAlias
                     else
-                        whiptail --title "Hornet [SHIMMER] Alias" --msgbox "No [Shimmer] Hornet alias change detected." 8 65
+                        whiptail --title "Hornet [SHIMMER] Alias" --msgbox "No [Shimmer] Hornet alias change detected." 8 70
                     fi
                 else
-                    whiptail --title "Hornet [SHIMMER] Alias" --msgbox "[Shimmer] Hornet alias \"$shimmerHornetAlias\" applied." 8 65
+                    whiptail --title "Hornet [SHIMMER] Alias" --msgbox "[Shimmer] Hornet alias \"$shimmerHornetAlias\" applied." 8 70
                 fi
             fi
         ;;
@@ -651,7 +651,7 @@ while [ $exitCode -lt 1 ]; do
                 source $shimmerHornetModule/shimmerHornetConfigs
                 # Hornet Networks
                 CHOICE=$(
-                    whiptail --title "Hornet [SHIMMER] Network" --menu "\nCurrent network: $shimmerHornetNetwork\n\nChoose an option" 24 65 0 \
+                    whiptail --title "Hornet [SHIMMER] Network" --menu "\nCurrent network: $shimmerHornetNetwork\n\nChoose an option" 24 70 0 \
                     "" "" \
                     "1)" "Select Shimmer Mainnet (Default)" 3>&2 2>&1 1>&3
                 )
@@ -661,7 +661,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if (whiptail --title "Hornet [SHIMMER] Network" --yesno --defaultno "Are you sure you want to change the network to [Shimmer] mainnet (the old database will be deleted)?" 8 65); then
+                        if (whiptail --title "Hornet [SHIMMER] Network" --yesno --defaultno "Are you sure you want to change the network to [Shimmer] mainnet (the old database will be deleted)?" 8 70); then
                             currentShimmerHornetNetwork=$shimmerHornetNetwork
                             shimmerHornetNetwork=mainnet
                             sudo sed -i 's/^shimmerHornetNetwork=.*/shimmerHornetNetwork='$shimmerHornetNetwork'/' $swarmConfigs/shimmer-hornet.cfg
@@ -679,7 +679,7 @@ while [ $exitCode -lt 1 ]; do
                 source $swarmConfigs/shimmer-hornet.cfg
                 # Hornet release channel
                 CHOICE=$(
-                    whiptail --title "Hornet [SHIMMER] Releases" --menu "\nSet \"rc\" for official [Shimmer] Hornet releases or \"beta\"/\"alpha\" for [Shimmer] Hornet releases under development\n\nChoose an option" 24 65 0 \
+                    whiptail --title "Hornet [SHIMMER] Releases" --menu "\nSet \"rc\" for official [Shimmer] Hornet releases or \"beta\"/\"alpha\" for [Shimmer] Hornet releases under development\n\nChoose an option" 24 70 0 \
                     "" "" \
                     "1)" "Select Release Candidate Channel (Default)" 3>&2 2>&1 1>&3
                 )
@@ -689,7 +689,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if (whiptail --title "Hornet [SHIMMER] Releases" --yesno --defaultno "Are you sure you want to change the [Shimmer] Hornet release channel to \"rc\" (Hornet will be reinstalled)?" 8 65); then
+                        if (whiptail --title "Hornet [SHIMMER] Releases" --yesno --defaultno "Are you sure you want to change the [Shimmer] Hornet release channel to \"rc\" (Hornet will be reinstalled)?" 8 70); then
                             currentShimmerHornetRelease=$shimmerHornetRelease
                             shimmerHornetRelease="rc"
                             sudo sed -i 's/^shimmerHornetRelease=.*/shimmerHornetRelease='$shimmerHornetRelease'/' $swarmConfigs/shimmer-hornet.cfg
@@ -705,7 +705,7 @@ while [ $exitCode -lt 1 ]; do
         ;;
         "12)")
             menuShimmerHornetUpdateCheck=$(echo $menuShimmerHornetUpdateCheck | awk '{print tolower($0)}')
-            if (whiptail --title "Hornet [SHIMMER] Update Check" --yesno --defaultno "Are you sure you want to $menuShimmerHornetUpdateCheck the [Shimmer] Hornet update check?" 8 65); then
+            if (whiptail --title "Hornet [SHIMMER] Update Check" --yesno --defaultno "Are you sure you want to $menuShimmerHornetUpdateCheck the [Shimmer] Hornet update check?" 8 70); then
                 source $swarmConfigs/shimmer-hornet.cfg
                 if [ "$shimmerHornetUpdateCheck" = "true" ]; then
                     shimmerHornetUpdateCheck=false
@@ -717,7 +717,7 @@ while [ $exitCode -lt 1 ]; do
                     sudo sed -i 's/^shimmerHornetUpdateCheck=.*/shimmerHornetUpdateCheck='$shimmerHornetUpdateCheck'/' $swarmConfigs/shimmer-hornet.cfg
                 fi
                 restartShimmerHornet=true
-                whiptail --title "Hornet [SHIMMER] Update Check" --msgbox "[Shimmer] Hornet update check $menuShimmerHornetUpdateCheck." 8 65
+                whiptail --title "Hornet [SHIMMER] Update Check" --msgbox "[Shimmer] Hornet update check $menuShimmerHornetUpdateCheck." 8 70
             fi
         ;;
     esac
