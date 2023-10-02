@@ -33,17 +33,27 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             swarmAppLatestVersion=$(curl --max-time 5 -Ls https://cdn.tanglebay.com/github/releases.json | jq '."'$swarmAppGithubName'".'${!swarmAppReleaseChannel}'')
             swarmAppLatestVersion=$(echo $swarmAppLatestVersion | tr -d 'v"')
 
-            if [ "$swarmAppLatestVersion" = "\"\"" ] || [ -z "$swarmAppLatestVersion" ] || [ "$swarmAppLatestVersion" = "null" ] || ! [[ $swarmAppLatestVersion =~ [0-9] ]]; then
-                source ${!swarmAppModule}/${swarmAppPrefix}Version
-                swarmAppLatestVersion=${swarmAppPrefix}Version
-            fi
+            if [ "${!swarmAppReleaseChannel}" = "rc" ] && [ ! -z "$swarmAppLatestVersion" ] && [[ $swarmAppLatestVersion =~ [0-9] ]] && [[ ${!swarmAppCurrentLatestVersion} =~ [0-9] ]]; then
+                swarmAppLatestStableVersion=$(curl --max-time 5 -Ls https://cdn.tanglebay.com/github/releases.json | jq '."'$swarmAppGithubName'".stable')
+                swarmAppLatestStableVersion=$(echo $swarmAppLatestStableVersion | tr -d 'v"')
+                swarmAppLatestVersionClean=$(echo $swarmAppLatestVersion | sed 's/\-rc.*//')
+                if [ "$swarmAppLatestStableVersion" = "$swarmAppLatestVersionClean" ]; then
+                    swarmAppLatestVersion=$swarmAppLatestStableVersion
+                    sudo sed -i 's~^latest'${swarmAppPrefix^}'Version=.*~latest'${swarmAppPrefix^}'Version="'$swarmAppLatestVersion'"~' $swarmConfigs/latest-versions.cfg
+                fi
+            else
+                if [ "$swarmAppLatestVersion" = "\"\"" ] || [ -z "$swarmAppLatestVersion" ] || [ "$swarmAppLatestVersion" = "null" ] || ! [[ $swarmAppLatestVersion =~ [0-9] ]]; then
+                    source ${!swarmAppModule}/${swarmAppPrefix}Version
+                    swarmAppLatestVersion=${swarmAppPrefix}Version
+                fi
 
-            if ! [[ ${!swarmAppCurrentLatestVersion} =~ [0-9] ]]; then
-                unset swarmAppCurrentLatestVersion
-            fi
+                if ! [[ ${!swarmAppCurrentLatestVersion} =~ [0-9] ]]; then
+                    unset swarmAppCurrentLatestVersion
+                fi
 
-            if [ "$(printf '%s\n' "$swarmAppLatestVersion" "${!swarmAppCurrentLatestVersion}" | sort -V | head -n 1)" != "$swarmAppLatestVersion" ] && [ ! -z "$swarmAppLatestVersion" ] && [[ $swarmAppLatestVersion =~ [0-9] ]] && [[ ${!swarmAppCurrentLatestVersion} =~ [0-9] ]]; then
-                sudo sed -i 's~^latest'${swarmAppPrefix^}'Version=.*~latest'${swarmAppPrefix^}'Version="'$swarmAppLatestVersion'"~' $swarmConfigs/latest-versions.cfg
+                if [ "$(printf '%s\n' "$swarmAppLatestVersion" "${!swarmAppCurrentLatestVersion}" | sort -V | head -n 1)" != "$swarmAppLatestVersion" ] && [ ! -z "$swarmAppLatestVersion" ] && [[ $swarmAppLatestVersion =~ [0-9] ]] && [[ ${!swarmAppCurrentLatestVersion} =~ [0-9] ]]; then
+                    sudo sed -i 's~^latest'${swarmAppPrefix^}'Version=.*~latest'${swarmAppPrefix^}'Version="'$swarmAppLatestVersion'"~' $swarmConfigs/latest-versions.cfg
+                fi
             fi
         else
             if [ ! -z "$swarmAppLatestVersion" ]; then
