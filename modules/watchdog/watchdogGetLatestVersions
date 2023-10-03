@@ -33,6 +33,9 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             swarmAppLatestVersion=$(curl --max-time 5 -Ls https://cdn.tanglebay.com/github/releases.json | jq '."'$swarmAppGithubName'".'${!swarmAppReleaseChannel}'')
             swarmAppLatestVersion=$(echo $swarmAppLatestVersion | tr -d 'v"')
 
+            if [ "${!swarmAppReleaseChannel}" = "rc" ] && [ "$swarmAppLatestVersion" != "${!swarmAppCurrentLatestVersion}" ] && [[ ${!swarmAppCurrentLatestVersion} = *rc* ]] && [ ! -z "$swarmAppLatestVersion" ] && [[ $swarmAppLatestVersion =~ [0-9] ]] && [[ ${!swarmAppCurrentLatestVersion} =~ [0-9] ]]; then
+                sudo sed -i 's~^latest'${swarmAppPrefix^}'Version=.*~latest'${swarmAppPrefix^}'Version="'$swarmAppLatestVersion'"~' $swarmConfigs/latest-versions.cfg
+            fi
             if [ "$swarmAppLatestVersion" = "\"\"" ] || [ -z "$swarmAppLatestVersion" ] || [ "$swarmAppLatestVersion" = "null" ] || ! [[ $swarmAppLatestVersion =~ [0-9] ]]; then
                 source ${!swarmAppModule}/${swarmAppPrefix}Version
                 swarmAppLatestVersion=${swarmAppPrefix}Version
