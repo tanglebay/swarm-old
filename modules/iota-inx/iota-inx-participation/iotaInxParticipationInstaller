@@ -1,14 +1,14 @@
 #!/bin/bash
 
-echo "====== INSTALLATION STARTED ======" > /tmp/iotaInxParticipationInstaller.log
+echo "====== INSTALLER STARTED ======" > /tmp/iotaInxParticipationInstaller.log
 # General
 if ! id inx >/dev/null 2>&1; then
-    echo "-> Create user" >> /tmp/iotaInxParticipationInstaller.log
+    echo "-> Create inx user" >> /tmp/iotaInxParticipationInstaller.log
     useradd --no-create-home --system inx >/dev/null
 fi
 
 if [ ! -d "$iotaInxParticipationHome" ]; then
-    echo "-> Create home folder" >> /tmp/iotaInxParticipationInstaller.log
+    echo "-> " >> /tmp/iotaInxParticipationInstaller.log
     sudo mkdir -p $iotaInxParticipationHome > /dev/null 2>&1
     sudo chown -R inx:inx $iotaInxParticipationHome > /dev/null 2>&1
 fi
@@ -21,14 +21,14 @@ fi
 
 # Create Service
 if [ ! -f "/lib/systemd/system/iota-inx-participation.service" ]; then
-    echo "-> Copy new service file from templates" >> /tmp/iotaInxParticipationInstaller.log
+    echo "-> Copy service file from templates" >> /tmp/iotaInxParticipationInstaller.log
     sudo cp -rf $swarmTemplates/app-service/iota-inx-participation.service /lib/systemd/system/iota-inx-participation.service > /dev/null 2>&1
     if [ ! -f "/etc/default/iota-inx-participation" ]; then
-        echo "-> Create OPTIONS file for service" >> /tmp/iotaInxParticipationInstaller.log
+        echo "-> Create options file for service" >> /tmp/iotaInxParticipationInstaller.log
         echo "OPTIONS=\"--config config.json\"" > /etc/default/iota-inx-participation
     fi
     if [ ! -f "/etc/systemd/system/multi-user.target.wants/iota-inx-participation.service" ]; then
-        echo "-> Register service" >> /tmp/iotaInxParticipationInstaller.log
+        echo "-> Enable service" >> /tmp/iotaInxParticipationInstaller.log
         sudo systemctl enable iota-inx-participation > /dev/null 2>&1
     fi
     sudo systemctl daemon-reload > /dev/null 2>&1
@@ -37,11 +37,11 @@ fi
 ##############################################################################################################################################
 
 # Create dir if not exist
-echo "-> Create tmp folder" >> /tmp/iotaInxParticipationInstaller.log
+echo "-> Create tmp dir" >> /tmp/iotaInxParticipationInstaller.log
 sudo mkdir -p /tmp/iota-inx-participation > /dev/null 2>&1
 
 # Download latest inx-participation
-echo "-> Download archive v${LatestIotaInxParticipationVersion}" >> /tmp/iotaInxParticipationInstaller.log
+echo "-> Download archive for v${latestIotaInxParticipationVersion}" >> /tmp/iotaInxParticipationInstaller.log
 ( cd /tmp/iota-inx-participation/ ; sudo wget -q https://$cdnUrl/apps/inx/inx-participation/v${latestIotaInxParticipationVersion}/inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz )
 if [ -f "/tmp/iota-inx-participation/inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz" ]; then
     iotaInxParticipationDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-participation/inx-participation-v${latestIotaInxParticipationVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
@@ -90,15 +90,6 @@ if [ "$newIotaInxParticipationBinary" = "true" ]; then
             sudo chmod 644 /var/lib/iota-inx-participation/*.json > /dev/null 2>&1
             newIotaInxParticipationConfig=true
         fi
-    fi
-fi
-
-##############################################################################################################################################
-
-if [ -d "$iotaHornetHome/${iotaHornetNetwork}db/participation" ]; then
-    sudo mv $iotaHornetHome/${iotaHornetNetwork}db/participation $iotaInxParticipationHome/database
-    if [ -d "$iotaInxParticipationHome/database" ]; then
-        sudo chown -R inx:inx $iotaInxParticipationHome/database > /dev/null 2>&1
     fi
 fi
 
