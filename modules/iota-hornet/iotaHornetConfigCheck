@@ -1,43 +1,32 @@
 #!/bin/bash
+if [ -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
+    checkConfigFile=$(cat $iotaHornetHome/$iotaHornetConfig.json)
+fi
 
-if [[ $iotaHornetVersion =~ ^2.* ]]; then
-    if [ -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
-        checkConfigFile=$(cat $iotaHornetHome/$iotaHornetConfig.json)
-    fi
-
-    if [ -z "$checkConfigFile" ] || [ ! -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
+if [ -z "$checkConfigFile" ] || [ ! -f "$iotaHornetHome/$iotaHornetConfig.json" ] || [[ $checkConfigFile = *chrysalis* ]]; then
+    if [ "$iotaHornetNetwork" = "mainnet" ]; then
         if [ -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
             sudo chown hornet:hornet $iotaHornetHome/$iotaHornetConfig.json > /dev/null 2>&1
         fi
-        sudo -u hornet wget -q -O $iotaHornetHome/$iotaHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/production/config_defaults.json
-    fi
-
-    if [ -f "/tmp/iotaHornetParsing" ]; then
-        sudo rm -rf /tmp/iotaHornetParsing > /dev/null 2>&1
-    fi
-
-    unset checkConfigFile
-else
-    if [ -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
-        checkConfigFile=$(cat $iotaHornetHome/$iotaHornetConfig.json)
-    fi
-    if [ ! -s "$iotaHornetHome/$iotaHornetConfig.json" ] || [ -z "$checkConfigFile" ]; then
-        if [ "$iotaHornetRelease" = "stable" ]; then
-            if [ -f "$iotaHornetHome/$iotaHornetConfig.json" ]; then
-                sudo chown hornet:hornet $iotaHornetHome/$iotaHornetConfig.json > /dev/null 2>&1
-            fi
-            sudo -u hornet wget -q -O $iotaHornetHome/$iotaHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/production/config.json
-        fi
-    fi
-    unset checkConfigFile
-    if [ -f "$iotaHornetHome/event.json" ]; then
-        sudo -u hornet touch $iotaHornetHome/event.json
-    fi
-
-    if [ -f "/tmp/iotaHornetParsing" ]; then
-        sudo rm -rf /tmp/iotaHornetParsing > /dev/null 2>&1
+        sudo -u hornet wget -q -O $iotaHornetHome/$iotaHornetConfig.json https://raw.githubusercontent.com/iotaledger/hornet/production/config_mainnet.json
     fi
 fi
+
+if [[ $checkConfigFile = *chrysalis* ]]; then
+    if [ -d "$iotaHornetHome/$iotaHornetNetwork/database" ]; then
+        sudo rm -rf $iotaHornetHome/${iotaHornetNetwork}/database > /dev/null 2>&1
+        restartIotaHornet=true
+    fi
+    if [ -d "$iotaHornetHome/$iotaHornetNetwork/snapshots" ]; then
+        sudo rm -rf $iotaHornetHome/${iotaHornetNetwork}/snapshots > /dev/null 2>&1
+        restartIotaHornet=true
+    fi
+fi
+
+if [ -f "/tmp/iotaHornetParsing" ]; then
+    sudo rm -rf /tmp/iotaHornetParsing > /dev/null 2>&1
+fi
+unset checkConfigFile
 
 ##################################################################################################################################################################
 

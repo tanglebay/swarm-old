@@ -21,14 +21,14 @@ fi
 
 # Create Service
 if [ ! -f "/lib/systemd/system/iota-inx-mqtt.service" ]; then
-    echo "-> Copy new service file from templates" >> /tmp/iotaInxMqttInstaller.log
+    echo "-> Copy service file" >> /tmp/iotaInxMqttInstaller.log
     sudo cp -rf $swarmTemplates/app-service/iota-inx-mqtt.service /lib/systemd/system/iota-inx-mqtt.service > /dev/null 2>&1
     if [ ! -f "/etc/default/iota-inx-mqtt" ]; then
         echo "-> Create OPTIONS file for service" >> /tmp/iotaInxMqttInstaller.log
         echo "OPTIONS=\"--config config.json\"" > /etc/default/iota-inx-mqtt
     fi
     if [ ! -f "/etc/systemd/system/multi-user.target.wants/iota-inx-mqtt.service" ]; then
-        echo "-> Register service" >> /tmp/iotaInxMqttInstaller.log
+        echo "-> Enable service" >> /tmp/iotaInxMqttInstaller.log
         sudo systemctl enable iota-inx-mqtt > /dev/null 2>&1
     fi
     sudo systemctl daemon-reload > /dev/null 2>&1
@@ -45,7 +45,7 @@ echo "-> Download archive for v${latestIotaInxMqttVersion}" >> /tmp/iotaInxMqttI
 ( cd /tmp/iota-inx-mqtt/ ; sudo wget -q https://$cdnUrl/apps/inx/inx-mqtt/v${latestIotaInxMqttVersion}/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz )
 if [ -f "/tmp/iota-inx-mqtt/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz" ]; then
     iotaInxMqttDownloadChecksum=$(sudo shasum -a 512 /tmp/iota-inx-mqtt/inx-mqtt-v${latestIotaInxMqttVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-    echo "-> Gen checksum of archive: $iotaInxMqttDownloadChecksum" >> /tmp/iotaInxMqttInstaller.log
+    echo "-> Generate local checksum: $iotaInxMqttDownloadChecksum" >> /tmp/iotaInxMqttInstaller.log
 fi
 
 # Download checksum
@@ -68,7 +68,7 @@ if [ "$iotaInxMqttDownloadChecksum" = "$iotaInxMqttChecksum" ] && [ ! -z "$iotaI
             sudo systemctl stop iota-inx-mqtt > /dev/null 2>&1
         fi
 
-        echo "-> Copy new binary file" >> /tmp/iotaInxMqttInstaller.log
+        echo "-> Copy new binary" >> /tmp/iotaInxMqttInstaller.log
         sudo cp -rf /tmp/iota-inx-mqtt/inx-mqtt /usr/bin/iota-inx-mqtt > /dev/null 2>&1
         sudo chmod +x /usr/bin/iota-inx-mqtt > /dev/null 2>&1
         newIotaInxMqttBinary=true
@@ -79,7 +79,7 @@ fi
 
 if [ "$newIotaInxMqttBinary" = "true" ]; then
     if [ -f "/tmp/iota-inx-mqtt/config_defaults.json" ]; then
-        echo "-> Copy new config file" >> /tmp/iotaInxMqttInstaller.log
+        echo "-> copy new config file" >> /tmp/iotaInxMqttInstaller.log
         sudo cp -rf /tmp/iota-inx-mqtt/config_defaults.json /var/lib/inx-mqtt/config.json > /dev/null 2>&1
         sudo chmod 644 /var/lib/iota-inx-mqtt/*.json > /dev/null 2>&1
         newIotaInxMqttConfig=true
