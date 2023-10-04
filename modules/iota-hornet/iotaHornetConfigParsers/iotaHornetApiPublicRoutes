@@ -1,10 +1,5 @@
 #!/bin/bash
 
-if [[ $iotaHornetApiPublicRoutes = */api/v1/info* ]]; then
-    iotaHornetApiPublicRoutes="/health,/api/routes,/api/core/v2/info,/api/core/v2/tips,/api/core/v2/blocks*,/api/core/v2/transactions*,/api/core/v2/milestones*,/api/core/v2/outputs*,/api/core/v2/treasury,/api/core/v2/receipts*,/api/debug/v1/*"
-    sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'"$iotaHornetApiPublicRoutes"'"~' $swarmConfigs/iota-hornet.cfg
-fi
-
 for iotaInxPlugin in ${iotaInxPlugins[@]}
 do
     if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
@@ -21,13 +16,12 @@ done
 unset iotaInxPlugin
 
 IFS=', ' read -r -a ARRAYiotaHornetApiPublicRoutes <<< "$iotaHornetApiPublicRoutes"
-iotaHornetApiPublicRoutesValidation="${iotaHornetApiPublicRoutes:0:1}"
-if [ "$iotaHornetApiPublicRoutesValidation" = "," ]; then
-    iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes:1}"
-    sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
-    iotaHornetForceApiPublicRoutes=true
-fi
-unset iotaHornetApiPublicRoutesValidation
+# validateIotaHornetApiPublicRoutes=$(echo "${iotaHornetApiPublicRoutes: -1}")
+# if [ "$validateIotaHornetApiPublicRoutes" = "," ]; then
+#     iotaHornetApiPublicRoutes="${iotaHornetApiPublicRoutes%?}"
+#     sudo sed -i 's~^iotaHornetApiPublicRoutes=.*~iotaHornetApiPublicRoutes="'$iotaHornetApiPublicRoutes'"~' $swarmConfigs/iota-hornet.cfg
+#     iotaHornetForceApiPublicRoutes=true
+# fi
 
 parser="$(jq '.restAPI.publicRoutes' $iotaHornetHome/$iotaHornetConfig.json)"
 parser="$(echo $parser | tr -d '[]" ')"
