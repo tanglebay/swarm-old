@@ -35,8 +35,8 @@ else
             echo ""
             echo "============================================================="
             echo ""
-            read -p "Do you want to ${swarmReinstall}install SWARM now?(y/N) " keyboardInput </dev/tty
-            keyboardInput=$(echo $keyboardInput | tr '[:upper:]' '[:lower:]')
+            read -p "Do you want to ${swarmReinstall}install SWARM now?(y/N): " keyboardInput
+            keyboardInput=$(echo ${keyboardInput,,})
             if [[ $keyboardInput = ^y* ]]; then
                 swarmTmp="/tmp/swarm"
                 echo ""
