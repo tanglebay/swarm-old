@@ -1,11 +1,8 @@
 #!/bin/bash
 
 if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
-    if [ -f "/usr/bin/iota-hornet" ]; then
-        iotaHornetVersion=$(/usr/bin/iota-hornet -v | awk '{ print $2 }' | tr -d 'v')
-    fi
     if [ "$watchdogIotaInxParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/iota-hornet" ] && [ -f "/usr/bin/iota-inx-participation" ] && [ "$iotaHornetApiEnabled" = "true" ] && [ "$iotaHornetNetwork" = "mainnet" ]; then
-        latestIotaParticipationEvents=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/event-list.json |jq '.official.eventIds' | tr -d '[]",')
+        latestIotaParticipationEvents=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/iota-mainnet/event-list.json |jq '.official.eventIds' | tr -d '[]",')
         latestIotaParticipationEvents=$(echo $latestIotaParticipationEvents)
         if [ "$watchdogIotaInxParticipationThirdParty" = "true" ]; then
             latestIotaParticipationThirdPartyEvents=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/iota-mainnet/event-list.json |jq '.thirdParty.eventIds' | tr -d '[]",')
@@ -46,7 +43,7 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                             sysDate=`date '+%d-%m-%Y %H-%M-%S'`
                             latestIotaParticipationEventName=$(echo $latestIotaParticipationEventDetails | jq '.name')
                             echo "$sysDate [WACHTDOG] INX-Participation (IOTA) - Event \"$latestIotaParticipationEventName\" added." >> $swarmLogs/swarm.log
-                            telegramText="Host: $HOSTNAME%0AApp: INX-Participation (IOTA)%0A%0AAction: Event $latestIotaParticipationEventName added automatically."
+                            telegramText="Host: $HOSTNAME%0A%0AApp: INX-Participation (IOTA)%0AAction: Event $latestIotaParticipationEventName added automatically."
                             source $watchdogModule/watchdogTelegram
                             unset latestIotaParticipationEventName
                         fi
