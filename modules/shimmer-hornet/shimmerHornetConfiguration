@@ -630,21 +630,27 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "9)")
-            shimmerHornetAlias=$(whiptail --inputbox "\nDefine an alias of your [Shimmer] Hornet node" 10 65 $shimmerHornetAlias --title "Hornet [SHIMMER] Alias" 3>&1 1>&2 2>&3)
-            if [ ! -z "$shimmerHornetAlias" ]; then
-                sudo sed -i 's~^shimmerHornetAlias=.*~shimmerHornetAlias="'$shimmerHornetAlias'"~' $swarmConfigs/shimmer-hornet.cfg
-                if [ -f "/usr/bin/shimmer-hornet" ]; then
-                    source $shimmerHornetConfigParsers/shimmerHornetAlias
-                    if [ "$newShimmerHornetAlias" = "true" ]; then
-                        whiptail --title "Hornet [SHIMMER] Alias" --msgbox "New [Shimmer] Hornet alias \"$shimmerHornetAlias\" applied." 8 70
-                        unset newShimmerHornetAlias
+            source $swarmConfigs/shimmer-hornet.cfg
+            shimmerHornetCurrentAlias=$shimmerHornetAlias
+            shimmerHornetAlias=$(whiptail --inputbox "\nDefine an alias of your [SHIMMER] Hornet node" 10 65 $shimmerHornetAlias --title "Hornet [SHIMMER] Alias" 3>&1 1>&2 2>&3)
+            exitStatus=$?
+            if [ $exitStatus != 1 ]; then
+                if [ "$shimmerHornetCurrentAlias" != "$shimmerHornetAlias" ]; then
+                    sudo sed -i 's~^shimmerHornetAlias=.*~shimmerHornetAlias="'$shimmerHornetAlias'"~' $swarmConfigs/shimmer-hornet.cfg
+                    if [ -f "/usr/bin/shimmer-hornet" ]; then
+                        source $shimmerHornetConfigParsers/shimmerHornetAlias
+                        if [ "$newShimmerHornetAlias" = "true" ]; then
+                            whiptail --title "Hornet [SHIMMER] Alias" --msgbox "New [SHIMMER] Hornet alias \"$shimmerHornetAlias\" applied." 8 70
+                            unset newShimmerHornetAlias
+                        else
+                            whiptail --title "Hornet [SHIMMER] Alias" --msgbox "No [SHIMMER] Hornet alias change detected." 8 70
+                        fi
                     else
-                        whiptail --title "Hornet [SHIMMER] Alias" --msgbox "No [Shimmer] Hornet alias change detected." 8 70
+                        whiptail --title "Hornet [SHIMMER] Alias" --msgbox "[SHIMMER] Hornet alias \"$shimmerHornetAlias\" applied." 8 70
                     fi
-                else
-                    whiptail --title "Hornet [SHIMMER] Alias" --msgbox "[Shimmer] Hornet alias \"$shimmerHornetAlias\" applied." 8 70
                 fi
             fi
+            unset shimmerHornetCurrentAlias
         ;;
         "10)")
             while [ $exitCode -lt 1 ]; do

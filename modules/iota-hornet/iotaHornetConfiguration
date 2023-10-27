@@ -630,21 +630,27 @@ while [ $exitCode -lt 1 ]; do
             exitCode=0
         ;;
         "9)")
+            source $swarmConfigs/iota-hornet.cfg
+            iotaHornetCurrentAlias=$iotaHornetAlias
             iotaHornetAlias=$(whiptail --inputbox "\nDefine an alias of your [IOTA] Hornet node" 10 65 $iotaHornetAlias --title "Hornet [IOTA] Alias" 3>&1 1>&2 2>&3)
-            if [ ! -z "$iotaHornetAlias" ]; then
-                sudo sed -i 's~^iotaHornetAlias=.*~iotaHornetAlias="'$iotaHornetAlias'"~' $swarmConfigs/iota-hornet.cfg
-                if [ -f "/usr/bin/iota-hornet" ]; then
-                    source $iotaHornetConfigParsers/iotaHornetAlias
-                    if [ "$newIotaHornetAlias" = "true" ]; then
-                        whiptail --title "Hornet [IOTA] Alias" --msgbox "New [IOTA] Hornet alias \"$iotaHornetAlias\" applied." 8 70
-                        unset newIotaHornetAlias
+            exitStatus=$?
+            if [ $exitStatus != 1 ]; then
+                if [ "$iotaHornetCurrentAlias" != "$iotaHornetAlias" ]; then
+                    sudo sed -i 's~^iotaHornetAlias=.*~iotaHornetAlias="'$iotaHornetAlias'"~' $swarmConfigs/iota-hornet.cfg
+                    if [ -f "/usr/bin/iota-hornet" ]; then
+                        source $iotaHornetConfigParsers/iotaHornetAlias
+                        if [ "$newIotaHornetAlias" = "true" ]; then
+                            whiptail --title "Hornet [IOTA] Alias" --msgbox "New [IOTA] Hornet alias \"$iotaHornetAlias\" applied." 8 70
+                            unset newIotaHornetAlias
+                        else
+                            whiptail --title "Hornet [IOTA] Alias" --msgbox "No [IOTA] Hornet alias change detected." 8 70
+                        fi
                     else
-                        whiptail --title "Hornet [IOTA] Alias" --msgbox "No [IOTA] Hornet alias change detected." 8 70
+                        whiptail --title "Hornet [IOTA] Alias" --msgbox "[IOTA] Hornet alias \"$iotaHornetAlias\" applied." 8 70
                     fi
-                else
-                    whiptail --title "Hornet [IOTA] Alias" --msgbox "[IOTA] Hornet alias \"$iotaHornetAlias\" applied." 8 70
                 fi
             fi
+            unset iotaHornetCurrentAlias
         ;;
         "10)")
             while [ $exitCode -lt 1 ]; do
