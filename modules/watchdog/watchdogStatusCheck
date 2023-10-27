@@ -3,140 +3,149 @@
 for swarmApp in ${swarmApps[@]}
 do
     if [ -f "/usr/bin/$swarmApp" ] && [ ! -f "/tmp/watchdog_$swarmApp.lock" ] && [ ! -f "/tmp/$swarmApp.lock" ]; then
-        source $watchdogStateFile
-        source $swarmModule/swarmAppVars
+        if [[ $swarmApp = iota-inx* ]] && [ "$iotaHornetStatus" != "active" ]; then
+            watchdogSkipStatusCheck=true
+        fi
+        if [[ $swarmApp = shimmer-inx* ]] && [ "$shimmerHornetStatus" != "active" ]; then
+            watchdogSkipStatusCheck=true
+        fi
+        if [ "$watchdogSkipStatusCheck" != "true" ]; then
+            source $watchdogStateFile
+            source $swarmModule/swarmAppVars
 
-        swarmAppStatusCounter=${swarmAppPrefix}StatusCounter
-        swarmAppStatusCounter=${!swarmAppStatusCounter}
-        if [ -n "${swarmAppStatusCounter}" ]; then
-            if [ ${swarmAppStatusCounter} -ne ${swarmAppStatusCounter} ] 2>/dev/null; then
+            swarmAppStatusCounter=${swarmAppPrefix}StatusCounter
+            swarmAppStatusCounter=${!swarmAppStatusCounter}
+            if [ -n "${swarmAppStatusCounter}" ]; then
+                if [ ${swarmAppStatusCounter} -ne ${swarmAppStatusCounter} ] 2>/dev/null; then
+                    swarmAppStatusCounter=0
+                    sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $watchdogStateFile
+                fi
+            else
                 swarmAppStatusCounter=0
                 sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $watchdogStateFile
             fi
-        else
-            swarmAppStatusCounter=0
-            sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $watchdogStateFile
-        fi
 
-        swarmAppHome=${swarmAppPrefix}Home
-        swarmAppNetwork=${swarmPrefix}Network
-        swarmAppStatus=${swarmAppPrefix}Status
-        swarmAppServiceStatusCheck=watchdog${swarmAppPrefix^}ServiceStatusCheck
-        swarmAppAllowDbReset=watchdog${swarmAppPrefix^}AllowDbReset
+            swarmAppHome=${swarmAppPrefix}Home
+            swarmAppNetwork=${swarmPrefix}Network
+            swarmAppStatus=${swarmAppPrefix}Status
+            swarmAppServiceStatusCheck=watchdog${swarmAppPrefix^}ServiceStatusCheck
+            swarmAppAllowDbReset=watchdog${swarmAppPrefix^}AllowDbReset
 
-        # START
-        if [ "${!swarmAppStatus}" != "active" ] && [ "${!swarmAppServiceStatusCheck}" = "true" ]; then
-            if [ "${!swarmAppStatus}" = "failed" ]; then
-                sudo systemctl reset-failed $swarmApp 2>/dev/null
-            fi
-            if [ $swarmAppStatusCounter -lt 5 ] 2>/dev/null; then
-                if [ $swarmAppStatusCounter -ge 1 ] 2>/dev/null; then
-                    if [ "$swarmApp" = "iota-hornet" ]; then
-                        for iotaInxPlugin in ${iotaInxPlugins[@]}
-                        do
-                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                                if [ ! -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
-                                    sudo touch /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+            # START
+            if [ "${!swarmAppStatus}" != "active" ] && [ "${!swarmAppServiceStatusCheck}" = "true" ]; then
+                if [ "${!swarmAppStatus}" = "failed" ]; then
+                    sudo systemctl reset-failed $swarmApp 2>/dev/null
+                fi
+                if [ $swarmAppStatusCounter -lt 5 ] 2>/dev/null; then
+                    if [ $swarmAppStatusCounter -ge 1 ] 2>/dev/null; then
+                        if [ "$swarmApp" = "iota-hornet" ]; then
+                            for iotaInxPlugin in ${iotaInxPlugins[@]}
+                            do
+                                if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                    if [ ! -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
+                                        sudo touch /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                    fi
+                                    sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
                                 fi
-                                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
-                            fi
-                        done
-                        unset iotaInxPlugin
-                    fi
-                    if [ "$swarmApp" = "shimmer-hornet" ]; then
-                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                        do
-                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                if [ ! -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                    sudo touch /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                            done
+                            unset iotaInxPlugin
+                        fi
+                        if [ "$swarmApp" = "shimmer-hornet" ]; then
+                            for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                            do
+                                if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                    if [ ! -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                        sudo touch /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                    fi
+                                    sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
                                 fi
-                                sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                            fi
-                        done
-                        unset shimmerInxPlugin
-                    fi
-                    sudo systemctl stop $swarmApp 2>/dev/null
-                    restartDate=`date '+%d-%m-%Y %H-%M-%S'`
-                    if [ "${!swarmAppAllowDbReset}" = "true" ]; then
-                        if [ $swarmAppStatusCounter -ge 4 ] 2>/dev/null; then
-                            if [ "${!swarmAppAllowDbReset}" = "true" ]; then
-                                if [ "$killall" = "true" ]; then
-                                    sudo killall -s SIGKILL $swarmApp 2>/dev/null
-                                fi
-                                if [ "$swarmApp" = "iota-hornet" ]; then
-                                    sudo rm -rf ${!swarmAppHome}/${iotaHornetNetwork}db $iotaHornetHome/snapshots/${iotaHornetNetwork}/*.bin 2>/dev/null
-                                    swarmAppDbDeleted=true
-                                fi
-                                if [ "$swarmApp" = "shimmer-hornet" ]; then
-                                    sudo rm -rf ${!swarmAppHome}/${!swarmAppNetwork}/database 2>/dev/null
-                                    swarmAppDbDeleted=true
-                                fi
-                                if [[ $swarmApp = *iota-inx* ]]; then
-                                    if [ -d "${!swarmAppHome}/database" ]; then
-                                        sudo rm -rf ${!swarmAppHome}/database 2>/dev/null
+                            done
+                            unset shimmerInxPlugin
+                        fi
+                        sudo systemctl stop $swarmApp 2>/dev/null
+                        restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+                        if [ "${!swarmAppAllowDbReset}" = "true" ]; then
+                            if [ $swarmAppStatusCounter -ge 4 ] 2>/dev/null; then
+                                if [ "${!swarmAppAllowDbReset}" = "true" ]; then
+                                    if [ "$killall" = "true" ]; then
+                                        sudo killall -s SIGKILL $swarmApp 2>/dev/null
+                                    fi
+                                    if [ "$swarmApp" = "iota-hornet" ]; then
+                                        sudo rm -rf ${!swarmAppHome}/${iotaHornetNetwork}db $iotaHornetHome/snapshots/${iotaHornetNetwork}/*.bin 2>/dev/null
                                         swarmAppDbDeleted=true
                                     fi
-                                fi
-                                if [[ $swarmApp = *shimmer-inx* ]]; then
-                                    if [ -d "${!swarmAppHome}/database" ]; then
-                                        sudo rm -rf ${!swarmAppHome}/database 2>/dev/null
+                                    if [ "$swarmApp" = "shimmer-hornet" ]; then
+                                        sudo rm -rf ${!swarmAppHome}/${!swarmAppNetwork}/database 2>/dev/null
                                         swarmAppDbDeleted=true
                                     fi
-                                fi
-                                if [ "$swarmAppDbDeleted" = "true" ]; then
-                                    echo "$restartDate [WACHTDOG] $swarmAppName - Database reset because of too many failed restarts." >> $swarmLogs/watchdog.log
-                                    if [ $swarmAppStatusCounter -eq 4 ] 2>/dev/null; then
-                                        telegramText="Host: $HOSTNAME%0A%0AApp: $swarmAppName%0AAction: Database reset because of too many failed restarts."
-                                        source $watchdogModule/watchdogTelegram
+                                    if [[ $swarmApp = *iota-inx* ]]; then
+                                        if [ -d "${!swarmAppHome}/database" ]; then
+                                            sudo rm -rf ${!swarmAppHome}/database 2>/dev/null
+                                            swarmAppDbDeleted=true
+                                        fi
                                     fi
-                                    unset swarmAppDbDeleted
+                                    if [[ $swarmApp = *shimmer-inx* ]]; then
+                                        if [ -d "${!swarmAppHome}/database" ]; then
+                                            sudo rm -rf ${!swarmAppHome}/database 2>/dev/null
+                                            swarmAppDbDeleted=true
+                                        fi
+                                    fi
+                                    if [ "$swarmAppDbDeleted" = "true" ]; then
+                                        echo "$restartDate [WACHTDOG] $swarmAppName - Database reset because of too many failed restarts." >> $swarmLogs/watchdog.log
+                                        if [ $swarmAppStatusCounter -eq 4 ] 2>/dev/null; then
+                                            telegramText="Host: $HOSTNAME%0A%0AApp: $swarmAppName%0AAction: Database reset because of too many failed restarts."
+                                            source $watchdogModule/watchdogTelegram
+                                        fi
+                                        unset swarmAppDbDeleted
+                                    fi
                                 fi
                             fi
                         fi
-                    fi
-                    sudo systemctl start $swarmApp 2>/dev/null
-                    echo "$restartDate [WACHTDOG] $swarmAppName - Service restarted." >> $swarmLogs/watchdog.log
-                    if [ $swarmAppStatusCounter -eq 1 ] 2>/dev/null; then
-                        telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Service restarted."
-                        source $watchdogModule/watchdogTelegram
-                    fi
-                    if [ "$swarmApp" = "iota-hornet" ]; then
-                        for iotaInxPlugin in ${iotaInxPlugins[@]}
-                        do
-                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
-                                if [ -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
-                                    sudo rm -rf /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                        sudo systemctl start $swarmApp 2>/dev/null
+                        echo "$restartDate [WACHTDOG] $swarmAppName - Service restarted." >> $swarmLogs/watchdog.log
+                        if [ $swarmAppStatusCounter -eq 1 ] 2>/dev/null; then
+                            telegramText="Host: $HOSTNAME%0AApp: $swarmAppName%0A%0AAction: Service restarted."
+                            source $watchdogModule/watchdogTelegram
+                        fi
+                        if [ "$swarmApp" = "iota-hornet" ]; then
+                            for iotaInxPlugin in ${iotaInxPlugins[@]}
+                            do
+                                if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                    sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                                    if [ -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
+                                        sudo rm -rf /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                                    fi
                                 fi
-                            fi
-                        done
-                        unset iotaInxPlugin
-                    fi
-                    if [ "$swarmApp" = "shimmer-hornet" ]; then
-                        for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                        do
-                            if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                                if [ -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                    sudo touch /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                            done
+                            unset iotaInxPlugin
+                        fi
+                        if [ "$swarmApp" = "shimmer-hornet" ]; then
+                            for shimmerInxPlugin in ${shimmerInxPlugins[@]}
+                            do
+                                if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
+                                    sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
+                                    if [ -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
+                                        sudo touch /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
+                                    fi
                                 fi
-                            fi
-                        done
-                        unset shimmerInxPlugin
+                            done
+                            unset shimmerInxPlugin
+                        fi
+                        let swarmAppStatusCounter=$swarmAppStatusCounter+1
+                    else
+                        let swarmAppStatusCounter=$swarmAppStatusCounter+1
                     fi
-                    let swarmAppStatusCounter=$swarmAppStatusCounter+1
-                else
-                    let swarmAppStatusCounter=$swarmAppStatusCounter+1
+                    sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $watchdogStateFile
                 fi
-                sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $watchdogStateFile
+            else
+                if [ $swarmAppStatusCounter -gt 0 ] 2>/dev/null; then
+                    let swarmAppStatusCounter=$swarmAppStatusCounter-1
+                    sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $watchdogStateFile
+                fi
             fi
-        else
-            if [ $swarmAppStatusCounter -gt 0 ] 2>/dev/null; then
-                let swarmAppStatusCounter=$swarmAppStatusCounter-1
-                sudo sed -i 's/^'${swarmAppPrefix}'StatusCounter=.*/'${swarmAppPrefix}'StatusCounter='$swarmAppStatusCounter'/' $watchdogStateFile
-            fi
+            unset swarmAppName swarmAppPrefix swarmAppHome swarmAppStatus swarmAppServiceStatusCheck swarmAppAllowDbReset swarmAppStatusCounter
         fi
-        unset swarmAppName swarmAppPrefix swarmAppHome swarmAppStatus swarmAppServiceStatusCheck swarmAppAllowDbReset swarmAppStatusCounter
+        unset watchdogSkipStatusCheck
     fi
 done
 
