@@ -354,42 +354,7 @@ while [ $exitCode -lt 1 ]; do
                         ;;
                         "3)")
                             if (whiptail --title "Hornet [IOTA] Management" --yesno --defaultno "Are you sure you want to delete the [IOTA] Hornet database?" 8 70); then
-                                if (whiptail --title "Hornet [IOTA] Management" --yesno --defaultno "Do you want to use an alternative source for the [IOTA] Hornet snapshot?" 8 70); then
-                                    CHOICE=$(
-                                        whiptail --title "Hornet [IOTA] Management" --menu "\nChoose your option" 24 70 0 \
-                                        "" "" \
-                                        "1)" "Download Snapshot For Stardust Genesis" \
-                                        "2)" "Download Snapshot via URL" 3>&2 2>&1 1>&3
-                                    )
-                                    exitstatus=$?
-                                    if [ "$exitstatus" != "1" ]; then
-                                        case $CHOICE in
-                                            "1)")
-                                                iotaHornetSnapshotSourceValid=$(curl --max-time 2 -s -o /dev/null -w "%{http_code}" https://$cdnUrl/snapshots/iota-mainnet/events/stardust_genesis.bin)
-                                                if [ "$iotaHornetSnapshotSourceValid" = "200" ]; then
-                                                    iotaHornetSnapshotSource="https://$cdnUrl/snapshots/iota-mainnet/events/stardust_genesis.bin"
-                                                else
-                                                    unset iotaHornetSnapshotSourceValid
-                                                    exitstatus=1
-                                                fi
-                                            ;;
-                                            "2)")
-                                                iotaHornetSnapshotSource=$(whiptail --inputbox "\nPlease specify the download url for the [IOTA] Hornet full snapshot" 10 65 --title "Hornet [IOTA] Management" 3>&1 1>&2 2>&3)
-                                                exitstatus=$?
-                                                if [ "$exitStatus" != 1 ] && [[ $iotaHornetSnapshotSource =~ *.bin$ ]]; then
-                                                    iotaHornetSnapshotSourceValid=$(curl --max-time 5 -s -o /dev/null -w "%{http_code}" $iotaHornetSnapshotSource)
-                                                    if [ "$iotaHornetSnapshotSourceValid" != "200" ]; then
-                                                        unset iotaHornetSnapshotSource iotaHornetSnapshotSourceValid
-                                                        exitstatus=1
-                                                    fi
-                                                else
-                                                    unset iotaHornetSnapshotSource
-                                                    exitstatus=1
-                                                fi
-                                            ;;
-                                        esac
-                                    fi
-                                fi
+                                source $iotaHornetModule/iotaHornetMenuSnapshots
                                 if [ "$exitstatus" != "1" ]; then
                                     source $swarmConfigs/iota-hornet.cfg
                                     if [ ! -f "/tmp/iota-hornet.lock" ]; then
