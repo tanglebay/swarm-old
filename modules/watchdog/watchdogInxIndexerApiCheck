@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
+    if [ -f "/usr/bin/iota-inx-indexer" ] && [ "$watchdogIotaInxIndexerApiCheck" = "true" ] && [ "$watchdogIotaInxIndexerApiCheckAddress" ] && [ "$iotaInxIndexerStatus" = "active" ]; then
+        watchdogIotaInxIndexerApiCheckAddressResult=$(curl -sL localhost:14265/api/indexer/v1/outputs?unlockableByAddress=$watchdogIotaInxIndexerApiCheckAddress)
+        if [[ $watchdogIotaInxIndexerApiCheckAddressResult = *jwt* ]]; then
+            systemctl stop iota-inx-indexer > /dev/null 2>&1
+            rm -rf $iotaInxDashboardHome/database > /dev/null 2>&1
+            systemctl start iota-inx-indexer > /dev/null 2>&1
+            restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+            telegramText="Host: $HOSTNAME%0A%0AApp: INX-Indexer [IOTA]%0AAction: Database reset because of faulty API check."
+            echo "$restartDate [IOTA] INX-Indexer database reset because of faulty API check." >> $swarmLogs/watchdog.log
+            source $watchdogModule/watchdogTelegram
+        fi
+        unset watchdogIotaInxIndexerApiCheckAddressResult
+    fi
+
+    if [ -f "/usr/bin/shimmer-inx-indexer" ] && [ "$watchdogShimmerInxIndexerApiCheck" = "true" ] && [ "$watchdogShimmerInxIndexerApiCheckAddress" ] && [ "$shimmerInxIndexerStatus" = "active" ]; then
+        watchdogShimmerInxIndexerApiCheckAddressResult=$(curl -sL localhost:14266/api/indexer/v1/outputs?unlockableByAddress=$watchdogShimmerInxIndexerApiCheckAddress)
+        if [[ $watchdogShimmerInxIndexerApiCheckAddressResult = *jwt* ]]; then
+            systemctl stop shimmer-inx-indexer > /dev/null 2>&1
+            rm -rf $shimmerInxDashboardHome/database > /dev/null 2>&1
+            systemctl start shimmer-inx-indexer > /dev/null 2>&1
+            restartDate=`date '+%d-%m-%Y %H-%M-%S'`
+            telegramText="Host: $HOSTNAME%0A%0AApp: INX-Indexer [SHIMMER]%0AAction: Database reset because of faulty API check."
+            echo "$restartDate [SHIMMER] INX-Indexer database reset because of faulty API check." >> $swarmLogs/watchdog.log
+            source $watchdogModule/watchdogTelegram
+        fi
+        unset watchdogShimmerInxIndexerApiCheckAddressResult
+    fi
+fi
