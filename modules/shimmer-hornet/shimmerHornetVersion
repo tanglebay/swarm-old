@@ -2,7 +2,12 @@
 source $swarmConfigs/latest-versions.cfg
 
 if [ -z "$latestShimmerHornetVersion" ] || [ "$latestShimmerHornetVersion" = "\"\"" ] || [ "$latestShimmerHornetVersion" = "null" ] || ! [[ $latestShimmerHornetVersion =~ [0-9] ]]; then
-    latestShimmerHornetVersion=$(curl --max-time 5 -Ls https://$cdnUrl/github/releases.json | jq '."hornet".'$shimmerHornetReleaseChannel'')
+    if [[ `wget -S --spider https://$cdnUrl/github/releases.json 2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then
+        releaseFileUrl="https://$cdnUrl/github/releases.json"
+    else
+        releaseFileUrl="https://raw.githubusercontent.com/tanglebay/apps-releases/main/releases.json"
+    fi
+    latestShimmerHornetVersion=$(curl --max-time 5 -Ls $releaseFileUrl | jq '."hornet".'$shimmerHornetReleaseChannel'')
     latestShimmerHornetVersion=$(echo $latestShimmerHornetVersion | tr -d 'v"')
 
     if [ ! -z "$latestShimmerHornetVersion" ] && [ "$latestShimmerHornetVersion" != "\"\"" ] && [ "$latestShimmerHornetVersion" != "null" ]; then

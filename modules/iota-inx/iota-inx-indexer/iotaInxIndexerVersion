@@ -2,7 +2,12 @@
 source $swarmConfigs/latest-versions.cfg
 
 if [ -z "$latestIotaInxIndexerVersion" ] || [ "$latestIotaInxIndexerVersion" = "\"\"" ] || [ "$latestIotaInxIndexerVersion" = "null" ] || ! [[ $latestIotaInxIndexerVersion =~ [0-9] ]]; then
-    latestIotaInxIndexerVersion=$(curl --max-time 5 -Ls https://$cdnUrl/github/releases.json | jq '."inx-indexer".'$iotaInxIndexerReleaseChannel'')
+    if [[ `wget -S --spider https://$cdnUrl/github/releases.json 2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then
+        releaseFileUrl="https://$cdnUrl/github/releases.json"
+    else
+        releaseFileUrl="https://raw.githubusercontent.com/tanglebay/apps-releases/main/releases.json"
+    fi
+    latestIotaInxIndexerVersion=$(curl --max-time 5 -Ls $releaseFileUrl | jq '."inx-indexer".'$iotaInxIndexerReleaseChannel'')
     latestIotaInxIndexerVersion=$(echo $latestIotaInxIndexerVersion | tr -d 'v"')
     if [ ! -z "$latestIotaInxIndexerVersion" ] && [ "$latestIotaInxIndexerVersion" != "\"\"" ] && [ "$latestIotaInxIndexerVersion" != "null" ]; then
         sudo sed -i 's~^latestIotaInxIndexerVersion=.*~latestIotaInxIndexerVersion="'$latestIotaInxIndexerVersion'"~' $swarmConfigs/latest-versions.cfg

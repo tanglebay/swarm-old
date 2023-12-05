@@ -2,7 +2,12 @@
 source $swarmConfigs/latest-versions.cfg
 
 if [ -z "$latestShimmerInxIrcMetadataVersion" ] || [ "$latestShimmerInxIrcMetadataVersion" = "\"\"" ] || [ "$latestShimmerInxIrcMetadataVersion" = "null" ] || ! [[ $latestShimmerInxIrcMetadataVersion =~ [0-9] ]]; then
-    latestShimmerInxIrcMetadataVersion=$(curl --max-time 5 -Ls https://$cdnUrl/github/releases.json | jq '."inx-poi".'$shimmerInxIrcMetadataReleaseChannel'')
+    if [[ `wget -S --spider https://$cdnUrl/github/releases.json 2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then
+        releaseFileUrl="https://$cdnUrl/github/releases.json"
+    else
+        releaseFileUrl="https://raw.githubusercontent.com/tanglebay/apps-releases/main/releases.json"
+    fi
+    latestShimmerInxIrcMetadataVersion=$(curl --max-time 5 -Ls $releaseFileUrl | jq '."inx-poi".'$shimmerInxIrcMetadataReleaseChannel'')
     latestShimmerInxIrcMetadataVersion=$(echo $latestShimmerInxIrcMetadataVersion | tr -d 'v"')
 
     if [ ! -z "$latestShimmerInxIrcMetadataVersion" ] && [ "$latestShimmerInxIrcMetadataVersion" != "\"\"" ] && [ "$latestShimmerInxIrcMetadataVersion" != "null" ]; then
