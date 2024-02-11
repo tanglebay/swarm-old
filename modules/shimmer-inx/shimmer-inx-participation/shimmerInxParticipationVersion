@@ -2,7 +2,12 @@
 source $swarmConfigs/latest-versions.cfg
 
 if [ -z "$latestShimmerInxParticipationVersion" ] || [ "$latestShimmerInxParticipationVersion" = "\"\"" ] || [ "$latestShimmerInxParticipationVersion" = "null" ] || ! [[ $latestShimmerInxParticipationVersion =~ [0-9] ]]; then
-    latestShimmerInxParticipationVersion=$(curl --max-time 5 -Ls https://$cdnUrl/github/releases.json | jq '."inx-participation".'$shimmerInxParticipationReleaseChannel'')
+    if [[ `wget -S --spider https://$cdnUrl/github/releases.json 2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then
+        releaseFileUrl="https://$cdnUrl/github/releases.json"
+    else
+        releaseFileUrl="https://raw.githubusercontent.com/tanglebay/apps-releases/main/releases.json"
+    fi
+    latestShimmerInxParticipationVersion=$(curl --max-time 5 -Ls $releaseFileUrl | jq '."inx-participation".'$shimmerInxParticipationReleaseChannel'')
     latestShimmerInxParticipationVersion=$(echo $latestShimmerInxParticipationVersion | tr -d 'v"')
 
     if [ ! -z "$latestShimmerInxParticipationVersion" ] && [ "$latestShimmerInxParticipationVersion" != "\"\"" ] && [ "$latestShimmerInxParticipationVersion" != "null" ]; then

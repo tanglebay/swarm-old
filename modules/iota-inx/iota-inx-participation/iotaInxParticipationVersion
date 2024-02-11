@@ -2,7 +2,12 @@
 source $swarmConfigs/latest-versions.cfg
 
 if [ -z "$latestIotaInxParticipationVersion" ] || [ "$latestIotaInxParticipationVersion" = "\"\"" ] || [ "$latestIotaInxParticipationVersion" = "null" ] || ! [[ $latestIotaInxParticipationVersion =~ [0-9] ]]; then
-    latestIotaInxParticipationVersion=$(curl --max-time 5 -Ls https://$cdnUrl/github/releases.json | jq '."inx-participation".'$iotaInxParticipationReleaseChannel'')
+    if [[ `wget -S --spider https://$cdnUrl/github/releases.json 2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then
+        releaseFileUrl="https://$cdnUrl/github/releases.json"
+    else
+        releaseFileUrl="https://raw.githubusercontent.com/tanglebay/apps-releases/main/releases.json"
+    fi
+    latestIotaInxParticipationVersion=$(curl --max-time 5 -Ls $releaseFileUrl | jq '."inx-participation".'$iotaInxParticipationReleaseChannel'')
     latestIotaInxParticipationVersion=$(echo $latestIotaInxParticipationVersion | tr -d 'v"')
 
     if [ ! -z "$latestIotaInxParticipationVersion" ] && [ "$latestIotaInxParticipationVersion" != "\"\"" ] && [ "$latestIotaInxParticipationVersion" != "null" ]; then

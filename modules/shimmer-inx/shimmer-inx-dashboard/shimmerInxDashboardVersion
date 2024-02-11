@@ -2,7 +2,12 @@
 source $swarmConfigs/latest-versions.cfg
 
 if [ -z "$latestShimmerInxDashboardVersion" ] || [ "$latestShimmerInxDashboardVersion" = "\"\"" ] || [ "$latestShimmerInxDashboardVersion" = "null" ] || ! [[ $latestShimmerInxDashboardVersion =~ [0-9] ]]; then
-    latestShimmerInxDashboardVersion=$(curl --max-time 5 -Ls https://$cdnUrl/github/releases.json | jq '."inx-dashboard".'$shimmerInxDashboardReleaseChannel'')
+    if [[ `wget -S --spider https://$cdnUrl/github/releases.json 2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then
+        releaseFileUrl="https://$cdnUrl/github/releases.json"
+    else
+        releaseFileUrl="https://raw.githubusercontent.com/tanglebay/apps-releases/main/releases.json"
+    fi
+    latestShimmerInxDashboardVersion=$(curl --max-time 5 -Ls $releaseFileUrl | jq '."inx-dashboard".'$shimmerInxDashboardReleaseChannel'')
     latestShimmerInxDashboardVersion=$(echo $latestShimmerInxDashboardVersion | tr -d 'v"')
 
     if [ ! -z "$latestShimmerInxDashboardVersion" ] && [ "$latestShimmerInxDashboardVersion" != "\"\"" ] && [ "$latestShimmerInxDashboardVersion" != "null" ]; then
