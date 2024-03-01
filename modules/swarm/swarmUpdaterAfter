@@ -26,52 +26,16 @@ do
                 sudo touch /tmp/$swarmApp.lock > /dev/null 2>&1
             fi
             if [ "$swarmApp" = "iota-hornet" ]; then
-                for iotaInxPlugin in ${iotaInxPlugins[@]}
-                do
-                    if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                        if [ ! -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
-                            sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
-                        fi
-                        sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
-                    fi
-                done
-                unset iotaInxPlugin
+                source $iotaInxModule/iotaInxAppStop
                 sudo systemctl restart $swarmApp > /dev/null 2>&1
-                sleep 10
-                for iotaInxPlugin in ${iotaInxPlugins[@]}
-                do
-                    if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                        sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
-                    fi
-                    if [ -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
-                        sudo rm -rf /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
-                    fi
-                done
-                unset iotaInxPlugin restartIotaHornet
+                bash $iotaInxModule/iotaInxAppStart &
+                unset restartIotaHornet
             fi
             if [ "$swarmApp" = "shimmer-hornet" ]; then
-                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                do
-                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                        if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                            sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
-                        fi
-                        sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                    fi
-                done
-                unset shimmerInxPlugin
+                source $shimmerInxModule/shimmerInxAppStop
                 sudo systemctl restart $swarmApp > /dev/null 2>&1
-                sleep 10
-                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                do
-                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                        sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                        if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                            sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
-                        fi
-                    fi
-                done
-                unset shimmerInxPlugin restartShimmerHornet
+                bash $shimmerInxModule/shimmerInxAppStart &
+                unset restartShimmerHornet
             fi
             if [[ $swarmApp != *hornet* ]]; then
                 sudo systemctl restart $swarmApp > /dev/null 2>&1

@@ -1,0 +1,26 @@
+#!/bin/bash
+
+source $swarmConfigs/iota-hornet.cfg
+nodeStatusCode=1
+while [ $nodeStatusCode -gt 0 ]; do
+    iotaHornetStatus=$(curl curl --max-time 2 -s -X GET "http://localhost:14265/api/core/v2/info" -H  "accept: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}"|jq -r '.status.isHealthy' 2> /dev/null)
+    if [ "$iotaHornetStatus" = "true" ] || [ "$iotaHornetStatus" = "false" ]; then
+        for iotaInxPlugin in ${iotaInxPlugins[@]}
+        do
+            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                if [ -f "/tmp/${watchdogInxLockTag}iota-inx-$iotaInxPlugin.lock" ]; then
+                    sudo rm -rf /tmp/${watchdogInxLockTag}iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                fi
+            fi
+        done
+        nodeStatusCode=0
+        unset iotaInxPlugin watchdogInxLockTag
+    else
+        sleep 10
+    fi
+    unset iotaHornetStatus
+done
+unset nodeStatusCode
+
+exit 0
