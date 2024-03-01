@@ -25,6 +25,8 @@
 
 SWARM is a script that allows you to easily install and manage an IOTA/Shimmer node. The most important configuration options are given via simple and selectable menu items. About the additional feature "Watchdog", the status of the nodes can be monitored, as well as automatically install updates. A reverse proxy installation is also offered for secure access via HTTPS.
 
+<b>⚠️IMPORTANT⚠️: When using SWARM, please report any bugs or suggestions to us directly. DO NOT use the official IOTA/Shimmer support channels.</b>
+
 ## Requirements
 
 ### VPS (Virtual Private Server)
