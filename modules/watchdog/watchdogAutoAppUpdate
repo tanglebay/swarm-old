@@ -29,56 +29,20 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                         swarmAppRestart=restart${swarmAppPrefix^}
                         if [ "${!swarmAppRestart}" = "true" ]; then
                             if [ "$swarmApp" = "iota-hornet" ]; then
-                                for iotaInxPlugin in ${iotaInxPlugins[@]}
-                                do
-                                    if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                                        if [ ! -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
-                                            sudo touch /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
-                                        fi
-                                        sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
-                                    fi
-                                done
-                                unset iotaInxPlugin
+                                source $iotaInxModule/iotaInxAppStop
                             fi
                             if [ "$swarmApp" = "shimmer-hornet" ]; then
-                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                do
-                                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                        if [ ! -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                            sudo touch /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
-                                        fi
-                                        sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                                    fi
-                                done
-                                unset shimmerInxPlugin
+                                source $shimmerInxModule/shimmerInxAppStop
                             fi
                             sudo systemctl stop $swarmApp > /dev/null 2>&1
                             sleep 5
                             sudo systemctl start $swarmApp > /dev/null 2>&1
                             sleep 10
                             if [ "$swarmApp" = "iota-hornet" ]; then
-                                for iotaInxPlugin in ${iotaInxPlugins[@]}
-                                do
-                                    if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                                        sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
-                                        if [ -f "/tmp/watchdog_iota-inx-$iotaInxPlugin.lock" ]; then
-                                            sudo rm -rf /tmp/watchdog_iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
-                                        fi
-                                    fi
-                                done
-                                unset iotaInxPlugin
+                                bash $iotaInxModule/iotaInxAppStart &
                             fi
                             if [ "$swarmApp" = "shimmer-hornet" ]; then
-                                for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                                do
-                                    if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                                        sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                                        if [ -f "/tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                            sudo rm -rf /tmp/watchdog_shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
-                                        fi
-                                    fi
-                                done
-                                unset shimmerInxPlugin
+                                bash $shimmerInxModule/shimmerInxAppStart &
                             fi
                         fi
                         swarmAppChecksum=${swarmAppPrefix}Checksum
