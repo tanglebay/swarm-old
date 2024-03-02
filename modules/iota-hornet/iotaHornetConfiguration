@@ -35,35 +35,15 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 {
                     echo 0
-                    echo 20
+                    echo 25
                     source $iotaHornetModule/iotaHornetParser
-                    echo 40
-                    for iotaInxPlugin in ${iotaInxPlugins[@]}
-                    do
-                        if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                            if [ ! -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
-                                sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
-                            fi
-                            sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
-                        fi
-                    done
-                    unset iotaInxPlugin
-                    echo 60
+                    echo 50
+                    source $iotaInxModule/iotaInxAppStop
+                    echo 75
                     sudo systemctl restart iota-hornet > /dev/null 2>&1
-                    echo 80
-                    for iotaInxPlugin in ${iotaInxPlugins[@]}
-                    do
-                        if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
-                            sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
-                            if [ -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
-                                sudo rm -rf /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
-                            fi
-                        fi
-                    done
-                    unset iotaInxPlugin
                     echo 100
-                    sleep 0.25
                 } | whiptail --gauge "Please wait while the changes are applied and [IOTA] Hornet is restarted..." 8 70 0
+                bash source $iotaInxModule/iotaInxAppStart &
                 unset restartIotaHornet
                 if [ -f "/tmp/iota-hornet.lock" ]; then
                     sudo rm -rf /tmp/iota-hornet.lock > /dev/null 2>&1

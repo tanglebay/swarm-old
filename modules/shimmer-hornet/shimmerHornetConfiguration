@@ -35,35 +35,16 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 {
                     echo 0
-                    echo 20
+                    echo 25
                     source $shimmerHornetModule/shimmerHornetParser
-                    echo 40
-                    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                    do
-                        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                            if [ ! -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                sudo touch /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
-                            fi
-                            sudo systemctl stop shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                        fi
-                    done
-                    unset shimmerInxPlugin
-                    echo 60
+                    echo 50
+                    source $shimmerInxModule/shimmerInxAppStop
+                    echo 75
                     sudo systemctl restart shimmer-hornet > /dev/null 2>&1
-                    echo 80
-                    for shimmerInxPlugin in ${shimmerInxPlugins[@]}
-                    do
-                        if [ -f "/usr/bin/shimmer-inx-$shimmerInxPlugin" ]; then
-                            sudo systemctl start shimmer-inx-$shimmerInxPlugin 2>/dev/null
-                            if [ -f "/tmp/shimmer-inx-$shimmerInxPlugin.lock" ]; then
-                                sudo rm -rf /tmp/shimmer-inx-$shimmerInxPlugin.lock > /dev/null 2>&1
-                            fi
-                        fi
-                    done
-                    unset shimmerInxPlugin
                     echo 100
                     sleep 0.25
                 } | whiptail --gauge "Please wait while the changes are applied and [Shimmer] Hornet is restarted..." 8 70 0
+                bash $shimmerInxModule/shimmerInxAppStart &
                 unset restartShimmerHornet
                 if [ -f "/tmp/shimmer-hornet.lock" ]; then
                     sudo rm -rf /tmp/shimmer-hornet.lock > /dev/null 2>&1
