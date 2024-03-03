@@ -1,6 +1,5 @@
 <h1 align="center">
-  <br>
-  <a href=""><img src="images/swarm_banner.png"></a>
+  <img src="images/swarm_banner.png"></img>
 </h1>
 
 <h2 align="center">SWARM</h2>
