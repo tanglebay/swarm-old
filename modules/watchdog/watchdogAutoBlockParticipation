@@ -1,0 +1,69 @@
+#!/bin/bash
+
+if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
+    if [ -f "/usr/bin/iota-hornet" ] && [ -f "/usr/bin/iota-inx-participation" ] && [ "$iotaHornetApiEnabled" = "true" ] && [ "$iotaHornetNetwork" = "mainnet" ]; then
+        latestIotaParticipationBlockedEvents=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/iota-mainnet/event-list.json |jq '.blocked.eventIds' | tr -d '[]",')
+        latestIotaParticipationBlockedEvents=$(echo $latestIotaParticipationBlockedEvents)
+
+        iotaInxParticipationList=$(curl -s localhost:14265/api/participation/v1/events -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" |jq '.eventIds' | tr -d '[]",')
+        iotaInxParticipationList=$(echo $iotaInxParticipationList)
+        if [ ! -z "$latestIotaParticipationBlockedEvents" ]; then
+            for latestIotaParticipationBlockedEvent in ${latestIotaParticipationBlockedEvents[@]}
+            do
+                if [[ $iotaInxParticipationList == *"$latestIotaParticipationBlockedEvent"* ]]; then
+                    iotaInxParticipationDeleteResponse=$(curl http://localhost:14265/api/participation/v1/admin/events/$latestIotaParticipationBlockedEvent -s --http1.1 -X DELETE -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}")
+                    if [[ $iotaInxParticipationDeleteResponse = *code\=400* ]] || [[ $iotaInxParticipationDeleteResponse = *code\=401* ]]; then
+                        iotaHornetApiJwtToken=$( cd $iotaHornetHome/$iotaHornetNetwork ; /usr/bin/iota-hornet tools jwt-api --salt $iotaHornetApiJwtSalt | awk '{ print $5 }')
+                        if [ ! -z "$iotaHornetApiJwtToken" ]; then
+                            sudo sed -i 's~^iotaHornetApiJwtToken=.*~iotaHornetApiJwtToken="'$iotaHornetApiJwtToken'"~' $swarmConfigs/iota-hornet.cfg
+                            echo $iotaHornetApiJwtToken >> $swarmLogs/iotaHornetJwtToken.log
+                        fi
+                    fi
+                    # if [[ $iotaInxParticipationDeleteResponse = *$latestIotaParticipationBlockedEvent* ]]; then
+                    #     sysDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    #     latestIotaParticipationBlockedEventName=$(echo $latestIotaParticipationBlockedEventDetails | jq '.name')
+                    #     echo "$sysDate [WACHTDOG] INX-Participation (IOTA) - Event \"$latestIotaParticipationBlockedEventName\" added." >> $swarmLogs/swarm.log
+                    #     telegramText="Host: $HOSTNAME%0A%0AApp: INX-Participation (IOTA)%0AAction: Event $latestIotaParticipationBlockedEventName added automatically."
+                    #     source $watchdogModule/watchdogTelegram
+                    #     unset latestIotaParticipationBlockedEventName
+                    # fi
+                    unset iotaInxParticipationDeleteResponse
+                fi
+            done
+        fi
+        unset latestIotaParticipationBlockedEvents iotaInxParticipationList
+    fi
+
+    if [ -f "/usr/bin/shimmer-hornet" ] && [ -f "/usr/bin/shimmer-inx-participation" ] && [ "$shimmerHornetApiEnabled" = "true" ] && [ "$shimmerHornetNetwork" = "mainnet" ]; then
+        latestShimmerParticipationBlockedEvents=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/shimmer-mainnet/event-list.json |jq '.blocked.eventIds' | tr -d '[]",')
+        latestShimmerParticipationBlockedEvents=$(echo $latestShimmerParticipationBlockedEvents)
+
+        shimmerInxParticipationList=$(curl -s localhost:14266/api/participation/v1/events -H "Content-Type: application/json" -H "Authorization: Bearer ${shimmerHornetApiJwtToken}" |jq '.eventIds' | tr -d '[]",')
+        shimmerInxParticipationList=$(echo $shimmerInxParticipationList)
+        if [ ! -z "$latestShimmerParticipationBlockedEvents" ]; then
+            for latestShimmerParticipationBlockedEvent in ${latestShimmerParticipationBlockedEvents[@]}
+            do
+                if [[ $shimmerInxParticipationList == *"$latestShimmerParticipationBlockedEvent"* ]]; then
+                    shimmerInxParticipationDeleteResponse=$(curl http://localhost:14266/api/participation/v1/admin/events/$latestShimmerParticipationBlockedEvent -s --http1.1 -X DELETE -H "Content-Type: application/json" -H "Authorization: Bearer ${shimmerHornetApiJwtToken}")
+                    if [[ $shimmerInxParticipationDeleteResponse = *code\=400* ]] || [[ $shimmerInxParticipationDeleteResponse = *code\=401* ]]; then
+                        shimmerHornetApiJwtToken=$( cd $shimmerHornetHome/$shimmerHornetNetwork ; /usr/bin/shimmer-hornet tools jwt-api --salt $shimmerHornetApiJwtSalt | awk '{ print $5 }')
+                        if [ ! -z "$shimmerHornetApiJwtToken" ]; then
+                            sudo sed -i 's~^shimmerHornetApiJwtToken=.*~shimmerHornetApiJwtToken="'$shimmerHornetApiJwtToken'"~' $swarmConfigs/shimmer-hornet.cfg
+                            echo $shimmerHornetApiJwtToken >> $swarmLogs/shimmerHornetJwtToken.log
+                        fi
+                    fi
+                    # if [[ $shimmerInxParticipationDeleteResponse = *$latestShimmerParticipationBlockedEvent* ]]; then
+                    #     sysDate=`date '+%d-%m-%Y %H-%M-%S'`
+                    #     latestShimmerParticipationBlockedEventName=$(echo $latestShimmerParticipationBlockedEventDetails | jq '.name')
+                    #     echo "$sysDate [WACHTDOG] INX-Participation (Shimmer) - Event \"$latestShimmerParticipationBlockedEventName\" added." >> $swarmLogs/swarm.log
+                    #     telegramText="Host: $HOSTNAME%0A%0AApp: INX-Participation (Shimmer)%0AAction: Event $latestShimmerParticipationBlockedEventName added automatically."
+                    #     source $watchdogModule/watchdogTelegram
+                    #     unset latestShimmerParticipationBlockedEventName
+                    # fi
+                    unset shimmerInxParticipationDeleteResponse
+                fi
+            done
+        fi
+        unset latestShimmerParticipationBlockedEvents shimmerInxParticipationList
+    fi
+fi
