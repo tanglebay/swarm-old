@@ -2,10 +2,17 @@
 
 if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpdateNumber2" ]; then
     if [ "$watchdogIotaInxParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/iota-hornet" ] && [ -f "/usr/bin/iota-inx-participation" ] && [ "$iotaHornetApiEnabled" = "true" ] && [ "$iotaHornetNetwork" = "mainnet" ]; then
-        latestIotaParticipationEvents=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/iota-mainnet/event-list.json |jq '.official.eventIds' | tr -d '[]",')
+        if [[ `wget -S --spider https://$cdnUrl/participation/iota-mainnet/event-list.json 2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then
+            eventFileUrl="https://$cdnUrl/participation/iota-mainnet/event-list.json"
+            eventTemplatesUrl="https://$cdnUrl/participation/iota-mainnet/templates"
+        else
+            eventFileUrl="https://raw.githubusercontent.com/tanglebay/participation/main/iota-mainnet/event-list.json"
+            eventTemplatesUrl="https://raw.githubusercontent.com/tanglebay/participation/main/iota-mainnet/templates"
+        fi
+        latestIotaParticipationEvents=$(curl -s -H "Content-Type: application/json" $eventFileUrl |jq '.official.eventIds' | tr -d '[]",')
         latestIotaParticipationEvents=$(echo $latestIotaParticipationEvents)
         if [ "$watchdogIotaInxParticipationThirdParty" = "true" ]; then
-            latestIotaParticipationThirdPartyEvents=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/iota-mainnet/event-list.json |jq '.thirdParty.eventIds' | tr -d '[]",')
+            latestIotaParticipationThirdPartyEvents=$(curl -s -H "Content-Type: application/json" $eventFileUrl |jq '.thirdParty.eventIds' | tr -d '[]",')
             latestIotaParticipationThirdPartyEvents=$(echo $latestIotaParticipationThirdPartyEvents)
             if [ ! -z "$latestIotaParticipationThirdPartyEvents" ]; then
                 latestIotaParticipationEvents=$(echo $latestIotaParticipationEvents $latestIotaParticipationThirdPartyEvents)
@@ -13,7 +20,7 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             fi
         fi
         if [ "$watchdogIotaInxParticipationTangleBay" = "true" ]; then
-            latestIotaParticipationTangleBayEvents=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/iota-mainnet/event-list.json |jq '.tanglebay.eventIds' | tr -d '[]",')
+            latestIotaParticipationTangleBayEvents=$(curl -s -H "Content-Type: application/json" $eventFileUrl |jq '.tanglebay.eventIds' | tr -d '[]",')
             latestIotaParticipationTangleBayEvents=$(echo $latestIotaParticipationTangleBayEvents)
             if [ ! -z "$latestIotaParticipationTangleBayEvents" ]; then
                 latestIotaParticipationEvents=$(echo $latestIotaParticipationEvents $latestIotaParticipationTangleBayEvents)
@@ -28,7 +35,7 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 iotaInxParticipationEvent=$(echo $iotaInxParticipationList | grep -o "$latestIotaParticipationEvent")
                 if [ -z "$iotaInxParticipationEvent" ] && [ "$iotaInxParticipationEvent" != "$latestIotaParticipationEvent" ]; then
                     iotaHornetPruningIndex=$(curl -s localhost:14265/api/core/v2/info -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" | jq '.status.pruningIndex')
-                    latestIotaParticipationEventDetails=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/iota-mainnet/templates/$latestIotaParticipationEvent.json)
+                    latestIotaParticipationEventDetails=$(curl -s -H "Content-Type: application/json" $eventTemplatesUrl/$latestIotaParticipationEvent.json)
                     latestIotaParticipationEventCommencingIndex=$(echo $latestIotaParticipationEventDetails | jq '.milestoneIndexCommence')
                     if [ ! -z "$iotaHornetPruningIndex" ] && [ ! -z "$latestIotaParticipationEventDetails" ] && [ ! -z "$latestIotaParticipationEventCommencingIndex" ] && [ $iotaHornetPruningIndex -le $latestIotaParticipationEventCommencingIndex ] 2>/dev/null; then
                         iotaInxParticipationAddResponse=$(curl http://localhost:14265/api/participation/v1/admin/events -s --http1.1 -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${iotaHornetApiJwtToken}" -d "${latestIotaParticipationEventDetails}")
@@ -54,14 +61,21 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 unset iotaInxParticipationEvent
             done
         fi
-        unset latestIotaParticipationEvents iotaInxParticipationList
+        unset eventFileUrl eventTemplatesUrl latestIotaParticipationEvents iotaInxParticipationList
     fi
 
     if [ "$watchdogShimmerInxParticipationAutoAdd" = "true" ] && [ -f "/usr/bin/shimmer-hornet" ] && [ -f "/usr/bin/shimmer-inx-participation" ] && [ "$shimmerHornetApiEnabled" = "true" ] && [ "$shimmerHornetNetwork" = "mainnet" ]; then
-        latestShimmerParticipationEvents=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/shimmer-mainnet/event-list.json |jq '.official.eventIds' | tr -d '[]",')
+        if [[ `wget -S --spider https://$cdnUrl/participation/shimmer-mainnet/event-list.json 2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then
+            eventFileUrl="https://$cdnUrl/participation/shimmer-mainnet/event-list.json"
+            eventTemplatesUrl="https://$cdnUrl/participation/shimmer-mainnet/templates"
+        else
+            eventFileUrl="https://raw.githubusercontent.com/tanglebay/participation/main/shimmer-mainnet/event-list.json"
+            eventTemplatesUrl="https://raw.githubusercontent.com/tanglebay/participation/main/shimmer-mainnet/templates"
+        fi
+        latestShimmerParticipationEvents=$(curl -s -H "Content-Type: application/json" $eventFileUrl |jq '.official.eventIds' | tr -d '[]",')
         latestShimmerParticipationEvents=$(echo $latestShimmerParticipationEvents)
         if [ "$watchdogShimmerInxParticipationThirdParty" = "true" ]; then
-            latestShimmerParticipationThirdPartyEvents=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/shimmer-mainnet/event-list.json |jq '.thirdParty.eventIds' | tr -d '[]",')
+            latestShimmerParticipationThirdPartyEvents=$(curl -s -H "Content-Type: application/json" $eventFileUrl |jq '.thirdParty.eventIds' | tr -d '[]",')
             latestShimmerParticipationThirdPartyEvents=$(echo $latestShimmerParticipationThirdPartyEvents)
             if [ ! -z "$latestShimmerParticipationThirdPartyEvents" ]; then
                 latestShimmerParticipationEvents=$(echo $latestShimmerParticipationEvents $latestShimmerParticipationThirdPartyEvents)
@@ -69,7 +83,7 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
             fi
         fi
         if [ "$watchdogShimmerInxParticipationTangleBay" = "true" ]; then
-            latestShimmerParticipationTangleBayEvents=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/shimmer-mainnet/event-list.json |jq '.tanglebay.eventIds' | tr -d '[]",')
+            latestShimmerParticipationTangleBayEvents=$(curl -s -H "Content-Type: application/json" $eventFileUrl |jq '.tanglebay.eventIds' | tr -d '[]",')
             latestShimmerParticipationTangleBayEvents=$(echo $latestShimmerParticipationTangleBayEvents)
             if [ ! -z "$latestShimmerParticipationTangleBayEvents" ]; then
                 latestShimmerParticipationEvents=$(echo $latestShimmerParticipationEvents $latestShimmerParticipationTangleBayEvents)
@@ -84,7 +98,7 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 shimmerInxParticipationEvent=$(echo $shimmerInxParticipationList | grep -o "$latestShimmerParticipationEvent")
                 if [ -z "$shimmerInxParticipationEvent" ] && [ "$shimmerInxParticipationEvent" != "$latestShimmerParticipationEvent" ]; then
                     shimmerHornetPruningIndex=$(curl -s localhost:14266/api/core/v2/info -H "Content-Type: application/json" -H "Authorization: Bearer ${shimmerHornetApiJwtToken}" | jq '.status.pruningIndex')
-                    latestShimmerParticipationEventDetails=$(curl -s -H "Content-Type: application/json" https://$cdnUrl/participation/shimmer-mainnet/templates/$latestShimmerParticipationEvent.json)
+                    latestShimmerParticipationEventDetails=$(curl -s -H "Content-Type: application/json" $eventTemplatesUrl/$latestShimmerParticipationEvent.json)
                     latestShimmerParticipationEventCommencingIndex=$(echo $latestShimmerParticipationEventDetails | jq '.milestoneIndexCommence')
                     if [ ! -z "$shimmerHornetPruningIndex" ] && [ ! -z "$latestShimmerParticipationEventDetails" ] && [ ! -z "$latestShimmerParticipationEventCommencingIndex" ] && [ $shimmerHornetPruningIndex -le $latestShimmerParticipationEventCommencingIndex ] 2>/dev/null; then
                         shimmerInxParticipationAddResponse=$(curl http://localhost:14266/api/participation/v1/admin/events -s --http1.1 -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${shimmerHornetApiJwtToken}" -d "${latestShimmerParticipationEventDetails}")
@@ -110,6 +124,6 @@ if [ "$timeFrame" = "$watchdogUpdateNumber" ] || [ "$timeFrame" = "$watchdogUpda
                 unset shimmerInxParticipationEvent
             done
         fi
-        unset latestShimmerParticipationEvents shimmerInxParticipationList
+        unset eventFileUrl eventTemplatesUrl latestShimmerParticipationEvents shimmerInxParticipationList
     fi
 fi
