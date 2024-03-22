@@ -1,0 +1,13 @@
+#!/bin/bash
+
+parser="$(jq '.snapshots.intervalSynced' $iotaNodePath/config.json)"
+if [ ! -z "$parser" ]; then
+    jq 'del(.snapshots.intervalSynced)' $iotaNodePath/config.json|sponge $iotaNodePath/config.json
+fi
+parser="$(jq '.snapshots.interval' $iotaNodePath/config.json)"
+if [ "$iotaNodeSnapshotsInterval" != "$parser" ]; then
+    sudo jq '.snapshots.interval = '$iotaNodeSnapshotsInterval'' $iotaNodePath/config.json|sponge $iotaNodePath/config.json
+    restartIotaNode=true
+    newIotaNodeSnapshotsInterval=true
+    echo "iotaNodeSnapshotsInterval" >> /tmp/iotaNodeParsing
+fi

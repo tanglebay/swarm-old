@@ -1,0 +1,308 @@
+services:
+  ##################################################################
+  #  Reverse Proxy and SSL                                         #
+  ##################################################################
+
+  traefik:
+    container_name: traefik
+    image: traefik:${TRAEFIK_IMAGE_VERSION}
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-80}:80/tcp"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/opt/docker/traefik/dynamic:/etc/traefik/dynamic"
+
+  ##################################################################
+  #  IOTA HORNET                                                   #
+  ##################################################################
+
+  iota-hornet:
+    container_name: iota-hornet:
+    image: iotaledger/hornet:${IOTA_HORNET_IMAGE_VERSION}
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_started
+    ports:
+      - "15600:15600/tcp"
+      - "14626:14626/udp"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.iota-hornet.service=iota-hornet:"
+      - "traefik.http.routers.iota-hornet.rule=Host(`${IOTA_NODE_ADDRESS:-localhost}`)"
+      - "traefik.http.routers.iota-hornet.entrypoints=web"
+      - "traefik.http.services.iota-hornet.loadbalancer.server.port=14265"
+    cap_drop:
+      - ALL
+    volumes:
+      - /opt/docker/iota-hornet/${IOTA_HORNET_CONFIG_FILE:-config.json}:/app/config.json:ro
+      - /opt/docker/iota-hornet/${IOTA_HORNET_PEERING_FILE:-peering.json}:/app/peering.json
+      - /opt/docker/iota-hornet:/app/data
+    command:
+      - "-c"
+      - "config.json"
+      - "--db.path=data/database"
+      - "--p2p.db.path=data/p2pstore"
+      - "--p2p.bindMultiAddresses=/ip4/0.0.0.0/tcp/15600,/ip6/::/tcp/15600"
+      - "--snapshots.fullPath=data/snapshots/full_snapshot.bin"
+      - "--snapshots.deltaPath=data/snapshots/delta_snapshot.bin"
+      - "--inx.enabled=true"
+      - "--inx.bindAddress=iota-hornet:9029"
+
+  ##################################################################
+  #  SHIMMER HORNET                                                #
+  ##################################################################
+
+  shimmer-hornet:
+    container_name: shimmer-hornet:
+    image: iotaledger/hornet:${SHIMMER_HORNET_IMAGE_VERSION}
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_started
+    ports:
+      - "15601:15601/tcp"
+      - "14627:14627/udp"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shimmer-hornet.service=shimmer-hornet:"
+      - "traefik.http.routers.shimmer-hornet.rule=Host(`${SHIMMER_NODE_ADDRESS:-localhost}`)"
+      - "traefik.http.routers.shimmer-hornet.entrypoints=web"
+      - "traefik.http.services.shimmer-hornet.loadbalancer.server.port=14265"
+    cap_drop:
+      - ALL
+    volumes:
+      - /opt/docker/shimmer-hornet/${SHIMMER_HORNET_CONFIG_FILE:-config.json}:/app/config.json:ro
+      - /opt/docker/shimmer-hornet/${SHIMMER_PEERING_FILE:-peering.json}:/app/peering.json
+      - /opt/docker/shimmer-hornet:/app/data
+    command:
+      - "-c"
+      - "config.json"
+      - "--db.path=data/database"
+      - "--p2p.db.path=data/p2pstore"
+      - "--p2p.bindMultiAddresses=/ip4/0.0.0.0/tcp/15601,/ip6/::/tcp/15601"
+      - "--snapshots.fullPath=data/snapshots/full_snapshot.bin"
+      - "--snapshots.deltaPath=data/snapshots/delta_snapshot.bin"
+      - "--inx.enabled=true"
+      - "--inx.bindAddress=shimmer-hornet:9029"
+
+  ##################################################################
+  #  IOTA INX Extensions                                           #
+  #  disable them out by commenting out the services               #
+  ##################################################################
+
+  iota-inx-indexer:
+    container_name: iota-inx-indexer
+    image: iotaledger/inx-indexer:${IOTA_INX_INDEXER_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      iota-hornet:
+        condition: service_healthy
+    volumes:
+      - /opt/docker/iota-inx-indexer:/app/database
+    command:
+      - "--inx.address=iota-hornet:9029"
+      - "--indexer.db.sqlite.path=database/database"
+      - "--restAPI.bindAddress=iota-inx-indexer:9091"
+
+  iota-inx-mqtt:
+    container_name: iota-inx-mqtt
+    image: iotaledger/inx-mqtt:${IOTA_INX_MQTT_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      iota-hornet:
+        condition: service_healthy
+    command:
+      - "--inx.address=iota-hornet:9029"
+      - "--mqtt.websocket.bindAddress=iota-inx-mqtt:1888"
+
+  iota-inx-participation:
+    container_name: iota-inx-participation
+    image: iotaledger/inx-participation:${IOTA_INX_PARTICIPATION_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      iota-hornet:
+        condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    volumes:
+      - /opt/docker/iota-inx-participation:/app/database
+    command:
+      - "--inx.address=iota-hornet:9029"
+      - "--participation.db.path=database/database"
+      - "--restAPI.bindAddress=iota-inx-participation:9892"
+
+  iota-inx-poi:
+    container_name: iota-inx-poi
+    image: iotaledger/inx-poi:${IOTA_INX_POI_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      iota-hornet:
+        condition: service_healthy
+    command:
+      - "--inx.address=hornet:9029"
+      - "--restAPI.bindAddress=iota-inx-poi:9687"
+
+  iota-inx-irc-metadata:
+    container_name: iota-inx-irc-metadata
+    image: iotaledger/inx-irc-metadata:${IOTA_INX_IRC_METADATA_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      iota-hornet:
+        condition: service_healthy
+    command:
+      - "--inx.address=iota-hornet:9029"
+      - "--restAPI.bindAddress=iota-inx-irc-metadata:9697"
+
+  iota-inx-dashboard:
+    container_name: iota-inx-dashboard
+    image: iotaledger/inx-dashboard:${IOTA_INX_DASHBOARD_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_started
+      iota-hornet:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.iota-hornet-dashboard.service=iota-hornet-dashboard"
+      - "traefik.http.routers.iota-hornet-dashboard.rule=Host(`${DASHBOARD_ADDRESS:-localhost}`)"
+      - "traefik.http.routers.iota-hornet-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.iota-hornet-dashboard.tls=true"
+      - "traefik.http.services.iota-hornet-dashboard.loadbalancer.server.port=8081"
+    volumes:
+      - /opt/docker/iota-inx-dashboard:/app/database
+    command:
+      - "--inx.address=iota-hornet:9029"
+      - "--dashboard.bindAddress=iota-inx-dashboard:8081"
+      - "--dashboard.auth.identityFilePath=/app/database/identity.key"
+      - "--dashboard.auth.username=${DASHBOARD_USERNAME:-admin}"
+      - "--dashboard.auth.passwordHash=${DASHBOARD_PASSWORD:-0000000000000000000000000000000000000000000000000000000000000000}"
+      - "--dashboard.auth.passwordSalt=${DASHBOARD_SALT:-0000000000000000000000000000000000000000000000000000000000000000}"
+
+  ##################################################################
+  #  SHIMMER INX Extensions                                        #
+  #  disable them out by commenting out the services               #
+  ##################################################################
+
+  shimmer-inx-indexer:
+    container_name: shimmer-inx-indexer
+    image: iotaledger/inx-indexer:${SHIMMER_INX_INDEXER_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      shimmer-hornet:
+        condition: service_healthy
+    volumes:
+      - /opt/docker/shimmer-inx-indexer:/app/database
+    command:
+      - "--inx.address=shimmer-hornet:9029"
+      - "--indexer.db.sqlite.path=database/database"
+      - "--restAPI.bindAddress=shimmer-inx-indexer:9091"
+
+  shimmer-inx-mqtt:
+    container_name: shimmer-inx-mqtt
+    image: iotaledger/inx-mqtt:${SHIMMER_INX_MQTT_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      shimmer-hornet:
+        condition: service_healthy
+    command:
+      - "--inx.address=shimmer-hornet:9029"
+      - "--mqtt.websocket.bindAddress=shimmer-inx-mqtt:1888"
+
+  shimmer-inx-participation:
+    container_name: shimmer-inx-participation
+    image: iotaledger/inx-participation:${SHIMMER_INX_PARTICIPATION_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      shimmer-hornet:
+        condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    volumes:
+      - /opt/docker/shimmer-inx-participation:/app/database
+    command:
+      - "--inx.address=shimmer-hornet:9029"
+      - "--participation.db.path=database/database"
+      - "--restAPI.bindAddress=shimmer-inx-participation:9892"
+
+  shimmer-inx-poi:
+    container_name: shimmer-inx-poi
+    image: iotaledger/inx-poi:${SHIMMER_INX_POI_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      shimmer-hornet:
+        condition: service_healthy
+    command:
+      - "--inx.address=shimmer-hornet:9029"
+      - "--restAPI.bindAddress=shimmer-inx-poi:9687"
+
+  shimmer-inx-irc-metadata:
+    container_name: shimmer-inx-irc-metadata
+    image: iotaledger/inx-irc-metadata:${SHIMMER_INX_IRC_METADATA_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      shimmer-hornet:
+        condition: service_healthy
+    command:
+      - "--inx.address=shimmer-hornet:9029"
+      - "--restAPI.bindAddress=shimmer-inx-irc-metadata:9697"
+
+  shimmer-inx-dashboard:
+    container_name: shimmer-inx-dashboard
+    image: iotaledger/inx-dashboard:${SHIMMER_INX_DASHBOARD_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_started
+      shimmer-hornet:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shimmer-hornet-dashboard.service=shimmer-hornet-dashboard"
+      - "traefik.http.routers.shimmer-hornet-dashboard.rule=Host(`${DASHBOARD_ADDRESS:-localhost}`)"
+      - "traefik.http.routers.shimmer-hornet-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.shimmer-hornet-dashboard.tls=true"
+      - "traefik.http.services.shimmer-hornet-dashboard.loadbalancer.server.port=8081"
+    volumes:
+      - /opt/docker/shimmer-inx-dashboard:/app/database
+    command:
+      - "--inx.address=shimmer-hornet:9029"
+      - "--dashboard.bindAddress=shimmer-inx-dashboard:8081"
+      - "--dashboard.auth.identityFilePath=/app/database/identity.key"
+      - "--dashboard.auth.username=${DASHBOARD_USERNAME:-admin}"
+      - "--dashboard.auth.passwordHash=${DASHBOARD_PASSWORD:-0000000000000000000000000000000000000000000000000000000000000000}"
+      - "--dashboard.auth.passwordSalt=${DASHBOARD_SALT:-0000000000000000000000000000000000000000000000000000000000000000}"

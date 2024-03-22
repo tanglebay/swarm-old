@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ -z "$iotaNodePruningPercentage" ]; then
+    iotaNodePruningPercentage=5
+else
+    iotaNodePruningPercentage=$(echo ${iotaNodePruningPercentage%.*})
+fi
+
+if [ "$iotaNodePruning" = "true" ]; then
+    parser="$(jq '.pruning.size.thresholdPercentage' $iotaNodePath/config.json)"
+    if [ "$parser" != "$iotaNodePruningPercentage" ]; then
+        sudo jq '.pruning.size.thresholdPercentage = '$iotaNodePruningPercentage'' $iotaNodePath/config.json|sponge $iotaNodePath/config.json
+        restartIotaNode=true
+        echo "iotaNodePruningPercentage" >> /tmp/iotaNodeParsing
+    fi
+fi

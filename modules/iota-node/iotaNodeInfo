@@ -1,0 +1,84 @@
+#!/bin/bash
+if [ -d $iotaNodePath ]; then
+
+    source $swarmConfigsPath/iota-node.cfg
+    source $swarmConfigsPath/docker-env.cfg
+    source $swarmConfigsPath/latest-app-versions.cfg
+
+    iotaNodeStatus=$( cd $swarmDockerPath ; docker compose ps --format "{{.Service}} {{.State}}" | grep $iotaNodeDockerService | awk '{print $2}' )
+
+    iotaNodeVersion=$( cd $swarmDockerPath ; docker compose run $iotaNodeDockerService -v | awk '{ print $2 }' )
+    if [ -z "$iotaNodeVersion" ]; then
+        iotaNodeVersion="N/A"
+    else
+        if [ "$iotaNodeVersion" != "$latestIotaNodeVersion" ] && [ ! -z "$latestIotaNodeVersion" ]; then
+            iotaNodeVersion="$iotaNodeVersion (new version \"v$latestIotaNodeVersion\" available!)"
+        fi
+    fi
+
+    if [ "$iotaNodeStatus" = "running" ]; then
+        if [ "$TRAEFIK_PROTOCOL" = "http" ]; then
+            TRAEFIK_PORT=$TRAEFIK_HTTP_PORT
+        fi
+        if [ "$TRAEFIK_PROTOCOL" = "https" ]; then
+            TRAEFIK_PORT=$TRAEFIK_HTTPS_PORT
+        fi
+        iotaNodeHealthy="$(curl --max-time 2 -s -X GET "$TRAEFIK_PROTOCOL://$IOTA_NODE_ADDRESS:$TRAEFIK_PORT/api/core/v2/info" -H  "accept: application/json" -H "Authorization: Bearer ${iotaNodeApiJwtToken}"|jq -r '.status.isHealthy' 2> /dev/null)"
+        if [ -z "$iotaNodeHealthy" ]; then
+            iotaNodeHealthy="N/A"
+        else
+            if [ "$iotaNodeHealthy" = "true" ]; then
+                iotaNodeHealthy="✓"
+            else
+                iotaNodeHealthy="X"
+            fi
+        fi
+    else
+        iotaNodeHealthy="N/A"
+    fi
+
+    # DB size
+    if [ -d "$iotaNodePath/database" ]; then
+        getCurrentDbSize="$(du -sb $iotaNodePath/database | cut -f1)"
+        let getCurrentDbSizeInMb=$getCurrentDbSize/1000000
+        if [ $getCurrentDbSizeInMb -gt 999 ]; then
+            let getCurrentDbSizeInGb=$getCurrentDbSize/1000000000
+            currentIotaNodeDbSize="${getCurrentDbSizeInGb} GB"
+        else
+            currentIotaNodeDbSize="${getCurrentDbSizeInMb} MB"
+        fi
+    else
+        currentIotaNodeDbSize="N/A"
+    fi
+
+    if [ "$iotaNodePruningEnabled" = "true" ]; then
+        iotaNodePruningEnabledStatus="✓"
+    else
+        iotaNodePruningEnabledStatus="X"
+    fi
+
+    if [ "$iotaNodeSnapshotsEnabled" = "true" ]; then
+        iotaNodeSnapshotsEnabledStatus="✓"
+    else
+        iotaNodeSnapshotsEnabledStatus="X"
+    fi
+
+    if [ "$iotaNodeAutopeeringEnabled" = "true" ]; then
+        iotaNodeAutopeeringEnabledStatus="✓"
+        iotaNodeAutopeeringPortInfo="\nAutopeering Port: ${iotaNodeAutopeeringPort}/udp"
+    else
+        iotaNodeAutopeeringEnabledStatus="X"
+    fi
+
+    if [ "$iotaNodePowEnabled" = "true" ]; then
+        iotaNodePowEnabledStatus="✓"
+    else
+        iotaNodePowEnabledStatus="X"
+    fi
+
+    # OUTPUT
+    whiptail --scrolltext --title "Node [IOTA] Info" --msgbox "Node: $iotaNodeStatus\nVersion: v$iotaNodeVersion\nDB size: $currentIotaNodeDbSize\nHealthy: $iotaNodeHealthy\n\nAlias: $iotaNodeAlias\nAutopeering: $iotaNodeAutopeeringEnabledStatus\nPoW: $iotaNodePowEnabledStatus\nLocal Snapshots: $iotaNodeSnapshotsEnabledStatus\nGossip Port: ${iotaNodeGossipPort}/tcp$iotaNodeAutopeeringPortInfo\n\nPruning: $iotaNodePruningEnabledStatus\nMax DB size: ${iotaNodePruningDatabaseSize} GB\nPruning percentage: ${iotaNodePruningPercentage}%\nPruning Cooldown: $iotaNodePruningCooldownTime minutes" 24 70
+else
+    # OUTPUT
+    whiptail --title "Node [IOTA] Info" --msgbox "Node not installed!" 8 70
+fi

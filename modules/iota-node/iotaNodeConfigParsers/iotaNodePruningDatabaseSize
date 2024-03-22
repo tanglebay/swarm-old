@@ -1,0 +1,45 @@
+#!/bin/bash
+
+if [ -f "/usr/bin/iota-node" ]; then
+    if [ ! -d "$iotaNodeHome/$iotaNodeNetwork/database" ]; then
+        sudo -u node mkdir -p $iotaNodeHome/$iotaNodeNetwork/database
+        sudo chmod 700 $iotaNodeHome/$iotaNodeNetwork/database
+    fi
+    getDiskSize=$(df -m $iotaNodeHome/$iotaNodeNetwork/database | awk '{print $2}')
+    getDiskSize=$(echo $getDiskSize | awk '{print $2}')
+    let diskSize=$getDiskSize/1000
+    if [ $diskSize -ge 550 ]; then
+        bufferSize=60
+    fi
+    if [ $diskSize -lt 550 ] && [ $diskSize -gt 250 ]; then
+        bufferSize=40
+    fi
+    if [ -z "$bufferSize" ]; then
+        bufferSize=20
+    fi
+    if [[ $iotaNodePruningDatabaseSize = *-* ]] || [ $iotaNodePruningDatabaseSize -gt $diskSize ] 2>/dev/null; then
+        unset iotaNodePruningDatabaseSize
+    fi
+    if [ -z "$iotaNodePruningDatabaseSize" ]; then
+        let iotaNodePruningDatabaseSize=$diskSize-$bufferSize
+        sudo sed -i 's/^iotaNodePruningDatabaseSize=.*/iotaNodePruningDatabaseSize='$iotaNodePruningDatabaseSize'/' $swarmConfigs/iota-node.cfg
+    else
+        iotaNodePruningDatabaseSize=${iotaNodePruningDatabaseSize//[!0-9]/}
+    fi
+    let bufferLimit=$diskSize-$iotaNodePruningDatabaseSize
+    if [ $bufferLimit -lt $bufferSize ]; then
+        let iotaNodePruningDatabaseSize=$diskSize-$bufferSize
+        sudo sed -i 's/^iotaNodePruningDatabaseSize=.*/iotaNodePruningDatabaseSize='$iotaNodePruningDatabaseSize'/' $swarmConfigs/iota-node.cfg
+    fi
+    unset getDiskSize diskSize bufferSize bufferLimit
+    parser="$(jq '.pruning.size.targetSize' $iotaNodePath/config.json)"
+    parser=$(echo $parser | tr -d '"')
+    if [ "$parser" != "${iotaNodePruningDatabaseSize}GB" ] && [ $iotaNodePruningDatabaseSize -eq $iotaNodePruningDatabaseSize ] 2>/dev/null; then
+        sudo jq '.pruning.size.targetSize = "'$iotaNodePruningDatabaseSize'GB"' $iotaNodePath/config.json|sponge $iotaNodePath/config.json
+        if [ "$iotaNodePruningEnabled" = "true" ]; then
+            restartIotaNode=true
+            echo "iotaNodePruningDatabaseSize" >> /tmp/iotaNodeParsing
+        fi
+    fi
+    unset parser
+fi

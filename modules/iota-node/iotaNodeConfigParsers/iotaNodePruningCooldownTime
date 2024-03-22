@@ -1,0 +1,12 @@
+#!/bin/bash
+if [ "$iotaNodePruning" = "true" ]; then
+    iotaNodePruningCooldownTime=${iotaNodePruningCooldownTime//[!0-9]/}
+
+    parser="$(jq '.pruning.size.cooldownTime' $iotaNodePath/config.json)"
+    parser=$(echo $parser | tr -d '"')
+    if [ "$parser" != "${iotaNodePruningCooldownTime}m" ]; then
+        sudo jq '.pruning.size.cooldownTime = "'$iotaNodePruningCooldownTime'm"' $iotaNodePath/config.json|sponge $iotaNodePath/config.json
+        restartIotaNode=true
+        echo "iotaNodePruningCooldownTime" >> /tmp/iotaNodeParsing
+    fi
+fi

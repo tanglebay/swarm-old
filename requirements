@@ -6,15 +6,6 @@ if [ $(id -u) -ne 0 ]; then
     exit 0
 fi
 
-if [ -z "$osArchitecture" ]; then
-    osArchitecture=$(sudo dpkg --print-architecture)
-    sudo sed -i 's/^osArchitecture=.*/osArchitecture="'$osArchitecture'"/' $swarmConfigs/swarm.cfg
-fi
-if [ "$osArchitecture" != "amd64" ] && [ "$osArchitecture" != "arm64" ]; then
-    whiptail --title "Welcome to SWARM! [v$version]" --msgbox "Error - Unsupported OS architecture \"$osArchitecture\" detected" 8 65
-    exit 0
-fi
-
 if [ ! -d "$swarmLogs" ]; then
     sudo mkdir -p $swarmLogs > /dev/null 2>&1
 fi
@@ -26,4 +17,42 @@ fi
 crontab -l | grep -q "$watchdogCronCmd" && watchdogStatus=enabled || watchdogStatus=disabled > /dev/null 2>&1
 if [ "$watchdogStatus" != "enabled" ]; then
     ( crontab -l | grep -v -F "$watchdogCronCmd" ; echo "$watchdogCronJob" ) | crontab - > /dev/null 2>&1
+fi
+
+# OS DETECTION
+if [ - z $OS ]; then
+    if [ -f /etc/os-release ]; then
+        # freedesktop.org and systemd
+        . /etc/os-release
+        OS=$NAME
+    elif type lsb_release >/dev/null 2>&1; then
+        # linuxbase.org
+        OS=$(lsb_release -si)
+    elif [ -f /etc/lsb-release ]; then
+        # For some versions of Debian/Ubuntu without lsb_release command
+        . /etc/lsb-release
+        OS=$DISTRIB_ID
+    elif [ -f /etc/debian_version ]; then
+        # Older Debian/Ubuntu/etc.
+        OS=Debian
+    elif [ -f /etc/SuSe-release ]; then
+        # Older SuSE/etc.
+        ...
+    elif [ -f /etc/redhat-release ]; then
+        # Older Red Hat, CentOS, etc.
+        ...
+    else
+        # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
+        OS=$(uname -s)
+    fi
+    OS=$(echo $OS | tr '[:upper:]' '[:lower:]')
+    if [ "$OS" = "ubuntu" ] || [ "$OS" = "debian" ]; then
+        sudo sed -i 's/^OS=.*/OS="'$OS'"/' $swarmConfigs/swarm.cfg
+    else
+        unset OS
+    fi
+fi
+if [ "$OS" != "ubuntu" ] || [ "$OS" != "debian" ]; then
+    whiptail --title "Welcome to SWARM! [v$version]" --msgbox "Error - Unsupported OS \"$OS\" detected" 8 65
+    exit 0
 fi

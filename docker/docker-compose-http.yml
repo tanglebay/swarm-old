@@ -1,0 +1,47 @@
+services:
+
+##################################################################
+#  Reverse Proxy and SSL                                         #
+##################################################################
+
+  traefik:
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    ports:
+      - "443:443/tcp"
+
+##################################################################
+#  HORNET                                                        #
+##################################################################
+
+  iota-hornet:
+    labels:
+      - "traefik.http.routers.iota-hornet.entrypoints=websecure"
+      - "traefik.http.routers.iota-hornet.tls=true"
+      - "traefik.http.routers.iota-hornet.tls.certresolver=myresolver"
+
+  shimmer-hornet:
+    labels:
+      - "traefik.http.routers.shimmer-hornet.entrypoints=websecure"
+      - "traefik.http.routers.shimmer-hornet.tls=true"
+      - "traefik.http.routers.shimmer-hornet.tls.certresolver=myresolver"
+
+##################################################################
+#  INX Extensions                                                #
+#  disable them out by commenting out the services               #
+##################################################################
+
+  iota-inx-dashboard:
+    labels:
+      - "traefik.http.routers.iota-hornet-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.iota-hornet-dashboard.tls=true"
+
+  shimmer-inx-dashboard:
+    labels:
+      - "traefik.http.routers.shimmer-hornet-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.shimmer-hornet-dashboard.tls=true"

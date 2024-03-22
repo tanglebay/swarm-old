@@ -1,0 +1,86 @@
+#!/bin/bash
+
+if [ ! -f "$iotaNodeHome/$iotaNodeNetwork/p2pstore/identity.key" ]; then
+    if [ -z "$iotaNodeIdentity" ]; then
+        for iotaInxPlugin in ${iotaInxPlugins[@]}
+        do
+            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                if [ ! -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                    sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                fi
+                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
+            fi
+        done
+        unset iotaInxPlugin
+        sudo systemctl stop iota-node > /dev/null 2>&1
+        ( cd $iotaNodeHome ; sudo -u node /usr/bin/iota-node tools p2pidentity-gen )
+        if [ -f "$iotaNodeHome/p2pstore/identity.key" ]; then
+            iotaNodeIdentity=$(cat $iotaNodeHome/p2pstore/identity.key | sed -n '2 p')
+            if [ ! -d "$iotaNodeHome/$iotaNodeNetwork/p2pstore" ]; then
+                sudo -u node mkdir -p $iotaNodeHome/$iotaNodeNetwork/p2pstore
+            fi
+            sudo mv -f $iotaNodeHome/p2pstore/identity.key $iotaNodeHome/$iotaNodeNetwork/p2pstore/identity.key 2>/dev/null
+            sudo sed -i 's~^iotaNodeIdentity=.*~iotaNodeIdentity="'$iotaNodeIdentity'"~' $swarmConfigs/iota-node.cfg
+            sudo systemctl start iota-node > /dev/null 2>&1
+            for iotaInxPlugin in ${iotaInxPlugins[@]}
+            do
+                if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                    sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                    if [ -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                        sudo rm -rf /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                    fi
+                fi
+            done
+            unset iotaInxPlugin
+        fi
+    else
+        for iotaInxPlugin in ${iotaInxPlugins[@]}
+        do
+            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                if [ ! -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                    sudo touch /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                fi
+                sudo systemctl stop iota-inx-$iotaInxPlugin 2>/dev/null
+            fi
+        done
+        unset iotaInxPlugin
+        sudo systemctl stop iota-node > /dev/null 2>&1
+        if [ -d "$iotaNodeHome/$iotaNodeNetwork/p2pstore" ]; then
+            sudo rm -rf $iotaNodeHome/$iotaNodeNetwork/p2pstore/*.* 2>/dev/null
+        else
+            sudo -u node mkdir -p $iotaNodeHome/$iotaNodeNetwork/p2pstore
+        fi
+        sudo -u node echo "-----BEGIN PRIVATE KEY-----" > $iotaNodeHome/$iotaNodeNetwork/p2pstore/identity.key
+        sudo -u node echo "$iotaNodeIdentity" >> $iotaNodeHome/$iotaNodeNetwork/p2pstore/identity.key
+        sudo -u node echo "-----END PRIVATE KEY-----" >> $iotaNodeHome/$iotaNodeNetwork/p2pstore/identity.key
+        sudo chown 660 $iotaNodeHome/$iotaNodeNetwork/p2pstore/identity.key
+        sudo systemctl start iota-node > /dev/null 2>&1
+        for iotaInxPlugin in ${iotaInxPlugins[@]}
+        do
+            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                sudo systemctl start iota-inx-$iotaInxPlugin 2>/dev/null
+                if [ -f "/tmp/iota-inx-$iotaInxPlugin.lock" ]; then
+                    sudo rm -rf /tmp/iota-inx-$iotaInxPlugin.lock > /dev/null 2>&1
+                fi
+            fi
+        done
+        unset iotaInxPlugin
+    fi
+fi
+
+if [ -d "$iotaNodeHome/p2pstore" ]; then
+    sudo rm -rf $iotaNodeHome/p2pstore 2>/dev/null
+fi
+
+parser=$(cat $iotaNodeHome/$iotaNodeNetwork/p2pstore/identity.key | sed -n '2 p')
+if [[ $parser = --* ]]; then
+    sudo -u node echo "-----BEGIN PRIVATE KEY-----" > $iotaNodeHome/$iotaNodeNetwork/p2pstore/identity.key
+    sudo -u node echo "$iotaNodeIdentity" >> $iotaNodeHome/$iotaNodeNetwork/p2pstore/identity.key
+    sudo -u node echo "-----END PRIVATE KEY-----" >> $iotaNodeHome/$iotaNodeNetwork/p2pstore/identity.key
+fi
+
+if [ "$parser" != "$iotaNodeIdentity" ]; then
+    sed -i '2 s~.*~'$iotaNodeIdentity'~' $iotaNodeHome/$iotaNodeNetwork/p2pstore/identity.key
+    restartIotaNode=true
+    echo "iotaNodeIdentity" >> /tmp/iotaNodeParsing
+fi

@@ -1,0 +1,551 @@
+#!/bin/bash
+
+# HORNET MENU
+while [ $exitCode -lt 1 ]; do
+    source $swarmConfigsPath/iota-node.cfg
+    clear
+    CHOICE=$(
+        whiptail --title "Node [IOTA] Menu" --menu "\nChoose an option" 24 70 0 \
+        "" "" \
+        "1)" "Node Info" \
+        "2)" "Node Configuration" \
+        "3)" "Node Management" \
+        "4)" "Node Installer" 3>&2 2>&1 1>&3
+    )
+    exitstatus=$?
+    if [ "$exitstatus" = "1" ]; then
+        exitCode=1
+    fi
+
+    case $CHOICE in
+        "1)")
+            source $iotaNodeModule/iotaNodeInfo
+        ;;
+        "2)")
+            while [ $exitCode -lt 1 ]; do
+                clear
+                CHOICE=$(
+                    whiptail --title "Node [IOTA] Configuration" --menu "\nChoose an option" 24 70 0 \
+                    "" "" \
+                    "1)" "Node Configuration" \
+                    "2)" "Advanced Configuration" 3>&2 2>&1 1>&3
+                )
+
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        source $iotaNodeModule/iotaNodeConfiguration
+                    ;;
+                    "2)")
+                        while [ $exitCode -lt 1 ]; do
+                            clear
+                            CHOICE=$(
+                                whiptail --title "Node [IOTA] Configuration" --menu "\nChoose an option" 24 70 0 \
+                                "" "" \
+                                "1)" "Peering.json" \
+                                "2)" "Config_Mainnet.json" \
+                                "3)" "Iota-Node.cfg (SWARM)" 3>&2 2>&1 1>&3
+                            )
+
+                            exitstatus=$?
+                            if [ "$exitstatus" = "1" ]; then
+                                exitCode=1
+                            fi
+
+                            case $CHOICE in
+                                "1)")
+                                    $swarmCLEditor $iotaNodeHome/peering.json
+                                    if (whiptail --title "Node [IOTA] Configuration" --yesno --defaultno "Would you like to restart [IOTA] Node now? (INX apps start delayed)" 8 70); then
+                                        if [ ! -f "/tmp/iota-node.lock" ]; then
+                                            touch /tmp/iota-node.lock > /dev/null 2>&1
+                                        fi
+                                        {
+                                            echo 0
+                                            echo 33
+                                            source $iotaInxModule/iotaInxAppStop
+                                            echo 66
+                                            systemctl restart iota-node > /dev/null 2>&1
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while [IOTA] Node is restarting..." 8 70 0
+                                        bash $iotaInxModule/iotaInxAppStart &
+                                        if [ -f "/tmp/iota-node.lock" ]; then
+                                            rm -rf /tmp/iota-node.lock > /dev/null 2>&1
+                                        fi
+                                    fi
+                                ;;
+                                "2)")
+                                    $swarmCLEditor $iotaNodeHome/config_mainnet.json
+                                    if [ -f "/usr/bin/iota-node" ]; then
+                                        if (whiptail --title "Node [IOTA] Configuration" --yesno --defaultno "Would you like to restart [IOTA] Node now? (INX apps start delayed)" 8 70); then
+                                            if [ ! -f "/tmp/iota-node.lock" ]; then
+                                                touch /tmp/iota-node.lock > /dev/null 2>&1
+                                            fi
+                                            {
+                                                echo 0
+                                                echo 33
+                                                source $iotaInxModule/iotaInxAppStop
+                                                echo 66
+                                                systemctl restart iota-node > /dev/null 2>&1
+                                                echo 100
+                                            } | whiptail --gauge "Please wait while [IOTA] Node is restarting..." 8 70 0
+                                            bash $iotaInxModule/iotaInxAppStart &
+                                            if [ -f "/tmp/iota-node.lock" ]; then
+                                                rm -rf /tmp/iota-node.lock > /dev/null 2>&1
+                                            fi
+                                        fi
+                                    fi
+                                ;;
+                                "3)")
+                                    $swarmCLEditor $swarmConfigsPath/iota-node.cfg
+                                    if [ -f "/usr/bin/iota-node" ]; then
+                                        if (whiptail --title "Node [IOTA] Configuration" --yesno --defaultno "Would you like to restart [IOTA] Node now? (INX apps start delayed)" 8 70); then
+                                            if [ ! -f "/tmp/iota-node.lock" ]; then
+                                                touch /tmp/iota-node.lock > /dev/null 2>&1
+                                            fi
+                                            {
+                                                echo 0
+                                                echo 25
+                                                source $iotaNodeModule/iotaNodeParser
+                                                echo 50
+                                                source $iotaInxModule/iotaInxAppStop
+                                                echo 75
+                                                systemctl restart iota-node > /dev/null 2>&1
+                                                echo 100
+                                            } | whiptail --gauge "Please wait while [IOTA] Node is restarting..." 8 70 0
+                                            bash $iotaInxModule/iotaInxAppStart &
+                                            if [ -f "/tmp/iota-node.lock" ]; then
+                                                rm -rf /tmp/iota-node.lock > /dev/null 2>&1
+                                            fi
+                                        fi
+                                    fi
+                                ;;
+                            esac
+                        done
+                        exitCode=0
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+        "3)")
+            if [ -f "/usr/bin/iota-node" ]; then
+                while [ $exitCode -lt 1 ]; do
+                    clear
+                    CHOICE=$(
+                        whiptail --title "Node [IOTA] Management" --menu "\nChoose your option" 24 70 0 \
+                        "" "" \
+                        "1)" "Node Log" \
+                        "2)" "Start/Stop Node" \
+                        "3)" "Reset Node All Databases" \
+                        "4)" "Reset Node Config" 3>&2 2>&1 1>&3
+                    )
+                    exitstatus=$?
+                    if [ "$exitstatus" = "1" ]; then
+                        exitCode=1
+                    fi
+                    case $CHOICE in
+                        "1)")
+                            while [ $exitCode -lt 1 ]; do
+                                clear
+                                CHOICE=$(
+                                    whiptail --title "Node [IOTA] Management" --menu "\nChoose your option" 24 70 0 \
+                                    "" "" \
+                                    "1)" "Show Live Log" \
+                                    "2)" "Show Latest PANIC" 3>&2 2>&1 1>&3
+                                )
+                                exitstatus=$?
+                                if [ "$exitstatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        journalctl -fu iota-node
+                                    ;;
+                                    "2)")
+                                        appLogDepth=10000
+                                        appLogDepth=$(whiptail --inputbox "\nPlease enter a higher depth if no PANIC was found (this may take longer)" 10 65 "$appLogDepth" --title "Node [IOTA] Management" 3>&1 1>&2 2>&3)
+                                        exitstatus=$?
+                                        if [ "$exitstatus" != "1" ] && [ $appLogDepth -eq $appLogDepth ] 2>/dev/null; then
+                                            echo ""
+                                            echo "Please wait while the log is searched for a PANIC..."
+                                            echo ""
+                                            echo ""
+                                            journalctl -u iota-node -n $appLogDepth | grep --color=always -A 9 -e PANIC | tail -n 10
+                                            echo ""
+                                            echo ""
+                                            read -rsn1 -p "Press any key to exit."
+                                        fi
+                                        unset appLogDepth
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
+                        ;;
+                        "2)")
+                            while [ $exitCode -lt 1 ]; do
+                                CHOICE=$(
+                                    whiptail --title "Node [IOTA] Management" --menu "\nChoose your option" 24 70 0 \
+                                    "" "" \
+                                    "1)" "Restart Node" \
+                                    "2)" "Start Node" \
+                                    "3)" "Stop Node" \
+                                    "4)" "Status Node" 3>&2 2>&1 1>&3
+                                )
+                                exitStatus=$?
+                                if [ "$exitStatus" = "1" ]; then
+                                    exitCode=1
+                                fi
+                                case $CHOICE in
+                                    "1)")
+                                        if [ ! -f "/tmp/iota-node.lock" ]; then
+                                            touch /tmp/iota-node.lock > /dev/null 2>&1
+                                        fi
+                                        {
+                                            echo 0
+                                            echo 33
+                                            source $iotaInxModule/iotaInxAppStop
+                                            echo 66
+                                            systemctl restart iota-node > /dev/null 2>&1
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while [IOTA] Node is restarting..." 8 70 0
+                                        bash $iotaInxModule/iotaInxAppStart &
+                                        if [ -f "/tmp/iota-node.lock" ]; then
+                                            rm -rf /tmp/iota-node.lock > /dev/null 2>&1
+                                        fi
+                                        whiptail --title "Node [IOTA] Management" --msgbox "[IOTA] Node successfully restarted. (INX apps start delayed)" 8 70
+                                    ;;
+                                    "2)")
+                                        {
+                                            echo 0
+                                            echo 50
+                                            systemctl start iota-node > /dev/null 2>&1
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while [IOTA] Node is starting..." 8 70 0
+                                        bash $iotaInxModule/iotaInxAppStart &
+                                        if [ -f "/tmp/iota-node.lock" ]; then
+                                            rm -rf /tmp/iota-node.lock > /dev/null 2>&1
+                                        fi
+                                        whiptail --title "Node [IOTA] Management" --msgbox "[IOTA] Node successfully started. (INX apps start delayed)" 8 70
+                                    ;;
+                                    "3)")
+                                        if [ ! -f "/tmp/iota-node.lock" ]; then
+                                            touch /tmp/iota-node.lock > /dev/null 2>&1
+                                        fi
+                                        {
+                                            echo 0
+                                            source $iotaInxModule/iotaInxAppStop
+                                            echo 50
+                                            systemctl stop iota-node > /dev/null 2>&1
+                                            echo 100
+                                            sleep 0.25
+                                        } | whiptail --gauge "Please wait while [IOTA] Node is stopping..." 8 70 0
+                                        whiptail --title "Node [IOTA] Management" --msgbox "[IOTA] Node successfully stopped." 8 70
+                                    ;;
+                                    "4)")
+                                        iotaNodeStatus="$(systemctl status iota-node)"
+                                        whiptail --title "Node [IOTA] Management" --msgbox "$iotaNodeStatus" 15 65
+                                    ;;
+                                esac
+                            done
+                            exitCode=0
+                        ;;
+                        "3)")
+                            if (whiptail --title "Node [IOTA] Management" --yesno --defaultno "Are you sure you want to delete the [IOTA] Node database?" 8 70); then
+                                source $iotaNodeModule/iotaNodeMenuSnapshots
+                                if [ "$exitstatus" != "1" ]; then
+                                    source $swarmConfigsPath/iota-node.cfg
+                                    if [ ! -f "/tmp/iota-node.lock" ]; then
+                                        touch /tmp/iota-node.lock > /dev/null 2>&1
+                                    fi
+                                    {
+                                        echo 0
+                                        echo 20
+                                        source $iotaInxModule/iotaInxAppStop
+                                        echo 40
+                                        if [ "$killall" = "true" ]; then
+                                            killall -s SIGKILL iota-node > /dev/null 2>&1
+                                        else
+                                            systemctl stop iota-node > /dev/null 2>&1
+                                        fi
+                                        echo 60
+                                        rm -rf $iotaNodeHome/${iotaNodeNetwork}/database $iotaNodeHome/${iotaNodeNetwork}/snapshots/*.bin > /dev/null 2>&1
+                                        if [ ! -z "$iotaNodeSnapshotSource" ]; then
+                                            if [ ! -d "$iotaNodeHome/${iotaNodeNetwork}/snapshots" ]; then
+                                                -u node mkdir -p $iotaNodeHome/${iotaNodeNetwork}/snapshots > /dev/null 2>&1
+                                            fi
+                                            -u node wget -q -O $iotaNodeHome/${iotaNodeNetwork}/snapshots/full_snapshot.bin $iotaNodeSnapshotSource
+                                        fi
+                                        sed -i 's/^iotaNodeStatusCounter=.*/iotaNodeStatusCounter=0/' $swarmConfigsPath/watchdog.cfg
+                                        sed -i 's/^iotaNodeSyncCounter=.*/iotaNodeSyncCounter=0/' $swarmConfigsPath/watchdog.cfg
+                                        echo 80
+                                        systemctl start iota-node > /dev/null 2>&1
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while the [IOTA] Node cleanup is running (this may take a while)..." 8 70 0
+                                    bash $iotaInxModule/iotaInxAppStart &
+                                    if [ -f "/tmp/iota-node.lock" ]; then
+                                        rm -rf /tmp/iota-node.lock > /dev/null 2>&1
+                                    fi
+                                    whiptail --title "Node [IOTA] Management" --msgbox "[IOTA] Node ${iotaNodeNetwork}DB successfully reset. (INX apps start delayed)" 8 70
+                                fi
+                            fi
+                        ;;
+                        "4)")
+                            if (whiptail --title "Node [IOTA] Management" --yesno --defaultno "Are you sure you want to reset the [IOTA] Node config file?" 8 70); then
+                                source $swarmConfigsPath/iota-node.cfg
+                                source $iotaNodeModule/iotaNodeConfigs
+                                if [ ! -f "/tmp/iota-node.lock" ]; then
+                                    touch /tmp/iota-node.lock > /dev/null 2>&1
+                                fi
+                                {
+                                    echo 0
+                                    echo 20
+                                    source $iotaInxModule/iotaInxAppStop
+                                    echo 40
+                                    systemctl stop iota-node > /dev/null 2>&1
+                                    echo 60
+                                    -u node wget -q -O $iotaNodeHome/$iotaNodeConfig.json https://raw.githubusercontent.com/iotaledger/node/production/config_mainnet.json
+                                    source $iotaNodeModule/iotaNodeParser
+                                    echo 80
+                                    systemctl start iota-node > /dev/null 2>&1
+                                    echo 100
+                                } | whiptail --gauge "Please wait while the [IOTA] Node config reset is running (this may take a while)..." 8 70 0
+                                bash $iotaInxModule/iotaInxAppStart &
+                                if [ -f "/tmp/iota-node.lock" ]; then
+                                    rm -rf /tmp/iota-node.lock > /dev/null 2>&1
+                                fi
+                                whiptail --title "Node [IOTA] Management" --msgbox "[IOTA] Node ${iotaNodeNetwork} config successfully reset. (INX apps start delayed)" 8 70
+                            fi
+                        ;;
+                    esac
+                done
+                exitCode=0
+            else
+                whiptail --title "Node [IOTA] Management" --msgbox "[IOTA] Node installation not found, please install [IOTA] Node first." 8 70
+            fi
+        ;;
+        "4)")
+            while [ $exitCode -lt 1 ]; do
+                CHOICE=$(
+                    whiptail --title "Node [IOTA] Installer" --menu "\nChoose your option" 24 70 0 \
+                    "" "" \
+                    "1)" "Update Node" \
+                    "2)" "Install Node" \
+                    "3)" "Remove Node" 3>&2 2>&1 1>&3
+                )
+
+                exitstatus=$?
+                if [ "$exitstatus" = "1" ]; then
+                    exitCode=1
+                fi
+
+                case $CHOICE in
+                    "1)")
+                        if [ -f "/usr/bin/iota-node" ]; then
+                            if (whiptail --title "Node [IOTA] Installer" --yesno --defaultno "Do you really want to update [IOTA] Node?" 8 70); then
+                                if [ ! -f "/tmp/watchdog_iota-node.lock" ]; then
+                                    # Update HORNET
+                                    source $iotaNodeModule/iotaNodeVersion
+                                    if [ ! -z "$latestIotaNodeVersion" ]; then
+                                        if [ ! -f "/tmp/iota-node.lock" ]; then
+                                            touch /tmp/iota-node.lock > /dev/null 2>&1
+                                        fi
+                                        {
+                                            echo 0
+                                            echo 33
+                                            source $iotaNodeModule/iotaNodeVersion
+                                            echo 66
+                                            source $iotaNodeModule/iotaNodeInstaller                      
+                                            echo 100
+                                            sleep 0.5
+                                        } | whiptail --gauge "Please wait while [IOTA] Node is updated..." 8 70 0
+                                        {
+                                            echo 0
+                                            echo 25
+                                            # CALL MODULE CONFIGPARSER
+                                            source $iotaNodeModule/iotaNodeParser
+                                            echo 50
+                                            source $iotaInxModule/iotaInxAppStop
+                                            echo 75
+                                            systemctl restart iota-node 2>/dev/null
+                                            echo 100
+                                        } | whiptail --gauge "Please wait while parsing the [IOTA] Node configuration..." 8 70 0
+                                        bash $iotaInxModule/iotaInxAppStart &
+                                        iotaNodeChecksum=$(cat /tmp/iota-node.checksum 2>/dev/null)
+                                        whiptail --title "Node [IOTA] Installer" --msgbox "[IOTA] Node successfully updated. (INX apps start delayed)\n\nChecksum: $iotaNodeChecksum" 10 65
+                                        if [ -f "/tmp/iota-node.checksum" ]; then
+                                            rm -rf /tmp/iota-node.checksum > /dev/null 2>&1
+                                            unset iotaNodeChecksum
+                                        fi
+                                        if [ -f "/tmp/iota-node.lock" ]; then
+                                            rm -rf /tmp/iota-node.lock > /dev/null 2>&1
+                                        fi
+                                    else
+                                        whiptail --title "Node [IOTA] Installer" --msgbox "Sorry, but [IOTA] Node update aborted." 10 65
+                                    fi
+                                else
+                                    whiptail --title "Node [IOTA] Installer" --msgbox "Aborted - [IOTA] Node is currently locked by Watchdog, please try again." 8 70
+                                fi
+                            fi
+                        else
+                            whiptail --title "Node [IOTA] Installer" --msgbox "Sorry, but [IOTA] Node is not installed." 8 70
+                        fi
+                    ;;
+                    "2)")
+                        if [ -f "/usr/bin/iota-node" ]; then
+                            if (whiptail --title "Node [IOTA] Installer" --yesno --defaultno "Already installed apps found on the system!\nIt is not recommended to run multiple apps on one host.\n\nDo you still want to continue?" 12 65); then
+                                iotaNodeSkipInstallation=false
+                            else
+                                iotaNodeSkipInstallation=true
+                            fi
+                        else
+                            iotaNodeSkipInstallation=false
+                        fi
+                        # INSTALL Node
+                        if [ ! -f "/usr/bin/iota-node" ] && [ "$iotaNodeSkipInstallation" = "false" ]; then
+                            if [ ! -f "/tmp/watchdog_iota-node.lock" ]; then
+                                if [ ! -f "/tmp/iota-node.lock" ]; then
+                                    touch /tmp/iota-node.lock > /dev/null 2>&1
+                                fi
+                                source $swarmConfigsPath/iota-node.cfg
+                                source $iotaNodeModule/iotaNodeConfigs
+                                source $iotaNodeModule/iotaNodeVersion
+                                {
+                                    echo 0
+                                    echo 10
+                                    echo 30
+                                    source $iotaNodeModule/iotaNodeInstaller
+                                    echo 50
+                                    if [ -f "/usr/bin/iota-node" ]; then
+                                        source $swarmConfigsPath/iota-node.cfg
+                                        echo 60
+                                        # CALL MODULE CONFIGPARSER
+                                        source $iotaNodeModule/iotaNodeParser
+                                        echo 70
+                                        if [ "$ufw" = "true" ]; then
+                                            if [ "$iotaNodeRunAsEntryNode" != "true" ]; then
+                                                ufw allow $iotaNodeGossipPort/tcp > /dev/null 2>&1
+                                            fi
+                                            if [ "$iotaNodeAutopeeringEnabled" = "true" ]; then
+                                                ufw allow $iotaNodeAutopeeringPort/udp > /dev/null 2>&1
+                                            fi
+                                        fi
+                                        systemctl start iota-node > /dev/null 2>&1
+                                        echo 80
+                                        sleep 2
+                                        iotaNodeStatus="$(systemctl show -p ActiveState --value iota-node)"
+                                        if [ "$iotaNodeStatus" != "active" ]; then
+                                            systemctl restart iota-node > /dev/null 2>&1
+                                        fi
+                                        echo 100
+                                    fi
+                                } | whiptail --gauge "Please wait while installing [IOTA] Node..." 8 70 0
+                                if [ -f "/usr/bin/iota-node" ]; then
+                                    if [ -f "/tmp/iota-node.checksum" ]; then
+                                        iotaNodeChecksum=$(cat /tmp/iota-node.checksum)
+                                    fi
+                                    if [ "$iotaNodeAutopeeringEnabled" = "true" ]; then
+                                        iotaNodeAutopeeringPortInfo="\nAutopeering: $iotaNodeAutopeeringPort/udp"
+                                    fi
+                                    whiptail --title "Node [IOTA] Installer" --msgbox "[IOTA] Node installation finished!\n\nYou need to open the following ports for peering\n\nGossip: $iotaNodeGossipPort/tcp$iotaNodeAutopeeringPortInfo\n\nChecksum: $iotaNodeChecksum" 17 65
+                                    if [ -f "/tmp/iota-node.checksum" ]; then
+                                        rm -rf /tmp/iota-node.checksum > /dev/null 2>&1
+                                    fi
+                                    if (whiptail --title "Proxy [IOTA] Node" --yesno --defaultno "Do you want to set up the proxy with the installation?" 8 70); then
+                                        source $swarmConfigsPath/proxy.cfg
+                                        if [ -z "$proxyIotaNodeUrl" ]; then
+                                            proxyUrl="example.com:443"
+                                            proxyUrl=$(whiptail --inputbox "\nSet your domain and port for [IOTA] Node" 10 65 "$proxyUrl" --title "Proxy [IOTA] Node" 3>&1 1>&2 2>&3)
+                                            exitStatus=$?
+                                            if [ "$proxyUrl" = "my.example.com:443" ]; then
+                                                unset proxyUrl
+                                            fi
+                                            if [ "$exitStatus" != "1" ]; then
+                                                source $proxyModule/proxyUrlValidation
+                                                if [ "$proxyUrlValid" = "true" ]; then
+                                                    proxyIotaNodeUrl=$proxyUrl
+                                                    sed -i 's/^proxyIotaNodeUrl=.*/proxyIotaNodeUrl="'$proxyUrl'"/' $swarmConfigsPath/proxy.cfg
+                                                    source $proxyModule/proxyDeployment
+                                                fi
+                                            fi
+                                            unset proxyUrl proxyUrlValid
+                                        else
+                                            proxyUrl=$proxyIotaNodeUrl
+                                            source $proxyModule/proxyUrlValidation
+                                            if [ "$proxyUrlValid" = "true" ]; then
+                                                source $proxyModule/proxyDeployment
+                                            fi
+                                            unset proxyUrl proxyUrlValid
+                                        fi
+                                    fi
+                                else
+                                    {
+                                        echo 0
+                                        echo 25
+                                        source $swarmConfigsPath/iota-node.cfg
+                                        echo 50
+                                        source $iotaNodeModule/iotaNodeRemoval
+                                        echo 75
+                                        echo 100
+                                    } | whiptail --gauge "Please wait while the [IOTA] Node files are removed..." 8 70 0
+                                    whiptail --title "Node [IOTA] Installer" --msgbox "Error while installing [IOTA] Node! Please try again later." 8 70
+                                fi
+                                if [ -f "/tmp/iota-node.lock" ]; then
+                                    rm -rf /tmp/iota-node.lock > /dev/null 2>&1
+                                fi
+                            else
+                                whiptail --title "Node [IOTA] Installer" --msgbox "Aborted - [IOTA] Node is currently locked by Watchdog, please try again." 8 70
+                            fi
+                        else
+                            if [ -f "/usr/bin/iota-node" ]; then
+                                whiptail --title "Node [IOTA] Installer" --msgbox "[IOTA] Node already installed." 8 70
+                            else
+                                if [ "$iotaNodeSkipInstallation" = "true" ]; then
+                                    whiptail --title "Node [IOTA] Installer" --msgbox "Installation of [IOTA] Node aborted." 8 70
+                                fi
+                            fi
+                        fi
+                        unset iotaNodeSkipInstallation iotaNodeChecksum
+                    ;;
+                    "3)")
+                        if (whiptail --title "Node [IOTA] Installer" --yesno --defaultno "Do you really want to remove [IOTA] Node?" 8 70); then
+                            {
+                                echo 0
+                                iotaNodeRemoval=true
+                                echo 50
+                                source $iotaNodeModule/iotaNodeRemoval
+                                echo 100
+                                sleep 0.5
+                            } | whiptail --gauge "Please wait while [IOTA] Node will be removed..." 8 70 0
+                            whiptail --title "Node [IOTA] Installer" --msgbox "[IOTA] Node successfully removed." 8 70
+
+                            if [ ! -f "/usr/bin/iota-node" ]; then
+                                if (whiptail --title "Node [IOTA] Installer" --yesno --defaultno "Do you also want to remove all installed [IOTA] INX plugins?" 8 70); then
+                                    nmbCounter=0
+                                    {
+                                        echo $nmbCounter
+                                        for iotaInxPlugin in ${iotaInxPlugins[@]}
+                                        do
+                                            if [ -f "/usr/bin/iota-inx-$iotaInxPlugin" ]; then
+                                                source $iotaInxModule/iota-inx-$iotaInxPlugin/iotaInx${iotaInxPlugin}Removal
+                                            fi
+                                            let nmbCounter=$nmbCounter+10
+                                            echo $nmbCounter
+                                        done
+                                    } | whiptail --gauge "Please wait while [IOTA] INX plugins will be removed..." 8 70 0
+                                    unset nmbCounter
+                                    whiptail --title "Node [IOTA] Installer" --msgbox "[IOTA] INX plugins successfully removed." 8 70
+                                fi
+                            fi
+                        fi
+                    ;;
+                esac
+            done
+            exitCode=0
+        ;;
+    esac
+done
+exitCode=0

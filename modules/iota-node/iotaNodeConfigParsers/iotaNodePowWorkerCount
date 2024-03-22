@@ -1,0 +1,14 @@
+#!/bin/bash
+
+iotaNodePowWorkerCount=$(grep ^cpu\\scores /proc/cpuinfo | uniq |  awk '{print $4}')
+let iotaNodePowWorkerCount=$iotaNodePowWorkerCount-1
+
+if [ "$iotaNodePowWorkerCount" -ge 1 ] 2>/dev/null; then
+    parser="$(jq '.restAPI.pow.workerCount' $iotaNodePath/config.json)"
+    if [ "$parser" != "$iotaNodePowWorkerCount" ]; then
+        sudo jq '.restAPI.pow.workerCount = '$iotaNodePowWorkerCount'' $iotaNodePath/config.json|sponge $iotaNodePath/config.json
+        sudo sed -i 's/^iotaNodePowWorkerCount=.*/iotaNodePowWorkerCount='$iotaNodePowWorkerCount'/' $swarmConfigs/iota-node.cfg
+        restartIotaNode=true
+        echo "iotaNodePowWorkerCount" >> /tmp/iotaNodeParsing
+    fi
+fi

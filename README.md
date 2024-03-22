@@ -22,10 +22,10 @@
 
 ## About
 
-SWARM is a script that allows you to easily install and manage an IOTA/Shimmer node. The most important configuration options are given via simple and selectable menu items. About the additional feature "Watchdog", the status of the nodes can be monitored, as well as automatically install updates. A reverse proxy installation is also offered for secure access via HTTPS.
+SWARM(d) is a script that allows you to easily install and manage an IOTA/Shimmer node. The most important configuration options are given via simple and selectable menu items. About the additional feature "Watchdog", the status of the nodes can be monitored, as well as automatically install updates. A reverse proxy installation is also offered for secure access via HTTPS.
 
 > [!CAUTION]
-> When using SWARM, please report any bugs or suggestions to us directly. DO NOT use the official IOTA/Shimmer support channels.
+> When using SWARM(d), please report any bugs or suggestions to us directly. DO NOT use the official IOTA/Shimmer support channels.
 
 ## Requirements
 
@@ -45,10 +45,10 @@ SWARM is a script that allows you to easily install and manage an IOTA/Shimmer n
 There are a few options to install SWAM:
 
 -   Clone from source code (not recommended)
--   Download latest SWARM release via command
+-   Download latest SWARM(d) release via command
 
 ```bash
-sudo ${SHELL:-sh} -c "$(curl -Ls https://cdn.tanglebay.com/swarm/installer/installer.sh)"
+sudo ${SHELL:-sh} -c "$(curl -Ls https://cdn.tanglebay.com/swarmd/installer/installer.sh)"
 ```
 
 ### Ports
@@ -64,7 +64,7 @@ sudo ${SHELL:-sh} -c "$(curl -Ls https://cdn.tanglebay.com/swarm/installer/insta
 
 ## Contributing
 
-Help out the SWARM project by filing a [bug report](https://github.com/tanglebay/swarm/issues/new?assignees=&labels=bug), making a [feature request](https://github.com/tanglebay/swarm/issues/new?assignees=&labels=feat) or opening a [pull request](https://github.com/tanglebay/swarm/pulls/).
+Help out the SWARM(d) project by filing a [bug report](https://github.com/tanglebay/swarmd/issues/new?assignees=&labels=bug), making a [feature request](https://github.com/tanglebay/swarmd/issues/new?assignees=&labels=feat) or opening a [pull request](https://github.com/tanglebay/swarmd/pulls/).
 
 ## Disclaimer
 

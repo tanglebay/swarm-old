@@ -1,0 +1,15 @@
+#!/bin/bash
+
+parser="$(jq '.restAPI.publicRoutes' $iotaNodePath/config.json)"
+parser="$(echo $parser | tr -d '[]" ')"
+
+if [ "$parser" != "$iotaNodeApiPublicRoutes" ] || [ "$iotaNodeForceApiPublicRoutes" = "true" ]; then
+    sudo jq '.restAPI.publicRoutes |= []' $iotaNodePath/config.json|sponge $iotaNodePath/config.json
+    for iotaNodeApiPublicRoute in "${ARRAYiotaNodeApiPublicRoutes[@]}"
+    do
+        sudo jq '.restAPI.publicRoutes |= .+ ["'$iotaNodeApiPublicRoute'"]' $iotaNodePath/config.json|sponge $iotaNodePath/config.json
+    done
+    restartIotaNode=true
+    echo "iotaNodeApiPublicRoutes" >> /tmp/iotaNodeParsing
+fi
+unset ARRAYiotaNodeApiPublicRoutes iotaNodeApiPublicRoute iotaNodeForceApiPublicRoutes
