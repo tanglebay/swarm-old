@@ -1,168 +1,70 @@
 #!/bin/bash
 #####################################################################################################
 # SWARM
-swarmHome="/var/lib/swarm"
-swarmHomePath="/var/lib/swarm"
-swarmConfigs="/var/lib/swarm/configs"
-swarmConfigsPath="/var/lib/swarm/configs"
-swarmModule="/var/lib/swarm/modules/swarm"
-swarmModulePath="/var/lib/swarm/modules/swarm"
-swarmSharedModule="/var/lib/swarm/modules/shared"
-swarmSharedModulePath="/var/lib/swarm/modules/shared"
-swarmTemplates="/var/lib/swarm/templates"
-swarmTemplatesPath="/var/lib/swarm/templates"
-swarmTmp="/tmp/swarm"
+swarmPath="/opt/swarm"
+swarmConfigsPath="$swarmPath/configs"
+swarmModulePath="/$swarmPath/modules/swarm"
+swarmSharedModulePath="/$swarmPath/modules/shared"
+swarmTemplatesPath="/$swarmPath/templates"
 swarmTmpPath="/tmp/swarm"
-swarmLogs="/var/log/swarm"
 swarmLogsPath="/var/log/swarm"
 swarmBackupPath="/etc/swarm/backup"
-swarmApps=(iota-hornet shimmer-hornet iota-inx-dashboard iota-inx-indexer iota-inx-mqtt iota-inx-participation iota-inx-poi iota-inx-irc-metadata shimmer-inx-dashboard shimmer-inx-indexer shimmer-inx-mqtt shimmer-inx-participation shimmer-inx-poi shimmer-inx-irc-metadata)
+swarmDockerPath="$swarmPath/docker"
+swarmDockerEnvFile="$swarmPath/docker/.env"
+swarmDockerTraefikFile="$swarmDockerPath/docker-traefik.yml"
+swarmDockerTraefikHttpsFile="$swarmDockerPath/docker-traefik-https.yml"
+swarmDockerIotaFile="$swarmDockerPath/docker-iota.yml"
+swarmDockerShimmerFile="$swarmDockerPath/docker-shimmer.yml"
+swarmDockerServices=(iota-node shimmer-node iota-inx-dashboard iota-inx-indexer iota-inx-mqtt iota-inx-participation iota-inx-poi iota-inx-irc-metadata shimmer-inx-dashboard shimmer-inx-indexer shimmer-inx-mqtt shimmer-inx-participation shimmer-inx-poi shimmer-inx-irc-metadata)
 #####################################################################################################
 # WATCHDOG
-watchdogCronCmd="/var/lib/swarm/watchdog"
+watchdogCronCmd="$swarmPath/watchdog"
 watchdogCronJob="*/1 * * * * $watchdogCronCmd"
-watchdogModule="/var/lib/swarm/modules/watchdog"
+watchdogModule="$swarmPath/modules/watchdog"
 watchdogStateFile="/tmp/watchdog.state"
 #####################################################################################################
+# DOCKER
+dockerPath="/opt/docker"
+#####################################################################################################
 # PROXY
-proxyModule="/var/lib/swarm/modules/proxy"
+proxyModulePath="$swarmPath/modules/proxy"
+proxyPath="$dockerPath/traefik"
+
 #####################################################################################################
-# Hornet (IOTA)
-## Files
-iotaHornetParser="/var/lib/swarm/modules/iota-hornet/iotaHornetParser"
-## DIR's
-iotaHornetHome="/var/lib/iota-hornet"
-iotaHornetModule="/var/lib/swarm/modules/iota-hornet"
-iotaHornetConfigParsers="/var/lib/swarm/modules/iota-hornet/iotaHornetConfigParsers"
+# Node (IOTA)
+iotaNodeParserFile="$swarmPath/modules/iota-node/iotaNodeParser"
+iotaNodePath="/$dockerPath/iota-node"
+iotaNodeModulePath="$swarmPath/modules/iota-node"
+iotaNodeConfigParsersPath="$swarmPath/modules/iota-node/iotaNodeConfigParsers"
 #####################################################################################################
-# Hornet (Shimmer)
-## Files
-shimmerHornetParser="/var/lib/swarm/modules/shimmer-hornet/shimmerHornetParser"
-## DIR's
-shimmerHornetHome="/var/lib/shimmer-hornet"
-shimmerHornetModule="/var/lib/swarm/modules/shimmer-hornet"
-shimmerHornetConfigParsers="/var/lib/swarm/modules/shimmer-hornet/shimmerHornetConfigParsers"
-#####################################################################################################
+# Node (Shimmer)
+shimmerNodeParserFile="$swarmPath/modules/shimmer-node/shimmerNodeParser"
+shimmerNodePath="/$dockerPath/shimmer-node"
+shimmerNodeModulePath="$swarmPath/modules/shimmer-node"
+shimmerNodeConfigParsersPath="$swarmPath/modules/shimmer-node/shimmerNodeConfigParsers"
 #####################################################################################################
 # I O T A - I N X
-#####################################################################################################
-#####################################################################################################
-# [IOTA] INX
-iotaInxPlugins=(dashboard indexer mqtt participation poi irc-metadata)
-iotaInxModule="/var/lib/swarm/modules/iota-inx"
-#####################################################################################################
-# [IOTA] INX-Dashboard
-## Files
-iotaInxDashboardParser="/var/lib/swarm/modules/iota-inx/iota-inx-dashboard/iotaInxDashboardParser"
-## DIR's
-iotaInxDashboardHome="/var/lib/iota-inx-dashboard"
-iotaInxDashboardModule="/var/lib/swarm/modules/iota-inx/iota-inx-dashboard"
-iotaInxDashboardConfigParsers="/var/lib/swarm/modules/iota-inx/iota-inx-dashboard/iotaInxDashboardConfigParsers"
-#####################################################################################################
-# [IOTA] INX-Indexer
-## Files
-iotaInxIndexerParser="/var/lib/swarm/modules/iota-inx/iota-inx-indexer/iotaInxIndexerParser"
-## DIR's
-iotaInxIndexerHome="/var/lib/iota-inx-indexer"
-iotaInxIndexerModule="/var/lib/swarm/modules/iota-inx/iota-inx-indexer"
-iotaInxIndexerConfigParsers="/var/lib/swarm/modules/iota-inx/iota-inx-indexer/iotaInxIndexerConfigParsers"
-#####################################################################################################
-# [IOTA] INX-MQTT
-## Files
-iotaInxMqttParser="/var/lib/swarm/modules/iota-inx/iota-inx-mqtt/iotaInxMqttParser"
-## DIR's
-iotaInxMqttHome="/var/lib/iota-inx-mqtt"
-iotaInxMqttModule="/var/lib/swarm/modules/iota-inx/iota-inx-mqtt"
-iotaInxMqttConfigParsers="/var/lib/swarm/modules/iota-inx/iota-inx-mqtt/iotaInxMqttConfigParsers"
-#####################################################################################################
-# [IOTA] INX-Participation
-iotaInxParticipationReleaseVersion="1"
-## Files
-iotaInxParticipationParser="/var/lib/swarm/modules/iota-inx/iota-inx-participation/iotaInxParticipationParser"
-## DIR's
-iotaInxParticipationHome="/var/lib/iota-inx-participation"
-iotaInxParticipationModule="/var/lib/swarm/modules/iota-inx/iota-inx-participation"
-iotaInxParticipationConfigParsers="/var/lib/swarm/modules/iota-inx/iota-inx-participation/iotaInxParticipationConfigParsers"
-#####################################################################################################
-# [IOTA] INX-POI
-## Files
-iotaInxPoiParser="/var/lib/swarm/modules/iota-inx/iota-inx-poi/iotaInxPoiParser"
-## DIR's
-iotaInxPoiHome="/var/lib/iota-inx-poi"
-iotaInxPoiModule="/var/lib/swarm/modules/iota-inx/iota-inx-poi"
-iotaInxPoiConfigParsers="/var/lib/swarm/modules/iota-inx/iota-inx-poi/iotaInxPoiConfigParsers"
-#####################################################################################################
-# [IOTA] INX-IRC-METADATA
-## Files
-iotaInxIrcMetadataParser="/var/lib/swarm/modules/iota-inx/iota-inx-irc-metadata/iotaInxIrcMetadataParser"
-## DIR's
-iotaInxIrcMetadataHome="/var/lib/iota-inx-irc-metadata"
-iotaInxIrcMetadataModule="/var/lib/swarm/modules/iota-inx/iota-inx-irc-metadata"
-iotaInxIrcMetadataConfigParsers="/var/lib/swarm/modules/iota-inx/iota-inx-irc-metadata/iotaInxIrcMetadataConfigParsers"
-#####################################################################################################
-#####################################################################################################
+iotaInxDashboardPath="$dockerPath/iota-inx-dashboard"
+iotaInxIndexerPath="$dockerPath/iota-inx-indexer"
+iotaInxParticipationPath="$dockerPath/iota-inx-participation"
+iotaInxMqttPath="$dockerPath/iota-inx-mqtt"
+iotaInxPoiPath="$dockerPath/iota-inx-poi"
+iotaInxIrcMetadataPath="$dockerPath/iota-inx-irc-metadata"
 #####################################################################################################
 # S H I M M E R - I N X
-#####################################################################################################
-#####################################################################################################
-# [SHIMMER] INX
-shimmerInxPlugins=(dashboard indexer mqtt participation poi irc-metadata)
-shimmerInxModule="/var/lib/swarm/modules/shimmer-inx"
-#####################################################################################################
-# [SHIMMER] INX-Dashboard
-## Files
-shimmerInxDashboardParser="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-dashboard/shimmerInxDashboardParser"
-## DIR's
-shimmerInxDashboardHome="/var/lib/shimmer-inx-dashboard"
-shimmerInxDashboardModule="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-dashboard"
-shimmerInxDashboardConfigParsers="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-dashboard/shimmerInxDashboardConfigParsers"
-#####################################################################################################
-# [SHIMMER] INX-Indexer
-## Files
-shimmerInxIndexerParser="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-indexer/shimmerInxIndexerParser"
-## DIR's
-shimmerInxIndexerHome="/var/lib/shimmer-inx-indexer"
-shimmerInxIndexerModule="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-indexer"
-shimmerInxIndexerConfigParsers="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-indexer/shimmerInxIndexerConfigParsers"
-#####################################################################################################
-# [SHIMMER] INX-MQTT
-## Files
-shimmerInxMqttParser="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-mqtt/shimmerInxMqttParser"
-## DIR's
-shimmerInxMqttHome="/var/lib/shimmer-inx-mqtt"
-shimmerInxMqttModule="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-mqtt"
-shimmerInxMqttConfigParsers="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-mqtt/shimmerInxMqttConfigParsers"
-#####################################################################################################
-# [SHIMMER] INX-Participation
-## Files
-shimmerInxParticipationParser="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-participation/shimmerInxParticipationParser"
-## DIR's
-shimmerInxParticipationHome="/var/lib/shimmer-inx-participation"
-shimmerInxParticipationModule="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-participation"
-shimmerInxParticipationConfigParsers="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-participation/shimmerInxParticipationConfigParsers"
-#####################################################################################################
-# [SHIMMER] INX-POI
-## Files
-shimmerInxPoiParser="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-poi/shimmerInxPoiParser"
-## DIR's
-shimmerInxPoiHome="/var/lib/shimmer-inx-poi"
-shimmerInxPoiModule="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-poi"
-shimmerInxPoiConfigParsers="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-poi/shimmerInxPoiConfigParsers"
-#####################################################################################################
-# [SHIMMER] INX-IRC-METADATA
-## Files
-shimmerInxIrcMetadataParser="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-irc-metadata/shimmerInxIrcMetadataParser"
-## DIR's
-shimmerInxIrcMetadataHome="/var/lib/shimmer-inx-irc-metadata"
-shimmerInxIrcMetadataModule="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-irc-metadata"
-shimmerInxIrcMetadataConfigParsers="/var/lib/swarm/modules/shimmer-inx/shimmer-inx-irc-metadata/shimmerInxIrcMetadataConfigParsers"
+shimmerInxDashboardPath="$dockerPath/shimmer-inx-dashboard"
+shimmerInxIndexerPath="$dockerPath/shimmer-inx-indexer"
+shimmerInxParticipationPath="$dockerPath/shimmer-inx-participation"
+shimmerInxMqttPath="$dockerPath/shimmer-inx-mqtt"
+shimmerInxPoiPath="$dockerPath/shimmer-inx-poi"
+shimmerInxIrcMetadataPath="$dockerPath/shimmer-inx-irc-metadata"
 #####################################################################################################
 # System
 envfile=/etc/environment
-licenseFile="/var/lib/swarm/LICENSE"
+licenseFile="$swarmPath/LICENSE"
 swarmUrl="github.com/tanglebay/swarm"
 cdnUrl="cdn.tanglebay.com"
 license="MIT License"
-copyright="Copyright (c) 2023 Tangle Bay"
+copyright="Copyright (c) 2024 Tangle Bay"
 iotaDonationAddress="iota1qr4em93qy2helq9vcxp5hcsnju70ky3pyptc0qnsdz590dzhkatw7sj9h5m"
 shimmerDonationAddress="smr1qq2fsqkfmdu4vgmjahj5ewyjghhlnltea7ttw3cfhfst5tdlwd6qg97wsgm"

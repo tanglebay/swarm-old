@@ -1,281 +1,44 @@
 #!/bin/bash
+source $proxyModulePath/proxyConfigCheck
 
-source $swarmConfigs/proxy.cfg
-
-# LOAD DOMAIN AND PORT
-source $proxyModule/proxyParser
-
-if [ ! -f "/usr/sbin/nginx" ]; then
-    if [ "$ufw" = "true" ]; then
-        sudo ufw allow 80/tcp > /dev/null 2>&1
-    fi
+if [ "$TRAEFIK_PROTOCOL" = "https" ] && [ -z $TRAEFIK_ACME_EMAIL ] && [ "$TRAEFIK_SSL_RESOLVER" = "acme" ]; then
+    TRAEFIK_ACME_EMAIL=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy [-] Deployment" 3>&1 1>&2 2>&3)
 fi
 
-# Check if letsencrypt is already installed on the node
-if [ ! -d "/etc/letsencrypt" ]; then
-    {
-        echo 0
-        echo 10
-        sudo apt-get -qq install software-properties-common certbot python3-certbot-nginx -y > /dev/null 2>&1
-        echo 20
-        sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-available/default > /dev/null 2>&1
-        echo 30
-        sudo rm -rf /etc/nginx/sites-enabled/iota* /etc/nginx/sites-enabled/shimmer* > /dev/null 2>&1
-        echo 50
-        sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-        echo 60
-        echo 70
-        sudo systemctl restart nginx > /dev/null 2>&1
-        echo 90
-        if [ ! -f "/etc/nginx/nginx.conf" ]; then
-            sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
-        fi
-        echo 100
-        sleep 0.25
-    } | whiptail --gauge "Please wait while the proxy will be installed..." 6 65 0
-else
-    if [ ! -f "/etc/nginx/sites-enabled/default" ]; then
-        sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-        sudo systemctl restart nginx > /dev/null 2>&1
-    fi
-fi
-
-###### Node certificates
-if [ -f "/usr/bin/iota-hornet" ] && [ ! -z "$proxyIotaHornetUrl" ]; then
-    if [ ! -d "/etc/letsencrypt/live/$proxyIotaHornetDomain" ]; then
-        if [ -z "$emailAddress" ]; then
-            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-            exitStatus=$?
-        fi
-        if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
-            {
-                echo 0
-                echo 10
-                if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
-                fi
-                echo 25
-                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-                if [ "$proxyStatus" != "active" ]; then
-                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-                    sudo systemctl restart nginx
-                fi
-                echo 50
-                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyIotaHornetDomain -m $emailAddress > /dev/null 2>&1
-                unset emailaddress
-                echo 100
-            } | whiptail --gauge "Requesting SSL certificate for [IOTA] Hornet..." 6 65 0  
-            if [ ! -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ]; then
-                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for Hornet not found!" 8 65
-            fi
-        fi
-    fi
-fi
-
-if [ -f "/usr/bin/iota-inx-dashboard" ] && [ ! -z "$proxyIotaInxDashboardUrl" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
-    if [ ! -d "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain" ]; then
-        if [ -z "$emailAddress" ]; then
-            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-            exitStatus=$?
-        fi
-        if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
-            {
-                echo 0
-                echo 10
-                if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
-                fi
-                echo 25
-                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-                if [ "$proxyStatus" != "active" ]; then
-                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-                    sudo systemctl restart nginx
-                fi
-                echo 50
-                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyIotaInxDashboardDomain -m $emailAddress > /dev/null 2>&1
-                unset emailaddress
-                echo 100
-            } | whiptail --gauge "Requesting SSL certificate for [IOTA] INX-Dashboard..." 6 65 0  
-            if [ ! -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ]; then
-                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for [IOTA] INX-Dashboard not found!" 8 65
-            fi
-        fi
-    fi
-fi
-
-if [ -f "/usr/bin/shimmer-hornet" ] && [ ! -z "$proxyShimmerHornetUrl" ]; then
-    if [ ! -d "/etc/letsencrypt/live/$proxyShimmerHornetDomain" ]; then
-        if [ -z "$emailAddress" ]; then
-            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-            exitStatus=$?
-        fi
-        if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
-            {
-                echo 0
-                echo 10
-                if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
-                fi
-                echo 25
-                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-                if [ "$proxyStatus" != "active" ]; then
-                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-                    sudo systemctl restart nginx
-                fi
-                echo 50
-                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyShimmerHornetDomain -m $emailAddress > /dev/null 2>&1
-                unset emailaddress
-                echo 100
-            } | whiptail --gauge "Requesting SSL certificate for [Shimmer] Hornet..." 6 65 0  
-            if [ ! -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ]; then
-                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for [Shimmer] Hornet not found!" 8 65
-            fi
-        fi
-    fi
-fi
-
-if [ -f "/usr/bin/shimmer-inx-dashboard" ] && [ ! -z "$proxyShimmerInxDashboardUrl" ] && [ "$proxyShimmerInxDashboardEnabled" = "true" ]; then
-    if [ ! -d "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain" ]; then
-        if [ -z "$emailAddress" ]; then
-            emailAddress=$(whiptail --inputbox "\nPlease enter your e-mail address so that a certificate can be issued" 10 65 --title "Proxy - Certificate" 3>&1 1>&2 2>&3)
-            exitStatus=$?
-        fi
-        if [ ! -z "$emailAddress" ] && [ "$exitStatus" != "1" ]; then
-            {
-                echo 0
-                echo 10
-                if [ ! -f "/etc/nginx/nginx.conf" ]; then
-                    sudo apt-get -qq -o DPkg::options::=--force-confmiss --reinstall install nginx-common > /dev/null 2>&1
-                fi
-                echo 25
-                proxyStatus="$(systemctl show -p ActiveState --value nginx)"
-                if [ "$proxyStatus" != "active" ]; then
-                    sudo cp -rf $swarmTemplates/proxy/nginx_http.template /etc/nginx/sites-enabled/default
-                    sudo systemctl restart nginx
-                fi
-                echo 50
-                sudo certbot --noninteractive --agree-tos --no-eff-email --nginx --no-redirect -d $proxyShimmerInxDashboardDomain -m $emailAddress > /dev/null 2>&1
-                unset emailaddress
-                echo 100
-            } | whiptail --gauge "Requesting SSL certificate for [Shimmer] INX-Dashboard..." 6 65 0  
-            if [ ! -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ]; then
-                whiptail --title "Proxy - Deployment" --msgbox "Aborted - SSL Certificate for [Shimmer] INX-Dashboard not found!" 8 65
-            fi
-        fi
-    fi
-fi
-
-#################################################################################################
-#################################################################################################
-#################################################################################################
-
-if [ ! -d "/etc/nginx/swarm" ]; then
-    sudo mkdir -p /etc/nginx/swarm
-fi
-
-# TANGLEBAY stuff
-if [ ! -f "/etc/nginx/swarm/tb-srv.conf" ]; then
-    sudo touch /etc/nginx/swarm/tb-srv.conf
-    sudo chmod 644 /etc/nginx/swarm/tb-srv.conf
-fi
-if [ ! -f "/etc/nginx/swarm/extended-proxy.conf" ]; then
-    sudo touch /etc/nginx/swarm/extended-proxy.conf
-    sudo chmod 644 /etc/nginx/swarm/extended-proxy.conf
-fi
-
-# SET TLS1.3
-if [ -f "/etc/nginx/nginx.conf" ]; then
-    proxySslProtocol=$(cat /etc/nginx/nginx.conf | grep -E ssl_protocols)
-    proxySslProtocol=$(echo $proxySslProtocol)
-    if [ "$proxySslProtocol" != "ssl_protocols TLSv1.3;" ]; then
-        sudo sed -i 's~ssl_protocols.*~ssl_protocols TLSv1\.3;~g' /etc/nginx/nginx.conf
-    fi
-    unset proxySslProtocol
-fi
-
-# Check if the certificate for the domain already exist
-if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ]; then
-    {
+{
     echo 0
     echo 20
-    if [ -f "/etc/nginx/sites-available/default > /dev/null 2>&1" ]; then
-        sudo rm -rf /etc/nginx/sites-available/default > /dev/null 2>&1
-    fi
-    sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/iota* /etc/nginx/sites-enabled/shimmer* /etc/nginx/sites-enabled/swarm* > /dev/null 2>&1
-    sudo cp -rf $swarmTemplates/proxy/nginx_default.template /etc/nginx/sites-enabled/default
-
-    #################################################################################################
-    if [ -f "/etc/nginx/sites-enabled/swarm-dashboard" ]; then
-        sudo rm -rf /etc/nginx/sites-enabled/swarm-dashboard > /dev/null 2>&1
-    fi
-    #################################################################################################
-    echo 30
-    if [ -f "/usr/bin/iota-hornet" ] && [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] && [ ! -z "$proxyIotaHornetDomain" ] && [ ! -z "$proxyIotaHornetPort" ]; then
-        if [ -z "$defaultDomain" ]; then
-            defaultDomain="$proxyIotaHornetDomain"
-        fi
-        sudo cp -rf $swarmTemplates/proxy/nginx_iota-hornet.template /etc/nginx/sites-enabled/iota-hornet
-        sudo sed -i 's/domain.tld/'$proxyIotaHornetDomain'/g' /etc/nginx/sites-enabled/iota-hornet
-        sudo sed -i 's/443/'$proxyIotaHornetPort'/g' /etc/nginx/sites-enabled/iota-hornet
-        if [ "$ufw" = "true" ]; then
-            sudo ufw allow $proxyIotaHornetPort/tcp > /dev/null 2>&1
-        fi
-    fi
-    echo 35
-    if [ -f "/usr/bin/shimmer-hornet" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerHornetDomain" ] && [ ! -z "$proxyShimmerHornetPort" ]; then
-        if [ -z "$defaultDomain" ]; then
-            defaultDomain="$proxyShimmerHornetDomain"
-        fi
-        sudo cp -rf $swarmTemplates/proxy/nginx_shimmer-hornet.template /etc/nginx/sites-enabled/shimmer-hornet
-        sudo sed -i 's/domain.tld/'$proxyShimmerHornetDomain'/g' /etc/nginx/sites-enabled/shimmer-hornet
-        sudo sed -i 's/443/'$proxyShimmerHornetPort'/g' /etc/nginx/sites-enabled/shimmer-hornet
-        if [ "$ufw" = "true" ]; then
-            sudo ufw allow $proxyShimmerHornetPort/tcp > /dev/null 2>&1
-        fi
+    if [ ! -d $proxyPath ]; then
+        mkdir -p $proxyPath/dynamic $proxyPath/certs > /dev/null 2>&1
+        chown -R 65532:65532 $proxyPath > /dev/null 2>&1
+        ( cd $swarmDockerPath ; docker compose -f docker-traefik.yml pull > /dev/null 2>&1 )
     fi
     echo 40
-    if [ -f "/usr/bin/iota-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyIotaInxDashboardDomain" ] && [ ! -z "$proxyIotaInxDashboardPort" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
-        if [ -z "$defaultDomain" ]; then
-            defaultDomain="$proxyIotaInxDashboardDomain"
-        fi
-        sudo cp -rf $swarmTemplates/proxy/nginx_iota-inx-dashboard.template /etc/nginx/sites-enabled/iota-inx-dashboard
-        sudo sed -i 's/domain.tld/'$proxyIotaInxDashboardDomain'/g' /etc/nginx/sites-enabled/iota-inx-dashboard
-        sudo sed -i 's/443/'$proxyIotaInxDashboardPort'/g' /etc/nginx/sites-enabled/iota-inx-dashboard
-        if [ "$ufw" = "true" ]; then
-            sudo ufw allow $proxyIotaInxDashboardPort/tcp > /dev/null 2>&1
-        fi
-    fi
-    if [ -f "/usr/bin/shimmer-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerInxDashboardDomain" ] && [ ! -z "$proxyShimmerInxDashboardPort" ] && [ "$proxyShimmerInxDashboardEnabled" = "true" ]; then
-        if [ -z "$defaultDomain" ]; then
-            defaultDomain="$proxyShimmerInxDashboardDomain"
-        fi
-        sudo cp -rf $swarmTemplates/proxy/nginx_shimmer-inx-dashboard.template /etc/nginx/sites-enabled/shimmer-inx-dashboard
-        sudo sed -i 's/domain.tld/'$proxyShimmerInxDashboardDomain'/g' /etc/nginx/sites-enabled/shimmer-inx-dashboard
-        sudo sed -i 's/443/'$proxyShimmerInxDashboardPort'/g' /etc/nginx/sites-enabled/shimmer-inx-dashboard
-        if [ "$ufw" = "true" ]; then
-            sudo ufw allow $proxyShimmerInxDashboardPort/tcp > /dev/null 2>&1
-        fi
-    fi
-    echo 45
-    sudo sed -i 's/# server_tokens off;/server_tokens off;/g' /etc/nginx/nginx.conf
-    sudo sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
-    sudo sed -i 's/domain.tld/'$defaultDomain'/g' /etc/nginx/sites-enabled/default
-    echo 75
-    if [ -f "/etc/nginx/swarm.conf" ]; then
-        sudo mv /etc/nginx/swarm.conf /etc/nginx/swarm/swarm.conf
+    if [ "$TRAEFIK_PROTOCOL" = "https" ]; then
+        ( cd $swarmDockerPath ; docker compose -f docker-traefik.yml -f docker-traefik-https.yml down > /dev/null 2>&1 )
     else
-        if [ ! -f "/etc/nginx/swarm/swarm.conf" ]; then
-            sudo touch /etc/nginx/swarm/swarm.conf > /dev/null 2>&1
-        fi
+        ( cd $swarmDockerPath ; docker compose -f docker-traefik.yml down > /dev/null 2>&1 )
     fi
-    source $proxyModule/proxyIotaInxDashboard
-    source $proxyModule/proxyIotaInxMqtt
-    source $proxyModule/proxyShimmerInxDashboard
-    source $proxyModule/proxyShimmerInxMqtt
-    source $proxyModule/proxySwarmEndpoint
-    source $proxyModule/proxyCORS
-    echo 85
-    sudo systemctl restart nginx > /dev/null 2>&1
+    echo 60
+    cp -rf $swarmConfigsPath/docker-env.cfg $swarmDockerPath/.env > /dev/null 2>&1
+    echo 80
+    if [ "$TRAEFIK_PROTOCOL" = "https" ]; then
+        if [ "$TRAEFIK_SSL_RESOLVER" = "acme" ]; then
+            cp -rf $swarmTemplatesPath/docker/acme.yaml $proxyPath/dynamic/acme.yaml > /dev/null 2>&1
+            sed -i 's~^email:.*~email: '$TRAEFIK_ACME_EMAIL'~g' $proxyPath/dynamic/acme.yaml
+        fi
+        if [ "$TRAEFIK_SSL_RESOLVER" = "custom" ]; then
+            if [ ! -f "$proxyPath/dynamic/tls.yaml" ]; then
+                cp -rf $swarmTemplatesPath/docker/tls_custom.yaml $proxyPath/dynamic/tls.yaml > /dev/null 2>&1
+            fi
+        else
+            cp -rf $swarmTemplatesPath/docker/tls.yaml $proxyPath/dynamic/tls.yaml > /dev/null 2>&1
+        fi
+        chown -R 65532:65532 $proxyPath > /dev/null 2>&1
+        ( cd $swarmDockerPath ; docker compose -f docker-traefik.yml -f docker-traefik-https.yml up -d > /dev/null 2>&1 )
+    else
+        ( cd $swarmDockerPath ; docker compose -f docker-traefik.yml up -d > /dev/null 2>&1 )
+    fi
     echo 100
-    } | whiptail --gauge "Please wait while SWARM deploying the config and restart the proxy..." 8 65 0
-fi
+} | whiptail --gauge "Please wait while the proxy will be deployed..." 6 65 0
+whiptail --title "Proxy [-] Deployment" --msgbox "Proxy deployed successfully." 8 70 

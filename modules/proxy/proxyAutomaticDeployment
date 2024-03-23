@@ -1,101 +1,31 @@
 #!/bin/bash
-if [ "$proxyAutomaticDeployment" = "true" ] && [ -f "/usr/sbin/nginx" ]; then
-    # LOAD DOMAIN AND PORT
-    source $swarmConfigs/proxy.cfg
-    source $proxyModule/proxyParser
-    if [ ! -d "/etc/nginx/swarm" ]; then
-        sudo mkdir -p /etc/nginx/swarm
+
+if [ "$proxyAutomaticDeployment" = "true" ] && [ -d "$proxyPath" ]; then
+    source $proxyModulePath/proxyConfigCheck
+
+    if [ "$TRAEFIK_PROTOCOL" = "https" ]; then
+        ( cd $swarmDockerPath ; docker compose -f docker-traefik.yml -f docker-traefik-https.yml down > /dev/null 2>&1 )
+    else
+        ( cd $swarmDockerPath ; docker compose -f docker-traefik.yml down > /dev/null 2>&1 )
     fi
 
-    # TANGLEBAY stuff
-    if [ ! -f "/etc/nginx/swarm/tb-srv.conf" ]; then
-        sudo touch /etc/nginx/swarm/tb-srv.conf
-        sudo chmod 644 /etc/nginx/swarm/tb-srv.conf
-    fi
-    if [ ! -f "/etc/nginx/swarm/extended-proxy.conf" ]; then
-        sudo touch /etc/nginx/swarm/extended-proxy.conf
-        sudo chmod 644 /etc/nginx/swarm/extended-proxy.conf
-    fi
+    cp -rf $swarmConfigsPath/docker-env.cfg $swarmDockerPath/.env > /dev/null 2>&1
 
-    # SET TLS1.3
-    if [ -f "/etc/nginx/nginx.conf" ]; then
-        proxySslProtocol=$(cat /etc/nginx/nginx.conf | grep -E ssl_protocols)
-        proxySslProtocol=$(echo $proxySslProtocol)
-        if [ "$proxySslProtocol" != "ssl_protocols TLSv1.3;" ]; then
-            sudo sed -i 's~ssl_protocols.*~ssl_protocols TLSv1\.3;~g' /etc/nginx/nginx.conf
+    if [ "$TRAEFIK_PROTOCOL" = "https" ]; then
+        if [ "$TRAEFIK_SSL_RESOLVER" = "acme" ]; then
+            cp -rf $swarmTemplatesPath/docker/acme.yaml $proxyPath/dynamic/acme.yaml > /dev/null 2>&1
+            sed -i 's~^email:.*~email: '$TRAEFIK_ACME_EMAIL'~g' $proxyPath/dynamic/acme.yaml
         fi
-        unset proxySslProtocol
-    fi
-
-    if [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ]; then
-        if [ -f "/etc/nginx/sites-available/default > /dev/null 2>&1" ]; then
-            sudo rm -rf /etc/nginx/sites-available/default > /dev/null 2>&1
-        fi
-        sudo rm -rf /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/iota* /etc/nginx/sites-enabled/shimmer* > /dev/null 2>&1
-        sudo cp -rf $swarmTemplates/proxy/nginx_default.template /etc/nginx/sites-enabled/default
-
-        #################################################################################################
-        if [ -f "/usr/bin/iota-hornet" ] && [ -f "/etc/letsencrypt/live/$proxyIotaHornetDomain/fullchain.pem" ] && [ ! -z "$proxyIotaHornetDomain" ] && [ ! -z "$proxyIotaHornetPort" ]; then
-            if [ -z "$defaultDomain" ]; then
-                defaultDomain="$proxyIotaHornetDomain"
+        if [ "$TRAEFIK_SSL_RESOLVER" = "custom" ]; then
+            if [ ! -f "$proxyPath/dynamic/tls.yaml" ]; then
+                cp -rf $swarmTemplatesPath/docker/tls_custom.yaml $proxyPath/dynamic/tls.yaml > /dev/null 2>&1
             fi
-            sudo cp -rf $swarmTemplates/proxy/nginx_iota-hornet.template /etc/nginx/sites-enabled/iota-hornet
-            sudo sed -i 's/domain.tld/'$proxyIotaHornetDomain'/g' /etc/nginx/sites-enabled/iota-hornet
-            sudo sed -i 's/443/'$proxyIotaHornetPort'/g' /etc/nginx/sites-enabled/iota-hornet
-            if [ "$ufw" = "true" ]; then
-                sudo ufw allow $proxyIotaHornetPort/tcp > /dev/null 2>&1
-            fi
-        fi
-        if [ -f "/usr/bin/iota-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyIotaInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyIotaInxDashboardDomain" ] && [ ! -z "$proxyIotaInxDashboardPort" ] && [ "$proxyIotaInxDashboardEnabled" = "true" ]; then
-            if [ -z "$defaultDomain" ]; then
-                defaultDomain="$proxyIotaInxDashboardDomain"
-            fi
-            sudo cp -rf $swarmTemplates/proxy/nginx_iota-inx-dashboard.template /etc/nginx/sites-enabled/iota-inx-dashboard
-            sudo sed -i 's/domain.tld/'$proxyIotaInxDashboardDomain'/g' /etc/nginx/sites-enabled/iota-inx-dashboard
-            sudo sed -i 's/443/'$proxyIotaInxDashboardPort'/g' /etc/nginx/sites-enabled/iota-inx-dashboard
-            if [ "$ufw" = "true" ]; then
-                sudo ufw allow $proxyIotaInxDashboardPort/tcp > /dev/null 2>&1
-            fi
-        fi
-        if [ -f "/usr/bin/shimmer-hornet" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerHornetDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerHornetDomain" ] && [ ! -z "$proxyShimmerHornetPort" ]; then
-            if [ -z "$defaultDomain" ]; then
-                defaultDomain="$proxyShimmerHornetDomain"
-            fi
-            sudo cp -rf $swarmTemplates/proxy/nginx_shimmer-hornet.template /etc/nginx/sites-enabled/shimmer-hornet
-            sudo sed -i 's/domain.tld/'$proxyShimmerHornetDomain'/g' /etc/nginx/sites-enabled/shimmer-hornet
-            sudo sed -i 's/443/'$proxyShimmerHornetPort'/g' /etc/nginx/sites-enabled/shimmer-hornet
-            if [ "$ufw" = "true" ]; then
-                sudo ufw allow $proxyShimmerHornetPort/tcp > /dev/null 2>&1
-            fi
-        fi
-        if [ -f "/usr/bin/shimmer-inx-dashboard" ] && [ -f "/etc/letsencrypt/live/$proxyShimmerInxDashboardDomain/fullchain.pem" ] && [ ! -z "$proxyShimmerInxDashboardDomain" ] && [ ! -z "$proxyShimmerInxDashboardPort" ] && [ "$proxyShimmerInxDashboardEnabled" = "true" ]; then
-            if [ -z "$defaultDomain" ]; then
-                defaultDomain="$proxyShimmerInxDashboardDomain"
-            fi
-            sudo cp -rf $swarmTemplates/proxy/nginx_shimmer-inx-dashboard.template /etc/nginx/sites-enabled/shimmer-inx-dashboard
-            sudo sed -i 's/domain.tld/'$proxyShimmerInxDashboardDomain'/g' /etc/nginx/sites-enabled/shimmer-inx-dashboard
-            sudo sed -i 's/443/'$proxyShimmerInxDashboardPort'/g' /etc/nginx/sites-enabled/shimmer-inx-dashboard
-            if [ "$ufw" = "true" ]; then
-                sudo ufw allow $proxyShimmerInxDashboardPort/tcp > /dev/null 2>&1
-            fi
-        fi
-        #########################################################################################################################################################################################################
-        sudo sed -i 's/# server_tokens off;/server_tokens off;/g' /etc/nginx/nginx.conf
-        sudo sed -i 's/# server_names_hash_bucket_size 64;/server_names_hash_bucket_size 64;/g' /etc/nginx/nginx.conf
-        sudo sed -i 's/domain.tld/'$defaultDomain'/g' /etc/nginx/sites-enabled/default
-        if [ -f /etc/nginx/swarm.conf ]; then
-            sudo mv /etc/nginx/swarm.conf /etc/nginx/swarm/swarm.conf
         else
-            if [ ! -f "/etc/nginx/swarm/swarm.conf" ]; then
-                sudo touch /etc/nginx/swarm/swarm.conf > /dev/null 2>&1
-            fi
+            cp -rf $swarmTemplatesPath/docker/tls.yaml $proxyPath/dynamic/tls.yaml > /dev/null 2>&1
         fi
-        source $proxyModule/proxyIotaInxDashboard
-        source $proxyModule/proxyIotaInxMqtt
-        source $proxyModule/proxyShimmerInxDashboard
-        source $proxyModule/proxyShimmerInxMqtt
-        source $proxyModule/proxySwarmEndpoint
-        source $proxyModule/proxyCORS
-        sudo systemctl restart nginx > /dev/null 2>&1
+        chown -R 65532:65532 $proxyPath > /dev/null 2>&1
+        ( cd $swarmDockerPath ; docker compose -f docker-traefik.yml -f docker-traefik-https.yml up -d > /dev/null 2>&1 )
+    else
+        ( cd $swarmDockerPath ; docker compose -f docker-traefik.yml up -d > /dev/null 2>&1 )
     fi
 fi
