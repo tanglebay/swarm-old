@@ -1,0 +1,139 @@
+services:
+##################################################################
+#  SHIMMER HORNET                                                   #
+##################################################################
+
+  shimmer-node:
+    container_name: shimmer-node:
+    image: iotaledger/hornet:${SHIMMER_HORNET_IMAGE_VERSION}
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    stop_grace_period: 5m
+    restart: unless-stopped
+    ports:
+      - "${SHIMMER_GOSSIP_PORT}:${SHIMMER_GOSSIP_PORT}/tcp"
+      ${SHIMMER_AUTOPEERING_PORT}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shimmer-node.service=shimmer-node"
+      - "traefik.http.routers.shimmer-node.rule=Host(`${SHIMMER_NODE_ADDRESS:-localhost}`)"
+      - "traefik.http.routers.shimmer-node.entrypoints=web"
+      - "traefik.http.services.shimmer-node.loadbalancer.server.port=14265"
+    cap_drop:
+      - ALL
+    volumes:
+      - /opt/docker/shimmer-node/${SHIMMER_HORNET_CONFIG_FILE:-config.json}:/app/config.json:ro
+      - /opt/docker/shimmer-node/${SHIMMER_HORNET_PEERING_FILE:-peering.json}:/app/peering.json
+      - /opt/docker/shimmer-node:/app/data
+    command:
+      - "-c"
+      - "config.json"
+      - "--db.path=data/database"
+      - "--p2p.db.path=data/p2pstore"
+      - "--p2p.bindMultiAddresses=/ip4/0.0.0.0/tcp/${SHIMMER_GOSSIP_PORT},/ip6/::/tcp/${SHIMMER_GOSSIP_PORT}"
+      - "--snapshots.fullPath=data/snapshots/full_snapshot.bin"
+      - "--snapshots.deltaPath=data/snapshots/delta_snapshot.bin"
+      - "--inx.enabled=true"
+      - "--inx.bindAddress=shimmer-node:9029"
+
+  ##################################################################
+  #  SHIMMER INX Extensions                                           #
+  #  disable them out by commenting out the services               #
+  ##################################################################
+
+  shimmer-inx-indexer:
+    container_name: shimmer-inx-indexer
+    image: iotaledger/inx-indexer:${SHIMMER_INX_INDEXER_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      shimmer-node:
+        condition: service_healthy
+    volumes:
+      - /opt/docker/shimmer-inx-indexer:/app/database
+    command:
+      - "--inx.address=shimmer-node:9029"
+      - "--indexer.db.sqlite.path=database/database"
+      - "--restAPI.bindAddress=shimmer-inx-indexer:9091"
+
+  shimmer-inx-mqtt:
+    container_name: shimmer-inx-mqtt
+    image: iotaledger/inx-mqtt:${SHIMMER_INX_MQTT_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      shimmer-node:
+        condition: service_healthy
+    command:
+      - "--inx.address=shimmer-node:9029"
+      - "--mqtt.websocket.bindAddress=shimmer-inx-mqtt:1888"
+
+  shimmer-inx-participation:
+    container_name: shimmer-inx-participation
+    image: iotaledger/inx-participation:${SHIMMER_INX_PARTICIPATION_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      shimmer-node:
+        condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    volumes:
+      - /opt/docker/shimmer-inx-participation:/app/database
+    command:
+      - "--inx.address=shimmer-node:9029"
+      - "--participation.db.path=database/database"
+      - "--restAPI.bindAddress=shimmer-inx-participation:9892"
+
+  shimmer-inx-poi:
+    container_name: shimmer-inx-poi
+    image: iotaledger/inx-poi:${SHIMMER_INX_POI_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      shimmer-node:
+        condition: service_healthy
+    command:
+      - "--inx.address=hornet:9029"
+      - "--restAPI.bindAddress=shimmer-inx-poi:9687"
+
+  shimmer-inx-irc-metadata:
+    container_name: shimmer-inx-irc-metadata
+    image: iotaledger/inx-irc-metadata:${SHIMMER_INX_IRC_METADATA_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      shimmer-node:
+        condition: service_healthy
+    command:
+      - "--inx.address=shimmer-node:9029"
+      - "--restAPI.bindAddress=shimmer-inx-irc-metadata:9697"
+
+  shimmer-inx-dashboard:
+    container_name: shimmer-inx-dashboard
+    image: iotaledger/inx-dashboard:${SHIMMER_INX_DASHBOARD_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      shimmer-node:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shimmer-node-dashboard.service=shimmer-node-dashboard"
+      - "traefik.http.routers.shimmer-node-dashboard.rule=Host(`${SHIMMER_DASHBOARD_ADDRESS:-localhost}`)"
+      - "traefik.http.routers.shimmer-node-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.shimmer-node-dashboard.tls=true"
+      - "traefik.http.services.shimmer-node-dashboard.loadbalancer.server.port=8081"
+    volumes:
+      - /opt/docker/shimmer-inx-dashboard:/app/database
+    command:
+      - "--inx.address=shimmer-node:9029"
+      - "--dashboard.bindAddress=shimmer-inx-dashboard:8081"
+      - "--dashboard.auth.identityFilePath=/app/database/identity.key"
+      - "--dashboard.auth.username=${SHIMMER_DASHBOARD_USERNAME:-admin}"
+      - "--dashboard.auth.passwordHash=${SHIMMER_DASHBOARD_PASSWORD:-0000000000000000000000000000000000000000000000000000000000000000}"
+      - "--dashboard.auth.passwordSalt=${SHIMMER_DASHBOARD_SALT:-0000000000000000000000000000000000000000000000000000000000000000}"

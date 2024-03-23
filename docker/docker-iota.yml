@@ -1,0 +1,145 @@
+services:
+##################################################################
+#  IOTA HORNET                                                   #
+##################################################################
+
+  iota-node:
+    container_name: iota-node:
+    image: iotaledger/hornet:${IOTA_HORNET_IMAGE_VERSION}
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_started
+    ports:
+      - "${IOTA_GOSSIP_PORT}:${IOTA_GOSSIP_PORT}/tcp"
+      ${IOTA_AUTOPEERING_PORT}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.iota-node.service=iota-node"
+      - "traefik.http.routers.iota-node.rule=Host(`${IOTA_NODE_ADDRESS:-localhost}`)"
+      - "traefik.http.routers.iota-node.entrypoints=web"
+      - "traefik.http.services.iota-node.loadbalancer.server.port=14265"
+    cap_drop:
+      - ALL
+    volumes:
+      - /opt/docker/iota-node/${IOTA_HORNET_CONFIG_FILE:-config.json}:/app/config.json:ro
+      - /opt/docker/iota-node/${IOTA_HORNET_PEERING_FILE:-peering.json}:/app/peering.json
+      - /opt/docker/iota-node:/app/data
+    command:
+      - "-c"
+      - "config.json"
+      - "--db.path=data/database"
+      - "--p2p.db.path=data/p2pstore"
+      - "--p2p.bindMultiAddresses=/ip4/0.0.0.0/tcp/${IOTA_GOSSIP_PORT},/ip6/::/tcp/${IOTA_GOSSIP_PORT}"
+      - "--p2p.autopeering.enabled="
+      - "--snapshots.fullPath=data/snapshots/full_snapshot.bin"
+      - "--snapshots.deltaPath=data/snapshots/delta_snapshot.bin"
+      - "--inx.enabled=true"
+      - "--inx.bindAddress=iota-node:9029"
+
+  ##################################################################
+  #  IOTA INX Extensions                                           #
+  #  disable them out by commenting out the services               #
+  ##################################################################
+
+  iota-inx-indexer:
+    container_name: iota-inx-indexer
+    image: iotaledger/inx-indexer:${IOTA_INX_INDEXER_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      iota-node:
+        condition: service_healthy
+    volumes:
+      - /opt/docker/iota-inx-indexer:/app/database
+    command:
+      - "--inx.address=iota-node:9029"
+      - "--indexer.db.sqlite.path=database/database"
+      - "--restAPI.bindAddress=iota-inx-indexer:9091"
+
+  iota-inx-mqtt:
+    container_name: iota-inx-mqtt
+    image: iotaledger/inx-mqtt:${IOTA_INX_MQTT_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      iota-node:
+        condition: service_healthy
+    command:
+      - "--inx.address=iota-node:9029"
+      - "--mqtt.websocket.bindAddress=iota-inx-mqtt:1888"
+
+  iota-inx-participation:
+    container_name: iota-inx-participation
+    image: iotaledger/inx-participation:${IOTA_INX_PARTICIPATION_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      iota-node:
+        condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    volumes:
+      - /opt/docker/iota-inx-participation:/app/database
+    command:
+      - "--inx.address=iota-node:9029"
+      - "--participation.db.path=database/database"
+      - "--restAPI.bindAddress=iota-inx-participation:9892"
+
+  iota-inx-poi:
+    container_name: iota-inx-poi
+    image: iotaledger/inx-poi:${IOTA_INX_POI_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      iota-node:
+        condition: service_healthy
+    command:
+      - "--inx.address=hornet:9029"
+      - "--restAPI.bindAddress=iota-inx-poi:9687"
+
+  iota-inx-irc-metadata:
+    container_name: iota-inx-irc-metadata
+    image: iotaledger/inx-irc-metadata:${IOTA_INX_IRC_METADATA_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      iota-node:
+        condition: service_healthy
+    command:
+      - "--inx.address=iota-node:9029"
+      - "--restAPI.bindAddress=iota-inx-irc-metadata:9697"
+
+  iota-inx-dashboard:
+    container_name: iota-inx-dashboard
+    image: iotaledger/inx-dashboard:${IOTA_INX_DASHBOARD_IMAGE_VERSION}
+    stop_grace_period: 5m
+    restart: unless-stopped
+    depends_on:
+      traefik:
+        condition: service_started
+      iota-node:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.iota-node-dashboard.service=iota-node-dashboard"
+      - "traefik.http.routers.iota-node-dashboard.rule=Host(`${IOTA_DASHBOARD_ADDRESS:-localhost}`)"
+      - "traefik.http.routers.iota-node-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.iota-node-dashboard.tls=true"
+      - "traefik.http.services.iota-node-dashboard.loadbalancer.server.port=8081"
+    volumes:
+      - /opt/docker/iota-inx-dashboard:/app/database
+    command:
+      - "--inx.address=iota-node:9029"
+      - "--dashboard.bindAddress=iota-inx-dashboard:8081"
+      - "--dashboard.auth.identityFilePath=/app/database/identity.key"
+      - "--dashboard.auth.username=${IOTA_DASHBOARD_USERNAME:-admin}"
+      - "--dashboard.auth.passwordHash=${IOTA_DASHBOARD_PASSWORD:-0000000000000000000000000000000000000000000000000000000000000000}"
+      - "--dashboard.auth.passwordSalt=${IOTA_DASHBOARD_SALT:-0000000000000000000000000000000000000000000000000000000000000000}"

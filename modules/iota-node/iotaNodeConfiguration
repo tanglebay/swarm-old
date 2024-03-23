@@ -2,32 +2,31 @@
 while [ $exitCode -lt 1 ]; do
     clear
     source $swarmConfigsPath/iota-node.cfg
-    source $iotaNodeModule/iotaNodeConfigs
     if [ "$iotaNodeUpdateCheck" = "true" ]; then
         menuIotaNodeUpdateCheck="Disable"
     else
         menuIotaNodeUpdateCheck="Enable"
     fi
     CHOICE=$(
-        whiptail --title "Node [IOTA] Configurations" --menu "\nChoose an option" 24 70 0 \
+        whiptail --title "Node [IOTA] Configuration" --menu "\nChoose an option" 24 70 0 \
         "" "" \
         "1)" "JWT" \
-        "2)" "Autopeering" \
-        "3)" "Snapshots" \
-        "4)" "Database Pruning" \
-        "5)" "Proof Of Work" \
-        "6)" "P2P Identity" \
-        "7)" "Gossip (Peering)" \
-        "8)" "Node Alias" \
-        "9)" "[$menuIotaNodeUpdateCheck] Update Check" \
-        "10)" "Advanced Configuration" 3>&2 2>&1 1>&3
+        "2)" "INX" \
+        "3)" "Autopeering" \
+        "4)" "Snapshots" \
+        "5)" "Database Pruning" \
+        "6)" "Proof Of Work" \
+        "7)" "P2P Identity" \
+        "8)" "Gossip (Peering)" \
+        "9)" "Node Alias" \
+        "10)" "[$menuIotaNodeUpdateCheck] Update Check" 3>&2 2>&1 1>&3
     )
 
     exitstatus=$?
     if [ "$exitstatus" = "1" ]; then
         exitCode=1
         if [ "$restartIotaNode" = "true" ] && [ -d "$iotaNodePath" ]; then
-            if (whiptail --title "Node [IOTA] Menu" --yesno "Would you like to apply the changes and restart [IOTA] Node? (INX apps start delayed)" 8 70); then
+            if (whiptail --title "Node [IOTA] Configuration" --yesno "Would you like to apply the changes and restart [IOTA] Node? (INX apps start delayed)" 8 70); then
                 if [ ! -f "/tmp/iota-node.lock" ]; then
                     touch /tmp/iota-node.lock > /dev/null 2>&1
                 fi
@@ -36,9 +35,9 @@ while [ $exitCode -lt 1 ]; do
                     echo 25
                     source $iotaNodeModule/iotaNodeParser
                     echo 50
-                    ( cd $swarmDockerPath ; docker compose down > /dev/null 2>&1)
+                    ( cd $swarmDockerPath ; docker compose -f docker-iota.yml down > /dev/null 2>&1)
                     echo 75
-                    ( cd $swarmDockerPath ; docker compose up -d > /dev/null 2>&1)
+                    ( cd $swarmDockerPath ; docker compose -f docker-iota.yml up -d > /dev/null 2>&1)
                     echo 100
                 } | whiptail --gauge "Please wait while the changes are applied and [IOTA] Node is restarted..." 8 70 0
                 unset restartIotaNode
@@ -70,7 +69,7 @@ while [ $exitCode -lt 1 ]; do
                     "1)")
                         if [ -d $iotaNodePath ]; then
                             if (whiptail --title "Node [IOTA] API & JWT" --yesno --defaultno "Are you sure you want to generate a new [IOTA] Node JWT token?" 8 70); then
-                                iotaNodeApiJwtToken=$( cd $swarmDockerPath ; docker compose run iota-hornet tools jwt-api --salt $iotaNodeApiJwtSalt --databasePath data/p2pstore | awk '{ print $5 }')
+                                iotaNodeApiJwtToken=$( cd $swarmDockerPath ; docker compose run $iotaNodeDockerService tools jwt-api --salt $iotaNodeApiJwtSalt --databasePath data/p2pstore | awk '{ print $5 }')
                                 if [ ! -z "$iotaNodeApiJwtToken" ]; then
                                     sed -i 's~^iotaNodeApiJwtToken=.*~iotaNodeApiJwtToken="'$iotaNodeApiJwtToken'"~' $swarmConfigsPath/iota-node.cfg
                                     echo $iotaNodeApiJwtToken >> $swarmLogs/iotaNodeJwtToken.log
@@ -108,9 +107,9 @@ while [ $exitCode -lt 1 ]; do
                                     echo 45
                                     source $iotaNodeConfigParsers/iotaNodeIdentity
                                     echo 60
-                                    ( cd $swarmDockerPath ; docker compose down > /dev/null 2>&1 && docker compose up -d > /dev/null 2>&1 )
+                                    ( cd $swarmDockerPath ; docker compose -f docker-iota.yml down > /dev/null 2>&1 && docker compose -f docker-iota.yml up -d > /dev/null 2>&1 )
                                     echo 75
-                                    iotaNodeApiJwtToken=$( cd $swarmDockerPath ; docker compose run iota-hornet tools jwt-api --salt $iotaNodeApiJwtSalt --databasePath data/p2pstore | awk '{ print $5 }')
+                                    iotaNodeApiJwtToken=$( cd $swarmDockerPath ; docker compose run $iotaNodeDockerService tools jwt-api --salt $iotaNodeApiJwtSalt --databasePath data/p2pstore | awk '{ print $5 }')
                                     echo 90
                                     if [ ! -z "$iotaNodeApiJwtToken" ]; then
                                         sed -i 's~^iotaNodeApiJwtToken=.*~iotaNodeApiJwtToken="'$iotaNodeApiJwtToken'"~' $swarmConfigsPath/iota-node.cfg
@@ -122,7 +121,7 @@ while [ $exitCode -lt 1 ]; do
                                 fi
                             fi
                         else
-                            whiptail --title "Node [IOTA] API & JWT" --msgbox "Please install [IOTA] Node first." 8 70
+                            whiptail --title "Node [IOTA] JWT" --msgbox "Please install [IOTA] Node first." 8 70
                         fi
                     ;;
                 esac
@@ -195,10 +194,14 @@ while [ $exitCode -lt 1 ]; do
                                 iotaNodeAutopeeringEnabled=false
                                 menuIotaNodeAutopeeringEnabled="disabled"
                                 sed -i 's/^iotaNodeAutopeeringEnabled=.*/iotaNodeAutopeeringEnabled='$iotaNodeAutopeeringEnabled'/' $swarmConfigsPath/iota-node.cfg
+                                sed -i 's/^IOTA_AUTOPEERING_ENABLED=.*/IOTA_AUTOPEERING_ENABLED='$iotaNodeAutopeeringEnabled'/' $swarmConfigsPath/docker-env.cfg
+                                sed -i 's/^IOTA_AUTOPEERING_PORT=.*/IOTA_AUTOPEERING_PORT=""/' $swarmConfigsPath/docker-env.cfg
                             else
                                 iotaNodeAutopeeringEnabled=true
                                 menuIotaNodeAutopeeringEnabled="enabled"
                                 sed -i 's/^iotaNodeAutopeeringEnabled=.*/iotaNodeAutopeeringEnabled='$iotaNodeAutopeeringEnabled'/' $swarmConfigsPath/iota-node.cfg
+                                sed -i 's/^IOTA_AUTOPEERING_ENABLED=.*/IOTA_AUTOPEERING_ENABLED='$iotaNodeAutopeeringEnabled'/' $swarmConfigsPath/docker-env.cfg
+                                sed -i 's~^IOTA_AUTOPEERING_PORT=.*~IOTA_AUTOPEERING_PORT="- \"'$iotaNodeAutopeeringPort':'$iotaNodeAutopeeringPort'/udp\""~g' $swarmConfigsPath/docker-env.cfg
                             fi
                             restartIotaNode=true
                             whiptail --title "Node [IOTA] Autopeering" --msgbox "[IOTA] Node autopeering $menuIotaNodeAutopeeringEnabled." 8 70
@@ -206,19 +209,22 @@ while [ $exitCode -lt 1 ]; do
                     ;;
                     "2)")
                         source $swarmConfigsPath/iota-node.cfg
-                        currentIotaNodeAutopeeringPort=$iotaNodeAutopeeringPort
-                        iotaNodeAutopeeringPort=$(whiptail --inputbox "\nSet the [IOTA] Node autopeering port for the automatic neighbors detection." 10 65 "$iotaNodeAutopeeringPort" --title "Node [IOTA] Autopeering" 3>&1 1>&2 2>&3)
-                        exitStatus=$?
-                        if [ $exitStatus != 1 ]; then
-                            if [ ! -z "$iotaNodeAutopeeringPort" ] && [ "$currentIotaNodeAutopeeringPort" != "$iotaNodeAutopeeringPort" ] && [ $iotaNodeAutopeeringPort -eq $iotaNodeAutopeeringPort ] 2>/dev/null; then
-                                if [ -d $iotaNodePath ]; then
-                                    source $iotaNodeConfigParsers/iotaNodeAutopeeringPort
+                        if [ "$iotaNodeAutopeeringEnabled" = "true" ]; then
+                            currentIotaNodeAutopeeringPort=$iotaNodeAutopeeringPort
+                            iotaNodeAutopeeringPort=$(whiptail --inputbox "\nSet the [IOTA] Node autopeering port for the automatic neighbors detection." 10 65 "$iotaNodeAutopeeringPort" --title "Node [IOTA] Autopeering" 3>&1 1>&2 2>&3)
+                            exitStatus=$?
+                            if [ $exitStatus != 1 ]; then
+                                if [ ! -z "$iotaNodeAutopeeringPort" ] && [ "$currentIotaNodeAutopeeringPort" != "$iotaNodeAutopeeringPort" ] && [ $iotaNodeAutopeeringPort -eq $iotaNodeAutopeeringPort ] 2>/dev/null; then
+                                    sed -i 's/^iotaNodeAutopeeringPort=.*/iotaNodeAutopeeringPort='$iotaNodeAutopeeringPort'/' $swarmConfigsPath/iota-node.cfg
+                                    sed -i 's~^IOTA_AUTOPEERING_PORT=.*~IOTA_AUTOPEERING_PORT="- \"'$iotaNodeAutopeeringPort':'$iotaNodeAutopeeringPort'/udp\""~g' $swarmConfigsPath/docker-env.cfg
+                                    restartIotaNode=true
+                                    whiptail --title "Node [IOTA] Autopeering" --msgbox "[IOTA] Node autopeering port set to \"$iotaNodeAutopeeringPort/udp\"." 8 70
                                 fi
-                                sed -i 's/^iotaNodeAutopeeringPort=.*/iotaNodeAutopeeringPort='$iotaNodeAutopeeringPort'/' $swarmConfigsPath/iota-node.cfg
-                                whiptail --title "Node [IOTA] Autopeering" --msgbox "[IOTA] Node autopeering port set to \"$iotaNodeAutopeeringPort/udp\"." 8 70
                             fi
+                            unset currentIotaNodeAutopeeringPort
+                        else
+                            whiptail --title "Node [IOTA] Autopeering" --msgbox "[IOTA] Node autopeering not enabled, please enable first." 8 70
                         fi
-                        unset currentIotaNodeAutopeeringPort
                     ;;
                 esac
             done
@@ -472,14 +478,8 @@ while [ $exitCode -lt 1 ]; do
                         exitStatus=$?
                         if [ $exitStatus != 1 ]; then
                             if [ ! -z "$iotaNodeGossipPort" ] && [ "$currentIotaNodeGossipPort" != "$iotaNodeGossipPort" ] && [ $iotaNodeGossipPort -eq $iotaNodeGossipPort ] 2>/dev/null; then
-                                if [ -d $iotaNodePath ]; then
-                                    if [ "$ufw" = "true" ]; then
-                                        ufw delete allow $currentIotaNodeGossipPort/tcp > /dev/null 2>&1
-                                        ufw allow $iotaNodeGossipPort/tcp > /dev/null 2>&1
-                                    fi
-                                    source $iotaNodeConfigParsers/iotaNodeGossipPort
-                                fi
                                 sed -i 's/^iotaNodeGossipPort=.*/iotaNodeGossipPort='$iotaNodeGossipPort'/' $swarmConfigsPath/iota-node.cfg
+                                sed -i 's/^IOTA_GOSSIP_PORT=.*/IOTA_GOSSIP_PORT='$iotaNodeGossipPort'/' $swarmConfigsPath/docker-env.cfg
                                 whiptail --title "Node [IOTA] Gossip" --msgbox "[IOTA] Node gossip port set to \"$iotaNodeGossipPort/tcp\"." 8 70
                                 restartIotaNode=true
                             fi
@@ -528,63 +528,6 @@ while [ $exitCode -lt 1 ]; do
             unset iotaNodeCurrentAlias
         ;;
         "10)")
-            while [ $exitCode -lt 1 ]; do
-                source $iotaNodeModule/iotaNodeConfigs
-                # Node Networks
-                CHOICE=$(
-                    whiptail --title "Node [IOTA] Network" --menu "\nCurrent network: $iotaNodeNetwork\n\nChoose an option" 24 70 0 \
-                    "" "" \
-                    "1)" "Select Iota Mainnet (Default)" 3>&2 2>&1 1>&3
-                )
-                exitStatus=$?
-                if [ "$exitStatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        if (whiptail --title "Node [IOTA] Network" --yesno --defaultno "Are you sure you want to change the network to [IOTA] mainnet (the old database will be deleted)?" 8 70); then
-                            currentIotaNodeNetwork=$iotaNodeNetwork
-                            iotaNodeNetwork=mainnet
-                            sed -i 's/^iotaNodeNetwork=.*/iotaNodeNetwork='$iotaNodeNetwork'/' $swarmConfigsPath/iota-node.cfg
-                            if [ -d $iotaNodePath ]; then
-                                source $iotaNodeModule/iotaNodeNetwork
-                            fi
-                        fi
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-        "11)")
-            while [ $exitCode -lt 1 ]; do
-                source $swarmConfigsPath/iota-node.cfg
-                # Node release channel
-                CHOICE=$(
-                    whiptail --title "Node [IOTA] Releases" --menu "\nSet \"rc\" for official [IOTA] Node releases or \"beta\"/\"alpha\" for [IOTA] Node releases under development\n\nChoose an option" 24 70 0 \
-                    "" "" \
-                    "1)" "Select Release Candidate Channel (Default)" 3>&2 2>&1 1>&3
-                )
-                exitStatus=$?
-                if [ "$exitStatus" = "1" ]; then
-                    exitCode=1
-                fi
-                case $CHOICE in
-                    "1)")
-                        if (whiptail --title "Node [IOTA] Releases" --yesno --defaultno "Are you sure you want to change the [IOTA] Node release channel to \"rc\" (Node will be reinstalled)?" 8 70); then
-                            currentIotaNodeRelease=$iotaNodeRelease
-                            iotaNodeRelease="rc"
-                            sed -i 's/^iotaNodeRelease=.*/iotaNodeRelease='$iotaNodeRelease'/' $swarmConfigsPath/iota-node.cfg
-                            if [ -d $iotaNodePath ]; then
-                                source $iotaNodeModule/iotaNodeReleaseChannel
-                                source $iotaNodeModule/iotaNodeParser
-                            fi
-                        fi
-                    ;;
-                esac
-            done
-            exitCode=0
-        ;;
-        "12)")
             menuIotaNodeUpdateCheck=$(echo $menuIotaNodeUpdateCheck | awk '{print tolower($0)}')
             if (whiptail --title "Node [IOTA] Update Check" --yesno --defaultno "Are you sure you want to $menuIotaNodeUpdateCheck the [IOTA] Node update check?" 8 70); then
                 source $swarmConfigsPath/iota-node.cfg
@@ -600,93 +543,6 @@ while [ $exitCode -lt 1 ]; do
                 restartIotaNode=true
                 whiptail --title "Node [IOTA] Update Check" --msgbox "[IOTA] Node update check $menuIotaNodeUpdateCheck." 8 70
             fi
-        ;;
-        "13)")
-            while [ $exitCode -lt 1 ]; do
-                clear
-                CHOICE=$(
-                    whiptail --title "Node [IOTA] Advanced Config" --menu "\nChoose an option" 24 70 0 \
-                    "" "" \
-                    "1)" "Peering.json" \
-                    "2)" "Config_Mainnet.json" \
-                    "3)" "IOTA-NODE.cfg (SWARM)" 3>&2 2>&1 1>&3
-                )
-
-                exitstatus=$?
-                if [ "$exitstatus" = "1" ]; then
-                    exitCode=1
-                fi
-
-                case $CHOICE in
-                    "1)")
-                        $swarmCLEditor $iotaNodePath/peering.json
-                        if (whiptail --title "Node [IOTA] Configuration" --yesno --defaultno "Would you like to restart [IOTA] Node now? (INX apps start delayed)" 8 70); then
-                            if [ ! -f "/tmp/iota-node.lock" ]; then
-                                touch /tmp/iota-node.lock > /dev/null 2>&1
-                            fi
-                            {
-                                echo 0
-                                echo 33
-                                source $iotaInxModule/iotaInxAppStop
-                                echo 66
-                                systemctl restart iota-node > /dev/null 2>&1
-                                echo 100
-                            } | whiptail --gauge "Please wait while [IOTA] Node is restarting..." 8 70 0
-                            bash $iotaInxModule/iotaInxAppStart &
-                            if [ -f "/tmp/iota-node.lock" ]; then
-                                rm -rf /tmp/iota-node.lock > /dev/null 2>&1
-                            fi
-                        fi
-                    ;;
-                    "2)")
-                        $swarmCLEditor $iotaNodePath/config_mainnet.json
-                        if [ -d $iotaNodePath ]; then
-                            if (whiptail --title "Node [IOTA] Configuration" --yesno --defaultno "Would you like to restart [IOTA] Node now? (INX apps start delayed)" 8 70); then
-                                if [ ! -f "/tmp/iota-node.lock" ]; then
-                                    touch /tmp/iota-node.lock > /dev/null 2>&1
-                                fi
-                                {
-                                    echo 0
-                                    echo 33
-                                    source $iotaInxModule/iotaInxAppStop
-                                    echo 66
-                                    systemctl restart iota-node > /dev/null 2>&1
-                                    echo 100
-                                } | whiptail --gauge "Please wait while [IOTA] Node is restarting..." 8 70 0
-                                bash $iotaInxModule/iotaInxAppStart &
-                                if [ -f "/tmp/iota-node.lock" ]; then
-                                    rm -rf /tmp/iota-node.lock > /dev/null 2>&1
-                                fi
-                            fi
-                        fi
-                    ;;
-                    "3)")
-                        $swarmCLEditor $swarmConfigsPath/iota-node.cfg
-                        if [ -d $iotaNodePath ]; then
-                            if (whiptail --title "Node [IOTA] Configuration" --yesno --defaultno "Would you like to restart [IOTA] Node now? (INX apps start delayed)" 8 70); then
-                                if [ ! -f "/tmp/iota-node.lock" ]; then
-                                    touch /tmp/iota-node.lock > /dev/null 2>&1
-                                fi
-                                {
-                                    echo 0
-                                    echo 25
-                                    source $iotaNodeModule/iotaNodeParser
-                                    echo 50
-                                    source $iotaInxModule/iotaInxAppStop
-                                    echo 75
-                                    systemctl restart iota-node > /dev/null 2>&1
-                                    echo 100
-                                } | whiptail --gauge "Please wait while [IOTA] Node is restarting..." 8 70 0
-                                bash $iotaInxModule/iotaInxAppStart &
-                                if [ -f "/tmp/iota-node.lock" ]; then
-                                    rm -rf /tmp/iota-node.lock > /dev/null 2>&1
-                                fi
-                            fi
-                        fi
-                    ;;
-                esac
-            done
-            exitCode=0
         ;;
     esac
 done
