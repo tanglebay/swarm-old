@@ -2,106 +2,20 @@
 
 echo "====== INSTALLATION STARTED ======" > /tmp/iotaHornetInstaller.log
 # General
-if ! id hornet >/dev/null 2>&1; then
-    echo "-> Create user" >> /tmp/iotaHornetInstaller.log
-    useradd --no-create-home --system hornet >/dev/null
-fi
 
 if [ ! -d "$iotaNodePath" ]; then
+    iotaHornetFirstInstall=true
     echo "-> Create home folder" >> /tmp/iotaHornetInstaller.log
     mkdir -p $iotaNodePath > /dev/null 2>&1
-    chown -R hornet:hornet $iotaNodePath > /dev/null 2>&1
-fi
-
-if [ ! -f "/usr/bin/iota-hornet" ]; then
-    iotaHornetFirstInstall=true
-fi
-
-# Install GO
-if ! [ -x "$(command -v go)" ] > /dev/null 2>&1; then
-    echo "-> Install go via snap" >> /tmp/iotaHornetInstaller.log
-    snap install go --classic > /dev/null 2>&1
-fi
-
-# Create Service
-if [ ! -f "/lib/systemd/system/iota-hornet.service" ]; then
-    echo "-> Copy new service file from templates" >> /tmp/iotaHornetInstaller.log
-    cp -rf $swarmTemplates/app-service/iota-hornet.service /lib/systemd/system/iota-hornet.service > /dev/null 2>&1
-    if [ ! -f "/etc/systemd/system/multi-user.target.wants/iota-hornet.service" ]; then
-        echo "-> Register service" >> /tmp/iotaHornetInstaller.log
-        systemctl enable iota-hornet > /dev/null 2>&1
-    fi
-    systemctl daemon-reload > /dev/null 2>&1
-fi
-
-if [ -f "/etc/default/iota-hornet" ]; then
-    iotaHornetServiceDefault=$(cat /etc/default/iota-hornet)
-    if [[ $iotaHornetServiceDefault = *config.json* ]]; then
-        rm -rf /etc/default/iota-hornet > /dev/null 2>&1
-    fi
-    unset iotaHornetServiceDefault
-fi
-if [ ! -f "/etc/default/iota-hornet" ]; then
-    if [ "$iotaHornetNetwork" = "mainnet" ]; then
-        echo "-> Create OPTIONS file for service" >> /tmp/iotaHornetInstaller.log
-        echo "OPTIONS=\"--config config_mainnet.json\"" > /etc/default/iota-hornet
-    fi
+    chown -R 65532:65532 $iotaNodePath > /dev/null 2>&1
 fi
 
 ##############################################################################################################################################
 
-# Create dir if not exist
-echo "-> Create tmp folder" >> /tmp/iotaHornetInstaller.log
-mkdir -p /tmp/iota-hornet > /dev/null 2>&1
-
-# Download latest iota-hornet
-echo "-> Download archive for v${latestIotaHornetVersion}" >> /tmp/iotaHornetInstaller.log
-( cd /tmp/iota-hornet/ ; wget -q https://$cdnUrl/apps/hornet/v${latestIotaHornetVersion}/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz )
-if [ -f "/tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz" ]; then
-    iotaHornetDownloadChecksum=$(shasum -a 512 /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz | awk '{ print $1 }')
-    echo "-> Generate local checksum: $iotaHornetDownloadChecksum" >> /tmp/iotaHornetInstaller.log
-fi
-
-# Download checksum
-echo "-> Download remote checksum file" >> /tmp/iotaHornetInstaller.log
-( cd /tmp/iota-hornet/ ; wget -q https://$cdnUrl/apps/hornet/v${latestIotaHornetVersion}/hornet_checksums_linux_$osArchitecture.txt )
-iotaHornetChecksum=$(cat /tmp/iota-hornet/hornet_checksums_linux_$osArchitecture.txt | awk '{ print $1 }')
-echo $iotaHornetChecksum > /tmp/iota-hornet.checksum
-echo "-> Remote checksum: $iotaHornetChecksum" >> /tmp/iotaHornetInstaller.log
-
-# Unzip archive
-if [ "$iotaHornetDownloadChecksum" = "$iotaHornetChecksum" ] && [ ! -z "$iotaHornetDownloadChecksum" ] && [ ! -z "$iotaHornetChecksum" ]; then
-    echo "-> Unzip archive" >> /tmp/iotaHornetInstaller.log
-    ( cd /tmp/iota-hornet ; tar -xzf /tmp/iota-hornet/hornet-v${latestIotaHornetVersion}_linux_$osArchitecture.tar.gz ) > /dev/null 2>&1
-
-    # Copy binary
-    if [ -f "/tmp/iota-hornet/hornet" ]; then
-        iotaHornetStatus="$(systemctl show -p ActiveState --value iota-hornet)"
-        if [ "$iotaHornetStatus" = "active" ]; then
-            echo "-> Stop service" >> /tmp/iotaHornetInstaller.log
-            systemctl stop iota-hornet > /dev/null 2>&1
-        fi
-
-        echo "-> Copy new binary file" >> /tmp/iotaHornetInstaller.log
-        cp -rf /tmp/iota-hornet/hornet /usr/bin/iota-hornet > /dev/null 2>&1
-        chmod +x /usr/bin/iota-hornet > /dev/null 2>&1
-        newIotaHornetBinary=true
-    fi
-fi
-
-##############################################################################################################################################
-
-if [ "$newIotaHornetBinary" = "true" ]; then
-    ### Mainnet Config
-    if [ "$iotaHornetNetwork" = "mainnet" ]; then
-        if [ -f "/tmp/iota-hornet/hornet-${latestIotaHornetVersion}_Linux_$osArchitecture/config_iota.json" ]; then
-            echo "-> Copy new config file" >> /tmp/iotaHornetInstaller.log
-            cp -rf /tmp/iota-hornet/hornet-${latestIotaHornetVersion}_Linux_$osArchitecture/config_iota.json $iotaNodePath/config_mainnet.json > /dev/null 2>&1
-            if [ -s "$iotaNodePath/config_mainnet.json" ]; then
-                newIotaHornetConfig=true
-            fi
-        fi
-    fi
+echo "-> Copy new config file" >> /tmp/iotaHornetInstaller.log
+wget -q -O $iotaNodePath/config.json https://raw.githubusercontent.com/iotaledger/node-docker-setup/main/iota/config.json
+if [ -s "$iotaNodePath/config.json" ]; then
+    newIotaHornetConfig=true
 fi
 
 ##############################################################################################################################################
@@ -109,21 +23,17 @@ fi
 if [ "$newIotaHornetConfig" = "true" ]; then
     # Run installer modules
     echo "-> Set permissions" >> /tmp/iotaHornetInstaller.log
-    chown -R hornet:hornet $iotaNodePath > /dev/null 2>&1
+    chown -R 65532:65532 $iotaNodePath > /dev/null 2>&1
     chmod 644 $iotaNodePath/*.json > /dev/null 2>&1
 
     restartIotaHornet=true
     iotaHornetUpdated=true
 fi
 
-# Remove temporary files
-echo "-> Remove tmp folder" >> /tmp/iotaHornetInstaller.log
-rm -rf /tmp/iota-hornet > /dev/null 2>&1
-
 if [ "$iotaHornetFirstInstall" = "true" ]; then
-    systemctl start iota-hornet > /dev/null 2>&1
+    ( cd $iotaNodePath ; docker compose -f docker-iota.yml up -d ) > /dev/null 2>&1
     unset iotaHornetFirstInstall
 fi
 
 echo "====== INSTALLATION FINISHED ======" >> /tmp/iotaHornetInstaller.log
-unset newIotaHornetBinary newIotaHornetConfig iotaHornetDownloadChecksum
+unset newIotaHornetConfig

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+parser="$(jq '.p2p.bindMultiAddresses' $iotaNodePath/config.json)"
+parser="$(echo $parser | tr -d '[]":/. ')"
+
+if [ -n "$iotaNodeGossipPort" ] && [ "$iotaNodeGossipPort" -gt 0 ] && [[ $parser != *$iotaNodeGossipPort* ]] 2>/dev/null; then
+    sudo jq '.p2p.bindMultiAddresses = ["/ip4/0.0.0.0/tcp/'$iotaNodeGossipPort'"]' $iotaNodePath/config.json|sponge $iotaNodePath/config.json
+    sudo jq '.p2p.bindMultiAddresses |= .+ ["/ip6/::/tcp/'$iotaNodeGossipPort'"]' $iotaNodePath/config.json|sponge $iotaNodePath/config.json
+    restartIotaNode=true
+    echo "iotaNodeGossipPort" >> /tmp/iotaNodeParsing
+fi
