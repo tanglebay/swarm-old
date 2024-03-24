@@ -161,7 +161,7 @@ while [ $exitCode -lt 1 ]; do
                 fi
                 case $CHOICE in
                     "1)")
-                        if [ -f "/usr/bin/iota-hornet" ] || [ -f "/usr/bin/shimmer-hornet" ]; then
+                        if [ -d $iotaNodePath ] || [ -d $shimmerNodePath ]; then
                             source $swarmConfigs/proxy.cfg
                             if (whiptail --title "Proxy [-] Installer" --yesno --defaultno "Before deploying the proxy, please make sure that the domain and port are set for all nodes to be installed. If you use one domain for multiple nodes, please use different ports.\n\n\nAre you sure you want to continue?" 16 65); then
                                 source $proxyModule/proxyDeployment
@@ -174,21 +174,6 @@ while [ $exitCode -lt 1 ]; do
                     "2)")
                         if (whiptail --title "Proxy [-] Installer" --yesno --defaultno "Do you really want to remove the proxy?" 8 70); then
                             {
-                                echo 0
-                                if [ "$ufw" = "true" ]; then
-                                    source $proxyModule/proxyParser
-                                    sudo ufw delete allow 80/tcp > /dev/null 2>&1
-                                    sudo ufw delete allow $proxySwarmDashboardPort/tcp > /dev/null 2>&1
-                                    sudo ufw delete allow $proxyIotaHornetPort/tcp > /dev/null 2>&1
-                                    sudo ufw delete allow $proxyIotaInxDashboardPort/tcp > /dev/null 2>&1
-                                    sudo ufw delete allow $proxyShimmerHornetPort/tcp > /dev/null 2>&1
-                                    sudo ufw delete allow $proxyShimmerInxDashboardPort/tcp > /dev/null 2>&1
-                                fi
-                                echo 20
-                            } | whiptail --gauge "Please wait while removing the proxy..." 6 65 0
-                                sudo apt -qq purge software-properties-common certbot python3-certbot-nginx nginx* -y
-                                sudo apt -qq autoremove -y > /dev/null 2>&1
-                            {
                                 echo 60
                                 if [ -d "/etc/nginx" ]; then
                                     sudo rm -rf /etc/nginx > /dev/null 2>&1
@@ -196,7 +181,7 @@ while [ $exitCode -lt 1 ]; do
                                 if [ -d "/etc/letsencrypt" ]; then
                                     sudo rm -rf /etc/letsencrypt > /dev/null 2>&1
                                 fi
-                                sudo sed -i 's/^proxyIotaHornetUrl=.*/proxyIotaHornetUrl=""/' $swarmConfigs/proxy.cfg
+                                sudo sed -i 's/^IOTA=.*/proxyIotaHornetUrl=""/' $swarmConfigs/proxy.cfg
                                 sudo sed -i 's/^proxyIotaInxDashboardUrl=.*/proxyIotaInxDashboardUrl=""/' $swarmConfigs/proxy.cfg
                                 sudo sed -i 's/^proxyShimmerHornetUrl=.*/proxyShimmerHornetUrl=""/' $swarmConfigs/proxy.cfg
                                 sudo sed -i 's/^proxyShimmerInxDashboardUrl=.*/proxyShimmerInxDashboardUrl=""/' $swarmConfigs/proxy.cfg

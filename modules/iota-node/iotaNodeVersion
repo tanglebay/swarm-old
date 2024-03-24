@@ -1,26 +1,25 @@
 #!/bin/bash
-source $swarmConfigsPath/latest-app-versions.cfg
 
-if [ -z "$latestIotaNodeVersion" ] || [ "$latestIotaNodeVersion" = "\"\"" ] || [ "$latestIotaNodeVersion" = "null" ] || ! [[ $latestIotaNodeVersion =~ [0-9] ]]; then
-    if [[ `wget -S --spider https://$cdnUrl/github/releases.json 2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then
-        releaseFileUrl="https://$cdnUrl/github/releases.json"
-    else
-        releaseFileUrl="https://raw.githubusercontent.com/tanglebay/apps-releases/main/releases.json"
-    fi
-    latestIotaNodeVersion=$(curl --max-time 5 -Ls $releaseFileUrl | jq '."iota".'node'')
-    latestIotaNodeVersion=$(echo $latestIotaNodeVersion | tr -d 'v"')
-
-    if [ ! -z "$latestIotaNodeVersion" ] && [ "$latestIotaNodeVersion" != "\"\"" ] && [ "$latestIotaNodeVersion" != "null" ]; then
-        sudo sed -i 's~^latestIotaNodeVersion=.*~latestIotaNodeVersion="'$latestIotaNodeVersion'"~' $swarmConfigsPath/latest-app-versions.cfg
-    fi
+if [[ `wget -S --spider https://$cdnUrl/swarm-helper/apps.json 2>&1 | grep 'HTTP/1.1 200 OK'` ]]; then
+    appsFileUrl="https://$cdnUrl/swarm-helper/apps.json"
+else
+    appsFileUrl="https://raw.githubusercontent.com/tanglebay/swarm-helper/main/apps.json"
 fi
+wget -q -O $swarmTmpPath/apps.json $appsFileUrl
+
+
+latestIotaNodeVersion=$(cat $swarmTmpPath/apps.json | jq '."iota-node".'latest'')
+latestIotaIndexerVersion=$(cat $swarmTmpPath/apps.json | jq '."iota-indexer".'latest'')
+latestIotaMqttVersion=$(cat $swarmTmpPath/apps.json | jq '."iota-mqtt".'latest'')
+latestIotaParticipationVersion=$(cat $swarmTmpPath/apps.json | jq '."iota-participation".'latest'')
+latestIotaPoiVersion=$(cat $swarmTmpPath/apps.json | jq '."iota-poi".'latest'')
+latestIotaIrcMetadataVersion=$(cat $swarmTmpPath/apps.json | jq '."iota-irc-metadata".'latest'')
+latestIotaDashboardVersion=$(cat $swarmTmpPath/apps.json | jq '."iota-dashboard".'latest'')
 
 # Local node version
 if [ -d $iotaNodePath ]; then
-    iotaNodeVersion=$( cd $swarmDockerPath ; docker compose run $iotaNodeDockerService -v | awk '{ print $2 }' | tr -d 'v' )
+    iotaNodeVersion=$( cd $swarmDockerPath ; docker compose run iota-node -v | awk '{ print $2 }' | tr -d 'v' )
+else
+    iotaNodeVersion="0.0.0"
 fi
 
-# Replace var if empty
-if [ -z "$latestIotaNodeVersion" ] || [ "$latestIotaNodeVersion" = "null" ]; then
-    latestIotaNodeVersion=$iotaNodeVersion
-fi

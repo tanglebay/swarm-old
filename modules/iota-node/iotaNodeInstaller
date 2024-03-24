@@ -1,5 +1,5 @@
 #!/bin/bash
-
+source $swarmConfigsPath/docker-env.cfg
 echo "====== INSTALLATION STARTED ======" > /tmp/iotaHornetInstaller.log
 # General
 
@@ -8,6 +8,15 @@ if [ ! -d "$iotaNodePath" ]; then
     echo "-> Create home folder" >> /tmp/iotaHornetInstaller.log
     mkdir -p $iotaNodePath > /dev/null 2>&1
     chown -R 65532:65532 $iotaNodePath > /dev/null 2>&1
+
+    if [ -z "$IOTA_NODE_ADDRESS" ]; then
+        IOTA_NODE_ADDRESS=$(hostname -I | awk '{print $1}')
+        sed -i 's~^IOTA_NODE_ADDRESS=.*~IOTA_NODE_ADDRESS="'$IOTA_NODE_ADDRESS'"~' $swarmConfigsPath/docker-env.cfg
+    fi
+    if [ -z "$IOTA_DASHBOARD_ADDRESS" ]; then
+        IOTA_DASHBOARD_ADDRESS=$IOTA_NODE_ADDRESS
+        sed -i 's~^IOTA_NODE_ADDRESS=.*~IOTA_DASHBOARD_ADDRESS="'$IOTA_DASHBOARD_ADDRESS'"~' $swarmConfigsPath/docker-env.cfg
+    fi
 fi
 
 ##############################################################################################################################################

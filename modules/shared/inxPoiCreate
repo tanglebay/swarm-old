@@ -1,19 +1,21 @@
 #!/bin/bash
-
-if [ "$nodeId" = "Iota-Hornet" ]; then
-    nodeApiPort=14265
+source $swarmConfigsPath/docker-env.cfg
+if [ "$poiNetwork" = "iota" ]; then
     nodeJwtToken="$iotaHornetApiJwtToken"
 fi
 
-if [ "$nodeId" = "Shimmer-Hornet" ]; then
-    nodeApiPort=14266
+if [ "$poiNetwork" = "shimmer" ]; then
     nodeJwtToken="$shimmerHornetApiJwtToken"
-    blockId="$shimmerInxPoiCreateBlockId"
+fi
+
+if [ "$TRAEFIK_PROTOCOL" = "https" ]; then
+    TRAEFIK_PORT=$TRAEFIK_HTTPS_PORT
+else
+    TRAEFIK_PORT=$TRAEFIK_HTTP_PORT
 fi
 
 if [ ! -z "$nodeId" ] && [ ! -z "$nodeApiPort" ] && [ ! -z "$nodeJwtToken" ] && [ ! -z "$blockId" ]; then
-    if [ "$nodeId" = ""]
-    inxPoiResult=$(curl http://localhost:$nodeApiPort/api/poi/v1/create/$blockId --max-time 5 --http1.1 -s -X GET -H 'Content-Type: application/json' -H "Authorization: Bearer $nodeJwtToken")
+    poiResult=$(curl ${TRAEFIK_PROTOCOL}://${SHIMMER_NODE_ADDRESS}:${TRAEFIK_PORT}/api/poi/v1/create/$blockId --max-time 5 --http1.1 -s -X GET -H 'Content-Type: application/json' -H "Authorization: Bearer $nodeJwtToken")
 fi
 
-unset nodeId nodeApiPort nodeJwtToken inxPoiResult
+unset poiNetwork nodeJwtToken poiResult TRAEFIK_PORT
